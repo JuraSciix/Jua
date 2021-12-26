@@ -12,6 +12,7 @@ public class Environment {
     public static final int MAX_CALLSTACK_SIZE;
 
     static {
+        // wtf?
         int a = Options.callStackSize();
 
         if (a < (1 << 10))
@@ -25,16 +26,18 @@ public class Environment {
         return new Environment(env.functions, env.constants);
     }
 
+    // todo: Ну тут и так понятно что надо сделать
+
     private final Map<String, Function> functions;
 
     private final Map<String, Constant> constants;
 
     private final Deque<CallStackElement> callStack;
 
-    private Program cp;
+    private Frame cp;
 
     // todo: ну... исправить
-    public Program getProgram() {
+    public Frame getFrame() {
         return cp;
     }
 
@@ -68,7 +71,7 @@ public class Environment {
         }
         cp.clearStack();
         cp.clearLocals();
-        cp = callStack.poll().lastProgram;
+        cp = callStack.poll().lastFrame;
         if (cp != null) {
             cp.push(returnValue);
         }
@@ -78,7 +81,7 @@ public class Environment {
         return callStack.toArray(new CallStackElement[0]);
     }
 
-    public void setProgram(Program newCP) {
+    public void setProgram(Frame newCP) {
         cp = newCP;
     }
 

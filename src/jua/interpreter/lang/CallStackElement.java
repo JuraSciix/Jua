@@ -1,11 +1,12 @@
 package jua.interpreter.lang;
 
 import jua.interpreter.Program;
+import jua.interpreter.Frame;
 
 public class CallStackElement {
 
     public static CallStackElement entry() {
-        return new CallStackElement(null, null, -1, null, Program.Builder.empty().build());
+        return new CallStackElement(null, null, -1, null, Program.empty().build());
     }
 
     public final String name;
@@ -16,13 +17,13 @@ public class CallStackElement {
 
     public final Operand[] args;
 
-    public final Program lastProgram;
+    public final Frame lastFrame;
 
-    public CallStackElement(String name, String filename, int line, Operand[] args, Program lastProgram) {
+    public CallStackElement(String name, String filename, int line, Operand[] args, Frame lastFrame) {
         this.name = name;
         this.filename = filename;
         this.line = line;
         this.args = args;
-        this.lastProgram = lastProgram;
+        this.lastFrame = lastFrame;
     }
 }

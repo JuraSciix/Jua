@@ -1,5 +1,10 @@
 package jua.compiler;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
+import jua.interpreter.Program;
 import jua.interpreter.lang.Operand;
 import jua.interpreter.lang.OperandFunction;
 import jua.interpreter.states.JumpState;
@@ -7,15 +12,13 @@ import jua.interpreter.states.State;
 
 import java.util.*;
 
-import static jua.interpreter.Program.Builder;
-
-public class Code {
+public final class Code {
 
     private static class Chain {
 
         static final int UNSATISFIED_DESTINATION = Integer.MIN_VALUE;
 
-        final Map<Integer, JumpState> states = new HashMap<>();
+        final Int2ObjectMap<JumpState> states = new Int2ObjectOpenHashMap<>();
 
         int destination = UNSATISFIED_DESTINATION;
     }
@@ -31,13 +34,13 @@ public class Code {
 
         final List<State> states = new ArrayList<>();
 
-        final List<Integer> lines = new ArrayList<>();
+        final IntList lines = new IntArrayList();
 
         final List<String> locals = new ArrayList<>();
 
-        final Map<Integer, Chain> chainMap = new HashMap<>();
+        final Int2ObjectMap<Chain> chainMap = new Int2ObjectOpenHashMap<>();
 
-        final Stack<Scope> scopes = new Stack<>();
+        final Deque<Scope> scopes = new ArrayDeque<>();
 
         int stackTop = 0;
 
@@ -48,7 +51,7 @@ public class Code {
         }
     }
 
-    private final Stack<Context> contexts = new Stack<>();
+    private final Deque<Context> contexts = new ArrayDeque<>();
 
     private final Map<Object, Operand> internMap = new HashMap<>();
 
@@ -167,9 +170,9 @@ public class Code {
         }
     }
 
-    public Builder getBuilder() {
+    public Program getBuilder() {
         Context context = currentContext();
-        return new Builder(context.filename,
+        return new Program(context.filename,
                 context.states.toArray(new State[0]),
                 context.lines.stream().mapToInt(i -> i).toArray(),
                 context.stackTop,

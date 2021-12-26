@@ -1,5 +1,7 @@
 package jua.parser.ast;
 
+// todo: У меня уже имеется механизм для координации по файлу по линиям и столбцам.
+// todo: внедрить этот механизм в эту версию
 public class Position {
 
     public final String filename;

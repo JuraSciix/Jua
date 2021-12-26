@@ -7,6 +7,9 @@ import java.util.stream.Collectors;
 
 public class ConstantFolder implements Visitor {
 
+    /**
+     * Ассоциативный список констант по их названиям.
+     */
     private final Map<String, Expression> constantFolding;
 
     private Node lower;
@@ -866,6 +869,8 @@ public class ConstantFolder implements Visitor {
             }
         }).collect(Collectors.toList());
     }
+
+    // todo: Переместить нижние методы в TreeInfo
 
     private boolean isTrue(Expression expr) {
         expr = expr.child();

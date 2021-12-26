@@ -1,5 +1,7 @@
 package jua.compiler;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
 import jua.interpreter.lang.*;
 import jua.interpreter.states.*;
 import jua.parser.ast.*;
@@ -33,17 +35,19 @@ public class Gen implements Visitor {
 
     private final Code code;
 
-    private final Stack<Integer> breakStack;
+    private final IntList breakChains;
 
-    private final Stack<Integer> continueStack;
+    private final IntList continueChains;
 
-    private final Stack<Integer> fallthroughStack;
+    private final IntList fallthroughChains;
 
-    private final Stack<List<Part>> switchPartsStack;
+    private final Deque<List<Part>> switchPartsStack;
 
-    private final Stack<Integer> chains;
+    private final IntList conditionalChains;
 
-    private final Stack<Loop> loops;
+    private final Deque<Loop> loops;
+
+    // todo: Избавиться от ниже определенных полей
 
     private int statementDepth = 0;
     
@@ -56,12 +60,12 @@ public class Gen implements Visitor {
     public Gen(BuiltIn builtIn) {
         this.builtIn = builtIn;
         code = new Code();
-        breakStack = new Stack<>();
-        continueStack = new Stack<>();
-        fallthroughStack = new Stack<>();
-        switchPartsStack = new Stack<>();
-        chains = new Stack<>();
-        loops = new Stack<>();
+        breakChains = new IntArrayList();
+        continueChains = new IntArrayList();
+        fallthroughChains = new IntArrayList();
+        switchPartsStack = new ArrayDeque<>();
+        conditionalChains = new IntArrayList();
+        loops = new ArrayDeque<>();
     }
 
     // todo: исправить этот low-cohesion
@@ -78,15 +82,15 @@ public class Gen implements Visitor {
 
     @Override
     public void visitAnd(AndExpression expression) {
-        insertCondition();
+        beginCondition();
         if (conditionInvert) {
             if (expression.rhs == null) {
                 visitCondition(expression.lhs);
             } else {
-                int fa = chains.push(code.createFlow());
+                int fa = pushNewFlow();
                 conditionInvert = false;
                 visitCondition(expression.lhs);
-                chains.pop();
+                popFlow();
                 conditionInvert = true;
                 visitCondition(expression.rhs);
                 code.resolveFlow(fa);
@@ -95,7 +99,17 @@ public class Gen implements Visitor {
             visitCondition(expression.lhs);
             visitCondition(expression.rhs);
         }
-        insertBoolean();
+        endCondition();
+    }
+    
+    private int pushNewFlow() {
+        int newFlow = code.createFlow();
+        conditionalChains.add(newFlow);
+        return newFlow;
+    }
+    
+    private int popFlow() {
+        return conditionalChains.removeInt(conditionalChains.size() - 1);
     }
 
     @Override
@@ -306,13 +320,17 @@ public class Gen implements Visitor {
 
     @Override
     public void visitBreak(BreakStatement statement) {
-        if (breakStack.isEmpty()) {
+        if (breakChains.isEmpty()) {
             cError(statement.getPosition(), "'break' is not allowed outside of loop/switch.");
             return;
         }
-        insertGoto(breakStack.peek());
+        insertGoto(peekInt(breakChains));
         code.deathScope();
-        loops.peek().setInfinity(false);
+        loops.getLast().setInfinity(false);
+    }
+    
+    private static int peekInt(IntList integers) {
+        return integers.getInt(integers.size() - 1);
     }
 
     @Override
@@ -350,11 +368,11 @@ public class Gen implements Visitor {
 
     @Override
     public void visitContinue(ContinueStatement statement) {
-        if (continueStack.isEmpty()) {
+        if (continueChains.isEmpty()) {
             cError(statement.getPosition(), "'continue' is not allowed outside of loop.");
             return;
         }
-        insertGoto(continueStack.peek());
+        insertGoto(peekInt(continueChains));
         code.deathScope();
     }
 
@@ -372,35 +390,41 @@ public class Gen implements Visitor {
 
     @Override
     public void visitEqual(EqualExpression expression) {
-        insertCondition();
+        beginCondition();
         Expression rhs = expression.rhs.child();
         if (rhs instanceof NullExpression) {
             visitExpression(expression.lhs);
-            code.addFlow(chains.peek(), conditionInvert ? new Ifnull() : new Ifnonnull());
+            code.addFlow(peekInt(conditionalChains), conditionInvert ? new Ifnull() : new Ifnonnull());
+            code.decStack();
+        } else if (expression.lhs instanceof IntExpression) {
+            visitExpression(expression.rhs);
+            code.addFlow(peekInt(conditionalChains), conditionInvert
+                    ? new Ifeq(((IntExpression) expression.lhs).value)
+                    : new Ifne(((IntExpression) expression.lhs).value));
             code.decStack();
         } else if (rhs instanceof IntExpression) {
             visitExpression(expression.lhs);
-            code.addFlow(chains.peek(), conditionInvert
+            code.addFlow(peekInt(conditionalChains), conditionInvert
                     ? new Ifeq(((IntExpression) rhs).value)
                     : new Ifne(((IntExpression) rhs).value));
             code.decStack();
         } else {
             visitBinary(expression);
-            code.addFlow(chains.peek(), conditionInvert ? new Ifcmpeq() : new Ifcmpne());
+            code.addFlow(peekInt(conditionalChains), conditionInvert ? new Ifcmpeq() : new Ifcmpne());
             code.decStack(2);
         }
-        insertBoolean();
+        endCondition();
     }
 
     @Override
     public void visitFallthrough(FallthroughStatement statement) {
-        if (fallthroughStack.isEmpty()) {
+        if (fallthroughChains.isEmpty()) {
             cError(statement.getPosition(), "'fallthrough' is not allowed outside of switch.");
             return;
         }
-        insertGoto(fallthroughStack.peek());
+        insertGoto(peekInt(fallthroughChains));
         code.deathScope();
-        loops.peek().setInfinity(false); // for cases
+        loops.getLast().setInfinity(false); // for cases
     }
 
     @Override
@@ -445,7 +469,7 @@ public class Gen implements Visitor {
             return code.getLocal(n);
         }).toArray();
         statement.body.accept(this);
-        insertReturn(true);
+        insertRetnull();
         ExpressionToOperand e2of = new ExpressionToOperand(code, false);
         builtIn.setFunction(statement.name, new ScriptFunction(
                 statement.names.toArray(new String[0]),
@@ -457,61 +481,61 @@ public class Gen implements Visitor {
 
     @Override
     public void visitGreaterEqual(GreaterEqualExpression expression) {
-        insertCondition();
+        beginCondition();
         if (expression.lhs instanceof IntExpression) {
             visitExpression(expression.rhs);
-            code.addFlow(chains.peek(), conditionInvert
+            code.addFlow(peekInt(conditionalChains), conditionInvert
                     ? new Ifle(((IntExpression) expression.lhs).value)
                     : new Ifgt(((IntExpression) expression.lhs).value));
             code.decStack();
         } else if (expression.rhs instanceof IntExpression) {
             visitExpression(expression.lhs);
-            code.addFlow(chains.peek(), conditionInvert
+            code.addFlow(peekInt(conditionalChains), conditionInvert
                     ? new Ifge(((IntExpression) expression.rhs).value)
                     : new Iflt(((IntExpression) expression.rhs).value));
             code.decStack();
         } else {
             visitBinary(expression);
-            code.addFlow(chains.peek(), line(expression),
+            code.addFlow(peekInt(conditionalChains), line(expression),
                     conditionInvert ? new Ifcmpge() : new Ifcmplt());
             code.decStack(2);
         }
-        insertBoolean();
+        endCondition();
     }
 
     @Override
     public void visitGreater(GreaterExpression expression) {
-        insertCondition();
+        beginCondition();
         if (expression.lhs instanceof IntExpression) {
             visitExpression(expression.rhs);
-            code.addFlow(chains.peek(), conditionInvert
+            code.addFlow(peekInt(conditionalChains), conditionInvert
                     ? new Ifge(((IntExpression) expression.lhs).value)
                     : new Iflt(((IntExpression) expression.lhs).value));
             code.decStack();
         } else if (expression.rhs instanceof IntExpression) {
             visitExpression(expression.lhs);
-            code.addFlow(chains.peek(), conditionInvert
+            code.addFlow(peekInt(conditionalChains), conditionInvert
                     ? new Ifle(((IntExpression) expression.rhs).value)
                     : new Ifgt(((IntExpression) expression.rhs).value));
             code.decStack();
         } else {
             visitBinary(expression);
-            code.addFlow(chains.peek(), line(expression),
+            code.addFlow(peekInt(conditionalChains), line(expression),
                     conditionInvert ? new Ifcmpgt() : new Ifcmple());
             code.decStack(2);
         }
-        insertBoolean();
+        endCondition();
     }
 
     @Override
     public void visitIf(IfStatement statement) {
         if (statement.elseBody == null) {
-            chains.add(code.createFlow());
+            conditionalChains.add(code.createFlow());
             visitCondition(statement.cond);
             visitBody(statement.body);
-            code.resolveFlow(chains.pop());
+            code.resolveFlow(popFlow());
         } else {
-            int el = chains.push(code.createFlow());
+            int el = pushNewFlow();
             int ex = code.createFlow();
             visitCondition(statement.cond);
             boolean thenAlive = visitBody(statement.body);
@@ -539,50 +563,50 @@ public class Gen implements Visitor {
 
     @Override
     public void visitLessEqual(LessEqualExpression expression) {
-        insertCondition();
+        beginCondition();
         if (expression.lhs instanceof IntExpression) {
             visitExpression(expression.rhs);
-            code.addFlow(chains.peek(), conditionInvert
+            code.addFlow(peekInt(conditionalChains), conditionInvert
                     ? new Ifge(((IntExpression) expression.lhs).value)
                     : new Iflt(((IntExpression) expression.lhs).value));
             code.decStack();
         } else if (expression.rhs instanceof IntExpression) {
             visitExpression(expression.lhs);
-            code.addFlow(chains.peek(), conditionInvert
+            code.addFlow(peekInt(conditionalChains), conditionInvert
                     ? new Ifle(((IntExpression) expression.rhs).value)
                     : new Ifgt(((IntExpression) expression.rhs).value));
             code.decStack();
         } else {
             visitBinary(expression);
-            code.addFlow(chains.peek(), line(expression),
+            code.addFlow(peekInt(conditionalChains), line(expression),
                     conditionInvert ? new Ifcmple() : new Ifcmpgt());
             code.decStack(2);
         }
-        insertBoolean();
+        endCondition();
     }
 
     @Override
     public void visitLess(LessExpression expression) {
-        insertCondition();
+        beginCondition();
         if (expression.lhs instanceof IntExpression) {
             visitExpression(expression.rhs);
-            code.addFlow(chains.peek(), conditionInvert
+            code.addFlow(peekInt(conditionalChains), conditionInvert
                     ? new Ifgt(((IntExpression) expression.lhs).value)
                     : new Ifle(((IntExpression) expression.lhs).value));
             code.decStack();
         } else if (expression.rhs instanceof IntExpression) {
             visitExpression(expression.lhs);
-            code.addFlow(chains.peek(), conditionInvert
+            code.addFlow(peekInt(conditionalChains), conditionInvert
                     ? new Iflt(((IntExpression) expression.rhs).value)
                     : new Ifge(((IntExpression) expression.rhs).value));
             code.decStack();
         } else {
             visitBinary(expression);
-            code.addFlow(chains.peek(), line(expression),
+            code.addFlow(peekInt(conditionalChains), line(expression),
                     conditionInvert ? new Ifcmplt() : new Ifcmpge());
             code.decStack(2);
         }
-        insertBoolean();
+        endCondition();
     }
 
     @Override
@@ -601,23 +625,35 @@ public class Gen implements Visitor {
 
     @Override
     public void visitNotEqual(NotEqualExpression expression) {
-        insertCondition();
+        beginCondition();
         Expression rhs = expression.rhs.child();
         if (rhs instanceof NullExpression) {
             visitExpression(expression.lhs);
-            code.addFlow(chains.peek(), conditionInvert ? new Ifnonnull() : new Ifnull());
+            code.addFlow(peekInt(conditionalChains), conditionInvert ? new Ifnonnull() : new Ifnull());
+            code.decStack();
+        } else if (expression.lhs instanceof IntExpression) {
+            visitExpression(expression.rhs);
+            code.addFlow(peekInt(conditionalChains), conditionInvert
+                    ? new Ifne(((IntExpression) expression.lhs).value)
+                    : new Ifeq(((IntExpression) expression.lhs).value));
+            code.decStack();
+        } else if (rhs instanceof IntExpression) {
+            visitExpression(expression.lhs);
+            code.addFlow(peekInt(conditionalChains), conditionInvert
+                    ? new Ifne(((IntExpression) rhs).value)
+                    : new Ifeq(((IntExpression) rhs).value));
             code.decStack();
         } else {
             visitBinary(expression);
-            code.addFlow(chains.peek(), conditionInvert ? new Ifcmpne() : new Ifcmpeq());
+            code.addFlow(peekInt(conditionalChains), conditionInvert ? new Ifcmpne() : new Ifcmpeq());
             code.decStack(2);
         }
-        insertBoolean();
+        endCondition();
     }
 
     @Override
     public void visitNot(NotExpression expression) {
-        insertCondition();
+        beginCondition();
         if (conditionInvert) {
             conditionInvert = false;
             visitCondition(expression.hs);
@@ -627,7 +663,7 @@ public class Gen implements Visitor {
             visitCondition(expression.hs);
             conditionInvert = false;
         }
-        insertBoolean();
+        endCondition();
     }
 
     @Override
@@ -654,7 +690,7 @@ public class Gen implements Visitor {
 
     @Override
     public void visitOr(OrExpression expression) {
-        insertCondition();
+        beginCondition();
         if (conditionInvert) {
             visitCondition(expression.lhs);
             visitCondition(expression.rhs);
@@ -662,16 +698,16 @@ public class Gen implements Visitor {
             if (expression.rhs == null) {
                 visitCondition(expression.lhs);
             } else {
-                int tr = chains.push(code.createFlow());
+                int tr = pushNewFlow();
                 conditionInvert = true;
                 visitCondition(expression.lhs);
-                chains.pop();
+                popFlow();
                 conditionInvert = false;
                 visitCondition(expression.rhs);
                 code.resolveFlow(tr);
             }
         }
-        insertBoolean();
+        endCondition();
     }
 
     @Override
@@ -731,13 +767,21 @@ public class Gen implements Visitor {
 
     @Override
     public void visitReturn(ReturnStatement statement) {
-        boolean isVoid = (statement.expr == null) || (statement.expr.child() instanceof NullExpression);
-        if (isVoid) {
-            insertReturn(true);
+        if (isNull(statement.expr)) {
+            insertRetnull();
         } else {
             visitExpression(statement.expr);
-            insertReturn(false);
+            insertReturn();
         }
+    }
+
+    private void insertRetnull() {
+        code.addState(Retnull.INSTANCE);
+    }
+
+    private static boolean isNull(Expression expression) {
+        Expression expr = TreeInfo.removeParens(expression);
+        return expr == null || expr instanceof NullExpression;
     }
 
     @Override
@@ -768,8 +812,10 @@ public class Gen implements Visitor {
         visitExpression(statement.selector);
         Part[] parts = new Part[count];
         Switch _switch = new Switch(parts);
-        code.addFlow(breakStack.push(code.createFlow()), _switch);
-        fallthroughStack.add(code.createFlow());
+        int a = code.createFlow();
+        breakChains.add(a);
+        code.addFlow(a, _switch);
+        fallthroughChains.add(code.createFlow());
         switchPartsStack.add(new ArrayList<>(count));
         for (CaseStatement _case: statement.cases) {
             if (_case.expressions == null) {
@@ -783,14 +829,18 @@ public class Gen implements Visitor {
         for (int i = 0; i < parts0.size(); i++) {
             parts[i] = parts0.get(i);
         }
-        code.resolveFlow(fallthroughStack.pop());
-        code.resolveFlow(breakStack.pop());
+        code.resolveFlow(popInt(fallthroughChains));
+        code.resolveFlow(popInt(breakChains));
+    }
+
+    private static int popInt(IntList integers) {
+        return integers.removeInt(integers.size() - 1);
     }
 
     @Override
     public void visitTernary(TernaryExpression expression) {
-        insertCondition();
-        int el = chains.push(code.createFlow());
+        beginCondition();
+        int el = pushNewFlow();
         int ex = code.createFlow();
         if (conditionInvert) {
             conditionInvert = false;
@@ -799,7 +849,7 @@ public class Gen implements Visitor {
         } else {
             visitCondition(expression.cond);
         }
-        chains.pop();
+        popFlow();
         visitExpression(expression.lhs);
         insertGoto(ex);
         code.resolveFlow(el);
@@ -847,8 +897,8 @@ public class Gen implements Visitor {
             insertGoto(cond);
         }
         code.resolveFlow(begin);
-        breakStack.add(exit);
-        continueStack.add(cond);
+        breakChains.add(exit);
+        continueChains.add(cond);
         visitBody(body);
         if (steps != null) {
             steps.forEach(this::visitStatement);
@@ -857,11 +907,11 @@ public class Gen implements Visitor {
         if (condition == null) {
             insertGoto(begin);
         } else {
-            chains.add(begin);
+            conditionalChains.add(begin);
             conditionInvert = true;
             visitCondition(condition);
             conditionInvert = false;
-            chains.pop();
+            popFlow();
         }
         code.resolveFlow(exit);
         checkInfinity();
@@ -904,7 +954,7 @@ public class Gen implements Visitor {
         }
         // todo: Здешний код отвратителен. Следует переписать всё с нуля...
         code.addState(Bool.INSTANCE);
-        code.addFlow(chains.peek(), line(expression),
+        code.addFlow(peekInt(conditionalChains), line(expression),
                 conditionInvert ? new Ifeq(0) : new Ifne(0));
         code.decStack(1);
     }
@@ -1010,21 +1060,21 @@ public class Gen implements Visitor {
         statementDepth--;
     }
 
-    private void insertCondition() {
+    private void beginCondition() {
         if (conditionDepth != 0) {
             return;
         }
-        chains.add(code.createFlow());
+        pushNewFlow();
     }
 
-    private void insertBoolean() {
+    private void endCondition() {
         if (conditionDepth != 0) {
             return;
         }
         int ex = code.createFlow();
         insertTrue();
         insertGoto(ex);
-        code.resolveFlow(chains.pop());
+        code.resolveFlow(popFlow());
         insertFalse();
         code.resolveFlow(ex);
         insertNecessaryPop();
@@ -1153,15 +1203,22 @@ public class Gen implements Visitor {
     }
 
     private void insertCaseBody(Statement body) {
-        code.resolveFlow(fallthroughStack.pop());
-        fallthroughStack.add(code.createFlow());
+        code.resolveFlow(popInt(fallthroughChains));
+        fallthroughChains.add(code.createFlow());
         addLoop(false);
         visitStatement(body);
-        if (loops.pop().isInfinity()) insertGoto(breakStack.peek());
+        if (loops.pop().isInfinity()) insertGoto(peekInt(breakChains));
     }
 
+    @Deprecated
     private void insertReturn(boolean isVoid) {
-        code.addState(isVoid ? Return.VOID : Return.NOT_VOID);
+        code.addState(Return.INSTANCE);
+        code.deathScope();
+    }
+
+    private void insertReturn() {
+        code.addState(Return.INSTANCE);
+        code.decStack();
         code.deathScope();
     }
 
@@ -1222,7 +1279,7 @@ public class Gen implements Visitor {
     }
 
     private int line(Statement stmt) {
-        return stmt.getPosition().line;
+        return TreeInfo.line(stmt);
     }
 
     private void cError(Position position, String message) {

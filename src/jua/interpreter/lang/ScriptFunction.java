@@ -1,9 +1,6 @@
 package jua.interpreter.lang;
 
-import jua.interpreter.Environment;
-import jua.interpreter.InterpreterError;
-import jua.interpreter.Program;
-import jua.interpreter.Trap;
+import jua.interpreter.*;
 
 public class ScriptFunction implements Function {
 
@@ -13,13 +10,13 @@ public class ScriptFunction implements Function {
 
     public final Operand[] optionals;
 
-    public final Program.Builder builder;
+    public final Program program;
 
-    public ScriptFunction(String[] args, int[] locals, Operand[] optionals, Program.Builder builder) {
+    public ScriptFunction(String[] args, int[] locals, Operand[] optionals, Program program) {
         this.args = args;
         this.locals = locals;
         this.optionals = optionals;
-        this.builder = builder;
+        this.program = program;
     }
 
     @Override
@@ -32,14 +29,14 @@ public class ScriptFunction implements Function {
         } else if (argc < req) {
             error(name, "arguments too few. (required " + req + ", got " + argc + ')');
         }
-        Program program = builder.build();
+        Frame frame = program.build();
         Operand[] args = new Operand[tot];
 
         for (int i = tot; --i >= 0; ) {
-            program.store(locals[i], args[i] = (i >= argc) ? optionals[i - req] : env.popStack());
+            frame.store(locals[i], args[i] = (i >= argc) ? optionals[i - req] : env.popStack());
         }
         env.enterCall(name, args);
-        env.setProgram(program);
+        env.setProgram(frame);
         Trap.bti();
     }
 

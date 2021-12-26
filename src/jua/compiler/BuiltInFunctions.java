@@ -2,9 +2,9 @@ package jua.compiler;
 
 import jua.Options;
 import jua.compiler.utils.ObjectsSize;
+import jua.interpreter.Program;
 import jua.interpreter.Environment;
 import jua.interpreter.InterpreterError;
-import jua.interpreter.Program;
 import jua.interpreter.lang.*;
 
 import java.util.Arrays;
@@ -95,7 +95,7 @@ class BuiltInFunctions {
             if (func == null) error(name, "function '" + fn + "' not found.");
             if (!(func instanceof ScriptFunction)) error(name, "cannot create thread for extern function.");
             Environment newEnv = Environment.copy(env);
-            newEnv.setProgram(Program.Builder.coroutine(env, args.length).build());
+            newEnv.setProgram(Program.coroutine(env, args.length).build());
             for (Operand a: args) newEnv.pushStack(a);
             func.call(newEnv, fn, args.length);
             new Thread(newEnv::run).start();

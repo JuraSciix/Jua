@@ -85,19 +85,19 @@ public class CodePrinter {
                 }
             }
             System.out.printf("fn %s(%s)%n", name, args);
-            print(sf.builder);
+            print(sf.program);
         });
     }
 
-    public static void print(Program.Builder builder) {
+    public static void print(Program program) {
         CodePrinter printer = new CodePrinter();
-        printer.printHead(builder);
+        printer.printHead(program);
 
-        for (State state: builder.states) {
+        for (State state: program.states) {
             state.print(printer);
             printer.printAndNext();
         }
-        printer.printLines(builder);
+        printer.printLines(program);
         System.out.println();
     }
 
@@ -109,17 +109,17 @@ public class CodePrinter {
         super();
     }
 
-    private void printHead(Program.Builder builder) {
-        System.out.printf("stack: %d, locals: %d%n", builder.stackSize, builder.localsSize);
+    private void printHead(Program program) {
+        System.out.printf("stack: %d, locals: %d%n", program.stackSize, program.localsSize);
         System.out.println("Code:");
     }
 
-    private void printLines(Program.Builder builder) {
+    private void printLines(Program program) {
         System.out.println("Lines:");
         Map<Integer, List<Integer>> lines = new TreeMap<>(Comparator.comparingInt(a -> a));
 
-        for (int i = 0; i < builder.lines.length; i++) {
-            int line = builder.lines[i];
+        for (int i = 0; i < program.lines.length; i++) {
+            int line = program.lines[i];
             if (line == 0) continue;
             if (!lines.containsKey(line)) lines.put(line, new ArrayList<>());
             lines.get(line).add(i);

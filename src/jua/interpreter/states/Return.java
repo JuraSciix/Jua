@@ -7,23 +7,16 @@ import jua.tools.CodePrinter;
 
 public enum Return implements State {
 
-    VOID(false),
-    NOT_VOID(true);
-
-    private final boolean passValue;
-
-    Return(boolean passValue) {
-        this.passValue = passValue;
-    }
+    INSTANCE;
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName(passValue ? "return" : "return_null");
+        printer.printName("return");
     }
 
     @Override
     public int run(Environment env) {
-        env.exitCall(passValue ? env.popStack() : NullOperand.NULL);
+        env.exitCall(env.popStack());
         Trap.bti();
         return NEXT;
     }

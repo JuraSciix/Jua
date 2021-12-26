@@ -37,10 +37,9 @@ public class FileLoader {
 
         if (Options.disassembler()) {
             result.print();
-        } else {
-            //for (int i = 0; i < 20_000; i++)
-                interpret(result.env());
+            if (Options.stop()) return;
         }
+        interpret(result.env());
     }
 
     private static Statement parse(String filename) {
