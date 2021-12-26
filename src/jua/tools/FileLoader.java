@@ -1,7 +1,7 @@
 package jua.tools;
 
 import jua.Options;
-import jua.compiler.Compiler;
+import jua.compiler.Gen;
 import jua.compiler.*;
 import jua.interpreter.Environment;
 import jua.interpreter.RuntimeError;
@@ -64,22 +64,22 @@ public class FileLoader {
 
     private static Result compile(Statement root) {
         BuiltIn builtIn = new BuiltIn();
-        Compiler compiler = new Compiler(builtIn);
+        Gen gen = new Gen(builtIn);
 
         try {
             if (Options.optimize()) {
-                root.accept(new Lower(builtIn));
+                root.accept(new ConstantFolder(builtIn));
             } else {
                 System.err.println("Warning: disabling optimization is strongly discouraged. " +
                         "This feature may be removed in a future version");
             }
-            root.accept(compiler);
+            root.accept(gen);
         } catch (CompileError e) {
             compileError(e);
         } catch (Throwable t) {
             fatal("Fatal error occurred at compiler: ", t);
         }
-        return compiler.getResult();
+        return gen.getResult();
     }
 
     private static void compileError(CompileError e) {

@@ -5,13 +5,13 @@ import jua.parser.ast.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Lower implements Visitor {
+public class ConstantFolder implements Visitor {
 
     private final Map<String, Expression> constantFolding;
 
     private Node lower;
 
-    public Lower(BuiltIn builtIn) {
+    public ConstantFolder(BuiltIn builtIn) {
         constantFolding = new HashMap<>();
         putFoldingNames(builtIn.constants.keySet());
     }

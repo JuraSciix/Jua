@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static jua.interpreter.states.Switch.Part;
 
-public class Compiler implements Visitor {
+public class Gen implements Visitor {
 
     @FunctionalInterface
     private interface AssignmentState {
@@ -57,7 +57,7 @@ public class Compiler implements Visitor {
 
     private boolean conditionInvert = false;
 
-    public Compiler(BuiltIn builtIn) {
+    public Gen(BuiltIn builtIn) {
         this.builtIn = builtIn;
         code = new Code();
         breakStack = new Stack<>();
