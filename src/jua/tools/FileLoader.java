@@ -9,7 +9,7 @@ import jua.parser.ParseException;
 import jua.parser.Parser;
 import jua.parser.TokenizeStream;
 import jua.parser.Tokenizer;
-import jua.parser.ast.Statement;
+import jua.parser.tree.Statement;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

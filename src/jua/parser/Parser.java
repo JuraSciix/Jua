@@ -1,6 +1,6 @@
 package jua.parser;
 
-import jua.parser.ast.*;
+import jua.parser.tree.*;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -301,10 +301,10 @@ public class Parser {
             return new AssignExpression(position, expr, parseAssignment());
         }
         if (match(GTGTEQ)) {
-            return new AssignLeftShiftExpression(position, expr, parseAssignment());
+            return new AssignShiftLeftExpression(position, expr, parseAssignment());
         }
         if (match(LTLTEQ)) {
-            return new AssignRightShiftExpression(position, expr, parseAssignment());
+            return new AssignShiftRightExpression(position, expr, parseAssignment());
         }
         if (match(MINUSEQ)) {
             return new AssignSubtractExpression(position, expr, parseAssignment());
@@ -472,9 +472,9 @@ public class Parser {
             Position position = currentToken.position;
 
             if (match(GTGT)) {
-                expr = new RightShiftExpression(position, expr, parseAdditive());
+                expr = new ShiftRightExpression(position, expr, parseAdditive());
             } else if (match(LTLT)) {
-                expr = new LeftShiftExpression(position, expr, parseAdditive());
+                expr = new ShiftLeftExpression(position, expr, parseAdditive());
             } else {
                 return expr;
             }

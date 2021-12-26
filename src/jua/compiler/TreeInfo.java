@@ -1,6 +1,6 @@
 package jua.compiler;
 
-import jua.parser.ast.*;
+import jua.parser.tree.*;
 
 public final class TreeInfo {
 

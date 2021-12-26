@@ -1,6 +1,6 @@
 package jua.compiler;
 
-import jua.parser.ast.Position;
+import jua.parser.tree.Position;
 
 public class CompileError extends RuntimeException {
 

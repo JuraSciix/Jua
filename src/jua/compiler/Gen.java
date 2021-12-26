@@ -4,7 +4,7 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import jua.interpreter.lang.*;
 import jua.interpreter.states.*;
-import jua.parser.ast.*;
+import jua.parser.tree.*;
 
 import java.util.*;
 
@@ -211,7 +211,7 @@ public class Gen implements Visitor {
     }
 
     @Override
-    public void visitAssignLeftShift(AssignLeftShiftExpression expression) {
+    public void visitAssignLeftShift(AssignShiftLeftExpression expression) {
         visitAssignment(expression, line -> {
             visitExpression(expression.expr);
             insertLhs(line);
@@ -260,7 +260,7 @@ public class Gen implements Visitor {
     }
 
     @Override
-    public void visitAssignRightShift(AssignRightShiftExpression expression) {
+    public void visitAssignRightShift(AssignShiftRightExpression expression) {
         visitAssignment(expression, line -> {
             visitExpression(expression.expr);
             insertRhs(line);
@@ -555,7 +555,7 @@ public class Gen implements Visitor {
     }
 
     @Override
-    public void visitLeftShift(LeftShiftExpression expression) {
+    public void visitLeftShift(ShiftLeftExpression expression) {
         visitBinary(expression);
         insertLhs(line(expression));
         insertNecessaryPop();
@@ -785,7 +785,7 @@ public class Gen implements Visitor {
     }
 
     @Override
-    public void visitRightShift(RightShiftExpression expression) {
+    public void visitRightShift(ShiftRightExpression expression) {
         visitBinary(expression);
         insertRhs(line(expression));
         insertNecessaryPop();

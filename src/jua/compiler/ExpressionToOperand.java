@@ -1,7 +1,7 @@
 package jua.compiler;
 
 import jua.interpreter.lang.*;
-import jua.parser.ast.*;
+import jua.parser.tree.*;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

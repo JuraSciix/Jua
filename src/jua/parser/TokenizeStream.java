@@ -1,6 +1,6 @@
 package jua.parser;
 
-import jua.parser.ast.Position;
+import jua.parser.tree.Position;
 
 import java.io.*;
 

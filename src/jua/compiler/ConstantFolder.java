@@ -1,6 +1,6 @@
 package jua.compiler;
 
-import jua.parser.ast.*;
+import jua.parser.tree.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -12,7 +12,7 @@ public class ConstantFolder implements Visitor {
      */
     private final Map<String, Expression> constantFolding;
 
-    private Node lower;
+    private Tree lower;
 
     public ConstantFolder(BuiltIn builtIn) {
         constantFolding = new HashMap<>();
@@ -125,7 +125,7 @@ public class ConstantFolder implements Visitor {
     }
 
     @Override
-    public void visitAssignLeftShift(AssignLeftShiftExpression expression) {
+    public void visitAssignLeftShift(AssignShiftLeftExpression expression) {
         visitAssignment(expression);
     }
 
@@ -150,7 +150,7 @@ public class ConstantFolder implements Visitor {
     }
 
     @Override
-    public void visitAssignRightShift(AssignRightShiftExpression expression) {
+    public void visitAssignRightShift(AssignShiftRightExpression expression) {
         visitAssignment(expression);
     }
 
@@ -463,7 +463,7 @@ public class ConstantFolder implements Visitor {
     }
 
     @Override
-    public void visitLeftShift(LeftShiftExpression expression) {
+    public void visitLeftShift(ShiftLeftExpression expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
         if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
@@ -721,7 +721,7 @@ public class ConstantFolder implements Visitor {
     }
 
     @Override
-    public void visitRightShift(RightShiftExpression expression) {
+    public void visitRightShift(ShiftRightExpression expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
         if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
@@ -857,7 +857,7 @@ public class ConstantFolder implements Visitor {
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends Node> List<T> lowerList(List<T> list) {
+    private <T extends Tree> List<T> lowerList(List<T> list) {
         return list.stream().map(n -> {
             n.accept(this);
             if (lower == null) // empty statement
@@ -908,8 +908,8 @@ public class ConstantFolder implements Visitor {
         lower = new FalseExpression(expression.getPosition());
     }
 
-    private void nothing(Node node) {
-        lower = node;
+    private void nothing(Tree tree) {
+        lower = tree;
     }
 
     private int compareLiterals(Expression a, Expression b) {
