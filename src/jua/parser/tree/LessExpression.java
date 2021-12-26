@@ -1,6 +1,6 @@
 package jua.parser.tree;
 
-public class LessExpression extends BinaryExpression {
+public class LessExpression extends ConditionalExpression {
 
     public LessExpression(Position position, Expression lhs, Expression rhs) {
         super(Tag.LT, position, lhs, rhs);

@@ -69,4 +69,5 @@ public interface Visitor {
     void visitTrue(TrueExpression expression);
     void visitVariable(VariableExpression expression);
     void visitWhile(WhileStatement statement);
+    void visitUnused(UnusedExpression expression);
 }

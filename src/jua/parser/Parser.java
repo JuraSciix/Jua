@@ -90,7 +90,7 @@ public class Parser {
         if (match(WHILE)) {
             return new WhileStatement(position, parseExpression(), parseStatement());
         }
-        return parseIgnoredExpression();
+        return parseUnusedExpression();
     }
 
     private Statement parseBreak(Position position) throws ParseException {
@@ -264,10 +264,11 @@ public class Parser {
         return new CaseStatement(position, expressions, parseStatement());
     }
 
-    private Statement parseIgnoredExpression() throws ParseException {
+    private Statement parseUnusedExpression() throws ParseException {
+        Position position = currentToken.position;
         Expression expr = parseExpression();
         expect(SEMICOLON);
-        return expr;
+        return new UnusedExpression(position, expr);
     }
 
     private List<Expression> parseExpressions() throws ParseException {
@@ -565,31 +566,51 @@ public class Parser {
     }
 
     private Expression parseAccess() throws ParseException {
-        Expression expr = parsePrimary();
-        Position position = currentToken.position;
-        int i = match(DOT) ? 1 : match(LBRACKET) ? 0 : -1;
-        return (i >= 0 ? parseArrayAccess(position, expr, i) : expr);
-    }
+//        Expression expr = parsePrimary();
+//        Position position = currentToken.position;
+//        int i = match(DOT) ? 1 : match(LBRACKET) ? 0 : -1;
+//        return (i >= 0 ? parseArrayAccess(position, expr, i) : expr);
 
-    private Expression parseArrayAccess(Position position, Expression expr, int dot)
-            throws ParseException {
-        List<Expression> keys = new ArrayList<>();
+        Expression expression = parsePrimary();
 
         while (true) {
-            if ((dot == 1) || match(DOT)) {
-                Token key = currentToken;
+            Position position = currentToken.position;
+
+            if (match(DOT)) {
+                Token token = currentToken;
                 expect(IDENTIFIER);
-                keys.add(new StringExpression(currentToken.position, key.getString()));
-                dot = 2;
-            } else if ((dot == 0) || match(LBRACKET)) {
-                keys.add(parseExpression());
+                expression = new ArrayAccessExpression(position,
+                        expression, new StringExpression(token.position, token.getString()));
+            } else if (match(LBRACKET)) {
+                expression = new ArrayAccessExpression(position,
+                        expression, parseExpression());
                 expect(RBRACKET);
-                dot = 2;
             } else {
-                return new ArrayAccessExpression(position, expr, keys);
+                break;
             }
         }
+        return expression;
     }
+
+//    private Expression parseArrayAccess(Position position, Expression expr, int dot)
+//            throws ParseException {
+//        List<Expression> keys = new ArrayList<>();
+//
+//        while (true) {
+//            if ((dot == 1) || match(DOT)) {
+//                Token key = currentToken;
+//                expect(IDENTIFIER);
+//                keys.add(new StringExpression(currentToken.position, key.getString()));
+//                dot = 2;
+//            } else if ((dot == 0) || match(LBRACKET)) {
+//                keys.add(parseExpression());
+//                expect(RBRACKET);
+//                dot = 2;
+//            } else {
+//                return new ArrayAccessExpression(position, expr, keys);
+//            }
+//        }
+//    }
 
     private Expression parsePrimary() throws ParseException {
         Token token = currentToken;

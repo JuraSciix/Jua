@@ -81,7 +81,7 @@ public class ConstantFolder implements Visitor {
     @Override
     public void visitArrayAccess(ArrayAccessExpression expression) {
         expression.hs.accept(this);
-        expression.keys = lowerList(expression.keys);
+        expression.key = getLowerExpression(expression.key);
         lower = expression;
     }
 
@@ -626,8 +626,8 @@ public class ConstantFolder implements Visitor {
 
     @Override
     public void visitParens(ParensExpression expression) {
-        expression.expr = getLowerExpression(expression.expr);
-        lower = expression;
+        // Удаление скобок
+        lower = getLowerExpression(expression.expr);
     }
 
     @Override
@@ -820,6 +820,12 @@ public class ConstantFolder implements Visitor {
         statement.cond = cond;
         statement.body = body;
         lower = statement;
+    }
+
+    @Override
+    public void visitUnused(UnusedExpression expression) {
+        expression.expression = getLowerExpression(expression.expression);
+        lower = expression;
     }
 
     private void visitAssignment(AssignmentExpression expression) {

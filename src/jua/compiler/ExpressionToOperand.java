@@ -49,12 +49,8 @@ public final class ExpressionToOperand implements OperandFunction<Expression> {
         if (expr instanceof ArrayAccessExpression) {
             ArrayAccessExpression e = (ArrayAccessExpression) expr;
             Operand val = apply(e.hs);
-            for (int i = 0; i < e.keys.size(); i++) {
-                Expression key = e.keys.get(i);
-                if (!val.isArray()) {
-                    throw new CompileError("array-constant expected.", key.getPosition());
-                }
-                val = val.arrayValue().get(e2of.apply(key));
+            if (!val.isArray()) {
+                throw new CompileError("array-constant expected.", e.hs.getPosition());
             }
             return val;
         }

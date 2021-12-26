@@ -1,6 +1,6 @@
 package jua.parser.tree;
 
-public class GreaterExpression extends BinaryExpression {
+public class GreaterExpression extends ConditionalExpression {
 
     public GreaterExpression(Position position, Expression lhs, Expression rhs) {
         super(Tag.GT, position, lhs, rhs);

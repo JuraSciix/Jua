@@ -2,10 +2,13 @@ package jua.parser.tree;
 
 import java.util.List;
 
-public class PrintlnStatement extends PrintStatement {
+public class PrintlnStatement extends Statement {
+
+    public List<Expression> expressions;
 
     public PrintlnStatement(Position position, List<Expression> expressions) {
-        super(position, expressions);
+        super(Tag.PRINTLN, position);
+        this.expressions = expressions;
     }
 
     @Override

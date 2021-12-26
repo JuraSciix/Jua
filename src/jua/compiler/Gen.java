@@ -77,7 +77,7 @@ public class Gen implements Visitor {
     public void visitAdd(AddExpression expression) {
         visitBinary(expression);
         insertAdd(line(expression));
-        insertNecessaryPop();
+
     }
 
     @Override
@@ -115,12 +115,10 @@ public class Gen implements Visitor {
     @Override
     public void visitArrayAccess(ArrayAccessExpression expression) {
         checkAccessible(expression.hs);
-        visitUnary(expression);
-        for (Expression key: expression.keys) {
-            visitExpression(key);
-            insertALoad(line(key));
-        }
-        insertNecessaryPop();
+        visitExpression(expression.hs);
+        visitExpression(expression.key);
+        insertALoad(line(expression));
+
     }
 
     @Override
@@ -162,7 +160,7 @@ public class Gen implements Visitor {
                     ? line(entry.getValue())
                     : line(entry.getKey()));
         }
-        insertNecessaryPop();
+
     }
 
     private void insertNewArray() {
@@ -279,28 +277,28 @@ public class Gen implements Visitor {
     public void visitBitAnd(BitAndExpression expression) {
         visitBinary(expression);
         insertAdd(line(expression));
-        insertNecessaryPop();
+
     }
 
     @Override
     public void visitBitNot(BitNotExpression expression) {
         visitUnary(expression);
-        code.addState(line(expression), Not.NOT);
-        insertNecessaryPop();
+        code.addState(line(expression), Not.INSTANCE);
+
     }
 
     @Override
     public void visitBitOr(BitOrExpression expression) {
         visitBinary(expression);
         insertOr(line(expression));
-        insertNecessaryPop();
+
     }
 
     @Override
     public void visitBitXor(BitXorExpression expression) {
         visitBinary(expression);
         insertXor(line(expression));
-        insertNecessaryPop();
+
     }
 
     @Override
@@ -336,7 +334,7 @@ public class Gen implements Visitor {
     @Override
     public void visitCase(CaseStatement statement) {
         ExpressionToOperand e2ot = new ExpressionToOperand(code, true);
-        switchPartsStack.peek().add(new Part(code.statesCount(), statement.expressions.stream()
+        switchPartsStack.getLast().add(new Part(code.statesCount(), statement.expressions.stream()
                 .map(e2ot::apply)
                 .toArray(Operand[]::new)));
         insertCaseBody(statement.body);
@@ -347,7 +345,7 @@ public class Gen implements Visitor {
         checkCloneable(expression.hs);
         visitUnary(expression);
         code.addState(Clone.INSTANCE);
-        insertNecessaryPop();
+
     }
 
     @Override
@@ -380,7 +378,7 @@ public class Gen implements Visitor {
     public void visitDivide(DivideExpression expression) {
         visitBinary(expression);
         insertDiv(line(expression));
-        insertNecessaryPop();
+
     }
 
     @Override
@@ -451,7 +449,7 @@ public class Gen implements Visitor {
         }
         code.addState(line(expression), new Call(expression.name, expression.args.size()));
         code.decStack(expression.args.size() - 1);
-        insertNecessaryPop();
+
     }
 
     @Override
@@ -558,7 +556,7 @@ public class Gen implements Visitor {
     public void visitLeftShift(ShiftLeftExpression expression) {
         visitBinary(expression);
         insertLhs(line(expression));
-        insertNecessaryPop();
+
     }
 
     @Override
@@ -613,14 +611,14 @@ public class Gen implements Visitor {
     public void visitMultiply(MultiplyExpression expression) {
         visitBinary(expression);
         insertMul(line(expression));
-        insertNecessaryPop();
+
     }
 
     @Override
     public void visitNegative(NegativeExpression expression) {
         visitUnary(expression);
         code.addState(line(expression), Neg.INSTANCE);
-        insertNecessaryPop();
+
     }
 
     @Override
@@ -674,18 +672,18 @@ public class Gen implements Visitor {
         int el = code.createFlow();
         code.addFlow(el, new Ifnonnull());
         code.decStack();
-        code.addState(Pop.POP);
+        code.addState(Pop.INSTANCE);
         code.decStack();
         visitExpression(expression.rhs);
         code.resolveFlow(el);
-        insertNecessaryPop();
+
     }
 
     @Override
     public void visitNull(NullExpression expression) {
         code.incStack();
         code.addState(PushNull.INSTANCE);
-        insertNecessaryPop();
+
     }
 
     @Override
@@ -712,14 +710,14 @@ public class Gen implements Visitor {
 
     @Override
     public void visitParens(ParensExpression expression) {
-        visitStatement(expression.expr);
+        throw new AssertionError(
+                "all brackets should have been removed in ConstantFolder");
     }
 
     @Override
     public void visitPositive(PositiveExpression expression) {
         visitUnary(expression);
         code.addState(line(expression), Pos.INSTANCE);
-        insertNecessaryPop();
     }
 
     @Override
@@ -762,7 +760,7 @@ public class Gen implements Visitor {
     public void visitRemainder(RemainderExpression expression) {
         visitBinary(expression);
         insertRem(line(expression));
-        insertNecessaryPop();
+
     }
 
     @Override
@@ -788,7 +786,7 @@ public class Gen implements Visitor {
     public void visitRightShift(ShiftRightExpression expression) {
         visitBinary(expression);
         insertRhs(line(expression));
-        insertNecessaryPop();
+
     }
 
     @Override
@@ -800,7 +798,7 @@ public class Gen implements Visitor {
     public void visitSubtract(SubtractExpression expression) {
         visitBinary(expression);
         insertSub(line(expression));
-        insertNecessaryPop();
+
     }
 
     @Override
@@ -855,7 +853,7 @@ public class Gen implements Visitor {
         code.resolveFlow(el);
         visitExpression(expression.rhs);
         code.resolveFlow(ex);
-        insertNecessaryPop();
+
     }
 
     @Override
@@ -872,7 +870,7 @@ public class Gen implements Visitor {
         } else {
             code.addState(line(expression), new Vload(name, code.getLocal(name)));
         }
-        insertNecessaryPop();
+
     }
 
     @Override
@@ -959,27 +957,33 @@ public class Gen implements Visitor {
         code.decStack(1);
     }
 
+    @Override
+    public void visitUnused(UnusedExpression expression) {
+        visitExpression(expression.expression);
+        switch (expression.expression.tag) {
+            case ASG: case ASG_ADD: case ASG_SUB: case ASG_MUL:
+            case ASG_DIV: case ASG_REM: case ASG_BITAND: case ASG_BITOR:
+            case ASG_BITXOR: case ASG_SL: case ASG_SR:
+            case PRE_INC: case PRE_DEC: case POST_INC: case POST_DEC:
+            case PRINT: case PRINTLN:
+                break;
+            default:
+                code.addState(Pop.INSTANCE);
+                code.decStack();
+        }
+    }
+
     private void visitAssignment(AssignmentExpression expression, AssignmentState state) {
         Expression var = expression.var.child();
         checkAssignable(var);
         int line = line(expression);
         if (var instanceof ArrayAccessExpression) {
             ArrayAccessExpression var0 = (ArrayAccessExpression) var;
-            visitUnary(var0);
-            Iterator<Expression> keys = var0.keys.iterator();
-            Expression key;
-            for (;;) {
-                key = keys.next();
-                visitExpression(key);
-                if (keys.hasNext()) {
-                    insertALoad(line(key));
-                } else {
-                    break;
-                }
-            }
+            visitExpression(var0.hs);
+            visitExpression(var0.key);
             if (state != null) {
-                insertDup2(0);
-                insertALoad(line(key));
+                insertDup2((line(expression)));
+                insertALoad(line(var0.key));
                 state.insert(line);
             } else {
                 visitExpression(expression.expr);
@@ -1007,21 +1011,10 @@ public class Gen implements Visitor {
         int line = line(expression);
         if (hs instanceof ArrayAccessExpression) {
             ArrayAccessExpression hs0 = (ArrayAccessExpression) hs;
-            visitUnary(hs0);
-            Iterator<Expression> keys = hs0.keys.iterator();
-            Expression key;
-            // todo: Убрать этот затрудняющий чтение цикл.
-            for (;;) {
-                key = keys.next();
-                visitExpression(key);
-                if (keys.hasNext()) {
-                    insertALoad(line(key));
-                } else {
-                    break;
-                }
-            }
-            insertDup2(0);
-            insertALoad(line(key));
+            visitExpression(hs0.hs);
+            visitExpression(hs0.key);
+            insertDup2(line(expression));
+            insertALoad(line(hs0.key));
             if (isPost && (expressionDepth > 0)) {
                 insertDup_x2(0);
             }
@@ -1077,25 +1070,25 @@ public class Gen implements Visitor {
         code.resolveFlow(popFlow());
         insertFalse();
         code.resolveFlow(ex);
-        insertNecessaryPop();
+
     }
 
     private <T> void insertPush(T value, OperandFunction<T> supplier) {
         code.incStack();
         code.addState(new Push(code.intern(value, supplier)));
-        insertNecessaryPop();
+
     }
 
     private void insertTrue() {
         code.incStack();
         code.addState(PushTrue.INSTANCE);
-        insertNecessaryPop();
+
     }
 
     private void insertFalse() {
         code.incStack();
         code.addState(PushFalse.INSTANCE);
-        insertNecessaryPop();
+
     }
 
     private void insertGoto(int flow) {
@@ -1222,16 +1215,6 @@ public class Gen implements Visitor {
         code.deathScope();
     }
 
-    /**
-     * Вставляет операцию POP если это нужно.
-     */
-    private void insertNecessaryPop() {
-        if (expressionDepth == 0) {
-            code.addState(Pop.POP);
-            code.decStack();
-        }
-    }
-
     private void checkAssignable(Expression expr) {
         expr = expr.child();
         checkConstant(expr);
@@ -1250,11 +1233,8 @@ public class Gen implements Visitor {
     }
 
     private void checkAccessible(Expression expr) {
-        expr = expr.child();
         if (!expr.isAccessible()) {
-            cError(expr.getPosition(), "accessible expected.");
-        } else if (expr instanceof ArrayAccessExpression) {
-            checkAccessible(((ArrayAccessExpression) expr).hs);
+            cError(expr.position, "accessible expected.");
         }
     }
 

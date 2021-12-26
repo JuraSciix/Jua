@@ -1,14 +1,12 @@
 package jua.parser.tree;
 
-import java.util.List;
-
 public class ArrayAccessExpression extends UnaryExpression {
 
-    public List<Expression> keys;
+    public Expression key;
 
-    public ArrayAccessExpression(Position position, Expression hs, List<Expression> keys) {
+    public ArrayAccessExpression(Position position, Expression hs, Expression key) {
         super(Tag.ARRAY_ACCESS, position, hs);
-        this.keys = keys;
+        this.key = key;
     }
 
     @Override

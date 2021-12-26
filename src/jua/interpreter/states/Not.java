@@ -5,13 +5,9 @@ import jua.interpreter.InterpreterError;
 import jua.interpreter.lang.Operand;
 import jua.tools.CodePrinter;
 
-public class Not implements State {
+public enum Not implements State {
 
-    public static final Not NOT = new Not();
-
-    private Not() {
-        super();
-    }
+    INSTANCE;
 
     @Override
     public void print(CodePrinter printer) {

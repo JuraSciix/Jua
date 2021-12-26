@@ -67,7 +67,11 @@ public abstract class Tree {
         VARIABLE,
         FUNC_CALL,
         PARENS,
-        ERROR
+        ERROR,
+
+        // временные теги
+        PRINT,
+        PRINTLN
     }
 
     // todo: Пригодится в будущем

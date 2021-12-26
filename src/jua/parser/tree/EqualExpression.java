@@ -1,6 +1,6 @@
 package jua.parser.tree;
 
-public class EqualExpression extends BinaryExpression {
+public class EqualExpression extends ConditionalExpression {
 
     public EqualExpression(Position position, Expression lhs, Expression rhs) {
         super(Tag.EQ, position, lhs, rhs);

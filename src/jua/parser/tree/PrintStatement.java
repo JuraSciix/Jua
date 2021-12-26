@@ -9,7 +9,7 @@ public class PrintStatement extends Statement {
 
     public PrintStatement(Position position, List<Expression> expressions) {
         // print и println с какой-то там версии больше не являются языковыми конструкциями.
-        super(Tag.FUNC_CALL, position);
+        super(Tag.PRINT, position);
         this.expressions = expressions;
     }
 

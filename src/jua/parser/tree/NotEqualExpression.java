@@ -1,6 +1,6 @@
 package jua.parser.tree;
 
-public class NotEqualExpression extends BinaryExpression {
+public class NotEqualExpression extends ConditionalExpression {
 
     public NotEqualExpression(Position position, Expression lhs, Expression rhs) {
         super(Tag.NEQ, position, lhs, rhs);
