@@ -9,24 +9,33 @@ public final class Options {
 
         for (i = 0; i < args.length && args[i].startsWith("-"); i++) {
             switch (args[i]) {
-                case "-h": {
+                case "-h":
+                    OPTIONS.stop = false;
+                    // fallthrough
+                case "-H":
                     help();
                     continue;
-                }
-                case "-v": {
+
+                case "-V":
+                    OPTIONS.stop = false;
+                    // fallthrough
+                case "-v":
                     version();
                     continue;
-                }
-                case "-x": {
+
+                case "-X":
+                    OPTIONS.stop = false;
+                    // fallthrough
+                case "-x":
                     OPTIONS.disassembler = true;
                     continue;
-                }
+
                 case "-O": {
                     OPTIONS.optimize = false;
                     continue;
                 }
             }
-            if (args[i].matches("-r\\d+\\.?\\d*(?:[Ee][+-]?\\d+)?")) {
+            if (args[i].matches("-r\\d+\\.?\\d*(?:[Ee][+-]?\\d+)?")) { // wtf?
                 OPTIONS.callStackSize = (int) Double.parseDouble(args[i].substring(2));
                 continue;
             }
@@ -49,13 +58,11 @@ public final class Options {
         System.out.println("Disassembler special symbols:");
         System.out.println("\t#<number> - reference to some Index.");
         System.out.println("\t$<number> - identifier of variable.");
-        System.exit(0);
     }
 
     private static void version() {
         System.out.printf("%s, version %s.%n", Main.NAME, Main.VERSION);
         System.out.printf("Running in Java %s.%n", System.getProperty("java.version"));
-        System.exit(0);
     }
 
     public static String filename() {
@@ -83,6 +90,14 @@ public final class Options {
     private boolean optimize = true;
     private int callStackSize = (1 << 14);
     private String[] argv;
+    /**
+     * Завершение работы
+     */
+    private boolean stop = false;
+
+    public static boolean stop() {
+        return OPTIONS.stop;
+    }
 
     private Options() {
         super();
