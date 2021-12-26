@@ -5,13 +5,9 @@ import jua.interpreter.InterpreterError;
 import jua.interpreter.lang.Operand;
 import jua.tools.CodePrinter;
 
-public class Neg implements State {
+public enum Neg implements State {
 
-    public static final Neg NEG = new Neg();
-
-    private Neg() {
-        super();
-    }
+    INSTANCE;
 
     @Override
     public void print(CodePrinter printer) {

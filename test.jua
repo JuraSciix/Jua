@@ -1,8 +1,5 @@
-# Тестирование нового метода генерации байт-кода для do-while цикла.
-
-i = 0;
-
-do {
-    println i;
-    i++;
-} while i < 10;
+a = {
+    'foo': 'bar',
+    'hotel': 'trivago',
+};
+println(a);

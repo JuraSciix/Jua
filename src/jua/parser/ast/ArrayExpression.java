@@ -4,6 +4,7 @@ import java.util.Map;
 
 public class ArrayExpression extends Expression {
 
+    // todo: заменить это на List со своей структурой
     public Map<Expression, Expression> map;
 
     public ArrayExpression(Position position, Map<Expression, Expression> map) {

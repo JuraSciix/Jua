@@ -5,13 +5,9 @@ import jua.interpreter.InterpreterError;
 import jua.interpreter.lang.Operand;
 import jua.tools.CodePrinter;
 
-public class Xor implements State {
+public enum Xor implements State {
 
-    public static final Xor XOR = new Xor();
-
-    private Xor() {
-        super();
-    }
+    XOR;
 
     @Override
     public void print(CodePrinter printer) {

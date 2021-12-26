@@ -7,7 +7,7 @@ public class Ifnonnull extends JumpState {
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName("if_nonnull");
+        printer.printName("ifnonnull");
         super.print(printer);
     }
 

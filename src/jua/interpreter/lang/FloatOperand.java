@@ -66,4 +66,14 @@ public class FloatOperand extends NumberOperand {
     public int hashCode() {
         return (OperandType.FLOAT.hashCode() + 31) * 31 + Double.hashCode(value);
     }
+
+    @Override
+    public Operand inc() {
+        return valueOf(value + 1D);
+    }
+
+    @Override
+    public Operand dec() {
+        return valueOf(value - 1D);
+    }
 }

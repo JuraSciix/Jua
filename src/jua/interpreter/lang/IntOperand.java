@@ -61,4 +61,14 @@ public class IntOperand extends NumberOperand {
     public int hashCode() {
         return (OperandType.INT.hashCode() + 31) * 31 + Long.hashCode(value);
     }
+
+    @Override
+    public Operand inc() {
+        return valueOf(value + 1L);
+    }
+
+    @Override
+    public Operand dec() {
+        return valueOf(value - 1L);
+    }
 }

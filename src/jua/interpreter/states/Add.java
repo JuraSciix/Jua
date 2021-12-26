@@ -6,13 +6,9 @@ import jua.interpreter.lang.Array;
 import jua.interpreter.lang.Operand;
 import jua.tools.CodePrinter;
 
-public class Add implements State {
+public enum Add implements State {
 
-    public static final Add ADD = new Add();
-
-    private Add() {
-        super();
-    }
+    INSTANCE;
 
     @Override
     public void print(CodePrinter printer) {
@@ -21,6 +17,8 @@ public class Add implements State {
 
     @Override
     public void run(Environment env) {
+        // todo: Распределить код по наследникам Operand.
+        // todo: Также с остальными операциями над операндами.
         Operand rhs = env.popStack();
         Operand lhs = env.popStack();
 

@@ -4,13 +4,9 @@ import jua.interpreter.Environment;
 import jua.interpreter.lang.Operand;
 import jua.tools.CodePrinter;
 
-public class Astore implements State {
+public enum Astore implements State {
 
-    public static final Astore ASTORE = new Astore();
-
-    private Astore() {
-        super();
-    }
+    INSTANCE;
 
     @Override
     public void print(CodePrinter printer) {

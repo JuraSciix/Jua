@@ -5,13 +5,9 @@ import jua.interpreter.InterpreterError;
 import jua.interpreter.lang.Operand;
 import jua.tools.CodePrinter;
 
-public class Div implements State {
+public enum Div implements State {
 
-    public static final Div DIV = new Div();
-
-    private Div() {
-        super();
-    }
+    INSTANCE;
 
     @Override
     public void print(CodePrinter printer) {

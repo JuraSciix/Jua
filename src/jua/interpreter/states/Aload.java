@@ -4,13 +4,9 @@ import jua.interpreter.Environment;
 import jua.interpreter.lang.Operand;
 import jua.tools.CodePrinter;
 
-public class Aload implements State {
+public enum Aload implements State {
 
-    public static final Aload ALOAD = new Aload();
-
-    private Aload() {
-        super();
-    }
+    INSTANCE;
 
     @Override
     public void print(CodePrinter printer) {

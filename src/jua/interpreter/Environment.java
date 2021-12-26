@@ -33,6 +33,11 @@ public class Environment {
 
     private Program cp;
 
+    // todo: ну... исправить
+    public Program getProgram() {
+        return cp;
+    }
+
     public Environment(Map<String, Function> functions, Map<String, Constant> constants) {
         this.functions = functions;
         this.constants = constants;

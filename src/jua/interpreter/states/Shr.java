@@ -5,13 +5,9 @@ import jua.interpreter.InterpreterError;
 import jua.interpreter.lang.Operand;
 import jua.tools.CodePrinter;
 
-public class Shr implements State {
+public enum Shr implements State {
 
-    public static final Shr RSH = new Shr();
-
-    private Shr() {
-        super();
-    }
+    INSTANCE;
 
     @Override
     public void print(CodePrinter printer) {

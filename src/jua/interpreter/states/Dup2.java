@@ -1,9 +1,10 @@
 package jua.interpreter.states;
 
 import jua.interpreter.Environment;
+import jua.interpreter.lang.Operand;
 import jua.tools.CodePrinter;
 
-public enum Dup implements State {
+public enum Dup2 implements State {
 
     INSTANCE;
 
@@ -15,7 +16,12 @@ public enum Dup implements State {
 
     @Override
     public void run(Environment env) {
-        env.pushStack(env.peekStack());
+        Operand a = env.popStack();
+        Operand b = env.popStack();
+        env.pushStack(b);
+        env.pushStack(a);
+        env.pushStack(b);
+        env.pushStack(a);
         env.nextPC();
     }
 }

@@ -4,13 +4,9 @@ import jua.interpreter.Environment;
 import jua.interpreter.lang.Operand;
 import jua.tools.CodePrinter;
 
-public class Clone implements State {
+public enum Clone implements State {
 
-    public static final Clone CLONE = new Clone();
-
-    private Clone() {
-        super();
-    }
+    INSTANCE;
 
     @Override
     public void print(CodePrinter printer) {

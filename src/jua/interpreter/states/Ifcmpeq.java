@@ -7,7 +7,7 @@ public class Ifcmpeq extends JumpState {
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName("if_eq");
+        printer.printName("ifcmpeq");
         super.print(printer);
     }
 

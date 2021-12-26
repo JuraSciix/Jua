@@ -5,6 +5,38 @@ import jua.interpreter.states.State;
 
 public class Program {
 
+    // todo: ну... исправить
+    public void dup1_x1() {
+        stack[tos] = stack[tos - 1];
+        stack[tos - 1] = stack[tos - 2];
+        stack[tos - 2] = stack[tos];
+        tos++;
+    }
+    public void dup1_x2() {
+        stack[tos] = stack[tos - 1];
+        stack[tos - 1] = stack[tos - 2];
+        stack[tos - 2] = stack[tos - 3];
+        stack[tos - 3] = stack[tos];
+        tos++;
+    }
+    public void dup2_x1() {
+        stack[tos + 1] = stack[tos - 1];
+        stack[tos] = stack[tos - 2];
+        stack[tos - 2] = stack[tos - 3];
+        stack[tos - 3] = stack[tos + 1];
+        stack[tos - 4] = stack[tos];
+        tos += 2;
+    }
+    public void dup2_x2() {
+        stack[tos + 1] = stack[tos - 1];
+        stack[tos] = stack[tos - 2];
+        stack[tos - 1] = stack[tos - 3];
+        stack[tos - 2] = stack[tos - 4];
+        stack[tos - 4] = stack[tos + 1];
+        stack[tos - 5] = stack[tos];
+        tos += 2;
+    }
+
     public static class Builder {
 
         public static Builder empty() {
@@ -52,7 +84,7 @@ public class Program {
 
     private int pc = 0;
 
-    private int st = 0;
+    private int tos = 0;
 
     private Program(String filename, State[] states, int[] lines, int stackSize, int localsSize) {
         this.filename = filename;
@@ -96,34 +128,36 @@ public class Program {
     }
 
     public void push(Operand operand) {
-        stack[st++] = operand;
+        stack[tos++] = operand;
     }
 
     public Operand pop() {
-        Operand operand = stack[--st];
-        stack[st] = null;
+        Operand operand = stack[--tos];
+        stack[tos] = null;
         return operand;
     }
 
     public Operand peek() {
-        return stack[st - 1];
+        return stack[tos - 1];
     }
-    
+
+    @Deprecated
     public void duplicate(int count, int x) {
         if (count == 1) {
-            for (Operand val = stack[st - 1]; --x >= 0; )
-                stack[st++] = val;
+            for (Operand val = stack[tos - 1]; --x >= 0; )
+                stack[tos++] = val;
         } else {
             for (int i = 0; i < x; i++)
-                System.arraycopy(stack, (st - count), stack, (st + count * i), count);
-            st += count * x;
+                System.arraycopy(stack, (tos - count), stack, (tos + count * i), count);
+            tos += count * x;
         }
     }
 
+    @Deprecated
     public void move(int x) {
-        Operand temp = stack[st - 1];
-        System.arraycopy(stack, (st + x - 1), stack, (st + x), (x < 0) ? -x : x);
-        stack[st + x - 1] = temp;
+        Operand temp = stack[tos - 1];
+        System.arraycopy(stack, (tos + x - 1), stack, (tos + x), (x < 0) ? -x : x);
+        stack[tos + x - 1] = temp;
     }
 
     public void store(int id, Operand value) {

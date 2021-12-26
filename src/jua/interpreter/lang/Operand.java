@@ -1,5 +1,7 @@
 package jua.interpreter.lang;
 
+import jua.interpreter.InterpreterError;
+
 public abstract class Operand {
 
     public abstract OperandType type();
@@ -91,5 +93,53 @@ public abstract class Operand {
             case STRING: return '"' + stringValue() + '"';
             default: return stringValue();
         }
+    }
+
+    public Operand inc() {
+        throw InterpreterError.unaryApplication("++", type());
+    }
+
+    public Operand dec() {
+        throw InterpreterError.unaryApplication("--", type());
+    }
+
+    public Operand add(Operand operand) {
+        throw InterpreterError.binaryApplication("+", type(), operand.type());
+    }
+
+    public Operand and(Operand operand) {
+        throw InterpreterError.binaryApplication("&", type(), operand.type());
+    }
+
+    public Operand or(Operand operand) {
+        throw InterpreterError.binaryApplication("|", type(), operand.type());
+    }
+
+    public Operand xor(Operand operand) {
+        throw InterpreterError.binaryApplication("^", type(), operand.type());
+    }
+
+    public Operand shl(Operand operand) {
+        throw InterpreterError.binaryApplication("<<", type(), operand.type());
+    }
+
+    public Operand shr(Operand operand) {
+        throw InterpreterError.binaryApplication(">>", type(), operand.type());
+    }
+
+    public Operand sub(Operand operand) {
+        throw InterpreterError.binaryApplication("-", type(), operand.type());
+    }
+
+    public Operand mul(Operand operand) {
+        throw InterpreterError.binaryApplication("*", type(), operand.type());
+    }
+
+    public Operand div(Operand operand) {
+        throw InterpreterError.binaryApplication("/", type(), operand.type());
+    }
+
+    public Operand rem(Operand operand) {
+        throw InterpreterError.binaryApplication("%", type(), operand.type());
     }
 }

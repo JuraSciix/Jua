@@ -6,6 +6,8 @@ import jua.tools.CodePrinter;
 
 public class Switch extends JumpState {
 
+    // todo: Переделать этот ужас.
+
     public static class Part {
 
         private final int index;
