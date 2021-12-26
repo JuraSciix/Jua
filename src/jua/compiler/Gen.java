@@ -953,6 +953,7 @@ public class Gen implements Visitor {
             visitUnary(hs0);
             Iterator<Expression> keys = hs0.keys.iterator();
             Expression key;
+            // todo: Убрать этот затрудняющий чтение цикл.
             for (;;) {
                 key = keys.next();
                 visitExpression(key);

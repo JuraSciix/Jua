@@ -11,7 +11,7 @@ public enum Dup2 implements State {
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName("dup");
+        printer.printName("dup2");
     }
 
     @Override

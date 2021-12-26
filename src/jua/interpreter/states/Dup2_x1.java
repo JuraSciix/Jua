@@ -10,7 +10,7 @@ public enum Dup2_x1 implements State {
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName("dup2_x2");
+        printer.printName("dup2_x1");
     }
 
     @Override
