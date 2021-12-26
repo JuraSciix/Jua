@@ -341,26 +341,7 @@ public class Gen implements Visitor {
 
     @Override
     public void visitDo(DoStatement statement) {
-        int st = code.createFlow();
-        int ex = code.createFlow();
-        code.resolveFlow(st);
-        breakStack.add(ex);
-        continueStack.add(st);
-        addLoop(statement.cond == null);
-        visitBody(statement.body);
-        breakStack.pop();
-        continueStack.pop();
-        chains.add(st);
-        conditionInvert = true;
-        if (statement.cond == null) {
-            insertGoto(st);
-        } else {
-            visitCondition(statement.cond);
-        }
-        conditionInvert = false;
-        chains.pop();
-        code.resolveFlow(ex);
-        checkInfinity();
+        compileLoop(null, statement.cond, null, statement.body, false);
     }
 
     @Override
@@ -402,31 +383,7 @@ public class Gen implements Visitor {
 
     @Override
     public void visitFor(ForStatement statement) {
-        if (statement.init != null) {
-            statement.init.forEach(this::visitStatement);
-        }
-        int st = code.createFlow();
-        int ct = code.createFlow();
-        int ex = code.createFlow();
-        code.resolveFlow(st);
-        addLoop(statement.cond == null);
-        if (statement.cond != null) {
-            chains.push(ex);
-            visitCondition(statement.cond);
-            chains.pop();
-        }
-        breakStack.add(ex);
-        continueStack.add(ct);
-        visitBody(statement.body);
-        breakStack.pop();
-        continueStack.pop();
-        code.resolveFlow(ct);
-        if (statement.step != null) {
-            statement.step.forEach(this::visitStatement);
-        }
-        insertGoto(st);
-        code.resolveFlow(ex);
-        checkInfinity();
+        compileLoop(statement.init, statement.cond, statement.step, statement.body, true);
     }
 
     @Override
@@ -781,20 +738,43 @@ public class Gen implements Visitor {
 
     @Override
     public void visitWhile(WhileStatement statement) {
-        int st = code.createFlow();
-        int ex = code.createFlow();
-        code.resolveFlow(st);
-        addLoop(statement.cond == null);
-        if (statement.cond != null) {
-            chains.push(ex);
-            visitCondition(statement.cond);
+        compileLoop(null, statement.cond, null, statement.body, true);
+    }
+
+    private void compileLoop(List<Expression> initials, Expression condition, List<Expression> steps,
+                             Statement body, boolean testFirst) {
+        // cond pc
+        int cond = code.createFlow();
+        // begin pc
+        int begin = code.createFlow();
+        // exit pc
+        int exit = code.createFlow();
+
+        addLoop(condition == null);
+        if (initials != null) {
+            initials.forEach(this::visitStatement);
+        }
+        if (testFirst && condition != null) {
+            insertGoto(cond);
+        }
+        code.resolveFlow(begin);
+        breakStack.add(exit);
+        continueStack.add(cond);
+        visitBody(body);
+        if (steps != null) {
+            steps.forEach(this::visitStatement);
+        }
+        code.resolveFlow(cond);
+        if (condition == null) {
+            insertGoto(begin);
+        } else {
+            chains.add(begin);
+            conditionInvert = true;
+            visitCondition(condition);
+            conditionInvert = false;
             chains.pop();
         }
-        breakStack.add(ex);
-        continueStack.add(st);
-        visitBody(statement.body);
-        insertGoto(st);
-        code.resolveFlow(ex);
+        code.resolveFlow(exit);
         checkInfinity();
     }
 
