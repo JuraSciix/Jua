@@ -16,8 +16,8 @@ public class Println extends Print {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         System.out.println(getString(env));
-        env.nextPC();
+        return NEXT;
     }
 }

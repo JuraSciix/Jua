@@ -291,11 +291,17 @@ public class Gen implements Visitor {
 
     @Override
     public void visitBlock(BlockStatement statement) {
+        boolean root = false;
         if (code.empty()) {
             code.enterContext(statement.getPosition().filename);
             code.enterScope();
+            root = true;
         }
         statement.statements.forEach(this::visitStatement);
+
+        if (root) {
+            code.addState(Halt.INSTANCE);
+        }
     }
 
     @Override
@@ -626,8 +632,9 @@ public class Gen implements Visitor {
 
     @Override
     public void visitNullCoalesce(NullCoalesceExpression expression) {
+        // todo: Это очевидно неполноценная реализация.
         visitExpression(expression.lhs);
-        insertDup2_x1(line(expression));
+        insertDup(line(expression));
         int el = code.createFlow();
         code.addFlow(el, new Ifnonnull());
         code.decStack();

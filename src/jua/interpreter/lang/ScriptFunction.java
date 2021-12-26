@@ -3,6 +3,7 @@ package jua.interpreter.lang;
 import jua.interpreter.Environment;
 import jua.interpreter.InterpreterError;
 import jua.interpreter.Program;
+import jua.interpreter.Trap;
 
 public class ScriptFunction implements Function {
 
@@ -39,6 +40,7 @@ public class ScriptFunction implements Function {
         }
         env.enterCall(name, args);
         env.setProgram(program);
+        Trap.bti();
     }
 
     private void error(String name, String message) {

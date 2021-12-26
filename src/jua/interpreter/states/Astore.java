@@ -14,10 +14,10 @@ public enum Astore implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         Operand val = env.popStack();
         Operand key = env.popStack();
         env.popArray().set(key, val);
-        env.nextPC();
+        return NEXT;
     }
 }

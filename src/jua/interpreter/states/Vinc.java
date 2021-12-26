@@ -20,8 +20,8 @@ public class Vinc implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         env.setLocal(id, env.getLocal(id).inc());
-        env.nextPC();
+        return NEXT;
     }
 }

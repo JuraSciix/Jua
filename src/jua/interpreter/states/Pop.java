@@ -17,8 +17,8 @@ public class Pop implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         env.popStack();
-        env.nextPC();
+        return NEXT;
     }
 }

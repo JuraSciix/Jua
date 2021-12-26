@@ -14,8 +14,8 @@ public enum Newarray implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         env.pushStack(new ArrayOperand());
-        env.nextPC();
+        return NEXT;
     }
 }

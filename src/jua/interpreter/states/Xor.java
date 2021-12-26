@@ -15,7 +15,7 @@ public enum Xor implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         Operand rhs = env.popStack();
         Operand lhs = env.popStack();
 
@@ -26,6 +26,6 @@ public enum Xor implements State {
         } else {
             throw InterpreterError.binaryApplication("^", lhs.type(), rhs.type());
         }
-        env.nextPC();
+        return NEXT;
     }
 }

@@ -11,11 +11,11 @@ public enum Shl implements State {
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName("lsh");
+        printer.printName("shl");
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         Operand rhs = env.popStack();
         Operand lhs = env.popStack();
 
@@ -24,6 +24,6 @@ public enum Shl implements State {
         } else {
             throw InterpreterError.binaryApplication("<<", lhs.type(), rhs.type());
         }
-        env.nextPC();
+        return NEXT;
     }
 }

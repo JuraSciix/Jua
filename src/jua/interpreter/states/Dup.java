@@ -14,8 +14,8 @@ public enum Dup implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         env.pushStack(env.peekStack());
-        env.nextPC();
+        return NEXT;
     }
 }

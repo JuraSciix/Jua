@@ -12,11 +12,11 @@ public class Ifnonnull extends JumpState {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         if (!env.popStack().isNull()) {
-            env.setPC(destination);
+            return destination;
         } else {
-            env.nextPC();
+            return NEXT;
         }
     }
 }

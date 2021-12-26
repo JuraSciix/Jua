@@ -15,7 +15,7 @@ public enum Neg implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         Operand val = env.popStack();
 
         if (val.isInt()) {
@@ -25,6 +25,6 @@ public enum Neg implements State {
         } else {
             throw InterpreterError.unaryApplication("-", val.type());
         }
-        env.nextPC();
+        return NEXT;
     }
 }

@@ -1,16 +1,18 @@
 package jua.interpreter.states;
 
 import jua.interpreter.Environment;
+import jua.interpreter.Trap;
+import jua.interpreter.lang.NullOperand;
 import jua.tools.CodePrinter;
 
-public class Return implements State {
+public enum Return implements State {
 
-    public static final Return VOID = new Return(false);
-    public static final Return NOT_VOID = new Return(true);
+    VOID(false),
+    NOT_VOID(true);
 
     private final boolean passValue;
 
-    private Return(boolean passValue) {
+    Return(boolean passValue) {
         this.passValue = passValue;
     }
 
@@ -20,8 +22,9 @@ public class Return implements State {
     }
 
     @Override
-    public void run(Environment env) {
-        env.exitCall(passValue);
-        env.nextPC();
+    public int run(Environment env) {
+        env.exitCall(passValue ? env.popStack() : NullOperand.NULL);
+        Trap.bti();
+        return NEXT;
     }
 }

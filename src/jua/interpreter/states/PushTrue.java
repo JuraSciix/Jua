@@ -18,8 +18,8 @@ public class PushTrue implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         env.pushStack(TrueOperand.TRUE);
-        env.nextPC();
+        return NEXT;
     }
 }

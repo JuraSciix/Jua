@@ -14,9 +14,9 @@ public enum Aload implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         Operand key = env.popStack();
         env.pushStack(env.popArray().get(key));
-        env.nextPC();
+        return NEXT;
     }
 }

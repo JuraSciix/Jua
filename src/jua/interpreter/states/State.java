@@ -5,7 +5,12 @@ import jua.tools.CodePrinter;
 
 public interface State {
 
+    /**
+     * Следующая инструкция.
+     */
+    int NEXT = 1;
+
     void print(CodePrinter printer);
 
-    void run(Environment env);
+    int run(Environment env);
 }

@@ -21,8 +21,8 @@ public class Vdec implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         env.setLocal(id, env.getLocal(id).dec());
-        env.nextPC();
+        return NEXT;
     }
 }

@@ -95,6 +95,8 @@ public abstract class Operand {
         }
     }
 
+    // TODO
+
     public Operand inc() {
         throw InterpreterError.unaryApplication("++", type());
     }

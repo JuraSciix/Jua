@@ -142,7 +142,7 @@ public class CodePrinter {
     }
 
     public void printIndex(int index) {
-        printOperand("#" + index);
+        printOperand("#" + (this.index + index - 1));
     }
 
     public void printOperand(Object operand) {

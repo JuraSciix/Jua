@@ -12,11 +12,11 @@ public class Ifcmpne extends JumpState {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         if (!env.popStack().equals(env.popStack())) {
-            env.setPC(destination);
+            return destination;
         } else {
-            env.nextPC();
+            return NEXT;
         }
     }
 }

@@ -15,11 +15,11 @@ public enum Pos implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         Operand val = env.peekStack();
 
         if (val.isNull())
             throw InterpreterError.unaryApplication("+", val.type());
-        env.nextPC();
+        return NEXT;
     }
 }

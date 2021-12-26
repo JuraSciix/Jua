@@ -1,6 +1,7 @@
 package jua.compiler;
 
 import jua.interpreter.Environment;
+import jua.interpreter.Program;
 import jua.tools.CodePrinter;
 
 import static jua.interpreter.Program.Builder;
@@ -23,7 +24,9 @@ public class Result {
 
     public Environment env() {
         Environment env = new Environment(builtIn.functions, builtIn.constants);
-        env.setProgram(builder.build());
+        Program build = builder.build();
+        build.incPC();
+        env.setProgram(build);
         return env;
     }
 }

@@ -18,8 +18,8 @@ public class PushNull implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         env.pushStack(NullOperand.NULL);
-        env.nextPC();
+        return NEXT;
     }
 }

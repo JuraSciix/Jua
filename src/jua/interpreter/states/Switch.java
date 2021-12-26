@@ -36,26 +36,25 @@ public class Switch extends JumpState {
     public void print(CodePrinter printer) {
         printer.printName("switch");
 
-        for (Part part: parts) printer.printCase(part.operands, part.index);
+        for (Part part : parts) printer.printCase(part.operands, part.index);
         if (_default != null) printer.printCase(_default.operands, _default.index);
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         Operand selector = env.popStack();
 
-        for (Part part: parts) {
-            for (Operand operand: part.operands) {
+        for (Part part : parts) {
+            for (Operand operand : part.operands) {
                 if (operand.equals(selector)) {
-                    env.setPC(part.index);
-                    return;
+                    return part.index;
                 }
             }
         }
         if (_default == null) {
-            env.setPC(destination);
+            return destination;
         } else {
-            env.setPC(_default.index);
+            return _default.index;
         }
     }
 }

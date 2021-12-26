@@ -23,13 +23,13 @@ public class Vload implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         Operand operand = env.getLocal(id);
 
         if (operand == null) {
             throw InterpreterError.variableNotExists(name);
         }
         env.pushStack(operand);
-        env.nextPC();
+        return NEXT;
     }
 }

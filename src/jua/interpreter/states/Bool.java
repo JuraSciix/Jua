@@ -6,7 +6,7 @@ import jua.tools.CodePrinter;
 /**
  * Эта инструкция используется в качестве пролога для инструкций
  * {@link Ifeq} и {@link Ifne} чтобы работать с нелогическими значениями.
- *
+ * <p>
  * Пример:
  *
  * <pre>{@code if [] {
@@ -32,9 +32,9 @@ public enum Bool implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         // todo:
         env.pushStack(env.popStack().booleanValue());
-        env.nextPC();
+        return NEXT;
     }
 }

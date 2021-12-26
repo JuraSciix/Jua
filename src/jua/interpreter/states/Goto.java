@@ -12,7 +12,7 @@ public class Goto extends JumpState {
     }
 
     @Override
-    public void run(Environment env) {
-        env.setPC(destination);
+    public int run(Environment env) {
+        return destination;
     }
 }

@@ -14,8 +14,8 @@ public enum Dup2_x1 implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         env.getProgram().dup2_x2();
-        env.nextPC();
+        return NEXT;
     }
 }

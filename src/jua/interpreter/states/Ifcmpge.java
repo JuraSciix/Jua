@@ -14,7 +14,7 @@ public class Ifcmpge extends JumpState {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         Operand rhs = env.popStack();
         Operand lhs = env.popStack();
 
@@ -25,9 +25,9 @@ public class Ifcmpge extends JumpState {
         if ((lhs.isFloat() || rhs.isFloat())
                 ? lhs.floatValue() < rhs.floatValue()
                 : lhs.intValue() < rhs.intValue()) {
-            env.nextPC();
+            return NEXT;
         } else {
-            env.setPC(destination);
+            return destination;
         }
     }
 }

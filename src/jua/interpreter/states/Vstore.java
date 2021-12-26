@@ -21,8 +21,8 @@ public class Vstore implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         env.setLocal(id, env.popStack());
-        env.nextPC();
+        return NEXT;
     }
 }

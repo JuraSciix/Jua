@@ -2,6 +2,7 @@ package jua.interpreter.states;
 
 import jua.interpreter.Environment;
 import jua.interpreter.InterpreterError;
+import jua.interpreter.Trap;
 import jua.interpreter.lang.Function;
 import jua.tools.CodePrinter;
 
@@ -24,12 +25,13 @@ public class Call implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         Function fn = env.getFunctionByName(name);
 
         if (fn == null) {
             throw InterpreterError.functionNotExists(name);
         }
         fn.call(env, name, argc);
+        return NEXT; // unreachable
     }
 }

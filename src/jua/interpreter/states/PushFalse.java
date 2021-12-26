@@ -18,8 +18,8 @@ public class PushFalse implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         env.pushStack(FalseOperand.FALSE);
-        env.nextPC();
+        return NEXT;
     }
 }

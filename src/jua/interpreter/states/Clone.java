@@ -14,8 +14,8 @@ public enum Clone implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         env.pushStack((Operand) env.popStack().clone());
-        env.nextPC();
+        return NEXT;
     }
 }

@@ -76,13 +76,14 @@ public class Program {
 
     private final State[] states;
 
+    // todo: Хранить только начальные позиции каждой строки ассоциированные с индексом первой операции
     private final int[] lines;
 
     private Operand[] stack;
 
     private Operand[] locals;
 
-    private int pc = 0;
+    private int pc = -1;
 
     private int tos = 0;
 
@@ -95,7 +96,7 @@ public class Program {
         locals = new Operand[localsSize];
     }
 
-    void incPC() { // for env
+    public void incPC() {
         pc++;
     }
 
@@ -115,8 +116,17 @@ public class Program {
         return lines[pc];
     }
 
-    void run(Environment env) { // for env
-        states[pc].run(env);
+    void run(Environment env) {
+        State[] states = this.states;
+        int bci = pc;
+        try {
+            while (true) {
+                //System.out.printf("[%d] %s%n", bci, states[bci].getClass().getName());
+                bci += states[bci].run(env);
+            }
+        } finally {
+            pc = bci;
+        }
     }
 
     void clearStack() { // for env

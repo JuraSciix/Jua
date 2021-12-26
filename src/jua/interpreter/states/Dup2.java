@@ -15,13 +15,13 @@ public enum Dup2 implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         Operand a = env.popStack();
         Operand b = env.popStack();
         env.pushStack(b);
         env.pushStack(a);
         env.pushStack(b);
         env.pushStack(a);
-        env.nextPC();
+        return NEXT;
     }
 }

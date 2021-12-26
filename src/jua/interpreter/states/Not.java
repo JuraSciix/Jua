@@ -19,14 +19,14 @@ public class Not implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         Operand val = env.popStack();
 
         if (val.isInt()) {
             env.pushStack(~val.intValue());
-            env.nextPC();
-            return;
+        } else {
+            throw InterpreterError.unaryApplication("~", val.type());
         }
-        throw InterpreterError.unaryApplication("~", val.type());
+        return NEXT;
     }
 }

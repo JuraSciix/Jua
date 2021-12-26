@@ -19,8 +19,8 @@ public class Push implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         env.pushStack(operand);
-        env.nextPC();
+        return NEXT;
     }
 }

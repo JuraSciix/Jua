@@ -13,9 +13,11 @@ public class Code {
 
     private static class Chain {
 
-        final List<JumpState> states = new ArrayList<>();
+        static final int UNSATISFIED_DESTINATION = Integer.MIN_VALUE;
 
-        int result;
+        final Map<Integer, JumpState> states = new HashMap<>();
+
+        int destination = UNSATISFIED_DESTINATION;
     }
 
     private static class Scope {
@@ -115,10 +117,11 @@ public class Code {
     public void addFlow(int id, int line, JumpState state) {
         if (isAlive()) {
             Chain chain = currentChainMap().get(id);
-            if (chain.result != 0) {
-                state.setDestination(chain.result);
+            int bci = currentContext().states.size();
+            if (chain.destination != Chain.UNSATISFIED_DESTINATION) {
+                state.setDestination(chain.destination - bci);
             }
-            chain.states.add(state);
+            chain.states.put(bci, state);
             addState(line, state);
         }
     }
@@ -127,8 +130,8 @@ public class Code {
         if (isAlive()) {
             Chain chain = currentChainMap().get(id);
             int result = currentContext().states.size();
-            chain.states.forEach(s -> s.setDestination(result));
-            chain.result = result;
+            chain.states.forEach((sBci, s) -> s.setDestination(result - sBci));
+            chain.destination = result;
         }
     }
 

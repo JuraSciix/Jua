@@ -16,7 +16,7 @@ public enum Add implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         // todo: Распределить код по наследникам Operand.
         // todo: Также с остальными операциями над операндами.
         Operand rhs = env.popStack();
@@ -38,6 +38,6 @@ public enum Add implements State {
         } else {
             throw InterpreterError.binaryApplication("+", lhs.type(), rhs.type());
         }
-        env.nextPC();
+        return NEXT;
     }
 }

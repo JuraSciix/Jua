@@ -18,8 +18,8 @@ public class Getconst implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         env.pushStack(env.getConstantByName(name).value);
-        env.nextPC();
+        return NEXT;
     }
 }

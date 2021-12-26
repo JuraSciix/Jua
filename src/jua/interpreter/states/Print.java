@@ -27,8 +27,8 @@ public class Print implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         System.out.print(getString(env));
-        env.nextPC();
+        return NEXT;
     }
 }

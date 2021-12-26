@@ -19,11 +19,11 @@ public class Ifle extends JumpState {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         if (env.popInt() <= value) {
-            env.setPC(destination);
+            return destination;
         } else {
-            env.nextPC();
+            return NEXT;
         }
     }
 }

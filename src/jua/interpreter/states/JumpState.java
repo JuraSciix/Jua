@@ -13,7 +13,7 @@ public abstract class JumpState implements State {
     }
 
     @Override
-    public void run(Environment env) {
+    public int run(Environment env) {
         throw new IllegalStateException("run(Environment) not implemented by " + getClass().getName());
     }
 

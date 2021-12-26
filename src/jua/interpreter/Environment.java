@@ -62,18 +62,16 @@ public class Environment {
         }
     }
 
-    public void exitCall(boolean passOperand) {
+    public void exitCall(Operand returnValue) {
         if (callStack.isEmpty()) {
             throw new IllegalStateException("callStack is empty");
         }
-        CallStackElement call = callStack.poll();
-
-        if (call.lastProgram != null) {
-            call.lastProgram.push(passOperand ? cp.pop() : NullOperand.NULL);
-        }
         cp.clearStack();
         cp.clearLocals();
-        cp = call.lastProgram;
+        cp = callStack.poll().lastProgram;
+        if (cp != null) {
+            cp.push(returnValue);
+        }
     }
 
     public CallStackElement[] getCallStack() {
@@ -84,19 +82,33 @@ public class Environment {
         cp = newCP;
     }
 
+    @Deprecated
     public void nextPC() {
         cp.incPC();
     }
 
+    @Deprecated
     public void setPC(int newPC) {
         cp.setPC(newPC);
     }
 
     public void run() {
-        try {
-            while (cp.next()) cp.run(this);
-        } catch (InterpreterError e) {
-            throw new RuntimeError(e.getMessage(), cp.filename(), cp.line());
+        loop: while (cp != null) {
+            try {
+                cp.run(this);
+            } catch (InterpreterError e) {
+                throw new RuntimeError(e.getMessage(), cp.filename(), cp.line());
+            } catch (Trap trap) {
+                switch (trap.state()) {
+                    case Trap.STATE_HALT:
+                        // STATE_HALT означает полную остановку потока и
+                        // выбрасывается только из обработчика операции halt
+                        break loop;
+                    case Trap.STATE_BTI:
+                        cp.incPC();
+                        //continue
+                }
+            }
         }
     }
 
@@ -239,10 +251,12 @@ public class Environment {
         return getString(peekStack());
     }
 
+    @Deprecated
     public void duplicateStack(int count, int x) {
         cp.duplicate(count, x);
     }
 
+    @Deprecated
     public void moveStack(int x) {
         cp.move(x);
     }
