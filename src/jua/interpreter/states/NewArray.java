@@ -4,11 +4,11 @@ import jua.interpreter.Environment;
 import jua.interpreter.lang.ArrayOperand;
 import jua.tools.CodePrinter;
 
-public class NewArray implements State {
+public class Newarray implements State {
 
-    public static final NewArray NEWARRAY = new NewArray();
+    public static final Newarray NEWARRAY = new Newarray();
 
-    private NewArray() {
+    private Newarray() {
         super();
     }
 

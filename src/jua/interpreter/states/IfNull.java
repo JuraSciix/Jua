@@ -3,7 +3,7 @@ package jua.interpreter.states;
 import jua.interpreter.Environment;
 import jua.tools.CodePrinter;
 
-public class IfNull extends JumpState {
+public class Ifnull extends JumpState {
 
     @Override
     public void print(CodePrinter printer) {

@@ -115,7 +115,7 @@ public class Gen implements Visitor {
     @Override
     public void visitArray(ArrayExpression expression) {
         code.incStack();
-        code.addState(NewArray.NEWARRAY);
+        code.addState(Newarray.NEWARRAY);
         insertDup1X(expression.map.size());
         AtomicInteger index = new AtomicInteger();
         expressionDepth++;
@@ -203,7 +203,7 @@ public class Gen implements Visitor {
         int ex = code.createFlow();
         boolean isArray = (expression.var.child() instanceof ArrayAccessExpression);
         visitAssignment(expression, line -> {
-            code.addFlow(el, new IfNotNull());
+            code.addFlow(el, new Ifnonnull());
             code.decStack();
             visitExpression(expression.expr);
         });
@@ -350,11 +350,11 @@ public class Gen implements Visitor {
         Expression rhs = expression.rhs.child();
         if (rhs instanceof NullExpression) {
             visitExpression(expression.lhs);
-            code.addFlow(chains.peek(), conditionInvert ? new IfNull() : new IfNotNull());
+            code.addFlow(chains.peek(), conditionInvert ? new Ifnull() : new Ifnonnull());
             code.decStack();
         } else {
             visitBinary(expression);
-            code.addFlow(chains.peek(), conditionInvert ? new IfEqual() : new IfNotEqual());
+            code.addFlow(chains.peek(), conditionInvert ? new Ifcmpeq() : new Ifcmpne());
             code.decStack(2);
         }
         insertBoolean();
@@ -393,7 +393,7 @@ public class Gen implements Visitor {
         } else {
             visitList(expression.args);
         }
-        code.addState(line(expression), new FunctionCall(expression.name, expression.args.size()));
+        code.addState(line(expression), new Call(expression.name, expression.args.size()));
         code.decStack(expression.args.size() - 1);
         insertPop();
     }
@@ -428,7 +428,7 @@ public class Gen implements Visitor {
         insertCondition();
         visitBinary(expression);
         code.addFlow(chains.peek(), line(expression),
-                conditionInvert ? new IfGreaterEqual() : new IfLess());
+                conditionInvert ? new Ifcmpge() : new Ifcmplt());
         code.decStack(2);
         insertBoolean();
     }
@@ -438,7 +438,7 @@ public class Gen implements Visitor {
         insertCondition();
         visitBinary(expression);
         code.addFlow(chains.peek(), line(expression),
-                conditionInvert ? new IfGreater() : new IfLessEqual());
+                conditionInvert ? new Ifcmpgt() : new Ifcmple());
         code.decStack(2);
         insertBoolean();
     }
@@ -482,7 +482,7 @@ public class Gen implements Visitor {
         insertCondition();
         visitBinary(expression);
         code.addFlow(chains.peek(), line(expression),
-                conditionInvert ? new IfLessEqual() : new IfGreater());
+                conditionInvert ? new Ifcmple() : new Ifcmpgt());
         code.decStack(2);
         insertBoolean();
     }
@@ -492,7 +492,7 @@ public class Gen implements Visitor {
         insertCondition();
         visitBinary(expression);
         code.addFlow(chains.peek(), line(expression),
-                conditionInvert ? new IfLess() : new IfGreaterEqual());
+                conditionInvert ? new Ifcmplt() : new Ifcmpge());
         code.decStack(2);
         insertBoolean();
     }
@@ -507,7 +507,7 @@ public class Gen implements Visitor {
     @Override
     public void visitNegative(NegativeExpression expression) {
         visitUnary(expression);
-        code.addState(line(expression), Negative.NEG);
+        code.addState(line(expression), Neg.NEG);
         insertPop();
     }
 
@@ -517,11 +517,11 @@ public class Gen implements Visitor {
         Expression rhs = expression.rhs.child();
         if (rhs instanceof NullExpression) {
             visitExpression(expression.lhs);
-            code.addFlow(chains.peek(), conditionInvert ? new IfNotNull() : new IfNull());
+            code.addFlow(chains.peek(), conditionInvert ? new Ifnonnull() : new Ifnull());
             code.decStack();
         } else {
             visitBinary(expression);
-            code.addFlow(chains.peek(), conditionInvert ? new IfNotEqual() : new IfEqual());
+            code.addFlow(chains.peek(), conditionInvert ? new Ifcmpne() : new Ifcmpeq());
             code.decStack(2);
         }
         insertBoolean();
@@ -547,7 +547,7 @@ public class Gen implements Visitor {
         visitExpression(expression.lhs);
         insertDup1X();
         int el = code.createFlow();
-        code.addFlow(el, new IfNotNull());
+        code.addFlow(el, new Ifnonnull());
         code.decStack();
         code.addState(Pop.POP);
         code.decStack();
@@ -593,7 +593,7 @@ public class Gen implements Visitor {
     @Override
     public void visitPositive(PositiveExpression expression) {
         visitUnary(expression);
-        code.addState(line(expression), Positive.POS);
+        code.addState(line(expression), Pos.POS);
         insertPop();
     }
 
@@ -729,9 +729,9 @@ public class Gen implements Visitor {
         code.incStack();
         String name = expression.name;
         if (builtIn.testConstant(name)) {
-            code.addState(new GetConstant(name));
+            code.addState(new Getconst(name));
         } else {
-            code.addState(line(expression), new VariableLoad(name, code.getLocal(name)));
+            code.addState(line(expression), new Vload(name, code.getLocal(name)));
         }
         insertPop();
     }
@@ -814,7 +814,7 @@ public class Gen implements Visitor {
             return;
         }
         code.addFlow(chains.peek(), line(expression),
-                conditionInvert ? new IfTrue() : new IfFalse());
+                conditionInvert ? new Ifne() : new Ifeq());
         code.decStack(1);
     }
 
@@ -884,7 +884,7 @@ public class Gen implements Visitor {
             if (isPost && (expressionDepth > 0)) {
                 insertDupMov_1_m3();
             }
-            code.addState(line, isIncrement ? Increment.INC : Decrement.DEC);
+            code.addState(line, isIncrement ? Inc.INC : Dec.DEC);
             if (!isPost && (expressionDepth > 0)) {
                 insertDupMov_1_m3();
             }
@@ -895,7 +895,7 @@ public class Gen implements Visitor {
             if (isPost && (expressionDepth > 0)) {
                 insertDup1X();
             }
-            code.addState(line, isIncrement ? Increment.INC : Decrement.DEC);
+            code.addState(line, isIncrement ? Inc.INC : Dec.DEC);
             if (!isPost && (expressionDepth > 0)) {
                 insertDup1X();
             }
@@ -968,26 +968,26 @@ public class Gen implements Visitor {
             case 0: break;
             case 1:
                 code.incStack();
-                code.addState(Duplicate.DUP1_1);
+                code.addState(Dup.DUP1_1);
                 break;
             case 2:
                 code.incStack(2);
-                code.addState(Duplicate.DUP1_2);
+                code.addState(Dup.DUP1_2);
                 break;
             default:
                 code.incStack(x);
-                code.addState(new Duplicate(1, x));
+                code.addState(new Dup(1, x));
         }
     }
 
     private void insertDup2_1() {
         code.incStack(2);
-        code.addState(Duplicate.DUP2_1);
+        code.addState(Dup.DUP2_1);
     }
 
     private void insertDupMov_1_m3() {
         code.incStack();
-        code.addState(DuplicateMove.DUP_MOV_1_M3);
+        code.addState(DupMov.DUP_MOV_1_M3);
     }
 
     private void insertAdd(int line) {
@@ -1011,52 +1011,52 @@ public class Gen implements Visitor {
     }
 
     private void insertDiv(int line) {
-        code.addState(line, Divide.DIV);
+        code.addState(line, Div.DIV);
         code.decStack();
     }
 
     private void insertLhs(int line) {
-        code.addState(line, LeftShift.LSH);
+        code.addState(line, Shl.LSH);
         code.decStack();
     }
 
     private void insertMul(int line) {
-        code.addState(line, Multiply.MUL);
+        code.addState(line, Mul.MUL);
         code.decStack();
     }
 
     private void insertRem(int line) {
-        code.addState(line, Remainder.REM);
+        code.addState(line, Rem.REM);
         code.decStack();
     }
 
     private void insertRhs(int line) {
-        code.addState(line, RightShift.RSH);
+        code.addState(line, Shr.RSH);
         code.decStack();
     }
 
     private void insertSub(int line) {
-        code.addState(line, Subtract.SUB);
+        code.addState(line, Sub.SUB);
         code.decStack();
     }
 
     private void insertALoad(int line) {
-        code.addState(line, ArrayLoad.ALOAD);
+        code.addState(line, Aload.ALOAD);
         code.decStack();
     }
 
     private void insertVLoad(int line, String name) {
         code.incStack();
-        code.addState(line, new VariableLoad(name, code.getLocal(name)));
+        code.addState(line, new Vload(name, code.getLocal(name)));
     }
 
     private void insertAStore(int line) {
-        code.addState(line, ArrayStore.ASTORE);
+        code.addState(line, Astore.ASTORE);
         code.decStack(3);
     }
 
     private void insertVStore(int line, String name) {
-        code.addState(line, new VariableStore(name, code.getLocal(name)));
+        code.addState(line, new Vstore(name, code.getLocal(name)));
         code.decStack();
     }
 
