@@ -1,33 +1,21 @@
 package jua.compiler;
 
-import jua.parser.tree.*;
+import jua.parser.Tree;
 
 public final class TreeInfo {
 
-    public static Expression removeParens(Expression expression) {
-        Expression current = expression;
+    public static Tree.Expression removeParens(Tree.Expression expression) {
+        Tree.Expression current = expression;
 
-        while (current instanceof ParensExpression) {
-            current = ((ParensExpression) current).expr;
+        while (current instanceof Tree.ParensExpression) {
+            current = ((Tree.ParensExpression) current).expr;
         }
 
         return current;
     }
 
-    public static int line(Statement statement) {
+    public static int line(Tree.Statement statement) {
         return statement.getPosition().line;
-    }
-
-    public static long getInteger(Expression expression) {
-        return ((IntExpression) expression).value;
-    }
-
-    public static double getDouble(Expression expression) {
-        return ((FloatExpression) expression).value;
-    }
-
-    public static String getString(Expression expression) {
-        return ((StringExpression) expression).value;
     }
 
     private TreeInfo() {

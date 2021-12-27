@@ -1,7 +1,5 @@
 package jua.parser;
 
-import jua.parser.tree.Position;
-
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,11 +29,11 @@ public class Tokenizer {
 
     private static class TokenBuilder {
 
-        private final Position position;
+        private final Tree.Position position;
 
         private final StringWriter buffer = new StringWriter();
 
-        private TokenBuilder(Position position) {
+        private TokenBuilder(Tree.Position position) {
             this.position = position;
         }
 
@@ -323,7 +321,7 @@ public class Tokenizer {
         return builder;
     }
 
-    private void tError(Position position, String message) throws ParseException {
+    private void tError(Tree.Position position, String message) throws ParseException {
         throw new ParseException(message, position);
     }
 }

@@ -4,7 +4,7 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import jua.interpreter.lang.*;
 import jua.interpreter.states.*;
-import jua.parser.tree.*;
+import jua.parser.Tree.*;
 
 import java.util.*;
 
@@ -50,7 +50,7 @@ public class Gen implements Visitor {
     // todo: Избавиться от ниже определенных полей
 
     private int statementDepth = 0;
-    
+
     private int expressionDepth = 0;
 
     private int conditionDepth = 0;
@@ -101,13 +101,13 @@ public class Gen implements Visitor {
         }
         endCondition();
     }
-    
+
     private int pushNewFlow() {
         int newFlow = code.createFlow();
         conditionalChains.add(newFlow);
         return newFlow;
     }
-    
+
     private int popFlow() {
         return conditionalChains.removeInt(conditionalChains.size() - 1);
     }
@@ -326,7 +326,7 @@ public class Gen implements Visitor {
         code.deathScope();
         loops.getLast().setInfinity(false);
     }
-    
+
     private static int peekInt(IntList integers) {
         return integers.getInt(integers.size() - 1);
     }
@@ -474,7 +474,8 @@ public class Gen implements Visitor {
                 locals, // function arguments must be first at local list
                 statement.optionals.stream().map(e2of::apply).toArray(Operand[]::new),
                 code.getBuilder()));
-        code.exitScope(); code.exitContext();
+        code.exitScope();
+        code.exitContext();
     }
 
     @Override
@@ -804,7 +805,7 @@ public class Gen implements Visitor {
     @Override
     public void visitSwitch(SwitchStatement statement) {
         int count = 0;
-        for (CaseStatement _case: statement.cases) {
+        for (CaseStatement _case : statement.cases) {
             if (_case.expressions != null) count++;
         }
         visitExpression(statement.selector);
@@ -815,7 +816,7 @@ public class Gen implements Visitor {
         code.addFlow(a, _switch);
         fallthroughChains.add(code.createFlow());
         switchPartsStack.add(new ArrayList<>(count));
-        for (CaseStatement _case: statement.cases) {
+        for (CaseStatement _case : statement.cases) {
             if (_case.expressions == null) {
                 _switch.setDefault(new Part(code.statesCount(), null));
                 insertCaseBody(_case.body);
@@ -988,7 +989,7 @@ public class Gen implements Visitor {
             } else {
                 visitExpression(expression.expr);
             }
-            if (expressionDepth>0)
+            if (expressionDepth > 0)
                 insertDup_x2(0);
             insertAStore(line);
         } else if (var instanceof VariableExpression) {

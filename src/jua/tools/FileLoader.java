@@ -9,7 +9,7 @@ import jua.parser.ParseException;
 import jua.parser.Parser;
 import jua.parser.TokenizeStream;
 import jua.parser.Tokenizer;
-import jua.parser.tree.Statement;
+import jua.parser.Tree;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -42,7 +42,7 @@ public class FileLoader {
         interpret(result.env());
     }
 
-    private static Statement parse(String filename) {
+    private static Tree.Statement parse(String filename) {
         try (TokenizeStream stream = TokenizeStream.fromFile(filename)) {
             return new Parser(new Tokenizer(stream)).parse();
         } catch (IOException e) {
@@ -61,7 +61,7 @@ public class FileLoader {
         System.exit(1);
     }
 
-    private static Result compile(Statement root) {
+    private static Result compile(Tree.Statement root) {
         BuiltIn builtIn = new BuiltIn();
         Gen gen = new Gen(builtIn);
 
