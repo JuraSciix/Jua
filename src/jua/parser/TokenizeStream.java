@@ -1,7 +1,5 @@
 package jua.parser;
 
-import jua.parser.tree.Position;
-
 import java.io.*;
 
 public class TokenizeStream implements Closeable {
@@ -26,7 +24,7 @@ public class TokenizeStream implements Closeable {
 
     private int offset = 0;
 
-    private Position savedPosition;
+    private Tree.Position savedPosition;
 
     public TokenizeStream(String filename, String content) {
         this.filename = filename;
@@ -62,9 +60,9 @@ public class TokenizeStream implements Closeable {
         offset = 0;
     }
 
-    public Position getPosition() {
+    public Tree.Position getPosition() {
         if (savedPosition == null) {
-            savedPosition = new Position(filename, line, offset);
+            savedPosition = new Tree.Position(filename, line, offset);
         }
         return savedPosition;
     }

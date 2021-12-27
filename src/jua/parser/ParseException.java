@@ -1,12 +1,10 @@
 package jua.parser;
 
-import jua.parser.tree.Position;
-
 public class ParseException extends Exception {
 
-    public final Position position;
+    public final Tree.Position position;
 
-    public ParseException(String message, Position position) {
+    public ParseException(String message, Tree.Position position) {
         super(message);
         this.position = position;
     }

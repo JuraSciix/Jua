@@ -1,6 +1,7 @@
 package jua.compiler;
 
-import jua.parser.tree.*;
+import jua.parser.Tree;
+import jua.parser.Tree.*;
 
 import java.util.*;
 import java.util.stream.Collectors;

@@ -1,6 +1,6 @@
 package jua.parser;
 
-import jua.parser.tree.*;
+import jua.parser.Tree.*;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
