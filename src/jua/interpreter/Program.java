@@ -2,37 +2,77 @@ package jua.interpreter;
 
 import jua.interpreter.states.State;
 
-public class Program {
+/**
+ * Программа представляет собой фабрику фреймов.
+ */
+public final class Program {
 
-    public static Program empty() {
+    public static final class LineTableEntry {
+
+        public final int lineNumber;
+
+        public final int startIp;
+
+        public LineTableEntry(int lineNumber, int startIp) {
+            this.lineNumber = lineNumber;
+            this.startIp = startIp;
+        }
+    }
+
+    public static Program createMain() {
         // stackSize = 1 because child program always delegate value to him
-        return new Program(null, new State[0], new int[]{-1}, 1, 0);
+        // ^^^ Я не понимаю что это значит, но трогать пока лучше не буду
+        return new Program("main", new State[0],
+                createEmptyLineTable(1), 1, 0);
     }
 
     public static Program coroutine(Environment parent, int argc) {
         // min stackSize value = 1 because child program always delegate value to him
-        return new Program(parent.currentFile(), new State[0], new int[]{parent.currentLine()}, Math.max(argc, 1), 0);
+        // ^^^ Я не понимаю что это значит, но трогать пока лучше не буду
+        return new Program(parent.currentFile(), new State[0],
+                createEmptyLineTable(parent.currentLine()), Math.max(argc, 1), 0);
+    }
+
+    private static LineTableEntry[] createEmptyLineTable(int lineNumber) {
+        return new LineTableEntry[] {
+                new LineTableEntry(lineNumber, 0)
+        };
     }
 
     public final String filename;
 
     public final State[] states;
 
-    public final int[] lines;
+    public final LineTableEntry[] lineTable;
 
     public final int stackSize;
 
     public final int localsSize;
 
-    public Program(String filename, State[] states, int[] lines, int stackSize, int localsSize) {
+    public Program(String filename, State[] states, LineTableEntry[] lineTable, int stackSize, int localsSize) {
         this.filename = filename;
         this.states = states;
-        this.lines = lines;
+        this.lineTable = lineTable;
         this.stackSize = stackSize;
         this.localsSize = localsSize;
     }
 
-    public Frame build() {
-        return new Frame(filename, states, lines, stackSize, localsSize);
+    public int getInstructionLine(int ip) {
+        int l = 0;
+        int r = lineTable.length - 1;
+        while (l <= r) {
+            int c = (l + r) >>> 1;
+
+            if (lineTable[c].startIp <= ip) {
+                l = c + 1;
+            } else {
+                r = c - 1;
+            }
+        }
+        return lineTable[l].lineNumber;
+    }
+
+    public Frame makeFrame() {
+        return new Frame(this);
     }
 }

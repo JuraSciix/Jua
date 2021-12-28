@@ -46,7 +46,7 @@ public class Environment {
         this.constants = constants;
 
         callStack = new ArrayDeque<>();
-        callStack.add(CallStackElement.entry());
+        callStack.add(CallStackElement.mainEntry());
     }
 
     public Function getFunctionByName(String name) {
@@ -58,7 +58,7 @@ public class Environment {
     }
 
     public void enterCall(String name, Operand[] args) {
-        callStack.addFirst(new CallStackElement(name, cp.filename(), cp.line(), args, cp));
+        callStack.addFirst(new CallStackElement(name, cp.sourceName(), cp.currentLine(), args, cp));
 
         if (callStack.size() >= MAX_CALLSTACK_SIZE) {
             throw InterpreterError.stackOverflow();
@@ -90,7 +90,7 @@ public class Environment {
             try {
                 cp.run(this);
             } catch (InterpreterError e) {
-                throw new RuntimeError(e.getMessage(), cp.filename(), cp.line());
+                throw new RuntimeError(e.getMessage(), cp.sourceName(), cp.currentLine());
             } catch (Trap trap) {
                 switch (trap.state()) {
                     case Trap.STATE_HALT:
@@ -105,11 +105,11 @@ public class Environment {
     }
 
     public String currentFile() {
-        return cp.filename();
+        return cp.sourceName();
     }
 
     public int currentLine() {
-        return cp.line();
+        return cp.currentLine();
     }
 
     public Array getArray(Operand operand) {

@@ -5,8 +5,9 @@ import jua.interpreter.Frame;
 
 public class CallStackElement {
 
-    public static CallStackElement entry() {
-        return new CallStackElement(null, null, -1, null, Program.empty().build());
+    public static CallStackElement mainEntry() {
+        return new CallStackElement(null, null, -1, null,
+                Program.createMain().makeFrame());
     }
 
     public final String name;

@@ -118,8 +118,8 @@ public class CodePrinter {
         System.out.println("Lines:");
         Map<Integer, List<Integer>> lines = new TreeMap<>(Comparator.comparingInt(a -> a));
 
-        for (int i = 0; i < program.lines.length; i++) {
-            int line = program.lines[i];
+        for (int i = 0; i < program.lineTable.length; i++) {
+            int line = program.lineTable[i];
             if (line == 0) continue;
             if (!lines.containsKey(line)) lines.put(line, new ArrayList<>());
             lines.get(line).add(i);

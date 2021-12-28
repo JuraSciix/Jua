@@ -29,7 +29,7 @@ public class ScriptFunction implements Function {
         } else if (argc < req) {
             error(name, "arguments too few. (required " + req + ", got " + argc + ')');
         }
-        Frame frame = program.build();
+        Frame frame = program.makeFrame();
         Operand[] args = new Operand[tot];
 
         for (int i = tot; --i >= 0; ) {

@@ -24,7 +24,7 @@ public class Result {
 
     public Environment env() {
         Environment env = new Environment(builtIn.functions, builtIn.constants);
-        Frame build = program.build();
+        Frame build = program.makeFrame();
         env.setProgram(build);
         return env;
     }

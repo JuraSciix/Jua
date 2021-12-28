@@ -3,7 +3,6 @@ package jua.compiler;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntList;
 import jua.interpreter.Program;
 import jua.interpreter.lang.Operand;
 import jua.interpreter.lang.OperandFunction;
@@ -34,7 +33,7 @@ public final class Code {
 
         final List<State> states = new ArrayList<>();
 
-        final IntList lines = new IntArrayList();
+        final List<Program.LineTableEntry> lineTable = new ArrayList<>();
 
         final List<String> locals = new ArrayList<>();
 
@@ -45,6 +44,8 @@ public final class Code {
         int stackTop = 0;
 
         int stackSize = 0;
+
+        int lastLineNumber = -1;
 
         private Context(String filename) {
             this.filename = filename;
@@ -66,7 +67,7 @@ public final class Code {
     public void exitContext() {
         Context context = contexts.removeLast();
         context.states.clear();
-        context.lines.clear();
+        context.lineTable.clear();
         context.locals.clear();
         context.chainMap.clear();
         context.scopes.clear();
@@ -94,8 +95,17 @@ public final class Code {
 
     public void addState(int line, State state) {
         if (isAlive()) {
-            currentContext().lines.add(line);
+            putLine(line);
             currentContext().states.add(state);
+        }
+    }
+
+    private void putLine(int lineNumber) {
+        Context context = currentContext();
+        if (lineNumber > context.lastLineNumber) {
+            int startIp = context.states.size();
+            context.lineTable.add(new Program.LineTableEntry(lineNumber, startIp));
+            context.lastLineNumber = lineNumber;
         }
     }
 
@@ -174,7 +184,7 @@ public final class Code {
         Context context = currentContext();
         return new Program(context.filename,
                 context.states.toArray(new State[0]),
-                context.lines.stream().mapToInt(i -> i).toArray(),
+                context.lineTable.toArray(new Program.LineTableEntry[0]),
                 context.stackTop,
                 context.locals.size());
     }
