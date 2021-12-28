@@ -9,7 +9,7 @@ public class Ifcmple extends JumpState {
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName("Ifcmple");
+        printer.printName("ifcmple");
         super.print(printer);
     }
 
