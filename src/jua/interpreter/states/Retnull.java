@@ -17,7 +17,8 @@ public enum Retnull implements State {
     @Override
     public int run(Environment env) {
         env.exitCall(NullOperand.NULL);
+        env.getFrame().incPC();
         Trap.bti();
-        return NEXT;
+        return 0; // unreachable
     }
 }

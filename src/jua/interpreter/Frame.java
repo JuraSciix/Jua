@@ -48,7 +48,7 @@ public class Frame {
 
     private Operand[] locals;
 
-    private int pc = -1;
+    private int pc = 0;
 
     private int tos = 0;
 

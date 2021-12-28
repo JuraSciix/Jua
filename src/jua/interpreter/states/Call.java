@@ -32,6 +32,6 @@ public class Call implements State {
             throw InterpreterError.functionNotExists(name);
         }
         fn.call(env, name, argc);
-        return NEXT; // unreachable
+        return NEXT;
     }
 }

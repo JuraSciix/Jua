@@ -85,16 +85,6 @@ public class Environment {
         cp = newCP;
     }
 
-    @Deprecated
-    public void nextPC() {
-        cp.incPC();
-    }
-
-    @Deprecated
-    public void setPC(int newPC) {
-        cp.setPC(newPC);
-    }
-
     public void run() {
         loop: while (cp != null) {
             try {
@@ -108,7 +98,6 @@ public class Environment {
                         // выбрасывается только из обработчика операции halt
                         break loop;
                     case Trap.STATE_BTI:
-                        cp.incPC();
                         //continue
                 }
             }

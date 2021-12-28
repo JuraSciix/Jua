@@ -17,7 +17,8 @@ public enum Return implements State {
     @Override
     public int run(Environment env) {
         env.exitCall(env.popStack());
+        env.getFrame().incPC();
         Trap.bti();
-        return NEXT;
+        return 0; // unreachable
     }
 }

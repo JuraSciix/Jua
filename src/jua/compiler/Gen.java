@@ -776,6 +776,7 @@ public class Gen implements Visitor {
 
     private void insertRetnull() {
         code.addState(Retnull.INSTANCE);
+        code.deathScope();
     }
 
     private static boolean isNull(Expression expression) {

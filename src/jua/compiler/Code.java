@@ -60,11 +60,11 @@ public final class Code {
     }
 
     public void enterContext(String filename) {
-        contexts.add(new Context(filename));
+        contexts.addLast(new Context(filename));
     }
 
     public void exitContext() {
-        Context context = contexts.pop();
+        Context context = contexts.removeLast();
         context.states.clear();
         context.lines.clear();
         context.locals.clear();
@@ -73,11 +73,11 @@ public final class Code {
     }
 
     public void enterScope() {
-        currentContext().scopes.add(new Scope());
+        currentContext().scopes.addLast(new Scope());
     }
 
     public void exitScope() {
-        currentContext().scopes.pop();
+        currentContext().scopes.removeLast();
     }
 
     public void deathScope() {
@@ -201,7 +201,7 @@ public final class Code {
     }
 
     private Scope currentScope() {
-        return currentContext().scopes.peek();
+        return currentContext().scopes.getLast();
     }
 
     private void updateCurrentStack() {
@@ -212,6 +212,6 @@ public final class Code {
     }
 
     private Context currentContext() {
-        return contexts.peek();
+        return contexts.getLast();
     }
 }

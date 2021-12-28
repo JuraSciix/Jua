@@ -25,7 +25,7 @@ class BuiltInFunctions {
         builtIn.setFunction("_sizeof", ((env, name, argc) -> {
             checkArgs(name, argc, 1);
             env.pushStack(ObjectsSize.sizeOf(popArgument(env, name, 1, null)));
-            env.nextPC();
+
         }));
         builtIn.setFunction("get_stack_trace", ((env, name, argc) -> {
             checkArgs(name, argc, 0, 1);
@@ -48,17 +48,17 @@ class BuiltInFunctions {
                 }
                 return env.getOperand(array);
             }));
-            env.nextPC();
+
         }));
         builtIn.setFunction("array_keys", ((env, name, argc) -> {
             checkArgs(name, argc, 1);
             env.pushStack(popArgument(env, name, 1, ARRAY).arrayValue().getKeys());
-            env.nextPC();
+
         }));
         builtIn.setFunction("array_values", ((env, name, argc) -> {
             checkArgs(name, argc, 1);
             env.pushStack(popArgument(env, name, 1, ARRAY).arrayValue().getValues());
-            env.nextPC();
+
         }));
         builtIn.setFunction("length", ((env, name, argc) -> {
             checkArgs(name, argc, 1);
@@ -68,7 +68,7 @@ class BuiltInFunctions {
                 case ARRAY: { env.pushStack(val.arrayValue().count()); break; }
                 default: error(name, "expected string or array at first argument.");
             }
-            env.nextPC();
+
         }));
         builtIn.setFunction("typeof", ((env, name, argc) -> {
             checkArgs(name, argc, 0, 1);
@@ -77,7 +77,7 @@ class BuiltInFunctions {
             } else {
                 env.pushStack(env.popStack().type().toString());
             }
-            env.nextPC();
+
         }));
         builtIn.setFunction("_sizeof_function", ((env, name, argc) -> {
             checkArgs(name, argc, 1);
@@ -85,7 +85,7 @@ class BuiltInFunctions {
             Function func = env.getFunctionByName(fn);
             if (func == null) error(name, "function '" + fn + "' not found.");
             env.pushStack(ObjectsSize.sizeOf(func));
-            env.nextPC();
+
         }));
         builtIn.setFunction("thread", ((env, name, argc) -> {
             checkArgs(name, argc, 1, 2);
@@ -100,7 +100,7 @@ class BuiltInFunctions {
             func.call(newEnv, fn, args.length);
             new Thread(newEnv::run).start();
             env.pushStackNull();
-            env.nextPC();
+
         }));
         builtIn.setFunction("random", ((env, name, argc) -> {
             if (random == null) random = new Random();
@@ -109,22 +109,22 @@ class BuiltInFunctions {
             if (min >= max) error(name, "min value cannot be greater than or equal to max value.");
             long rand = random.nextLong();
             env.pushStack((max == 0) ? (min + (rand >>> 1) % -min) : (min == 0) ? (max - ((rand >>> 1) % max)) : (rand + min) % max);
-            env.nextPC();
+
         }));
         builtIn.setFunction("nanos_time", ((env, name, argc) -> {
             checkArgs(name, argc, 0);
             env.pushStack(System.nanoTime());
-            env.nextPC();
+
         }));
         builtIn.setFunction("time", (env, name, argc) -> {
             checkArgs(name, argc, 0);
             env.pushStack(System.currentTimeMillis());
-            env.nextPC();
+
         });
         builtIn.setFunction("defined", ((env, name, argc) -> {
             checkArgs(name, argc, 1);
             env.pushStack(env.getConstantByName(popArgument(env, name, 1, STRING).stringValue()) != null);
-            env.nextPC();
+
         }));
         builtIn.setFunction("const_info", ((env, name, argc) -> {
             checkArgs(name, argc, 1);
@@ -135,7 +135,7 @@ class BuiltInFunctions {
             array.set(env.getOperand("value"), c.value);
             array.set(env.getOperand("is_extern"), env.getOperand(c.isExtern));
             env.pushStack(array);
-            env.nextPC();
+
         }));
     }
 
