@@ -11,6 +11,8 @@ import jua.interpreter.states.State;
 
 import java.util.*;
 
+import jua.interpreter.Program.LineTableEntry;
+
 public final class Code {
 
     private static class Chain {
@@ -33,7 +35,7 @@ public final class Code {
 
         final List<State> states = new ArrayList<>();
 
-        final List<Program.LineTableEntry> lineTable = new ArrayList<>();
+        final List<LineTableEntry> lineTable = new ArrayList<>();
 
         final List<String> locals = new ArrayList<>();
 
@@ -102,7 +104,7 @@ public final class Code {
 
     private void putLine(int lineNumber) {
         Context context = currentContext();
-        if (lineNumber > context.lastLineNumber) {
+        if (lineNumber != context.lastLineNumber) {
             int startIp = context.states.size();
             context.lineTable.add(new Program.LineTableEntry(lineNumber, startIp));
             context.lastLineNumber = lineNumber;

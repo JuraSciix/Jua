@@ -42,9 +42,16 @@ public class CodePrinter {
 
         private List<Case> cases;
 
+        int line;
+
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
+            if (line != 0) {
+                sb.append(String.format("L%-6d ", line));
+            } else {
+                sb.append("        ");
+            }
             if (!cases.isEmpty()) { // operands empty
                 sb.append(String.format("%4d: %-5s ", index, name));
                 sb.append('{').append(System.lineSeparator());
@@ -92,13 +99,26 @@ public class CodePrinter {
     public static void print(Program program) {
         CodePrinter printer = new CodePrinter();
         printer.printHead(program);
-
-        for (State state: program.states) {
-            state.print(printer);
-            printer.printAndNext();
+        int lastLineNumber = 0;
+        for (int i = 0, j = 0; i < program.states.length; i++) {
+            program.states[i].print(printer);
+            int line = program.getInstructionLine(i);
+            if (line != lastLineNumber) {
+                printer.printLine(line);
+                lastLineNumber = line;
+            }
+            printer.flushAndNext();
         }
-        printer.printLines(program);
+//        for (State state: program.states) {
+//            state.print(printer);
+//            printer.flushAndNext();
+//        }
+//        printer.printLines(program);
         System.out.println();
+    }
+
+    private void printLine(int line) {
+        current.line = line;
     }
 
     private int index;
@@ -110,27 +130,27 @@ public class CodePrinter {
     }
 
     private void printHead(Program program) {
-        System.out.printf("stack: %d, locals: %d%n", program.stackSize, program.localsSize);
-        System.out.println("Code:");
+        System.out.printf("Code:  stack: %d, locals: %d%n", program.stackSize, program.localsSize);
     }
 
+    @Deprecated
     private void printLines(Program program) {
-        System.out.println("Lines:");
-        Map<Integer, List<Integer>> lines = new TreeMap<>(Comparator.comparingInt(a -> a));
-
-        for (int i = 0; i < program.lineTable.length; i++) {
-            int line = program.lineTable[i];
-            if (line == 0) continue;
-            if (!lines.containsKey(line)) lines.put(line, new ArrayList<>());
-            lines.get(line).add(i);
-        }
-        lines.forEach((line, ops) -> {
-            StringJoiner sj = new StringJoiner(", ");
-            for (int op: ops) {
-                sj.add("#" + op);
-            }
-            System.out.printf("%4d: %s%n", line, sj);
-        });
+//        System.out.println("Lines:");
+//        Map<Integer, List<Integer>> lines = new TreeMap<>(Comparator.comparingInt(a -> a));
+//
+//        for (int i = 0; i < program.lineTable.length; i++) {
+//            int line = program.lineTable[i];
+//            if (line == 0) continue;
+//            if (!lines.containsKey(line)) lines.put(line, new ArrayList<>());
+//            lines.get(line).add(i);
+//        }
+//        lines.forEach((line, ops) -> {
+//            StringJoiner sj = new StringJoiner(", ");
+//            for (int op: ops) {
+//                sj.add("#" + op);
+//            }
+//            System.out.printf("%4d: %s%n", line, sj);
+//        });
     }
 
     public void printName(String name) {
@@ -138,11 +158,11 @@ public class CodePrinter {
     }
 
     public void printIdentifier(String name, int id) {
-        printOperand(String.format("%s ($%d)", name, id));
+        printOperand(String.format("%d (%s)", id, name));
     }
 
     public void printIndex(int index) {
-        printOperand("#" + (this.index + index - 1));
+        printOperand("->" + (this.index + index - 1));
     }
 
     public void printOperand(Object operand) {
@@ -163,7 +183,7 @@ public class CodePrinter {
         return current;
     }
 
-    private void printAndNext() {
+    private void flushAndNext() {
         System.out.println(current);
         current = null;
     }

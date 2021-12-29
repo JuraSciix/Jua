@@ -31,6 +31,8 @@ public class Call implements State {
         if (fn == null) {
             throw InterpreterError.functionNotExists(name);
         }
+        // todo: Это новый костыль вместо старого..
+        env.getFrame().setRunningstate(false);
         fn.call(env, name, argc);
         return NEXT;
     }

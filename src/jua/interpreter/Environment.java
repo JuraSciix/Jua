@@ -57,6 +57,7 @@ public class Environment {
         return constants.get(name);
     }
 
+    @Deprecated
     public void enterCall(String name, Operand[] args) {
         callStack.addFirst(new CallStackElement(name, cp.sourceName(), cp.currentLine(), args, cp));
 
@@ -69,8 +70,8 @@ public class Environment {
         if (callStack.isEmpty()) {
             throw new IllegalStateException("callStack is empty");
         }
-        cp.clearStack();
-        cp.clearLocals();
+//        cp.clearStack();
+//        cp.clearLocals();
         cp = callStack.poll().lastFrame;
         if (cp != null) {
             cp.push(returnValue);

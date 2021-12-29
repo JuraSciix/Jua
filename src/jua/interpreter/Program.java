@@ -62,14 +62,17 @@ public final class Program {
         int r = lineTable.length - 1;
         while (l <= r) {
             int c = (l + r) >>> 1;
+            int current = lineTable[c].startIp;
 
-            if (lineTable[c].startIp <= ip) {
+            if (current < ip) {
                 l = c + 1;
-            } else {
+            } else if (current > ip) {
                 r = c - 1;
+            } else {
+                return lineTable[c].lineNumber;
             }
         }
-        return lineTable[l].lineNumber;
+        return lineTable[l - 1].startIp;
     }
 
     public Frame makeFrame() {

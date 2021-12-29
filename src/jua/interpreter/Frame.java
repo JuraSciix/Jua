@@ -53,7 +53,7 @@ public final class Frame {
         runningstate = true;
         try {
             while (true) {
-                //System.out.printf("[%d] %s%n", bci, states[bci].getClass().getName());
+//                System.out.printf("[%d] %s%n", bci, states[bci].getClass().getName());
                 bci += states[bci].run(env);
             }
         } finally {
@@ -62,6 +62,10 @@ public final class Frame {
         }
     }
 
+
+    public void setRunningstate(boolean runningstate) {
+        this.runningstate = runningstate;
+    }
 
     // в двух нижеописанных операциях нет смысла
     public void clearStack() {}
