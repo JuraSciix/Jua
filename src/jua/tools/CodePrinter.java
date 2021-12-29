@@ -47,17 +47,17 @@ public class CodePrinter {
         public String toString() {
             StringBuilder sb = new StringBuilder();
             if (line != 0) {
-                sb.append(String.format("L%-6d ", line));
+                sb.append(String.format("L%-6s ", line + ":"));
             } else {
                 sb.append("        ");
             }
             if (!cases.isEmpty()) { // operands empty
-                sb.append(String.format("%4d: %-5s ", index, name));
+                sb.append(String.format("%5d: %-5s ", index, name));
                 sb.append('{').append(System.lineSeparator());
                 cases.forEach(c -> sb.append("\t\t").append(c).append(System.lineSeparator()));
                 sb.append("      }");
             } else {
-                sb.append(String.format("%4d: %-15s %s", index, name, String.join(", ", operands)));
+                sb.append(String.format("%5d: %-15s %s", index, name, String.join(", ", operands)));
             }
             return sb.toString();
         }
@@ -132,7 +132,7 @@ public class CodePrinter {
     }
 
     private void printHead(Program program) {
-        System.out.printf("Code:  stack: %d, locals: %d%n", program.stackSize, program.localsSize);
+        System.out.printf("Code:   stack: %d, locals: %d%n", program.stackSize, program.localsSize);
     }
 
     @Deprecated

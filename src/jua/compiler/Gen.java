@@ -308,7 +308,12 @@ public class Gen implements Visitor {
             code.enterScope();
             root = true;
         }
-        statement.statements.forEach(this::visitStatement);
+        for (Statement childStatement : statement.statements) {
+            if (!code.scopeAlive()) {
+                break;
+            }
+            visitStatement(childStatement);
+        }
 
         if (root) {
             code.addState(Halt.INSTANCE);
@@ -838,7 +843,6 @@ public class Gen implements Visitor {
 
     @Override
     public void visitTernary(TernaryExpression expression) {
-        beginCondition();
         int el = pushNewFlow();
         int ex = code.createFlow();
         if (conditionInvert) {
@@ -854,7 +858,6 @@ public class Gen implements Visitor {
         code.resolveFlow(el);
         visitExpression(expression.rhs);
         code.resolveFlow(ex);
-
     }
 
     @Override
@@ -1209,7 +1212,7 @@ public class Gen implements Visitor {
     }
 
     private void insertGoto(int line, int flow) {
-        code.addFlow(line, flow, new Goto());
+        code.addFlow(flow, line, new Goto());
     }
 
     private void insertDup() {
