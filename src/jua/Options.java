@@ -93,7 +93,7 @@ public final class Options {
     /**
      * Завершение работы
      */
-    private boolean stop = false;
+    private boolean stop = true;
 
     public static boolean stop() {
         return OPTIONS.stop;

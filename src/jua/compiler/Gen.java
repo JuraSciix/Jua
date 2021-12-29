@@ -118,7 +118,6 @@ public class Gen implements Visitor {
         visitExpression(expression.hs);
         visitExpression(expression.key);
         insertALoad(line(expression));
-
     }
 
     @Override
@@ -126,7 +125,7 @@ public class Gen implements Visitor {
 //        code.incStack();
 //        code.addState(Newarray.INSTANCE);
 //        AtomicInteger index = new AtomicInteger();
-//        expressionDepth++;
+//        enableUsed();
 //        expression.map.forEach((key, value) -> {
 //            int line;
 //            if (key.isEmpty()) {
@@ -140,20 +139,19 @@ public class Gen implements Visitor {
 //            insertAStore(line);
 //            index.incrementAndGet();
 //        });
-//        expressionDepth--;
+//        disableUsed();
 //        insertNecessaryPop();
 
-        insertNewArray();
+        insertNewArray(line(expression));
         long implicitIndex = 0;
         Iterator<Map.Entry<Expression, Expression>> iterator
                 = expression.map.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<Expression, Expression> entry = iterator.next();
+            insertDup();
             if (entry.getKey().isEmpty()) {
-                insertDup(line(entry.getValue()));
                 insertPush(line(entry.getValue()), implicitIndex++, IntOperand::valueOf);
             } else {
-                insertDup(line(entry.getKey()));
                 visitExpression(entry.getKey());
             }
             visitExpression(entry.getValue());
@@ -164,9 +162,9 @@ public class Gen implements Visitor {
 
     }
 
-    private void insertNewArray() {
+    private void insertNewArray(int line) {
         code.incStack();
-        code.addState(Newarray.INSTANCE);
+        code.addState(line, Newarray.INSTANCE);
     }
 
     @Override
@@ -539,7 +537,7 @@ public class Gen implements Visitor {
             int ex = code.createFlow();
             visitCondition(statement.cond);
             boolean thenAlive = visitBody(statement.body);
-            insertGoto(line(statement), ex);
+            insertGoto(0, ex);
             code.resolveFlow(el);
             boolean elseAlive = visitBody(statement.elseBody);
             code.resolveFlow(ex);
@@ -670,7 +668,7 @@ public class Gen implements Visitor {
     public void visitNullCoalesce(NullCoalesceExpression expression) {
         // todo: Это очевидно неполноценная реализация.
         visitExpression(expression.lhs);
-        insertDup(line(expression));
+        insertDup();
         int el = code.createFlow();
         code.addFlow(el, new Ifnonnull());
         code.decStack();
@@ -852,7 +850,7 @@ public class Gen implements Visitor {
         }
         popFlow();
         visitExpression(expression.lhs);
-        insertGoto(line(expression), ex);
+        insertGoto(0, ex);
         code.resolveFlow(el);
         visitExpression(expression.rhs);
         code.resolveFlow(ex);
@@ -866,14 +864,13 @@ public class Gen implements Visitor {
 
     @Override
     public void visitVariable(VariableExpression expression) {
-        code.incStack();
         String name = expression.name;
         if (builtIn.testConstant(name)) {
             code.addState(new Getconst(name));
+            code.incStack();
         } else {
-            code.addState(line(expression), new Vload(name, code.getLocal(name)));
+            insertVLoad(line(expression), expression.name);
         }
-
     }
 
     @Override
@@ -895,7 +892,7 @@ public class Gen implements Visitor {
             initials.forEach(this::visitStatement);
         }
         if (testFirst && condition != null) {
-            insertGoto(line(body), cond);
+            insertGoto(0, cond);
         }
         code.resolveFlow(begin);
         breakChains.add(exit);
@@ -906,7 +903,7 @@ public class Gen implements Visitor {
         }
         code.resolveFlow(cond);
         if (condition == null) {
-            insertGoto(line(body), begin);
+            insertGoto(0, begin);
         } else {
             conditionalChains.add(begin);
             conditionInvert = true;
@@ -919,28 +916,28 @@ public class Gen implements Visitor {
     }
 
     private void visitExpression(Expression expression) {
-        expressionDepth++;
+        enableUsed();
         visitStatement(expression);
-        expressionDepth--;
+        disableUsed();
     }
 
     private void visitBinary(BinaryExpression expression) {
-        expressionDepth++;
+        enableUsed();
         visitStatement(expression.lhs);
         visitStatement(expression.rhs);
-        expressionDepth--;
+        disableUsed();
     }
 
     private void visitUnary(UnaryExpression expression) {
-        expressionDepth++;
+        enableUsed();
         visitStatement(expression.hs);
-        expressionDepth--;
+        disableUsed();
     }
 
     private void visitList(List<? extends Expression> expressions) {
-        expressionDepth++;
+        enableUsed();
         expressions.forEach(this::visitStatement);
-        expressionDepth--;
+        disableUsed();
     }
 
     private void visitCondition(Expression expression) {
@@ -978,7 +975,7 @@ public class Gen implements Visitor {
 
     private void visitAssignment(AssignmentExpression expression,
                                  @Deprecated AssignmentState state) {
-//        Expression var = expression.var.child();
+        //        Expression var = expression.var.child();
 //        checkAssignable(var);
 //        int line = line(expression);
 //        if (var instanceof ArrayAccessExpression) {
@@ -992,7 +989,7 @@ public class Gen implements Visitor {
 //            } else {
 //                visitExpression(expression.expr);
 //            }
-//            if (expressionDepth > 0)
+//            if (isUsed())
 //                // Здесь используется var0.key потому что
 //                // он может быть дальше, чем var0, а если бы он был ближе
 //                // к началу файла, то это было бы некорректно для таблицы линий
@@ -1004,50 +1001,159 @@ public class Gen implements Visitor {
 //                state.insert(line);
 //            } else {
 //                visitExpression(expression.expr);
-//                if (expressionDepth > 0) {
+//                if (isUsed()) {
 //                    insertDup(line(var));
 //                }
 //            }
 //            insertVStore(line, ((VariableExpression) var).name);
 //        }
 
-        switch (expression.tag) {
-            case ASG:
-                com.sun.tools.javac.jvm.Gen
+        Expression lhs = expression.var;
+        Expression rhs = expression.expr;
+
+        switch (lhs.tag) {
+            case ARRAY_ACCESS: {
+                ArrayAccessExpression arrayAccess = (ArrayAccessExpression) lhs;
+                visitExpression(arrayAccess.hs);
+                visitExpression(arrayAccess.key);
+                if (expression.isTag(Tag.ASG)) {
+                    visitExpression(rhs);
+                } else {
+                    insertDup2();
+                    insertALoad(line(arrayAccess));
+                    visitExpression(rhs);
+                    code.addState(line(expression), asg2state(expression.tag));
+                    code.decStack();
+                }
+                if (isUsed()) {
+                    insertDupX2();
+                }
+                insertAStore(line(arrayAccess));
+                break;
+            }
+            case VARIABLE: {
+                VariableExpression variable = (VariableExpression) lhs;
+                if (expression.isTag(Tag.ASG)) {
+                    visitExpression(rhs);
+                } else {
+                    visitExpression(lhs);
+                    visitExpression(rhs);
+                    code.addState(line(expression), asg2state(expression.tag));
+                    code.decStack();
+                }
+                if (isUsed()) {
+                    insertDup();
+                }
+                insertVStore(line(expression), variable.name);
+                break;
+            }
+            default: cError(lhs.position, "assignable expression expected.");
         }
     }
 
-    private void visitIncrease(IncreaseExpression expression, boolean isIncrement, boolean isPost) {
-        Expression hs = expression.hs.child();
-        checkAssignable(hs);
-        int line = line(expression);
-        if (hs instanceof ArrayAccessExpression) {
-            ArrayAccessExpression hs0 = (ArrayAccessExpression) hs;
-            visitExpression(hs0.hs);
-            visitExpression(hs0.key);
-            insertDup2(line(expression));
-            insertALoad(line(hs0.key));
-            if (isPost && (expressionDepth > 0)) {
-                insertDup_x2(line(hs0.key));
+    public static State asg2state(Tag tag) {
+        switch (tag) {
+            case ASG_ADD: return Add.INSTANCE;
+            case ASG_SUB: return Sub.INSTANCE;
+            case ASG_MUL: return Mul.INSTANCE;
+            case ASG_DIV: return Div.INSTANCE;
+            case ASG_REM: return Rem.INSTANCE;
+            case ASG_SL: return Shl.INSTANCE;
+            case ASG_SR: return Shr.INSTANCE;
+            case ASG_BITAND: return And.INSTANCE;
+            case ASG_BITOR: return Or.INSTANCE;
+            case ASG_BITXOR: return Xor.INSTANCE;
+            default: throw new AssertionError();
+        }
+    }
+
+    // todo: В будущем планируется заменить поле expressionDepth на более удобный механизм.
+    private boolean isUsed() {
+        return expressionDepth > 0;
+    }
+    private void enableUsed() {
+        expressionDepth++;
+    }
+    private void disableUsed() {
+        expressionDepth--;
+    }
+
+    private void visitIncrease(IncreaseExpression expression,
+                               @Deprecated boolean isIncrement,
+                               @Deprecated boolean isPost) {
+//        Expression hs = expression.hs.child();
+//        checkAssignable(hs);
+//        int line = line(expression);
+//        if (hs instanceof ArrayAccessExpression) {
+//            ArrayAccessExpression hs0 = (ArrayAccessExpression) hs;
+//            visitExpression(hs0.hs);
+//            visitExpression(hs0.key);
+//            insertDup2(line(expression));
+//            insertALoad(line(hs0.key));
+//            if (isPost && (isUsed())) {
+//                insertDupX2(line(hs0.key));
+//            }
+//            code.addState(line, isIncrement
+//                    ? Inc.INSTANCE
+//                    : Dec.INSTANCE);
+//            if (!isPost && (isUsed())) {
+//                insertDupX2(line(hs0.key));
+//            }
+//            insertAStore(line);
+//        } else if (hs instanceof VariableExpression) {
+//            String name = ((VariableExpression) hs).name;
+//            if (isPost && (isUsed())) {
+//                insertVLoad(line, name);
+//            }
+//            code.addState(line, isIncrement
+//                    ? new Vinc(name, code.getLocal(name))
+//                    : new Vinc(name, code.getLocal(name)));
+//            if (!isPost && (isUsed())) {
+//                insertVLoad(line, name);
+//            }
+//        }
+
+        Expression hs = expression.hs;
+
+        switch (hs.tag) {
+            case ARRAY_ACCESS: {
+                ArrayAccessExpression arrayAccess = (ArrayAccessExpression) hs;
+                visitExpression(arrayAccess.hs);
+                visitExpression(arrayAccess.key);
+                insertDup2();
+                insertALoad(line(arrayAccess));
+                if (isUsed() && (expression.isTag(Tag.POST_INC) || expression.isTag(Tag.POST_DEC))) {
+                    insertDupX2();
+                }
+                code.addState(line(expression), increase2state(expression.tag, -1));
+                if (isUsed() && (expression.isTag(Tag.PRE_INC) || expression.isTag(Tag.PRE_DEC))) {
+                    insertDupX2();
+                }
+                insertAStore(line(arrayAccess));
+                break;
             }
-            code.addState(line, isIncrement
-                    ? Inc.INSTANCE
-                    : Dec.INSTANCE);
-            if (!isPost && (expressionDepth > 0)) {
-                insertDup_x2(line(hs0.key));
+            case VARIABLE: {
+                VariableExpression variable = (VariableExpression) hs;
+                if (isUsed() && (expression.isTag(Tag.POST_INC) || expression.isTag(Tag.POST_DEC))) {
+                    insertVLoad(line(variable), variable.name);
+                }
+                code.addState(line(expression), increase2state(expression.tag, code.getLocal(variable.name)));
+                if (isUsed() && (expression.isTag(Tag.PRE_INC) || expression.isTag(Tag.PRE_DEC))) {
+                    insertVLoad(line(variable), variable.name);
+                }
+                break;
             }
-            insertAStore(line);
-        } else if (hs instanceof VariableExpression) {
-            String name = ((VariableExpression) hs).name;
-            if (isPost && (expressionDepth > 0)) {
-                insertVLoad(line, name);
-            }
-            code.addState(line, isIncrement
-                    ? new Vinc(name, code.getLocal(name))
-                    : new Vinc(name, code.getLocal(name)));
-            if (!isPost && (expressionDepth > 0)) {
-                insertVLoad(line, name);
-            }
+            default: cError(hs.position, "assignable expression expected.");
+        }
+    }
+
+    public static State increase2state(Tag tag, int id) {
+        switch (tag) {
+            case PRE_INC: case POST_INC:
+                return id >= 0 ? new Vinc(id) : Inc.INSTANCE;
+            case PRE_DEC: case POST_DEC:
+                return id >= 0 ? new Vdec(id) : Dec.INSTANCE;
+            default: throw new AssertionError();
         }
     }
 
@@ -1078,7 +1184,7 @@ public class Gen implements Visitor {
         }
         int ex = code.createFlow();
         insertTrue(line);
-        insertGoto(line, ex);
+        insertGoto(0, ex);
         code.resolveFlow(popFlow());
         insertFalse(line);
         code.resolveFlow(ex);
@@ -1106,34 +1212,34 @@ public class Gen implements Visitor {
         code.addFlow(line, flow, new Goto());
     }
 
-    private void insertDup(int line) {
-        code.addState(line, Dup.INSTANCE);
+    private void insertDup() {
         code.incStack();
+        code.addState(Dup.INSTANCE);
     }
 
-    private void insertDup_x1(int line) {
-        code.addState(line, Dup_x1.INSTANCE);
+    private void insertDupX1() {
         code.incStack();
+        code.addState(Dup_x1.INSTANCE);
     }
 
-    private void insertDup_x2(int line) {
-        code.addState(line, Dup_x2.INSTANCE);
+    private void insertDupX2() {
         code.incStack();
+        code.addState(Dup_x2.INSTANCE);
     }
 
-    private void insertDup2(int line) {
-        code.addState(line, Dup2.INSTANCE);
+    private void insertDup2() {
         code.incStack(2);
+        code.addState(Dup2.INSTANCE);
     }
 
-    private void insertDup2_x1(int line) {
-        code.addState(line, Dup2_x1.INSTANCE);
+    private void insertDup2X1() {
         code.incStack(2);
+        code.addState(Dup2_x1.INSTANCE);
     }
 
-    private void insertDup2_x2(int line) {
-        code.addState(line, Dup2_x2.INSTANCE);
+    private void insertDup2X2() {
         code.incStack(2);
+        code.addState(Dup2_x2.INSTANCE);
     }
 
     private void insertAdd(int line) {
@@ -1147,12 +1253,12 @@ public class Gen implements Visitor {
     }
 
     private void insertOr(int line) {
-        code.addState(line, Or.OR);
+        code.addState(line, Or.INSTANCE);
         code.decStack();
     }
 
     private void insertXor(int line) {
-        code.addState(line, Xor.XOR);
+        code.addState(line, Xor.INSTANCE);
         code.decStack();
     }
 
@@ -1167,12 +1273,12 @@ public class Gen implements Visitor {
     }
 
     private void insertMul(int line) {
-        code.addState(line, Mul.MUL);
+        code.addState(line, Mul.INSTANCE);
         code.decStack();
     }
 
     private void insertRem(int line) {
-        code.addState(line, Rem.REM);
+        code.addState(line, Rem.INSTANCE);
         code.decStack();
     }
 
@@ -1193,7 +1299,7 @@ public class Gen implements Visitor {
 
     private void insertVLoad(int line, String name) {
         code.incStack();
-        code.addState(line, new Vload(name, code.getLocal(name)));
+        code.addState(line, new Vload(code.getLocal(name)));
     }
 
     private void insertAStore(int line) {
@@ -1202,7 +1308,7 @@ public class Gen implements Visitor {
     }
 
     private void insertVStore(int line, String name) {
-        code.addState(line, new Vstore(name, code.getLocal(name)));
+        code.addState(line, new Vstore(code.getLocal(name)));
         code.decStack();
     }
 
@@ -1212,12 +1318,6 @@ public class Gen implements Visitor {
         addLoop(false);
         visitStatement(body);
         if (loops.pop().isInfinity()) insertGoto(line(body), peekInt(breakChains));
-    }
-
-    @Deprecated
-    private void insertReturn(boolean isVoid) {
-        code.addState(Return.INSTANCE);
-        code.deathScope();
     }
 
     private void insertReturn() {
@@ -1237,16 +1337,19 @@ public class Gen implements Visitor {
     }
 
     private void checkCloneable(Expression expr) {
-        expr = expr.child();
-        if (!expr.isCloneable()) {
-            cError(expr.getPosition(), "cloneable expected.");
-        }
+//        expr = expr.child();
+//        if (!expr.isCloneable()) {
+//            cError(expr.getPosition(), "cloneable expected.");
+//        }
     }
 
     private void checkAccessible(Expression expr) {
-        if (!expr.isAccessible()) {
-            cError(expr.position, "accessible expected.");
+        switch (expr.tag) {
+            case FUNC_CALL: case ARRAY_ACCESS:
+            case VARIABLE: case PARENS:
+                return;
         }
+        cError(expr.position, "accessible expression expected.");
     }
 
     private void checkConstant(Expression expr) {

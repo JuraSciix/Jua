@@ -14,7 +14,7 @@ public class Ifgt extends JumpState {
     @Override
     public void print(CodePrinter printer) {
         printer.printName("ifgt");
-        printer.printOperand(value);
+        printer.print(value);
         super.print(printer);
     }
 

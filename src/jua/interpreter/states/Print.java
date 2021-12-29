@@ -11,24 +11,17 @@ public class Print implements State {
         this.count = count;
     }
 
-    protected String getString(Environment env) {
-        String[] values = new String[count];
-
-        for (int i = count; --i >= 0; ) {
-            values[i] = env.popString();
-        }
-        return String.join("", values);
-    }
-
     @Override
     public void print(CodePrinter printer) {
         printer.printName("print");
-        printer.printOperand(count);
+        printer.print(count);
     }
 
     @Override
     public int run(Environment env) {
-        System.out.print(getString(env));
+        for (int i = 0; i < count; i++) {
+            System.out.print(env.popStack().stringValue());
+        }
         return NEXT;
     }
 }

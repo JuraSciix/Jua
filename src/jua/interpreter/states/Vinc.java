@@ -1,27 +1,31 @@
 package jua.interpreter.states;
 
 import jua.interpreter.Environment;
+import jua.interpreter.lang.Operand;
 import jua.tools.CodePrinter;
 
 public class Vinc implements State {
 
-    private final String name;
     private final int id;
 
-    public Vinc(String name, int id) {
-        this.name = name;
+    public Vinc(int id) {
         this.id = id;
     }
 
     @Override
     public void print(CodePrinter printer) {
         printer.printName("vinc");
-        printer.printIdentifier(name, id);
+        printer.printLocal(id);
     }
 
     @Override
     public int run(Environment env) {
-        env.setLocal(id, env.getLocal(id).inc());
+        Operand local = env.getLocal(id);
+        if (local == null) {
+            env.getFrame().reportUndefinedVariable(id);
+        } else {
+            env.setLocal(id, local.inc());
+        }
         return NEXT;
     }
 }

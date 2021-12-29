@@ -18,9 +18,6 @@ public class Main {
         } catch (Throwable t) {
             error("can't parse console arguments: " + t);
         }
-        if (Options.stop()) {
-            System.exit(0);
-        }
         FileLoader.load(testFilename());
     }
 

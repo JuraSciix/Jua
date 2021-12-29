@@ -14,7 +14,7 @@ public class Ifge extends JumpState {
     @Override
     public void print(CodePrinter printer) {
         printer.printName("ifge");
-        printer.printOperand(value);
+        printer.print(value);
         super.print(printer);
     }
 

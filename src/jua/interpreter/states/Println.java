@@ -3,7 +3,7 @@ package jua.interpreter.states;
 import jua.interpreter.Environment;
 import jua.tools.CodePrinter;
 
-public class Println extends Print {
+public final class Println extends Print {
 
     public Println(int count) {
         super(count);
@@ -12,12 +12,13 @@ public class Println extends Print {
     @Override
     public void print(CodePrinter printer) {
         printer.printName("println");
-        printer.printOperand(count);
+        printer.print(count);
     }
 
     @Override
     public int run(Environment env) {
-        System.out.println(getString(env));
+        super.run(env);
+        System.out.println();
         return NEXT;
     }
 }

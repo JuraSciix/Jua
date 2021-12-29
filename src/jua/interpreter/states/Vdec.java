@@ -1,28 +1,31 @@
 package jua.interpreter.states;
 
 import jua.interpreter.Environment;
+import jua.interpreter.lang.Operand;
 import jua.tools.CodePrinter;
 
-public class Vdec implements State {
-
-    private final String name;
+public final class Vdec implements State {
 
     private final int id;
 
-    public Vdec(String name, int id) {
-        this.name = name;
+    public Vdec(int id) {
         this.id = id;
     }
 
     @Override
     public void print(CodePrinter printer) {
         printer.printName("vdec");
-        printer.printIdentifier(name, id);
+        printer.printLocal(id);
     }
 
     @Override
     public int run(Environment env) {
-        env.setLocal(id, env.getLocal(id).dec());
+        Operand local = env.getLocal(id);
+        if (local == null) {
+            env.getFrame().reportUndefinedVariable(id);
+        } else {
+            env.setLocal(id, local.dec());
+        }
         return NEXT;
     }
 }

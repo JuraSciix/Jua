@@ -9,7 +9,7 @@ public abstract class JumpState implements State {
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printIndex(destination);
+        printer.printIp(destination);
     }
 
     @Override

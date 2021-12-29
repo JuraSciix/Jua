@@ -3,21 +3,18 @@ package jua.interpreter.states;
 import jua.interpreter.Environment;
 import jua.tools.CodePrinter;
 
-public class Vstore implements State {
-
-    private final String name;
+public final class Vstore implements State {
 
     private final int id;
 
-    public Vstore(String name, int id) {
-        this.name = name;
+    public Vstore(int id) {
         this.id = id;
     }
 
     @Override
     public void print(CodePrinter printer) {
         printer.printName("vstore");
-        printer.printIdentifier(name, id);
+        printer.printLocal(id);
     }
 
     @Override

@@ -7,7 +7,7 @@ import jua.tools.CodePrinter;
 
 public enum Xor implements State {
 
-    XOR;
+    INSTANCE;
 
     @Override
     public void print(CodePrinter printer) {

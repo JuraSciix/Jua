@@ -14,7 +14,7 @@ public class Ifeq extends JumpState {
     @Override
     public void print(CodePrinter printer) {
         printer.printName("ifeq");
-        printer.printOperand(value);
+        printer.print(value);
         super.print(printer);
     }
 

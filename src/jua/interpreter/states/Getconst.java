@@ -14,7 +14,7 @@ public class Getconst implements State {
     @Override
     public void print(CodePrinter printer) {
         printer.printName("getconst");
-        printer.printOperand(name);
+        printer.print(name);
     }
 
     @Override

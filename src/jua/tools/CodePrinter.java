@@ -5,7 +5,6 @@ import jua.interpreter.lang.Constant;
 import jua.interpreter.lang.Function;
 import jua.interpreter.lang.Operand;
 import jua.interpreter.lang.ScriptFunction;
-import jua.interpreter.states.State;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -97,10 +96,10 @@ public class CodePrinter {
     }
 
     public static void print(Program program) {
-        CodePrinter printer = new CodePrinter();
+        CodePrinter printer = new CodePrinter(program);
         printer.printHead(program);
         int lastLineNumber = 0;
-        for (int i = 0, j = 0; i < program.states.length; i++) {
+        for (int i = 0; i < program.states.length; i++) {
             program.states[i].print(printer);
             int line = program.getInstructionLine(i);
             if (line != lastLineNumber) {
@@ -121,12 +120,15 @@ public class CodePrinter {
         current.line = line;
     }
 
+    private final Program program;
+
     private int index;
 
     private PrintState current;
 
-    private CodePrinter() {
+    private CodePrinter(Program program) {
         super();
+        this.program = program;
     }
 
     private void printHead(Program program) {
@@ -157,15 +159,15 @@ public class CodePrinter {
         preparePrint().name = name;
     }
 
-    public void printIdentifier(String name, int id) {
-        printOperand(String.format("%d (%s)", id, name));
+    public void printLocal(int id) {
+        print(String.format("%d (%s)", id, program.localsNames[id]));
     }
 
-    public void printIndex(int index) {
-        printOperand("->" + (this.index + index - 1));
+    public void printIp(int ip) {
+        print("->" + (this.index + ip - 1));
     }
 
-    public void printOperand(Object operand) {
+    public void print(Object operand) {
         preparePrint().operands.add(String.valueOf(operand));
     }
 

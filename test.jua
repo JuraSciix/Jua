@@ -1,8 +1,10 @@
-for i = 0; i < 10; i++ {
-    doPrint(i);
-    i = "";
-}
-
-fn doPrint(x) {
-    print(x + ' ');
+for a = [
+        0,
+        10
+    ];
+    a[0] < a[1];
+    a[0]++ {
+    println(
+        a[0]
+    );
 }

@@ -147,4 +147,8 @@ public final class Frame {
     public Operand load(int id) {
         return locals[id];
     }
+
+    public void reportUndefinedVariable(int id) {
+        throw InterpreterError.variableNotExists(program.localsNames[id]);
+    }
 }

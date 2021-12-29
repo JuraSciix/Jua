@@ -15,7 +15,7 @@ public class Push implements State {
     @Override
     public void print(CodePrinter printer) {
         printer.printName("push_" + operand.type());
-        printer.printOperand(operand);
+        printer.print(operand);
     }
 
     @Override

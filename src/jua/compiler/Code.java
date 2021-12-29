@@ -2,7 +2,6 @@ package jua.compiler;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
 import jua.interpreter.Program;
 import jua.interpreter.lang.Operand;
 import jua.interpreter.lang.OperandFunction;
@@ -104,7 +103,8 @@ public final class Code {
 
     private void putLine(int lineNumber) {
         Context context = currentContext();
-        if (lineNumber != context.lastLineNumber) {
+        if (lineNumber > 0 &&
+                lineNumber != context.lastLineNumber) {
             int startIp = context.states.size();
             context.lineTable.add(new Program.LineTableEntry(lineNumber, startIp));
             context.lastLineNumber = lineNumber;
@@ -188,7 +188,8 @@ public final class Code {
                 context.states.toArray(new State[0]),
                 context.lineTable.toArray(new Program.LineTableEntry[0]),
                 context.stackTop,
-                context.locals.size());
+                context.locals.size(),
+                context.locals.toArray(new String[0]));
     }
 
     public <T> Operand intern(T value, OperandFunction<T> supplier) {

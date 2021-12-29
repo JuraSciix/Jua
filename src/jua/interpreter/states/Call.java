@@ -2,7 +2,6 @@ package jua.interpreter.states;
 
 import jua.interpreter.Environment;
 import jua.interpreter.InterpreterError;
-import jua.interpreter.Trap;
 import jua.interpreter.lang.Function;
 import jua.tools.CodePrinter;
 
@@ -20,8 +19,8 @@ public class Call implements State {
     @Override
     public void print(CodePrinter printer) {
         printer.printName("invoke");
-        printer.printOperand(name);
-        printer.printOperand(argc);
+        printer.print(name);
+        printer.print(argc);
     }
 
     @Override

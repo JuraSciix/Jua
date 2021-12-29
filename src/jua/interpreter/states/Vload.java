@@ -5,21 +5,18 @@ import jua.interpreter.InterpreterError;
 import jua.interpreter.lang.Operand;
 import jua.tools.CodePrinter;
 
-public class Vload implements State {
-
-    private final String name;
+public final class Vload implements State {
 
     private final int id;
 
-    public Vload(String name, int id) {
-        this.name = name;
+    public Vload(int id) {
         this.id = id;
     }
 
     @Override
     public void print(CodePrinter printer) {
         printer.printName("vload");
-        printer.printIdentifier(name, id);
+        printer.printLocal(id);
     }
 
     @Override
@@ -27,9 +24,10 @@ public class Vload implements State {
         Operand operand = env.getLocal(id);
 
         if (operand == null) {
-            throw InterpreterError.variableNotExists(name);
+            env.getFrame().reportUndefinedVariable(id);
+        } else {
+            env.pushStack(operand);
         }
-        env.pushStack(operand);
         return NEXT;
     }
 }
