@@ -230,22 +230,24 @@ public class Gen implements Visitor {
 
     @Override
     public void visitAssignNullCoalesce(AssignNullCoalesceExpression expression) {
-        int el = code.createFlow();
-        int ex = code.createFlow();
-        boolean isArray = (expression.var.child() instanceof ArrayAccessExpression);
-        visitAssignment(expression, line -> {
-            code.addFlow(el, new Ifnonnull());
-            code.decStack();
-            visitExpression(expression.expr);
-        });
-        insertGoto(0, ex);
-        code.resolveFlow(el);
-        if (isArray) {
-            insertALoad(line(expression));
-        } else {
-            visitExpression(expression.var);
-        }
-        code.resolveFlow(ex);
+//        int el = code.createFlow();
+//        int ex = code.createFlow();
+//        boolean isArray = (expression.var.child() instanceof ArrayAccessExpression);
+//        visitAssignment(expression, line -> {
+//            code.addFlow(el, new Ifnonnull());
+//            code.decStack();
+//            visitExpression(expression.expr);
+//        });
+//        insertGoto(0, ex);
+//        code.resolveFlow(el);
+//        if (isArray) {
+//            insertALoad(line(expression));
+//        } else {
+//            visitExpression(expression.var);
+//        }
+//        code.resolveFlow(ex);
+
+        visitAssignment(expression, null);
     }
 
     @Override
@@ -966,7 +968,7 @@ public class Gen implements Visitor {
         switch (expression.expression.tag) {
             case ASG: case ASG_ADD: case ASG_SUB: case ASG_MUL:
             case ASG_DIV: case ASG_REM: case ASG_BITAND: case ASG_BITOR:
-            case ASG_BITXOR: case ASG_SL: case ASG_SR:
+            case ASG_BITXOR: case ASG_SL: case ASG_SR: case ASG_NULLCOALESCE:
             case PRE_INC: case PRE_DEC: case POST_INC: case POST_DEC:
             case PRINT: case PRINTLN:
                 break;
@@ -1019,35 +1021,79 @@ public class Gen implements Visitor {
                 ArrayAccessExpression arrayAccess = (ArrayAccessExpression) lhs;
                 visitExpression(arrayAccess.hs);
                 visitExpression(arrayAccess.key);
-                if (expression.isTag(Tag.ASG)) {
-                    visitExpression(rhs);
-                } else {
+                if (expression.isTag(Tag.ASG_NULLCOALESCE)) {
+                    int el = code.createFlow();
+                    int ex = code.createFlow();
                     insertDup2();
                     insertALoad(line(arrayAccess));
-                    visitExpression(rhs);
-                    code.addState(line(expression), asg2state(expression.tag));
+                    code.addFlow(el, new Ifnonnull());
                     code.decStack();
+                    visitExpression(rhs);
+                    if (isUsed()) {
+                        insertDupX2();
+                    }
+                    insertAStore(line(arrayAccess));
+                    insertGoto(0, ex);
+                    code.resolveFlow(el);
+                    if (isUsed()) {
+                        insertALoad(line(arrayAccess));
+                    } else {
+                        code.addState(Pop2.INSTANCE);
+                        code.decStack(2);
+                    }
+                    code.resolveFlow(ex);
+                } else {
+                    if (!expression.isTag(Tag.ASG)) {
+                        insertDup2();
+                        insertALoad(line(arrayAccess));
+                        visitExpression(rhs);
+                        code.addState(line(expression), asg2state(expression.tag));
+                        code.decStack();
+                    } else {
+                        visitExpression(rhs);
+                    }
+                    if (isUsed()) {
+                        insertDupX2();
+                    }
+                    insertAStore(line(arrayAccess));
                 }
-                if (isUsed()) {
-                    insertDupX2();
-                }
-                insertAStore(line(arrayAccess));
                 break;
             }
             case VARIABLE: {
                 VariableExpression variable = (VariableExpression) lhs;
-                if (expression.isTag(Tag.ASG)) {
-                    visitExpression(rhs);
-                } else {
+                if (expression.isTag(Tag.ASG_NULLCOALESCE)) {
+                    int ex = code.createFlow();
                     visitExpression(lhs);
-                    visitExpression(rhs);
-                    code.addState(line(expression), asg2state(expression.tag));
+                    code.addFlow(ex, new Ifnonnull());
                     code.decStack();
+                    visitExpression(rhs);
+                    if (isUsed()) {
+                        insertDup();
+                    }
+                    insertVStore(line(expression), variable.name);
+                    if (isUsed()) {
+                        int el = code.createFlow();
+                        insertGoto(0, el);
+                        code.resolveFlow(ex);
+                        visitExpression(lhs);
+                        code.resolveFlow(el);
+                    } else {
+                        code.resolveFlow(ex);
+                    }
+                } else {
+                    if (!expression.isTag(Tag.ASG)) {
+                        visitExpression(lhs);
+                        visitExpression(rhs);
+                        code.addState(line(expression), asg2state(expression.tag));
+                        code.decStack();
+                    } else {
+                        visitExpression(rhs);
+                    }
+                    if (isUsed()) {
+                        insertDup();
+                    }
+                    insertVStore(line(expression), variable.name);
                 }
-                if (isUsed()) {
-                    insertDup();
-                }
-                insertVStore(line(expression), variable.name);
                 break;
             }
             default: cError(lhs.position, "assignable expression expected.");

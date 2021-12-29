@@ -99,7 +99,8 @@ public class CodePrinter {
         CodePrinter printer = new CodePrinter(program);
         printer.printHead(program);
         int lastLineNumber = 0;
-        for (int i = 0; i < program.states.length; i++) {
+        int length = program.states.length;
+        for (int i = 0; i < length; i++) {
             program.states[i].print(printer);
             int line = program.getInstructionLine(i);
             if (line != lastLineNumber) {

@@ -46,10 +46,11 @@ public final class Code {
 
         int stackSize = 0;
 
-        int lastLineNumber = -1;
+        int lastLineNumber = 1;
 
         private Context(String filename) {
             this.filename = filename;
+            lineTable.add(new LineTableEntry(1, 0));
         }
     }
 

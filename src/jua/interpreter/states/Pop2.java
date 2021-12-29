@@ -3,13 +3,9 @@ package jua.interpreter.states;
 import jua.interpreter.Environment;
 import jua.tools.CodePrinter;
 
-public class Pop2 implements State {
+public enum Pop2 implements State {
 
-    public static final Pop2 POP2 = new Pop2();
-
-    private Pop2() {
-        super();
-    }
+    INSTANCE;
 
     @Override
     public void print(CodePrinter printer) {

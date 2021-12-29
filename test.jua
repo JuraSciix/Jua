@@ -1,3 +1,28 @@
-fn fib(n) { return n <= 1 ? n : fib(n - 1) + fib(n - 2); }
+fn null_coalesce_expr(x, b) {
 
-println(fib(2));
+# COMPILED CODE:
+# L2:         0: vload           0 (x)
+#             1: ifnonnull       ->4
+#             2: vload           1 (b)
+#             3: vstore          0 (x)
+# L3:         4: vload           0 (x)
+#             5: return
+
+    x ??= b;
+    return x;
+}
+
+fn null_coalesce_stmt(x, b) {
+
+# COMPILED CODE:
+# L7:         0: vload           0 (x)
+#             1: ifnonnull       ->4
+# L8:         2: vload           1 (b)
+#             3: vstore          0 (x)
+# L9:         4: vload           0 (x)
+#             5: return
+
+    if x == null
+       x = b;
+    return x;
+}
