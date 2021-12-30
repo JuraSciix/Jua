@@ -1,26 +1,25 @@
 package jua.interpreter.states;
 
 import jua.interpreter.Environment;
-import jua.interpreter.lang.Operand;
 import jua.tools.CodePrinter;
 
 public class Push implements State {
 
-    private final Operand operand;
+    private final int operand;
 
-    public Push(Operand operand) {
+    public Push(int operand) {
         this.operand = operand;
     }
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName("push_" + operand.type());
-        printer.print(operand);
+        printer.printName("push");
+        printer.printLiteral(operand);
     }
 
     @Override
     public int run(Environment env) {
-        env.pushStack(operand);
+        env.pushStack(env.getFrame().getConstant(operand));
         return NEXT;
     }
 }

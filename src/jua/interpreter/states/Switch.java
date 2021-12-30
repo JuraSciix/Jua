@@ -12,9 +12,9 @@ public class Switch extends JumpState {
 
         private final int index;
 
-        private final Operand[] operands;
+        private final int[] operands;
 
-        public Part(int index, Operand[] operands) {
+        public Part(int index, int[] operands) {
             this.index = index;
             this.operands = operands;
         }
@@ -45,8 +45,8 @@ public class Switch extends JumpState {
         Operand selector = env.popStack();
 
         for (Part part : parts) {
-            for (Operand operand : part.operands) {
-                if (operand.equals(selector)) {
+            for (int operand : part.operands) {
+                if (env.getFrame().getConstant(operand).equals(selector)) {
                     return part.index;
                 }
             }

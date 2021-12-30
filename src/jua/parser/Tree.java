@@ -438,10 +438,10 @@ public abstract class Tree {
         }
     }
 
-    public abstract static class BooleanExpression extends Expression {
+    public abstract static class BooleanExpression extends LiteralExpression {
 
         protected BooleanExpression(Position position) {
-            super(Tag.LITERAL, position);
+            super(position);
         }
     }
 
@@ -649,12 +649,12 @@ public abstract class Tree {
         }
     }
 
-    public static class FloatExpression extends Expression {
+    public static class FloatExpression extends LiteralExpression {
 
         public double value;
 
         public FloatExpression(Position position, double value) {
-            super(Tag.LITERAL, position);
+            super(position);
             this.value = value;
         }
 
@@ -822,12 +822,19 @@ public abstract class Tree {
         }
     }
 
-    public static class IntExpression extends Expression {
+    public static abstract class LiteralExpression extends Expression {
+
+        protected LiteralExpression(Position position) {
+            super(Tag.LITERAL, position);
+        }
+    }
+
+    public static class IntExpression extends LiteralExpression {
 
         public long value;
 
         public IntExpression(Position position, long value) {
-            super(Tag.LITERAL, position);
+            super(position);
             this.value = value;
         }
 
@@ -961,10 +968,10 @@ public abstract class Tree {
         }
     }
 
-    public static class NullExpression extends Expression {
+    public static class NullExpression extends LiteralExpression {
 
         public NullExpression(Position position) {
-            super(Tag.LITERAL, position);
+            super(position);
         }
 
         @Override
@@ -1201,12 +1208,12 @@ public abstract class Tree {
         }
     }
 
-    public static class StringExpression extends Expression {
+    public static class StringExpression extends LiteralExpression {
 
         public String value;
 
         public StringExpression(Position position, String value) {
-            super(Tag.LITERAL, position);
+            super(position);
             this.value = value;
         }
 

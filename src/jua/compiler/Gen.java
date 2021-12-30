@@ -143,14 +143,18 @@ public class Gen implements Visitor {
 //        insertNecessaryPop();
 
         insertNewArray(line(expression));
+        compileArrayCreation(expression.map);
+    }
+
+    private void compileArrayCreation(Map<Expression, Expression> entries) {
         long implicitIndex = 0;
         Iterator<Map.Entry<Expression, Expression>> iterator
-                = expression.map.entrySet().iterator();
+                = entries.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<Expression, Expression> entry = iterator.next();
             insertDup();
             if (entry.getKey().isEmpty()) {
-                insertPush(line(entry.getValue()), implicitIndex++, IntOperand::valueOf);
+                insertPushLong(line(entry.getValue()), implicitIndex++);
             } else {
                 visitExpression(entry.getKey());
             }
@@ -159,7 +163,6 @@ public class Gen implements Visitor {
                     ? line(entry.getValue())
                     : line(entry.getKey()));
         }
-
     }
 
     private void insertNewArray(int line) {
@@ -339,10 +342,12 @@ public class Gen implements Visitor {
 
     @Override
     public void visitCase(CaseStatement statement) {
-        ExpressionToOperand e2ot = new ExpressionToOperand(code, true);
         switchPartsStack.getLast().add(new Part(code.statesCount(), statement.expressions.stream()
-                .map(e2ot::apply)
-                .toArray(Operand[]::new)));
+                .mapToInt(a -> {
+                    assert a instanceof LiteralExpression;
+                    return TreeInfo.resolveLiteral(code, (LiteralExpression) a);
+                })
+                .toArray()));
         insertCaseBody(statement.body);
     }
 
@@ -359,14 +364,24 @@ public class Gen implements Visitor {
         if (statementDepth > 1) {
             cError(statement.getPosition(), "constants declaration is not allowed here.");
         }
-        ExpressionToOperand e2of = new ExpressionToOperand(code, false);
         for (int i = 0; i < statement.names.size(); i++) {
             String name = statement.names.get(i);
             if (builtIn.testConstant(name)) {
                 cError(statement.getPosition(), "constant '" + name + "' already declared");
             }
             Expression expr = statement.expressions.get(i);
-            builtIn.setConstant(name, new Constant(e2of.apply(expr), false));
+            Operand value;
+            if (expr instanceof ArrayExpression) {
+                value = new ArrayOperand();
+                code.incStack();
+                code.addState(new Getconst(name));
+                compileArrayCreation(((ArrayExpression) expr).map);
+            } else {
+                assert expr instanceof LiteralExpression;
+                value = TreeInfo.resolveLiteral((LiteralExpression) expr);
+            }
+            builtIn.setConstant(name, new Constant(
+                    value, false));
         }
     }
 
@@ -438,7 +453,7 @@ public class Gen implements Visitor {
 
     @Override
     public void visitFloat(FloatExpression expression) {
-        insertPush(line(expression), expression.value, FloatOperand::valueOf);
+        insertPushDouble(line(expression), expression.value);
     }
 
     @Override
@@ -474,11 +489,13 @@ public class Gen implements Visitor {
         }).toArray();
         statement.body.accept(this);
         insertRetnull();
-        ExpressionToOperand e2of = new ExpressionToOperand(code, false);
         builtIn.setFunction(statement.name, new ScriptFunction(
                 statement.names.toArray(new String[0]),
                 locals, // function arguments must be first at local list
-                statement.optionals.stream().map(e2of::apply).toArray(Operand[]::new),
+                statement.optionals.stream().mapToInt(a -> {
+                    assert a instanceof LiteralExpression;
+                    return TreeInfo.resolveLiteral(code, (LiteralExpression) a);
+                }).toArray(),
                 code.getBuilder()));
         code.exitScope();
         code.exitContext();
@@ -556,7 +573,7 @@ public class Gen implements Visitor {
 
     @Override
     public void visitInt(IntExpression expression) {
-        insertPush(line(expression), expression.value, IntOperand::valueOf);
+        insertPushLong(line(expression), expression.value);
     }
 
     @Override
@@ -799,7 +816,7 @@ public class Gen implements Visitor {
 
     @Override
     public void visitString(StringExpression expression) {
-        insertPush(line(expression), expression.value, StringOperand::valueOf);
+        insertPushString(line(expression), expression.value);
     }
 
     @Override
@@ -1240,10 +1257,26 @@ public class Gen implements Visitor {
 
     }
 
-    private <T> void insertPush(int line, T value, OperandFunction<T> supplier) {
+    private void insertPushLong(int line, long value) {
         code.incStack();
-        code.addState(line, new Push(code.intern(value, supplier)));
+        // todo: ldc instruction
+        code.addState(line, new Push(code.resolveLong(value)));
+    }
 
+    private void insertPushDouble(int line, double value) {
+        code.incStack();
+        // todo: ldc instruction
+        code.addState(line, new Push(code.resolveDouble(value)));
+    }
+
+    private void insertPushString(int line, String value) {
+        code.incStack();
+        // todo: ldc instruction
+        code.addState(line, new Push(code.resolveString(value)));
+    }
+
+    private static boolean isShort(long value) {
+        return value >= Short.MIN_VALUE && value <= Short.MAX_VALUE;
     }
 
     private void insertTrue(int line) {

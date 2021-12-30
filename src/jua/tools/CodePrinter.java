@@ -13,19 +13,22 @@ public class CodePrinter {
 
     private static class Case {
 
-        private final Operand[] operands;
+        private final int[] operands;
 
         private final int index;
 
-        private Case(Operand[] operands, int index) {
+        private final Program program;
+
+        private Case(int[] operands, int index, Program program) {
             this.operands = operands;
             this.index = index;
+            this.program = program;
         }
 
         @Override
         public String toString() {
             String operands0 = (operands == null) ? "default" : Arrays.stream(operands)
-                    .map(Operand::toString)
+                    .mapToObj(a -> program.constantPool[a].toString())
                     .collect(Collectors.joining(", "));
             return String.format("%s: #%d", operands0, index);
         }
@@ -172,8 +175,13 @@ public class CodePrinter {
         preparePrint().operands.add(String.valueOf(operand));
     }
 
-    public void printCase(Operand[] operands, int index) {
-        preparePrint().cases.add(new Case(operands, index));
+    public void printCase(int[] operands, int index) {
+        preparePrint().cases.add(new Case(operands, index, program));
+    }
+
+    public void printLiteral(int index) {
+        Operand constant = program.constantPool[index];
+        preparePrint().operands.add(constant.type().toString() + " " + constant.toString());
     }
 
     private PrintState preparePrint() {

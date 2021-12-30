@@ -148,6 +148,10 @@ public final class Frame {
         return locals[id];
     }
 
+    public Operand getConstant(int index) {
+        return program.constantPool[index];
+    }
+
     public void reportUndefinedVariable(int id) {
         throw InterpreterError.variableNotExists(program.localsNames[id]);
     }

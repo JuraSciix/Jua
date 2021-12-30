@@ -8,11 +8,11 @@ public class ScriptFunction implements Function {
 
     public final int[] locals;
 
-    public final Operand[] optionals;
+    public final int[] optionals;
 
     public final Program program;
 
-    public ScriptFunction(String[] args, int[] locals, Operand[] optionals, Program program) {
+    public ScriptFunction(String[] args, int[] locals, int[] optionals, Program program) {
         this.args = args;
         this.locals = locals;
         this.optionals = optionals;
@@ -33,7 +33,7 @@ public class ScriptFunction implements Function {
         Operand[] args = new Operand[tot];
 
         for (int i = tot; --i >= 0; ) {
-            frame.store(locals[i], args[i] = (i >= argc) ? optionals[i - req] : env.popStack());
+            frame.store(locals[i], args[i] = (i >= argc) ? program.constantPool[i - req] : env.popStack());
         }
         env.enterCall(name, args);
         env.setProgram(frame);

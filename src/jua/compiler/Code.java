@@ -1,14 +1,20 @@
 package jua.compiler;
 
+import it.unimi.dsi.fastutil.doubles.Double2ObjectMap;
+import it.unimi.dsi.fastutil.doubles.Double2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import jua.interpreter.Program;
-import jua.interpreter.lang.Operand;
-import jua.interpreter.lang.OperandFunction;
+import jua.interpreter.lang.*;
 import jua.interpreter.states.JumpState;
 import jua.interpreter.states.State;
 
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import jua.interpreter.Program.LineTableEntry;
 
@@ -42,6 +48,8 @@ public final class Code {
 
         final Deque<Scope> scopes = new ArrayDeque<>();
 
+        final List<Operand> constantPool = new ArrayList<>();
+
         int stackTop = 0;
 
         int stackSize = 0;
@@ -56,7 +64,11 @@ public final class Code {
 
     private final Deque<Context> contexts = new ArrayDeque<>();
 
-    private final Map<Object, Operand> internMap = new HashMap<>();
+    private final Long2ObjectMap<Operand> longConstants = new Long2ObjectOpenHashMap<>();
+
+    private final Double2ObjectMap<Operand> doubleConstants = new Double2ObjectOpenHashMap<>();
+
+    private final Map<String, Operand> stringConstants = new HashMap<>();
 
     public boolean empty() {
         return contexts.isEmpty();
@@ -190,16 +202,48 @@ public final class Code {
                 context.lineTable.toArray(new Program.LineTableEntry[0]),
                 context.stackTop,
                 context.locals.size(),
-                context.locals.toArray(new String[0]));
+                context.locals.toArray(new String[0]), context.constantPool.toArray(new Operand[0]));
     }
 
-    public <T> Operand intern(T value, OperandFunction<T> supplier) {
-        Operand operand = internMap.get(value);
+    public int resolveLong(long value) {
+        return resolve(longConstants.containsKey(value)
+                        ? c -> c.isInt() && c.intValue() == value
+                        : null,
+                () -> IntOperand.valueOf(value),
+                c -> longConstants.put(value, c));
+    }
 
-        if (operand == null) {
-            internMap.put(value, operand = supplier.apply(value));
+    public int resolveDouble(double value) {
+        return resolve(doubleConstants.containsKey(value)
+                        ? c -> c.isFloat() && Double.compare(value, c.floatValue()) == 0
+                        : null,
+                () -> FloatOperand.valueOf(value),
+                c -> doubleConstants.put(value, c));
+    }
+
+    public int resolveString(String value) {
+        return resolve(stringConstants.containsKey(value)
+                        ? c -> c.isFloat() && value.equals(c.stringValue())
+                        : null,
+                () -> StringOperand.valueOf(value),
+                c -> stringConstants.put(value, c));
+    }
+
+    private int resolve(Predicate<Operand> filter, Supplier<Operand> supplier, Consumer<Operand> cache) {
+        List<Operand> constantPool = currentContext().constantPool;
+
+        for (int i = 0; filter != null && i < constantPool.size(); i++) {
+            Operand constant = constantPool.get(i);
+            if (filter.test(constant)) {
+                return i;
+            }
         }
-        return operand;
+        Operand result = supplier.get();
+        if (filter == null) {
+            cache.accept(result);
+        }
+        constantPool.add(result);
+        return constantPool.size() - 1;
     }
 
     private boolean isAlive() {
