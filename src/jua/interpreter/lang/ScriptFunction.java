@@ -4,16 +4,13 @@ import jua.interpreter.*;
 
 public class ScriptFunction implements Function {
 
-    public final String[] args;
-
     public final int[] locals;
 
     public final int[] optionals;
 
     public final Program program;
 
-    public ScriptFunction(String[] args, int[] locals, int[] optionals, Program program) {
-        this.args = args;
+    public ScriptFunction(int[] locals, int[] optionals, Program program) {
         this.locals = locals;
         this.optionals = optionals;
         this.program = program;

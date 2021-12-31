@@ -86,11 +86,11 @@ public class CodePrinter {
             ScriptFunction sf = (ScriptFunction) function;
             StringJoiner args = new StringJoiner(", ");
 
-            for (int i = 0, o = (sf.args.length - sf.optionals.length); i < sf.args.length; i++) {
+            for (int i = 0, o = (sf.locals.length - sf.optionals.length); i < sf.locals.length; i++) {
                 if (i >= o) {
-                    args.add(sf.args[i] + " = " + sf.optionals[i - o]);
+                    args.add(sf.locals[i] + ": " + sf.program.localsNames[i] + " = " + sf.optionals[i - o]);
                 } else {
-                    args.add(sf.args[i]);
+                    args.add(sf.locals[i] + ": " + sf.program.localsNames[i]);
                 }
             }
             System.out.printf("fn %s(%s)%n", name, args);

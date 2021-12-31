@@ -443,7 +443,6 @@ public final class Gen implements Visitor {
         visitStatement(statement.body);
         emitRetnull(0);
         builtIn.setFunction(statement.name, new ScriptFunction(
-                statement.names.toArray(new String[0]),
                 locals, // function arguments must be first at local list
                 statement.optionals.stream().mapToInt(a -> {
                     assert a instanceof LiteralExpression;
