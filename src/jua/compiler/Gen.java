@@ -1259,20 +1259,26 @@ public class Gen implements Visitor {
 
     private void insertPushLong(int line, long value) {
         code.incStack();
-        // todo: ldc instruction
-        code.addState(line, new Push(code.resolveLong(value)));
+        if (isShort(value)) {
+            code.addState(line, new Push(Push.TYPE_INT, value));
+        } else {
+            code.addState(line, new Ldc(code.resolveLong(value)));
+        }
     }
 
     private void insertPushDouble(int line, double value) {
         code.incStack();
-        // todo: ldc instruction
-        code.addState(line, new Push(code.resolveDouble(value)));
+        long lv = (long) value;
+        if (lv == value && isShort(lv)) {
+            code.addState(line, new Push(Push.TYPE_INT, lv));
+        } else {
+            code.addState(line, new Ldc(code.resolveDouble(value)));
+        }
     }
 
     private void insertPushString(int line, String value) {
         code.incStack();
-        // todo: ldc instruction
-        code.addState(line, new Push(code.resolveString(value)));
+        code.addState(line, new Ldc(code.resolveString(value)));
     }
 
     private static boolean isShort(long value) {
@@ -1281,13 +1287,12 @@ public class Gen implements Visitor {
 
     private void insertTrue(int line) {
         code.incStack();
-        code.addState(line, PushTrue.INSTANCE);
+        code.addState(line, Push.PUSH_TRUE);
     }
 
     private void insertFalse(int line) {
         code.incStack();
-        code.addState(line, PushFalse.INSTANCE);
-
+        code.addState(line, Push.PUSH_FALSE);
     }
 
     private void insertGoto(int line, int flow) {

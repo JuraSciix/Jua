@@ -1,6 +1,13 @@
-const TEST = {
-    'foo': 'bar',
-    'hotel': TEST
-};
+0. lload     args
+1. makeiter  
+2. goto      7
+3. nextiter  
+4. lstore    k
+5. lstore    v
+3. lload     k
+4. lload     v
+5. call      any, 2
+6. pop      
+7. checkiter ->3
+8. halt
 
-println(TEST);

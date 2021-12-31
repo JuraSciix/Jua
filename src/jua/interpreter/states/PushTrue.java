@@ -4,6 +4,7 @@ import jua.interpreter.Environment;
 import jua.interpreter.lang.TrueOperand;
 import jua.tools.CodePrinter;
 
+@Deprecated
 public class PushTrue implements State {
 
     public static final PushTrue INSTANCE = new PushTrue();

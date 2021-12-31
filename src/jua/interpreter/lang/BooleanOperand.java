@@ -2,6 +2,10 @@ package jua.interpreter.lang;
 
 public abstract class BooleanOperand extends Operand {
 
+    public static BooleanOperand valueOf(long value) {
+        return valueOf(value != 0);
+    }
+
     public static BooleanOperand valueOf(boolean value) {
         return (value ? TrueOperand.TRUE : FalseOperand.FALSE);
     }
