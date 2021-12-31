@@ -9,15 +9,14 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import jua.interpreter.Program;
 import jua.interpreter.Program.LineTableEntry;
-import jua.interpreter.lang.FloatOperand;
-import jua.interpreter.lang.IntOperand;
-import jua.interpreter.lang.Operand;
-import jua.interpreter.lang.StringOperand;
-import jua.interpreter.states.JumpState;
-import jua.interpreter.states.State;
+import jua.interpreter.runtime.DoubleOperand;
+import jua.interpreter.runtime.LongOperand;
+import jua.interpreter.runtime.Operand;
+import jua.interpreter.runtime.StringOperand;
+import jua.interpreter.opcodes.ChainOpcode;
+import jua.interpreter.opcodes.Opcode;
 import jua.tools.ListDequeUtils;
 
 import java.util.*;
@@ -32,7 +31,7 @@ public final class Code {
 
         final Context prev;
 
-        final List<State> states = new ArrayList<>();
+        final List<Opcode> opcodes = new ArrayList<>();
 
         final Int2IntMap lineTable = new Int2IntLinkedOpenHashMap();
 
@@ -62,7 +61,7 @@ public final class Code {
     private static class Chain {
 
         // Map<BCI, State>
-        final Int2ObjectMap<JumpState> states = new Int2ObjectOpenHashMap<>();
+        final Int2ObjectMap<ChainOpcode> states = new Int2ObjectOpenHashMap<>();
 
         int resultBci = -1;
     }
@@ -121,45 +120,45 @@ public final class Code {
 //                chainId, resultBci, currentBci(), chain.resultBci, isAlive());
 
         if (!isAlive()) return;
-        for (Int2ObjectMap.Entry<JumpState> entry : chain.states.int2ObjectEntrySet()) {
+        for (Int2ObjectMap.Entry<ChainOpcode> entry : chain.states.int2ObjectEntrySet()) {
             entry.getValue().setDestination(resultBci - entry.getIntKey());
         }
         chain.resultBci = resultBci;
     }
 
-    public void addState(State state) {
-        addState0(state, 0, 0);
+    public void addState(Opcode opcode) {
+        addState0(opcode, 0, 0);
     }
 
-    public void addState(int line, State state) {
-        addState0(state, 0, line);
+    public void addState(int line, Opcode opcode) {
+        addState0(opcode, 0, line);
     }
 
-    public void addState(State state, int stackAdjustment) {
-        addState0(state, stackAdjustment, 0);
+    public void addState(Opcode opcode, int stackAdjustment) {
+        addState0(opcode, stackAdjustment, 0);
     }
 
-    public void addState(int line, State state, int stackAdjustment) {
-        addState0(state, stackAdjustment, line);
+    public void addState(int line, Opcode opcode, int stackAdjustment) {
+        addState0(opcode, stackAdjustment, line);
     }
 
-    public void addChainedState(JumpState state, int chainId) {
+    public void addChainedState(ChainOpcode state, int chainId) {
         addChainedState0(state, chainId, 0, 0);
     }
 
-    public void addChainedState(int line, JumpState state, int chainId) {
+    public void addChainedState(int line, ChainOpcode state, int chainId) {
         addChainedState0(state, chainId, 0, line);
     }
 
-    public void addChainedState(int line, JumpState state, int chainId, int stackAdjustment) {
+    public void addChainedState(int line, ChainOpcode state, int chainId, int stackAdjustment) {
         addChainedState0(state, chainId, stackAdjustment, line);
     }
 
-    public void addChainedState(JumpState state, int chainId, int stackAdjustment) {
+    public void addChainedState(ChainOpcode state, int chainId, int stackAdjustment) {
         addChainedState0(state, chainId, stackAdjustment, 0);
     }
 
-    private void addChainedState0(JumpState state, int chainId, int stackAdjustment, int line) {
+    private void addChainedState0(ChainOpcode state, int chainId, int stackAdjustment, int line) {
         Chain chain = context.chains.get(chainId);
 //        System.err.printf("addChainedState(%s, %d, %d, %d) (currentBci: %d, resultBci: %d, alive: %b)%n",
 //                state.getClass().getName(), chainId, stackAdjustment, line, currentBci(), chain.resultBci, isAlive());
@@ -171,13 +170,13 @@ public final class Code {
         addState0(state, stackAdjustment, line);
     }
 
-    private void addState0(State state, int stackAdjustment, int line) {
+    private void addState0(Opcode opcode, int stackAdjustment, int line) {
 //        System.err.printf("addState0(%s, %d, %d) (nstack: %d, maxNstack: %d, scopes: %s)%n",
 //                state.getClass().getName(), stackAdjustment, line,
 //                context.nstack, context.maxNstack, context.scopes);
 
         if (!isAlive()) return;
-        context.states.add(state);
+        context.opcodes.add(opcode);
         context.nstack += stackAdjustment;
         if (context.nstack > context.maxNstack)
             context.maxNstack = context.nstack;
@@ -192,7 +191,7 @@ public final class Code {
     }
 
     public int currentBci() {
-        return context.states.size();
+        return context.opcodes.size();
     }
 
     public boolean isAlive() {
@@ -219,7 +218,7 @@ public final class Code {
                 constant -> constant.isInt() && constant.intValue() == value,
                 () -> {
                     if (!longConstants.containsKey(value)) {
-                        longConstants.put(value, IntOperand.valueOf(value));
+                        longConstants.put(value, LongOperand.valueOf(value));
                     }
                     return longConstants.get(value);
                 });
@@ -230,7 +229,7 @@ public final class Code {
                 constant -> constant.isFloat() && Double.compare(constant.floatValue(), value) == 0,
                 () -> {
                     if (!doubleConstants.containsKey(value)) {
-                        doubleConstants.put(value, FloatOperand.valueOf(value));
+                        doubleConstants.put(value, DoubleOperand.valueOf(value));
                     }
                     return doubleConstants.get(value);
                 });
@@ -260,7 +259,7 @@ public final class Code {
 
     public Program toProgram() {
         return new Program(context.sourceName,
-                context.states.toArray(new State[0]),
+                context.opcodes.toArray(new Opcode[0]),
                 buildLineTable(),
                 context.maxNstack,
                 context.nlocals,

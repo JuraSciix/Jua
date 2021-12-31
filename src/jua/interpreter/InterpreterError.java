@@ -1,6 +1,6 @@
 package jua.interpreter;
 
-import jua.interpreter.lang.OperandType;
+import jua.interpreter.runtime.OperandType;
 
 // will be caught by Jua Exception Handler
 // and thrown with location in RuntimeError

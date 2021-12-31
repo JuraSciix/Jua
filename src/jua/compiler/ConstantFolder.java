@@ -15,9 +15,9 @@ public class ConstantFolder implements Visitor {
 
     private Tree lower;
 
-    public ConstantFolder(BuiltIn builtIn) {
+    public ConstantFolder(CodeData codeData) {
         constantFolding = new HashMap<>();
-        putFoldingNames(builtIn.constants.keySet());
+        putFoldingNames(codeData.constants.keySet());
     }
 
     private void putFoldingNames(Set<String> names) {

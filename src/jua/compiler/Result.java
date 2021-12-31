@@ -1,30 +1,30 @@
 package jua.compiler;
 
-import jua.interpreter.Environment;
-import jua.interpreter.Frame;
+import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.ProgramFrame;
 import jua.tools.CodePrinter;
 
 import jua.interpreter.Program;
 
 public class Result {
 
-    private final BuiltIn builtIn;
+    private final CodeData codeData;
     private final Program program;
 
-    public Result(BuiltIn builtIn, Program program) {
-        this.builtIn = builtIn;
+    public Result(CodeData codeData, Program program) {
+        this.codeData = codeData;
         this.program = program;
     }
 
     public void print() {
-        CodePrinter.printConstants(builtIn.constants);
+        CodePrinter.printConstants(codeData.constants);
         CodePrinter.print(program);
-        CodePrinter.printFunctions(builtIn.functions);
+        CodePrinter.printFunctions(codeData.functions);
     }
 
-    public Environment env() {
-        Environment env = new Environment(builtIn.functions, builtIn.constants);
-        Frame build = program.makeFrame();
+    public InterpreterRuntime env() {
+        InterpreterRuntime env = new InterpreterRuntime(codeData.functions, codeData.constants);
+        ProgramFrame build = program.makeFrame();
         env.setProgram(build);
         return env;
     }

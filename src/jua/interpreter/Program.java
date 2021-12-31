@@ -1,7 +1,7 @@
 package jua.interpreter;
 
-import jua.interpreter.lang.Operand;
-import jua.interpreter.states.State;
+import jua.interpreter.runtime.Operand;
+import jua.interpreter.opcodes.Opcode;
 
 /**
  * Программа представляет собой фабрику фреймов.
@@ -23,14 +23,14 @@ public final class Program {
     public static Program createMain() {
         // stackSize = 1 because child program always delegate value to him
         // ^^^ Я не понимаю что это значит, но трогать пока лучше не буду
-        return new Program("main", new State[0],
+        return new Program("main", new Opcode[0],
                 createEmptyLineTable(1), 1, 0, new String[0], new Operand[0]);
     }
 
-    public static Program coroutine(Environment parent, int argc) {
+    public static Program coroutine(InterpreterRuntime parent, int argc) {
         // min stackSize value = 1 because child program always delegate value to him
         // ^^^ Я не понимаю что это значит, но трогать пока лучше не буду
-        return new Program(parent.currentFile(), new State[0],
+        return new Program(parent.currentFile(), new Opcode[0],
                 createEmptyLineTable(parent.currentLine()), Math.max(argc, 1), 0, new String[0],
                 new Operand[0]);
     }
@@ -43,7 +43,7 @@ public final class Program {
 
     public final String filename;
 
-    public final State[] states;
+    public final Opcode[] opcodes;
 
     public final LineTableEntry[] lineTable;
 
@@ -55,9 +55,9 @@ public final class Program {
 
     public final Operand[] constantPool;
 
-    public Program(String filename, State[] states, LineTableEntry[] lineTable, int stackSize, int localsSize, String[] localsNames, Operand[] constantPool) {
+    public Program(String filename, Opcode[] opcodes, LineTableEntry[] lineTable, int stackSize, int localsSize, String[] localsNames, Operand[] constantPool) {
         this.filename = filename;
-        this.states = states;
+        this.opcodes = opcodes;
         this.lineTable = lineTable;
         this.stackSize = stackSize;
         this.localsSize = localsSize;
@@ -83,7 +83,7 @@ public final class Program {
         return lineTable[l - 1].lineNumber;
     }
 
-    public Frame makeFrame() {
-        return new Frame(this);
+    public ProgramFrame makeFrame() {
+        return new ProgramFrame(this);
     }
 }

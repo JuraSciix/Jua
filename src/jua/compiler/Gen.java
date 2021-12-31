@@ -2,19 +2,19 @@ package jua.compiler;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
-import jua.interpreter.lang.*;
-import jua.interpreter.states.*;
+import jua.interpreter.runtime.*;
+import jua.interpreter.opcodes.*;
 import jua.parser.Tree.*;
 import jua.tools.ListDequeUtils;
 
 import java.util.*;
 
-import static jua.interpreter.states.Switch.Part;
+import static jua.interpreter.opcodes.Switch.Part;
 
 public final class Gen implements Visitor {
     
     // todo: Rename it...
-    private final BuiltIn builtIn;
+    private final CodeData codeData;
     
     private final Code code;
 
@@ -40,8 +40,8 @@ public final class Gen implements Visitor {
     
     private boolean loopInfinity = false;
 
-    public Gen(BuiltIn builtIn) {
-        this.builtIn = builtIn;
+    public Gen(CodeData codeData) {
+        this.codeData = codeData;
         code = new Code();
         breakChains = new IntArrayList();
         continueChains = new IntArrayList();
@@ -52,7 +52,7 @@ public final class Gen implements Visitor {
 
     // todo: исправить этот low-cohesion
     public Result getResult() {
-        return new Result(builtIn, code.toProgram());
+        return new Result(codeData, code.toProgram());
     }
 
     @Override
@@ -299,7 +299,7 @@ public final class Gen implements Visitor {
         }
         for (int i = 0; i < statement.names.size(); i++) {
             String name = statement.names.get(i);
-            if (builtIn.testConstant(name)) {
+            if (codeData.testConstant(name)) {
                 cError(statement.getPosition(), "constant '" + name + "' already declared");
             }
             Expression expr = statement.expressions.get(i);
@@ -312,7 +312,7 @@ public final class Gen implements Visitor {
                 assert expr instanceof LiteralExpression;
                 value = TreeInfo.resolveLiteral((LiteralExpression) expr);
             }
-            builtIn.setConstant(name, new Constant(value, false));
+            codeData.setConstant(name, new Constant(value, false));
         }
     }
 
@@ -430,7 +430,7 @@ public final class Gen implements Visitor {
     public void visitFunctionDefine(FunctionDefineStatement statement) {
         if (statementDepth > 1)
             cError(statement.getPosition(), "function declaration is not allowed here.");
-        if (builtIn.testFunction(statement.name))
+        if (codeData.testFunction(statement.name))
             cError(statement.getPosition(), "function '" + statement.name + "' already declared.");
         code.pushContext(TreeInfo.sourceName(statement));
         code.pushScope();
@@ -442,7 +442,7 @@ public final class Gen implements Visitor {
         }).toArray();
         visitStatement(statement.body);
         emitRetnull(0);
-        builtIn.setFunction(statement.name, new ScriptFunction(
+        codeData.setFunction(statement.name, new ScriptFunction(
                 locals, // function arguments must be first at local list
                 statement.optionals.stream().mapToInt(a -> {
                     assert a instanceof LiteralExpression;
@@ -597,7 +597,7 @@ public final class Gen implements Visitor {
         beginCondition();
         Expression lhs = expression.lhs;
         Expression rhs = expression.rhs;
-        JumpState resultState;
+        ChainOpcode resultState;
         int resultStackAdjustment;
         int shortVal = Integer.MIN_VALUE;
         boolean lhsNull = (lhs instanceof NullExpression);
@@ -958,7 +958,7 @@ public final class Gen implements Visitor {
     @Override
     public void visitVariable(VariableExpression expression) {
         String name = expression.name;
-        if (builtIn.testConstant(name)) {
+        if (codeData.testConstant(name)) {
             code.addState(new Getconst(name), 1);
         } else {
             emitVLoad(TreeInfo.line(expression), expression.name);
@@ -1184,7 +1184,7 @@ public final class Gen implements Visitor {
         }
     }
 
-    public static State asg2state(Tag tag) {
+    public static Opcode asg2state(Tag tag) {
         switch (tag) {
             case ASG_ADD: return Add.INSTANCE;
             case ASG_SUB: return Sub.INSTANCE;
@@ -1281,7 +1281,7 @@ public final class Gen implements Visitor {
         }
     }
 
-    public static State increase2state(Tag tag, int id) {
+    public static Opcode increase2state(Tag tag, int id) {
         switch (tag) {
             case PRE_INC: case POST_INC:
                 return id >= 0 ? new Vinc(id) : Inc.INSTANCE;

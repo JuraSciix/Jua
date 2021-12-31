@@ -1,10 +1,10 @@
 package jua.tools;
 
 import jua.interpreter.Program;
-import jua.interpreter.lang.Constant;
-import jua.interpreter.lang.Function;
-import jua.interpreter.lang.Operand;
-import jua.interpreter.lang.ScriptFunction;
+import jua.interpreter.runtime.Constant;
+import jua.interpreter.runtime.Function;
+import jua.interpreter.runtime.Operand;
+import jua.interpreter.runtime.ScriptFunction;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -102,9 +102,9 @@ public class CodePrinter {
         CodePrinter printer = new CodePrinter(program);
         printer.printHead(program);
         int lastLineNumber = 0;
-        int length = program.states.length;
+        int length = program.opcodes.length;
         for (int i = 0; i < length; i++) {
-            program.states[i].print(printer);
+            program.opcodes[i].print(printer);
             int line = program.getInstructionLine(i);
             if (line != lastLineNumber) {
                 printer.printLine(line);

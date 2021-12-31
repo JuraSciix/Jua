@@ -1,5 +1,0 @@
-fn loop(start, end, inc) {
-    for i = start; i < end; i += inc {
-        println(i);
-    }
-}

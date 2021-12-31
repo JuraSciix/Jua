@@ -1,9 +1,9 @@
 package jua.compiler;
 
-import jua.interpreter.lang.FloatOperand;
-import jua.interpreter.lang.IntOperand;
-import jua.interpreter.lang.Operand;
-import jua.interpreter.lang.StringOperand;
+import jua.interpreter.runtime.DoubleOperand;
+import jua.interpreter.runtime.LongOperand;
+import jua.interpreter.runtime.Operand;
+import jua.interpreter.runtime.StringOperand;
 import jua.parser.Tree;
 import jua.parser.Tree.*;
 
@@ -50,10 +50,10 @@ public final class TreeInfo {
 
     public static Operand resolveLiteral(LiteralExpression expression) {
         if (expression instanceof IntExpression) {
-            return IntOperand.valueOf(((IntExpression) expression).value);
+            return LongOperand.valueOf(((IntExpression) expression).value);
         }
         if (expression instanceof FloatExpression) {
-            return FloatOperand.valueOf(((FloatExpression) expression).value);
+            return DoubleOperand.valueOf(((FloatExpression) expression).value);
         }
         if (expression instanceof StringExpression) {
             return StringOperand.valueOf(((StringExpression) expression).value);

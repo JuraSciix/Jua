@@ -3,8 +3,8 @@ package jua.tools;
 import jua.Options;
 import jua.compiler.Gen;
 import jua.compiler.*;
-import jua.interpreter.Environment;
-import jua.interpreter.RuntimeError;
+import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterRuntimeException;
 import jua.parser.ParseException;
 import jua.parser.Parser;
 import jua.parser.TokenizeStream;
@@ -21,8 +21,8 @@ public class FileLoader {
 
         @Override
         public void uncaughtException(Thread t, Throwable e) {
-            if (e instanceof RuntimeError) {
-                runtimeError((RuntimeError) e);
+            if (e instanceof InterpreterRuntimeException) {
+                runtimeError((InterpreterRuntimeException) e);
             } else {
                 fatal("Fatal error occurred at runtime: ", e);
             }
@@ -62,12 +62,12 @@ public class FileLoader {
     }
 
     private static Result compile(Tree.Statement root) {
-        BuiltIn builtIn = new BuiltIn();
-        Gen gen = new Gen(builtIn);
+        CodeData codeData = new CodeData();
+        Gen gen = new Gen(codeData);
 
         try {
             if (Options.optimize()) {
-                root.accept(new ConstantFolder(builtIn));
+                root.accept(new ConstantFolder(codeData));
             } else {
                 System.err.println("Warning: disabling optimization is strongly discouraged. " +
                         "This feature may be removed in a future version");
@@ -87,12 +87,12 @@ public class FileLoader {
         System.exit(1);
     }
 
-    private static void interpret(Environment env) {
+    private static void interpret(InterpreterRuntime env) {
         Thread.setDefaultUncaughtExceptionHandler(RUNTIME_EXCEPTION_HANDLER);
         env.run();
     }
 
-    private static void runtimeError(RuntimeError e) {
+    private static void runtimeError(InterpreterRuntimeException e) {
         System.err.println("Runtime error: " + e.getMessage());
         printPosition(e.filename, e.line, -1);
         System.exit(1);
