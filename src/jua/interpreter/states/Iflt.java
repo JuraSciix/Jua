@@ -3,11 +3,11 @@ package jua.interpreter.states;
 import jua.interpreter.Environment;
 import jua.tools.CodePrinter;
 
-public class Iflt extends JumpState {
+public final class Iflt extends JumpState {
 
-    private final long value;
+    private final int value;
 
-    public Iflt(long value) {
+    public Iflt(int value) {
         this.value = value;
     }
 

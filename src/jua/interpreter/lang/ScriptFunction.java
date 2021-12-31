@@ -32,7 +32,7 @@ public class ScriptFunction implements Function {
         Frame frame = program.makeFrame();
         Operand[] args = new Operand[tot];
 
-        for (int i = tot; --i >= 0; ) {
+        for (int i = tot - 1; i >= 0; i--) {
             frame.store(locals[i], args[i] = (i >= argc) ? program.constantPool[i - req] : env.popStack());
         }
         env.enterCall(name, args);

@@ -10,13 +10,13 @@ public final class Program {
 
     public static final class LineTableEntry {
 
+        public final int startBci;
+
         public final int lineNumber;
 
-        public final int startIp;
-
-        public LineTableEntry(int lineNumber, int startIp) {
+        public LineTableEntry(int startBci, int lineNumber) {
+            this.startBci = startBci;
             this.lineNumber = lineNumber;
-            this.startIp = startIp;
         }
     }
 
@@ -37,7 +37,7 @@ public final class Program {
 
     private static LineTableEntry[] createEmptyLineTable(int lineNumber) {
         return new LineTableEntry[] {
-                new LineTableEntry(lineNumber, 0)
+                new LineTableEntry(0, lineNumber)
         };
     }
 
@@ -65,16 +65,16 @@ public final class Program {
         this.constantPool = constantPool;
     }
 
-    public int getInstructionLine(int ip) {
+    public int getInstructionLine(int bci) {
         int l = 1;
         int r = lineTable.length - 1;
         while (l <= r) {
             int c = (l + r) >>> 1;
-            int current = lineTable[c].startIp;
+            int current = lineTable[c].startBci;
 
-            if (current < ip) {
+            if (current < bci) {
                 l = c + 1;
-            } else if (current > ip) {
+            } else if (current > bci) {
                 r = c - 1;
             } else {
                 return lineTable[c].lineNumber;

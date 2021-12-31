@@ -53,7 +53,6 @@ public final class Frame {
         runningstate = true;
         try {
             while (true) {
-//                System.out.printf("[%d] %s%n", bci, states[bci].getClass().getName());
                 bci += states[bci].run(env);
             }
         } finally {

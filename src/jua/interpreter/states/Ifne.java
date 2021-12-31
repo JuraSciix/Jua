@@ -5,9 +5,11 @@ import jua.tools.CodePrinter;
 
 public class Ifne extends JumpState {
 
-    private final long value;
+    public static final Ifne IF_TRUE = new Ifne(0);
 
-    public Ifne(long value) {
+    private final int value;
+
+    public Ifne(int value) {
         this.value = value;
     }
 
@@ -20,7 +22,7 @@ public class Ifne extends JumpState {
 
     @Override
     public int run(Environment env) {
-        if (env.popInt() == value) {
+        if (env.popInt() != value) {
             return destination;
         } else {
             return NEXT;

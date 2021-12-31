@@ -23,15 +23,27 @@ public final class TreeInfo {
         return statement.getPosition().line;
     }
 
+    public static String sourceName(Statement statement) {
+        return statement.getPosition().filename;
+    }
+
+    public static boolean testShort(Expression expression) {
+        if (expression instanceof IntExpression) {
+            long value = ((IntExpression) expression).value;
+            return value >= Short.MIN_VALUE && value <= Short.MAX_VALUE;
+        }
+        return false;
+    }
+
     public static int resolveLiteral(Code code, LiteralExpression expression) {
         if (expression instanceof IntExpression) {
-            return code.resolveLong(((IntExpression) expression).value);
+            return code.resolveConstant(((IntExpression) expression).value);
         }
         if (expression instanceof FloatExpression) {
-            return code.resolveDouble(((FloatExpression) expression).value);
+            return code.resolveConstant(((FloatExpression) expression).value);
         }
         if (expression instanceof StringExpression) {
-            return code.resolveString(((StringExpression) expression).value);
+            return code.resolveConstant(((StringExpression) expression).value);
         }
         throw new AssertionError();
     }

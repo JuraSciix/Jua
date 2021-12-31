@@ -5,34 +5,17 @@ import it.unimi.dsi.fastutil.ints.IntList;
 import jua.interpreter.lang.*;
 import jua.interpreter.states.*;
 import jua.parser.Tree.*;
+import jua.tools.ListDequeUtils;
 
 import java.util.*;
 
 import static jua.interpreter.states.Switch.Part;
 
-public class Gen implements Visitor {
-
-    @FunctionalInterface
-    private interface AssignmentState {
-
-        void insert(int line);
-    }
-
-    private static class Loop {
-
-        private boolean infinity;
-
-        void setInfinity(boolean infinity) {
-            this.infinity = infinity;
-        }
-
-        boolean isInfinity() {
-            return infinity;
-        }
-    }
-
+public final class Gen implements Visitor {
+    
+    // todo: Rename it...
     private final BuiltIn builtIn;
-
+    
     private final Code code;
 
     private final IntList breakChains;
@@ -45,8 +28,6 @@ public class Gen implements Visitor {
 
     private final IntList conditionalChains;
 
-    private final Deque<Loop> loops;
-
     // todo: Избавиться от ниже определенных полей
 
     private int statementDepth = 0;
@@ -55,7 +36,9 @@ public class Gen implements Visitor {
 
     private int conditionDepth = 0;
 
-    private boolean conditionInvert = false;
+    private boolean invertCond = false;
+    
+    private boolean loopInfinity = false;
 
     public Gen(BuiltIn builtIn) {
         this.builtIn = builtIn;
@@ -65,59 +48,46 @@ public class Gen implements Visitor {
         fallthroughChains = new IntArrayList();
         switchPartsStack = new ArrayDeque<>();
         conditionalChains = new IntArrayList();
-        loops = new ArrayDeque<>();
     }
 
     // todo: исправить этот low-cohesion
     public Result getResult() {
-        return new Result(builtIn, code.getBuilder());
+        return new Result(builtIn, code.toProgram());
     }
 
     @Override
     public void visitAdd(AddExpression expression) {
         visitBinary(expression);
-        insertAdd(line(expression));
-
+        emitAdd(TreeInfo.line(expression));
     }
 
     @Override
     public void visitAnd(AndExpression expression) {
         beginCondition();
-        if (conditionInvert) {
+        if (invertCond) {
             if (expression.rhs == null) {
-                visitCondition(expression.lhs);
+                generateCondition(expression.lhs);
             } else {
-                int fa = pushNewFlow();
-                conditionInvert = false;
-                visitCondition(expression.lhs);
-                popFlow();
-                conditionInvert = true;
-                visitCondition(expression.rhs);
-                code.resolveFlow(fa);
+                int fa = pushMakeConditionChain();
+                invertCond = false;
+                generateCondition(expression.lhs);
+                popConditionChain();
+                invertCond = true;
+                generateCondition(expression.rhs);
+                code.resolveChain(fa);
             }
         } else {
-            visitCondition(expression.lhs);
-            visitCondition(expression.rhs);
+            generateCondition(expression.lhs);
+            generateCondition(expression.rhs);
         }
-        endCondition(line(expression));
-    }
-
-    private int pushNewFlow() {
-        int newFlow = code.createFlow();
-        conditionalChains.add(newFlow);
-        return newFlow;
-    }
-
-    private int popFlow() {
-        return conditionalChains.removeInt(conditionalChains.size() - 1);
+        endCondition();
     }
 
     @Override
     public void visitArrayAccess(ArrayAccessExpression expression) {
-        checkAccessible(expression.hs);
         visitExpression(expression.hs);
         visitExpression(expression.key);
-        insertALoad(line(expression));
+        emitALoad(TreeInfo.line(expression));
     }
 
     @Override
@@ -130,105 +100,83 @@ public class Gen implements Visitor {
 //            int line;
 //            if (key.isEmpty()) {
 //                line = value.getPosition().line;
-//                insertPush(index.longValue(), IntOperand::valueOf);
+//                emitPush(index.longValue(), IntOperand::valueOf);
 //            } else {
 //                line = key.getPosition().line;
 //                visitStatement(key);
 //            }
 //            visitStatement(value);
-//            insertAStore(line);
+//            emitAStore(line);
 //            index.incrementAndGet();
 //        });
 //        disableUsed();
-//        insertNecessaryPop();
+//        emitNecessaryPop();
 
-        insertNewArray(line(expression));
-        compileArrayCreation(expression.map);
+        emitNewArray(TreeInfo.line(expression));
+        generateArrayCreation(expression.map);
     }
 
-    private void compileArrayCreation(Map<Expression, Expression> entries) {
+    private void generateArrayCreation(Map<Expression, Expression> entries) {
         long implicitIndex = 0;
         Iterator<Map.Entry<Expression, Expression>> iterator
                 = entries.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<Expression, Expression> entry = iterator.next();
-            insertDup();
+            emitDup();
             if (entry.getKey().isEmpty()) {
-                insertPushLong(line(entry.getValue()), implicitIndex++);
+                emitPushLong(TreeInfo.line(entry.getValue()), implicitIndex++);
             } else {
                 visitExpression(entry.getKey());
             }
             visitExpression(entry.getValue());
-            insertAStore(entry.getKey().isEmpty()
-                    ? line(entry.getValue())
-                    : line(entry.getKey()));
+            emitAStore(entry.getKey().isEmpty()
+                    ? TreeInfo.line(entry.getValue())
+                    : TreeInfo.line(entry.getKey()));
         }
     }
 
-    private void insertNewArray(int line) {
-        code.incStack();
-        code.addState(line, Newarray.INSTANCE);
+    private void emitNewArray(int line) {
+        code.addState(line, Newarray.INSTANCE, 1);
     }
 
     @Override
     public void visitAssignAdd(AssignAddExpression expression) {
-        visitAssignment(expression, line -> {
-            visitExpression(expression.expr);
-            insertAdd(line);
-        });
+        generateAssignment(expression);
     }
 
     @Override
     public void visitAssignBitAnd(AssignBitAndExpression expression) {
-        visitAssignment(expression, line -> {
-            visitExpression(expression.expr);
-            insertAnd(line);
-        });
+        generateAssignment(expression);
     }
 
     @Override
     public void visitAssignBitOr(AssignBitOrExpression expression) {
-        visitAssignment(expression, line -> {
-            visitExpression(expression.expr);
-            insertOr(line);
-        });
+        generateAssignment(expression);
     }
 
     @Override
     public void visitAssignBitXor(AssignBitXorExpression expression) {
-        visitAssignment(expression, line -> {
-            visitExpression(expression.expr);
-            insertXor(line);
-        });
+        generateAssignment(expression);
     }
 
     @Override
     public void visitAssignDivide(AssignDivideExpression expression) {
-        visitAssignment(expression, line -> {
-            visitExpression(expression.expr);
-            insertDiv(line);
-        });
+        generateAssignment(expression);
     }
 
     @Override
     public void visitAssignLeftShift(AssignShiftLeftExpression expression) {
-        visitAssignment(expression, line -> {
-            visitExpression(expression.expr);
-            insertLhs(line);
-        });
+        generateAssignment(expression);
     }
 
     @Override
     public void visitAssign(AssignExpression expression) {
-        visitAssignment(expression, null);
+        generateAssignment(expression);
     }
 
     @Override
     public void visitAssignMultiply(AssignMultiplyExpression expression) {
-        visitAssignment(expression, line -> {
-            visitExpression(expression.expr);
-            insertMul(line);
-        });
+        generateAssignment(expression);
     }
 
     @Override
@@ -250,79 +198,71 @@ public class Gen implements Visitor {
 //        }
 //        code.resolveFlow(ex);
 
-        visitAssignment(expression, null);
+        generateAssignment(expression);
     }
 
     @Override
     public void visitAssignRemainder(AssignRemainderExpression expression) {
-        visitAssignment(expression, line -> {
-            visitExpression(expression.expr);
-            insertRem(line);
-        });
+        generateAssignment(expression);
     }
 
     @Override
     public void visitAssignRightShift(AssignShiftRightExpression expression) {
-        visitAssignment(expression, line -> {
-            visitExpression(expression.expr);
-            insertRhs(line);
-        });
+        generateAssignment(expression);
     }
 
     @Override
     public void visitAssignSubtract(AssignSubtractExpression expression) {
-        visitAssignment(expression, line -> {
-            visitExpression(expression.expr);
-            insertSub(line);
-        });
+        generateAssignment(expression);
     }
 
     @Override
     public void visitBitAnd(BitAndExpression expression) {
-        visitBinary(expression);
-        insertAdd(line(expression));
-
+        visitExpression(expression.lhs);
+        visitExpression(expression.rhs);
+        emitAnd(TreeInfo.line(expression));
     }
 
     @Override
     public void visitBitNot(BitNotExpression expression) {
         visitUnary(expression);
-        code.addState(line(expression), Not.INSTANCE);
-
+        code.addState(TreeInfo.line(expression), Not.INSTANCE);
     }
 
     @Override
     public void visitBitOr(BitOrExpression expression) {
         visitBinary(expression);
-        insertOr(line(expression));
-
+        emitOr(TreeInfo.line(expression));
     }
 
     @Override
     public void visitBitXor(BitXorExpression expression) {
         visitBinary(expression);
-        insertXor(line(expression));
-
+        emitXor(TreeInfo.line(expression));
     }
 
     @Override
     public void visitBlock(BlockStatement statement) {
-        boolean root = false;
-        if (code.empty()) {
-            code.enterContext(statement.getPosition().filename);
-            code.enterScope();
-            root = true;
+        if (statementDepth == 0) { // is root?
+            code.pushContext(TreeInfo.sourceName(statement));
+            code.pushScope();
+            generateStatementsWhileAlive(statement.statements);
+            code.addState(1, Halt.INSTANCE);
+            code.popScope();
+        } else {
+            generateStatementsWhileAlive(statement.statements);
         }
-        for (Statement childStatement : statement.statements) {
-            if (!code.scopeAlive()) {
+    }
+    
+    private void generateStatementsWhileAlive(List<Statement> statements) {
+        statementDepth++;
+        for (Statement statement : statements) {
+            if (!code.isAlive()) {
                 break;
             }
-            visitStatement(childStatement);
+            statement.accept(this);
         }
-
-        if (root) {
-            code.addState(Halt.INSTANCE);
-        }
+        statementDepth--;
     }
 
     @Override
@@ -331,32 +271,25 @@ public class Gen implements Visitor {
             cError(statement.getPosition(), "'break' is not allowed outside of loop/switch.");
             return;
         }
-        insertGoto(line(statement), peekInt(breakChains));
-        code.deathScope();
-        loops.getLast().setInfinity(false);
-    }
-
-    private static int peekInt(IntList integers) {
-        return integers.getInt(integers.size() - 1);
+        emitGoto(TreeInfo.line(statement), ListDequeUtils.peekLastInt(breakChains));
+        loopInfinity = false;
     }
 
     @Override
     public void visitCase(CaseStatement statement) {
-        switchPartsStack.getLast().add(new Part(code.statesCount(), statement.expressions.stream()
+        switchPartsStack.getLast().add(new Part(code.currentBci(), statement.expressions.stream()
                 .mapToInt(a -> {
                     assert a instanceof LiteralExpression;
                     return TreeInfo.resolveLiteral(code, (LiteralExpression) a);
                 })
                 .toArray()));
-        insertCaseBody(statement.body);
+        emitCaseBody(statement.body);
     }
 
     @Override
     public void visitClone(CloneExpression expression) {
-        checkCloneable(expression.hs);
         visitUnary(expression);
         code.addState(Clone.INSTANCE);
-
     }
 
     @Override
@@ -373,15 +306,13 @@ public class Gen implements Visitor {
             Operand value;
             if (expr instanceof ArrayExpression) {
                 value = new ArrayOperand();
-                code.incStack();
-                code.addState(new Getconst(name));
-                compileArrayCreation(((ArrayExpression) expr).map);
+                code.addState(new Getconst(name), 1);
+                generateArrayCreation(((ArrayExpression) expr).map);
             } else {
                 assert expr instanceof LiteralExpression;
                 value = TreeInfo.resolveLiteral((LiteralExpression) expr);
             }
-            builtIn.setConstant(name, new Constant(
-                    value, false));
+            builtIn.setConstant(name, new Constant(value, false));
         }
     }
 
@@ -391,48 +322,74 @@ public class Gen implements Visitor {
             cError(statement.getPosition(), "'continue' is not allowed outside of loop.");
             return;
         }
-        insertGoto(line(statement), peekInt(continueChains));
-        code.deathScope();
+        emitGoto(TreeInfo.line(statement), peekConditionChain());
+        code.dead();
     }
 
     @Override
     public void visitDivide(DivideExpression expression) {
         visitBinary(expression);
-        insertDiv(line(expression));
+        emitDiv(TreeInfo.line(expression));
 
     }
 
     @Override
     public void visitDo(DoStatement statement) {
-        compileLoop(null, statement.cond, null, statement.body, false);
+        generateLoop(statement, null, statement.cond, null, statement.body, false);
     }
 
     @Override
     public void visitEqual(EqualExpression expression) {
-        beginCondition();
-        Expression rhs = expression.rhs.child();
-        if (rhs instanceof NullExpression) {
-            visitExpression(expression.lhs);
-            code.addFlow(peekInt(conditionalChains), conditionInvert ? new Ifnull() : new Ifnonnull());
-            code.decStack();
-        } else if (expression.lhs instanceof IntExpression) {
-            visitExpression(expression.rhs);
-            code.addFlow(peekInt(conditionalChains), conditionInvert
-                    ? new Ifeq(((IntExpression) expression.lhs).value)
-                    : new Ifne(((IntExpression) expression.lhs).value));
-            code.decStack();
-        } else if (rhs instanceof IntExpression) {
-            visitExpression(expression.lhs);
-            code.addFlow(peekInt(conditionalChains), conditionInvert
-                    ? new Ifeq(((IntExpression) rhs).value)
-                    : new Ifne(((IntExpression) rhs).value));
-            code.decStack();
-        } else {
-            visitBinary(expression);
-            code.addFlow(peekInt(conditionalChains), conditionInvert ? new Ifcmpeq() : new Ifcmpne());
-            code.decStack(2);
-        }
-        endCondition(line(expression));
+//        beginCondition();
+//        Expression lhs = expression.lhs;
+//        Expression rhs = expression.rhs;
+//        int line = TreeInfo.line(expression);
+//        if (lhs instanceof NullExpression) {
+//            visitExpression(rhs);
+//            code.addChainedState(line,
+//                    invertCond ? new Ifnull() : new Ifnonnull(),
+//                    peekConditionChain(), -1);
+//        } else if (rhs instanceof NullExpression) {
+//            visitExpression(lhs);
+//            code.addChainedState(line,
+//                    (invertCond ? new Ifnull() : new Ifnonnull()),
+//                    peekConditionChain(), -1);
+//        } else if (TreeInfo.resolveShort(lhs) >= 0) {
+//            visitExpression(rhs);
+//            int shortVal = TreeInfo.resolveShort(lhs);
+//            code.addChainedState(line,
+//                    (invertCond ? new Ifeq(shortVal) : new Ifne(shortVal)),
+//                    peekConditionChain(), -1);
+//        } else if (TreeInfo.resolveShort(rhs) >= 0) {
+//            visitExpression(rhs);
+//            int shortVal = TreeInfo.resolveShort(lhs);
+//            code.addChainedState(line,
+//                    (invertCond ? new Ifeq(shortVal) : new Ifne(shortVal)),
+//                    peekConditionChain(), -1);
+//        } else {
+//            visitExpression(lhs);
+//            visitExpression(rhs);
+//            code.addChainedState(line,
+//                    (invertCond ? new Ifcmpeq() : new Ifcmpne()),
+//                    peekConditionChain(), -2);
+//        }
+//        endCondition();
+
+        generateComparison(expression);
+    }
+
+    private int pushMakeConditionChain() {
+        int newChain = code.makeChain();
+        ListDequeUtils.addLastInt(conditionalChains, newChain);
+        return newChain;
+    }
+
+    private int popConditionChain() {
+        return ListDequeUtils.removeLastInt(conditionalChains);
+    }
+
+    private int peekConditionChain() {
+        return ListDequeUtils.peekLastInt(conditionalChains);
     }
 
     @Override
@@ -441,36 +398,32 @@ public class Gen implements Visitor {
             cError(statement.getPosition(), "'fallthrough' is not allowed outside of switch.");
             return;
         }
-        insertGoto(line(statement), peekInt(fallthroughChains));
-        code.deathScope();
-        loops.getLast().setInfinity(false); // for cases
+        emitGoto(TreeInfo.line(statement), ListDequeUtils.peekLastInt(fallthroughChains));
+        loopInfinity = false; // for cases
+        code.dead();
     }
 
     @Override
     public void visitFalse(FalseExpression expression) {
-        insertFalse(line(expression));
+        emitPushFalse(TreeInfo.line(expression));
     }
 
     @Override
     public void visitFloat(FloatExpression expression) {
-        insertPushDouble(line(expression), expression.value);
+        emitPushDouble(TreeInfo.line(expression), expression.value);
     }
 
     @Override
     public void visitFor(ForStatement statement) {
-        compileLoop(statement.init, statement.cond, statement.step, statement.body, true);
+        generateLoop(statement, statement.init, statement.cond, statement.step, statement.body, true);
     }
 
     @Override
     public void visitFunctionCall(FunctionCallExpression expression) {
-        if (expression.args.isEmpty()) {
-            code.incStack();
-        } else {
-            visitList(expression.args);
-        }
-        code.addState(line(expression), new Call(expression.name, expression.args.size()));
-        code.decStack(expression.args.size() - 1);
-
+        visitList(expression.args);
+        code.addState(TreeInfo.line(expression),
+                new Call(expression.name, expression.args.size()),
+                Math.max(1, expression.args.size()));
     }
 
     @Override
@@ -479,16 +432,16 @@ public class Gen implements Visitor {
             cError(statement.getPosition(), "function declaration is not allowed here.");
         if (builtIn.testFunction(statement.name))
             cError(statement.getPosition(), "function '" + statement.name + "' already declared.");
-        code.enterContext(statement.getPosition().filename);
-        code.enterScope();
+        code.pushContext(TreeInfo.sourceName(statement));
+        code.pushScope();
         int[] locals = statement.names.stream().mapToInt(n -> {
             if (statement.names.indexOf(n) != statement.names.lastIndexOf(n)) {
                 cError(statement.getPosition(), "duplicate argument '" + n + "'.");
             }
-            return code.getLocal(n);
+            return code.resolveLocal(n);
         }).toArray();
-        statement.body.accept(this);
-        insertRetnull();
+        visitStatement(statement.body);
+        emitRetnull(0);
         builtIn.setFunction(statement.name, new ScriptFunction(
                 statement.names.toArray(new String[0]),
                 locals, // function arguments must be first at local list
@@ -496,240 +449,368 @@ public class Gen implements Visitor {
                     assert a instanceof LiteralExpression;
                     return TreeInfo.resolveLiteral(code, (LiteralExpression) a);
                 }).toArray(),
-                code.getBuilder()));
-        code.exitScope();
-        code.exitContext();
+                code.toProgram()));
+        code.popScope();
+        code.popContext();
     }
 
     @Override
     public void visitGreaterEqual(GreaterEqualExpression expression) {
-        beginCondition();
-        if (expression.lhs instanceof IntExpression) {
-            visitExpression(expression.rhs);
-            code.addFlow(peekInt(conditionalChains), conditionInvert
-                    ? new Ifle(((IntExpression) expression.lhs).value)
-                    : new Ifgt(((IntExpression) expression.lhs).value));
-            code.decStack();
-        } else if (expression.rhs instanceof IntExpression) {
-            visitExpression(expression.lhs);
-            code.addFlow(peekInt(conditionalChains), conditionInvert
-                    ? new Ifge(((IntExpression) expression.rhs).value)
-                    : new Iflt(((IntExpression) expression.rhs).value));
-            code.decStack();
-        } else {
-            visitBinary(expression);
-            code.addFlow(peekInt(conditionalChains), line(expression),
-                    conditionInvert ? new Ifcmpge() : new Ifcmplt());
-            code.decStack(2);
-        }
-        endCondition(line(expression));
+//        beginCondition();
+//        if (expression.lhs instanceof IntExpression) {
+//            visitExpression(expression.rhs);
+//            code.addFlow(ListDequeUtils.peekLastInt(conditionalChains), invertCond
+//                    ? new Ifle(((IntExpression) expression.lhs).value)
+//                    : new Ifgt(((IntExpression) expression.lhs).value));
+//            code.decStack();
+//        } else if (expression.rhs instanceof IntExpression) {
+//            visitExpression(expression.lhs);
+//            code.addFlow(ListDequeUtils.peekLastInt(conditionalChains), invertCond
+//                    ? new Ifge(((IntExpression) expression.rhs).value)
+//                    : new Iflt(((IntExpression) expression.rhs).value));
+//            code.decStack();
+//        } else {
+//            visitBinary(expression);
+//            code.addFlow(TreeInfo.line(expression), ListDequeUtils.peekLastInt(conditionalChains),
+//                    invertCond ? new Ifcmpge() : new Ifcmplt());
+//            code.decStack(2);
+//        }
+//        endCondition();
+
+        generateComparison(expression);
     }
 
     @Override
     public void visitGreater(GreaterExpression expression) {
-        beginCondition();
-        if (expression.lhs instanceof IntExpression) {
-            visitExpression(expression.rhs);
-            code.addFlow(peekInt(conditionalChains), conditionInvert
-                    ? new Ifge(((IntExpression) expression.lhs).value)
-                    : new Iflt(((IntExpression) expression.lhs).value));
-            code.decStack();
-        } else if (expression.rhs instanceof IntExpression) {
-            visitExpression(expression.lhs);
-            code.addFlow(peekInt(conditionalChains), conditionInvert
-                    ? new Ifle(((IntExpression) expression.rhs).value)
-                    : new Ifgt(((IntExpression) expression.rhs).value));
-            code.decStack();
-        } else {
-            visitBinary(expression);
-            code.addFlow(peekInt(conditionalChains), line(expression),
-                    conditionInvert ? new Ifcmpgt() : new Ifcmple());
-            code.decStack(2);
-        }
-        endCondition(line(expression));
+//        beginCondition();
+//        if (expression.lhs instanceof IntExpression) {
+//            visitExpression(expression.rhs);
+//            code.addFlow(ListDequeUtils.peekLastInt(conditionalChains), invertCond
+//                    ? new Ifge(((IntExpression) expression.lhs).value)
+//                    : new Iflt(((IntExpression) expression.lhs).value));
+//            code.decStack();
+//        } else if (expression.rhs instanceof IntExpression) {
+//            visitExpression(expression.lhs);
+//            code.addFlow(ListDequeUtils.peekLastInt(conditionalChains), invertCond
+//                    ? new Ifle(((IntExpression) expression.rhs).value)
+//                    : new Ifgt(((IntExpression) expression.rhs).value));
+//            code.decStack();
+//        } else {
+//            visitBinary(expression);
+//            code.addFlow(TreeInfo.line(expression), ListDequeUtils.peekLastInt(conditionalChains),
+//                    invertCond ? new Ifcmpgt() : new Ifcmple());
+//            code.decStack(2);
+//        }
+//        endCondition();
+
+        generateComparison(expression);
     }
 
     @Override
     public void visitIf(IfStatement statement) {
         if (statement.elseBody == null) {
-            conditionalChains.add(code.createFlow());
-            visitCondition(statement.cond);
+            conditionalChains.add(code.makeChain());
+            generateCondition(statement.cond);
             visitBody(statement.body);
-            code.resolveFlow(popFlow());
+            code.resolveChain(popConditionChain());
         } else {
-            int el = pushNewFlow();
-            int ex = code.createFlow();
-            visitCondition(statement.cond);
+            int el = pushMakeConditionChain();
+            int ex = code.makeChain();
+            generateCondition(statement.cond);
             boolean thenAlive = visitBody(statement.body);
-            insertGoto(0, ex);
-            code.resolveFlow(el);
+            emitGoto(0, ex);
+            code.resolveChain(el);
             boolean elseAlive = visitBody(statement.elseBody);
-            code.resolveFlow(ex);
-            if (!thenAlive && !elseAlive) {
-                code.deathScope();
-            }
+            code.resolveChain(ex);
+            if (!thenAlive && !elseAlive) code.dead();
         }
     }
 
     @Override
     public void visitInt(IntExpression expression) {
-        insertPushLong(line(expression), expression.value);
+        emitPushLong(TreeInfo.line(expression), expression.value);
     }
 
     @Override
     public void visitLeftShift(ShiftLeftExpression expression) {
         visitBinary(expression);
-        insertLhs(line(expression));
+        emitLhs(TreeInfo.line(expression));
 
     }
 
     @Override
     public void visitLessEqual(LessEqualExpression expression) {
-        beginCondition();
-        if (expression.lhs instanceof IntExpression) {
-            visitExpression(expression.rhs);
-            code.addFlow(peekInt(conditionalChains), conditionInvert
-                    ? new Ifge(((IntExpression) expression.lhs).value)
-                    : new Iflt(((IntExpression) expression.lhs).value));
-            code.decStack();
-        } else if (expression.rhs instanceof IntExpression) {
-            visitExpression(expression.lhs);
-            code.addFlow(peekInt(conditionalChains), conditionInvert
-                    ? new Ifle(((IntExpression) expression.rhs).value)
-                    : new Ifgt(((IntExpression) expression.rhs).value));
-            code.decStack();
-        } else {
-            visitBinary(expression);
-            code.addFlow(peekInt(conditionalChains), line(expression),
-                    conditionInvert ? new Ifcmple() : new Ifcmpgt());
-            code.decStack(2);
-        }
-        endCondition(line(expression));
+//        beginCondition();
+//        Expression lhs = expression.lhs;
+//        Expression rhs = expression.rhs;
+//        int line = TreeInfo.line(expression);
+//        if (TreeInfo.resolveShort(lhs) >= 0) {
+//            visitExpression(rhs);
+//            int shortVal = TreeInfo.resolveShort(lhs);
+//            code.addChainedState(line,
+//                    (invertCond ? new Ifge(shortVal) : new Iflt(shortVal)),
+//                    peekConditionChain(), -1);
+//        } else if (TreeInfo.resolveShort(rhs) >= 0) {
+//            visitExpression(rhs);
+//            int shortVal = TreeInfo.resolveShort(lhs);
+//            code.addChainedState(line,
+//                    (invertCond ? new Ifle(shortVal) : new Ifgt(shortVal)),
+//                    peekConditionChain(), -1);
+//        } else {
+//            visitExpression(lhs);
+//            visitExpression(rhs);
+//            code.addChainedState(line,
+//                    (invertCond ? new Ifcmple() : new Ifcmpgt()),
+//                    peekConditionChain(), -2);
+//        }
+//        endCondition();
+
+        generateComparison(expression);
     }
 
     @Override
     public void visitLess(LessExpression expression) {
+//        beginCondition();
+//        if (expression.lhs instanceof IntExpression) {
+//            visitExpression(expression.rhs);
+//            code.addFlow(ListDequeUtils.peekLastInt(conditionalChains), invertCond
+//                    ? new Ifgt(((IntExpression) expression.lhs).value)
+//                    : new Ifle(((IntExpression) expression.lhs).value));
+//            code.decStack();
+//        } else if (expression.rhs instanceof IntExpression) {
+//            visitExpression(expression.lhs);
+//            code.addFlow(ListDequeUtils.peekLastInt(conditionalChains), invertCond
+//                    ? new Iflt(((IntExpression) expression.rhs).value)
+//                    : new Ifge(((IntExpression) expression.rhs).value));
+//            code.decStack();
+//        } else {
+//            visitBinary(expression);
+//            code.addFlow(TreeInfo.line(expression), ListDequeUtils.peekLastInt(conditionalChains),
+//                    invertCond ? new Ifcmplt() : new Ifcmpge());
+//            code.decStack(2);
+//        }
+//        endCondition();
+
+        generateComparison(expression);
+    }
+
+    private void generateComparison(ConditionalExpression expression) {
         beginCondition();
-        if (expression.lhs instanceof IntExpression) {
-            visitExpression(expression.rhs);
-            code.addFlow(peekInt(conditionalChains), conditionInvert
-                    ? new Ifgt(((IntExpression) expression.lhs).value)
-                    : new Ifle(((IntExpression) expression.lhs).value));
-            code.decStack();
-        } else if (expression.rhs instanceof IntExpression) {
-            visitExpression(expression.lhs);
-            code.addFlow(peekInt(conditionalChains), conditionInvert
-                    ? new Iflt(((IntExpression) expression.rhs).value)
-                    : new Ifge(((IntExpression) expression.rhs).value));
-            code.decStack();
-        } else {
-            visitBinary(expression);
-            code.addFlow(peekInt(conditionalChains), line(expression),
-                    conditionInvert ? new Ifcmplt() : new Ifcmpge());
-            code.decStack(2);
+        Expression lhs = expression.lhs;
+        Expression rhs = expression.rhs;
+        JumpState resultState;
+        int resultStackAdjustment;
+        int shortVal = Integer.MIN_VALUE;
+        boolean lhsNull = (lhs instanceof NullExpression);
+        boolean rhsNull = (rhs instanceof NullExpression);
+        boolean lhsShort = TreeInfo.testShort(lhs);
+        boolean rhsShort = TreeInfo.testShort(rhs);
+        if (lhsShort || rhsShort) {
+            shortVal = (int) ((IntExpression) (lhsShort ? lhs : rhs)).value;
+            visitExpression(lhsShort ? rhs : lhs);
         }
-        endCondition(line(expression));
+        switch (expression.tag) {
+            case EQ:
+                if (lhsNull || rhsNull) {
+                    visitExpression(lhsNull ? rhs : lhs);
+                    resultState = (invertCond ? new Ifnull() : new Ifnonnull());
+                    resultStackAdjustment = -1;
+                    break;
+                } else if (lhsShort || rhsShort) {
+                    resultState = (shortVal == 0) ?
+                            (invertCond ? Ifeq.IF_FALSE : Ifne.IF_TRUE) :
+                            (invertCond ? new Ifeq(shortVal) : new Ifne(shortVal));
+                    resultStackAdjustment = -1;
+                } else {
+                    visitExpression(lhs);
+                    visitExpression(rhs);
+                    resultState = (invertCond ? new Ifcmpeq() : new Ifcmpne());
+                    resultStackAdjustment = -2;
+                }
+                break;
+            case NEQ:
+                if (lhsNull || rhsNull) {
+                    visitExpression(lhsNull ? rhs : lhs);
+                    resultState = (invertCond ? new Ifnonnull() : new Ifnull());
+                    resultStackAdjustment = -1;
+                    break;
+                } else if (lhsShort || rhsShort) {
+                    resultState = (shortVal == 0) ?
+                            (invertCond ? Ifne.IF_TRUE : Ifeq.IF_FALSE) :
+                            (invertCond ? new Ifne(shortVal) : new Ifeq(shortVal));
+                    resultStackAdjustment = -1;
+                } else {
+                    visitExpression(lhs);
+                    visitExpression(rhs);
+                    resultState = (invertCond ? new Ifcmpne() : new Ifcmpeq());
+                    resultStackAdjustment = -2;
+                }
+                break;
+            case LT:
+                if (lhsShort || rhsShort) {
+                    resultState = lhsShort ?
+                            (invertCond ? new Ifgt(shortVal) : new Iflt(shortVal)) :
+                            (invertCond ? new Iflt(shortVal) : new Ifge(shortVal));
+                    resultStackAdjustment = -1;
+                } else {
+                    visitExpression(lhs);
+                    visitExpression(rhs);
+                    resultState = (invertCond ? new Ifcmplt() : new Ifcmpge());
+                    resultStackAdjustment = -2;
+                }
+                break;
+            case LE:
+                if (lhsShort || rhsShort) {
+                    resultState = lhsShort ?
+                            (invertCond ? new Ifge(shortVal) : new Ifle(shortVal)) :
+                            (invertCond ? new Ifle(shortVal) : new Ifgt(shortVal));
+                    resultStackAdjustment = -1;
+                } else {
+                    visitExpression(lhs);
+                    visitExpression(rhs);
+                    resultState = (invertCond ? new Ifcmple() : new Ifcmpgt());
+                    resultStackAdjustment = -2;
+                }
+                break;
+            case GT:
+                if (lhsShort || rhsShort) {
+                    resultState = lhsShort ?
+                            (invertCond ? new Iflt(shortVal) : new Ifgt(shortVal)) :
+                            (invertCond ? new Ifgt(shortVal) : new Ifle(shortVal));
+                    resultStackAdjustment = -1;
+                } else {
+                    visitExpression(lhs);
+                    visitExpression(rhs);
+                    resultState = (invertCond ? new Ifcmpgt() : new Ifcmple());
+                    resultStackAdjustment = -2;
+                }
+                break;
+            case GE:
+                if (lhsShort || rhsShort) {
+                    resultState = lhsShort ?
+                            (invertCond ? new Ifle(shortVal) : new Ifge(shortVal)) :
+                            (invertCond ? new Ifge(shortVal) : new Iflt(shortVal));
+                    resultStackAdjustment = -1;
+                } else {
+                    visitExpression(lhs);
+                    visitExpression(rhs);
+                    resultState = (invertCond ? new Ifcmpge() : new Ifcmplt());
+                    resultStackAdjustment = -2;
+                }
+                break;
+            default: throw new AssertionError();
+        }
+        code.addChainedState(TreeInfo.line(expression),
+                resultState,
+                peekConditionChain(),
+                resultStackAdjustment);
+        endCondition();
     }
 
     @Override
     public void visitMultiply(MultiplyExpression expression) {
         visitBinary(expression);
-        insertMul(line(expression));
-
+        emitMul(TreeInfo.line(expression));
     }
 
     @Override
     public void visitNegative(NegativeExpression expression) {
         visitUnary(expression);
-        code.addState(line(expression), Neg.INSTANCE);
-
+        code.addState(TreeInfo.line(expression), Neg.INSTANCE);
     }
 
     @Override
     public void visitNotEqual(NotEqualExpression expression) {
-        beginCondition();
-        Expression rhs = expression.rhs.child();
-        if (rhs instanceof NullExpression) {
-            visitExpression(expression.lhs);
-            code.addFlow(peekInt(conditionalChains), conditionInvert ? new Ifnonnull() : new Ifnull());
-            code.decStack();
-        } else if (expression.lhs instanceof IntExpression) {
-            visitExpression(expression.rhs);
-            code.addFlow(peekInt(conditionalChains), conditionInvert
-                    ? new Ifne(((IntExpression) expression.lhs).value)
-                    : new Ifeq(((IntExpression) expression.lhs).value));
-            code.decStack();
-        } else if (rhs instanceof IntExpression) {
-            visitExpression(expression.lhs);
-            code.addFlow(peekInt(conditionalChains), conditionInvert
-                    ? new Ifne(((IntExpression) rhs).value)
-                    : new Ifeq(((IntExpression) rhs).value));
-            code.decStack();
-        } else {
-            visitBinary(expression);
-            code.addFlow(peekInt(conditionalChains), conditionInvert ? new Ifcmpne() : new Ifcmpeq());
-            code.decStack(2);
-        }
-        endCondition(line(expression));
+//        beginCondition();
+//        Expression lhs = expression.lhs;
+//        Expression rhs = expression.rhs;
+//        int line = TreeInfo.line(expression);
+//        if (lhs instanceof NullExpression) {
+//            visitExpression(rhs);
+//            code.addChainedState(line,
+//                    invertCond ? new Ifnonnull() : new Ifnull(),
+//                    peekConditionChain(), -1);
+//        } else if (rhs instanceof NullExpression) {
+//            visitExpression(lhs);
+//            code.addChainedState(line,
+//                    (invertCond ? new Ifnonnull() : new Ifnull()),
+//                    peekConditionChain(), -1);
+//        } else if (TreeInfo.resolveShort(lhs) >= 0) {
+//            visitExpression(rhs);
+//            int shortVal = TreeInfo.resolveShort(lhs);
+//            code.addChainedState(line,
+//                    (invertCond ? new Ifne(shortVal) : new Ifeq(shortVal)),
+//                    peekConditionChain(), -1);
+//        } else if (TreeInfo.resolveShort(rhs) >= 0) {
+//            visitExpression(rhs);
+//            int shortVal = TreeInfo.resolveShort(lhs);
+//            code.addChainedState(line,
+//                    (invertCond ? new Ifne(shortVal) : new Ifeq(shortVal)),
+//                    peekConditionChain(), -1);
+//        } else {
+//            visitExpression(lhs);
+//            visitExpression(rhs);
+//            code.addChainedState(line,
+//                    (invertCond ? new Ifcmpne() : new Ifcmpeq()),
+//                    peekConditionChain(), -2);
+//        }
+//        endCondition();
+
+        generateComparison(expression);
     }
 
     @Override
     public void visitNot(NotExpression expression) {
         beginCondition();
-        if (conditionInvert) {
-            conditionInvert = false;
-            visitCondition(expression.hs);
-            conditionInvert = true;
+        if (invertCond) {
+            invertCond = false;
+            generateCondition(expression.hs);
+            invertCond = true;
         } else {
-            conditionInvert = true;
-            visitCondition(expression.hs);
-            conditionInvert = false;
+            invertCond = true;
+            generateCondition(expression.hs);
+            invertCond = false;
         }
-        endCondition(line(expression));
+        endCondition();
     }
 
     @Override
     public void visitNullCoalesce(NullCoalesceExpression expression) {
         // todo: Это очевидно неполноценная реализация.
         visitExpression(expression.lhs);
-        insertDup();
-        int el = code.createFlow();
-        code.addFlow(el, new Ifnonnull());
-        code.decStack();
-        code.addState(Pop.INSTANCE);
-        code.decStack();
+        emitDup();
+        int el = code.makeChain();
+        code.addChainedState(new Ifnonnull(), el, -1);
+        code.addState(Pop.INSTANCE, -1);
         visitExpression(expression.rhs);
-        code.resolveFlow(el);
-
+        code.resolveChain(el);
     }
 
     @Override
     public void visitNull(NullExpression expression) {
-        code.incStack();
-        code.addState(PushNull.INSTANCE);
-
+        code.addState(PushNull.INSTANCE, 1);
     }
 
     @Override
     public void visitOr(OrExpression expression) {
         beginCondition();
-        if (conditionInvert) {
-            visitCondition(expression.lhs);
-            visitCondition(expression.rhs);
+        if (invertCond) {
+            generateCondition(expression.lhs);
+            generateCondition(expression.rhs);
         } else {
             if (expression.rhs == null) {
-                visitCondition(expression.lhs);
+                generateCondition(expression.lhs);
             } else {
-                int tr = pushNewFlow();
-                conditionInvert = true;
-                visitCondition(expression.lhs);
-                popFlow();
-                conditionInvert = false;
-                visitCondition(expression.rhs);
-                code.resolveFlow(tr);
+                int tr = pushMakeConditionChain();
+                invertCond = true;
+                generateCondition(expression.lhs);
+                popConditionChain();
+                invertCond = false;
+                generateCondition(expression.rhs);
+                code.resolveChain(tr);
             }
         }
-        endCondition(line(expression));
+        endCondition();
     }
 
     @Override
@@ -741,65 +822,62 @@ public class Gen implements Visitor {
     @Override
     public void visitPositive(PositiveExpression expression) {
         visitUnary(expression);
-        code.addState(line(expression), Pos.INSTANCE);
+        code.addState(TreeInfo.line(expression), Pos.INSTANCE);
     }
 
     @Override
     public void visitPostDecrement(PostDecrementExpression expression) {
-        visitIncrease(expression, false, true);
+        generateIncrease(expression, false, true);
     }
 
     @Override
     public void visitPostIncrement(PostIncrementExpression expression) {
-        visitIncrease(expression, true, true);
+        generateIncrease(expression, true, true);
     }
 
     @Override
     public void visitPreDecrement(PreDecrementExpression expression) {
-        visitIncrease(expression, false, false);
+        generateIncrease(expression, false, false);
     }
 
     @Override
     public void visitPreIncrement(PreIncrementExpression expression) {
-        visitIncrease(expression, true, false);
+        generateIncrease(expression, true, false);
     }
 
     @Override
     public void visitPrintln(PrintlnStatement statement) {
         visitList(statement.expressions);
         int count = statement.expressions.size();
-        code.addState(line(statement), new Println(count));
-        code.decStack(count);
+        code.addState(TreeInfo.line(statement), new Println(count), -count);
     }
 
     @Override
     public void visitPrint(PrintStatement statement) {
         visitList(statement.expressions);
         int count = statement.expressions.size();
-        code.addState(line(statement), new Print(count));
-        code.decStack(count);
+        code.addState(TreeInfo.line(statement), new Print(count), -count);
     }
 
     @Override
     public void visitRemainder(RemainderExpression expression) {
         visitBinary(expression);
-        insertRem(line(expression));
-
+        emitRem(TreeInfo.line(expression));
     }
 
     @Override
     public void visitReturn(ReturnStatement statement) {
         if (isNull(statement.expr)) {
-            insertRetnull();
+            emitRetnull(TreeInfo.line(statement));
         } else {
             visitExpression(statement.expr);
-            insertReturn();
+            emitReturn(TreeInfo.line(statement));
         }
     }
 
-    private void insertRetnull() {
-        code.addState(Retnull.INSTANCE);
-        code.deathScope();
+    private void emitRetnull(int line) {
+        code.addState(line, Retnull.INSTANCE);
+        code.dead();
     }
 
     private static boolean isNull(Expression expression) {
@@ -810,20 +888,18 @@ public class Gen implements Visitor {
     @Override
     public void visitRightShift(ShiftRightExpression expression) {
         visitBinary(expression);
-        insertRhs(line(expression));
-
+        emitRhs(TreeInfo.line(expression));
     }
 
     @Override
     public void visitString(StringExpression expression) {
-        insertPushString(line(expression), expression.value);
+        emitPushString(TreeInfo.line(expression), expression.value);
     }
 
     @Override
     public void visitSubtract(SubtractExpression expression) {
         visitBinary(expression);
-        insertSub(line(expression));
-
+        emitSub(TreeInfo.line(expression));
     }
 
     @Override
@@ -835,15 +911,15 @@ public class Gen implements Visitor {
         visitExpression(statement.selector);
         Part[] parts = new Part[count];
         Switch _switch = new Switch(parts);
-        int a = code.createFlow();
+        int a = code.makeChain();
         breakChains.add(a);
-        code.addFlow(a, _switch);
-        fallthroughChains.add(code.createFlow());
+        code.addChainedState(TreeInfo.line(statement), _switch, a);
+        fallthroughChains.add(code.makeChain());
         switchPartsStack.add(new ArrayList<>(count));
         for (CaseStatement _case : statement.cases) {
             if (_case.expressions == null) {
-                _switch.setDefault(new Part(code.statesCount(), null));
-                insertCaseBody(_case.body);
+                _switch.setDefault(new Part(code.currentBci(), null));
+                emitCaseBody(_case.body);
             } else {
                 visitStatement(_case);
             }
@@ -852,89 +928,88 @@ public class Gen implements Visitor {
         for (int i = 0; i < parts0.size(); i++) {
             parts[i] = parts0.get(i);
         }
-        code.resolveFlow(popInt(fallthroughChains));
-        code.resolveFlow(popInt(breakChains));
-    }
-
-    private static int popInt(IntList integers) {
-        return integers.removeInt(integers.size() - 1);
+        code.resolveChain(ListDequeUtils.removeLastInt(fallthroughChains));
+        code.resolveChain(ListDequeUtils.removeLastInt(breakChains));
     }
 
     @Override
     public void visitTernary(TernaryExpression expression) {
-        int el = pushNewFlow();
-        int ex = code.createFlow();
-        if (conditionInvert) {
-            conditionInvert = false;
-            visitCondition(expression.cond);
-            conditionInvert = true;
+        int el = pushMakeConditionChain();
+        int ex = code.makeChain();
+        if (invertCond) {
+            invertCond = false;
+            generateCondition(expression.cond);
+            invertCond = true;
         } else {
-            visitCondition(expression.cond);
+            generateCondition(expression.cond);
         }
-        popFlow();
+        popConditionChain();
         visitExpression(expression.lhs);
-        insertGoto(0, ex);
-        code.resolveFlow(el);
+        emitGoto(0, ex);
+        code.resolveChain(el);
         visitExpression(expression.rhs);
-        code.resolveFlow(ex);
+        code.resolveChain(ex);
     }
 
     @Override
     public void visitTrue(TrueExpression expression) {
-        insertTrue(line(expression));
+        emitPushTrue(TreeInfo.line(expression));
     }
 
     @Override
     public void visitVariable(VariableExpression expression) {
         String name = expression.name;
         if (builtIn.testConstant(name)) {
-            code.addState(new Getconst(name));
-            code.incStack();
+            code.addState(new Getconst(name), 1);
         } else {
-            insertVLoad(line(expression), expression.name);
+            emitVLoad(TreeInfo.line(expression), expression.name);
         }
     }
 
     @Override
     public void visitWhile(WhileStatement statement) {
-        compileLoop(null, statement.cond, null, statement.body, true);
+        generateLoop(statement, null, statement.cond, null, statement.body, true);
     }
 
-    private void compileLoop(List<Expression> initials, Expression condition, List<Expression> steps,
+    private void generateLoop(Statement loop, List<Expression> initials, Expression condition, List<Expression> steps,
                              Statement body, boolean testFirst) {
-        // cond pc
-        int cond = code.createFlow();
-        // begin pc
-        int begin = code.createFlow();
-        // exit pc
-        int exit = code.createFlow();
-
-        addLoop(condition == null);
+        // cond chain
+        int cdc = code.makeChain();
+        // begin chain
+        int bgc = code.makeChain();
+        // exit chain
+        int exc = code.makeChain();
+        
+        boolean prevLoopInfinity = loopInfinity;
+        loopInfinity = false;
+        
         if (initials != null) {
             initials.forEach(this::visitStatement);
         }
         if (testFirst && condition != null) {
-            insertGoto(0, cond);
+            emitGoto(TreeInfo.line(loop), cdc);
         }
-        code.resolveFlow(begin);
-        breakChains.add(exit);
-        continueChains.add(cond);
+        code.resolveChain(bgc);
+        breakChains.add(exc);
+        continueChains.add(cdc);
         visitBody(body);
         if (steps != null) {
             steps.forEach(this::visitStatement);
         }
-        code.resolveFlow(cond);
+        code.resolveChain(cdc);
         if (condition == null) {
-            insertGoto(0, begin);
+            emitGoto(0, bgc);
         } else {
-            conditionalChains.add(begin);
-            conditionInvert = true;
-            visitCondition(condition);
-            conditionInvert = false;
-            popFlow();
+//            System.err.printf("bgc: %d%n", bgc);
+            conditionalChains.add(bgc);
+            invertCond = true;
+            generateCondition(condition);
+            invertCond = false;
+            popConditionChain();
         }
-        code.resolveFlow(exit);
-        checkInfinity();
+        code.resolveChain(exc);
+        if (loopInfinity) code.dead();
+        loopInfinity = prevLoopInfinity;
     }
 
     private void visitExpression(Expression expression) {
@@ -962,7 +1037,7 @@ public class Gen implements Visitor {
         disableUsed();
     }
 
-    private void visitCondition(Expression expression) {
+    private void generateCondition(Expression expression) {
         if (expression == null) {
             return;
         }
@@ -974,9 +1049,9 @@ public class Gen implements Visitor {
         }
         // todo: Здешний код отвратителен. Следует переписать всё с нуля...
         code.addState(Bool.INSTANCE);
-        code.addFlow(peekInt(conditionalChains), line(expression),
-                conditionInvert ? new Ifeq(0) : new Ifne(0));
-        code.decStack(1);
+        code.addChainedState(TreeInfo.line(expression),
+                invertCond ? Ifne.IF_TRUE : Ifeq.IF_FALSE,
+                peekConditionChain(), -1);
     }
 
     @Override
@@ -990,14 +1065,12 @@ public class Gen implements Visitor {
             case PRINT: case PRINTLN:
                 break;
             default:
-                code.addState(Pop.INSTANCE);
-                code.decStack();
+                code.addState(Pop.INSTANCE, -1);
         }
     }
 
-    private void visitAssignment(AssignmentExpression expression,
-                                 @Deprecated AssignmentState state) {
-        //        Expression var = expression.var.child();
+    private void generateAssignment(AssignmentExpression expression) {
+//        Expression var = expression.var.child();
 //        checkAssignable(var);
 //        int line = line(expression);
 //        if (var instanceof ArrayAccessExpression) {
@@ -1005,9 +1078,9 @@ public class Gen implements Visitor {
 //            visitExpression(var0.hs);
 //            visitExpression(var0.key);
 //            if (state != null) {
-//                insertDup2(line);
-//                insertALoad(line(var0.key));
-//                state.insert(line);
+//                emitDup2(line);
+//                emitALoad(line(var0.key));
+//                state.emit(line);
 //            } else {
 //                visitExpression(expression.expr);
 //            }
@@ -1015,19 +1088,19 @@ public class Gen implements Visitor {
 //                // Здесь используется var0.key потому что
 //                // он может быть дальше, чем var0, а если бы он был ближе
 //                // к началу файла, то это было бы некорректно для таблицы линий
-//                insertDup_x2(line(var0.key));
-//            insertAStore(line);
+//                emitDup_x2(line(var0.key));
+//            emitAStore(line);
 //        } else if (var instanceof VariableExpression) {
 //            if (state != null) {
 //                visitExpression(var);
-//                state.insert(line);
+//                state.emit(line);
 //            } else {
 //                visitExpression(expression.expr);
 //                if (isUsed()) {
-//                    insertDup(line(var));
+//                    emitDup(line(var));
 //                }
 //            }
-//            insertVStore(line, ((VariableExpression) var).name);
+//            emitVStore(line, ((VariableExpression) var).name);
 //        }
 
         Expression lhs = expression.var;
@@ -1039,77 +1112,72 @@ public class Gen implements Visitor {
                 visitExpression(arrayAccess.hs);
                 visitExpression(arrayAccess.key);
                 if (expression.isTag(Tag.ASG_NULLCOALESCE)) {
-                    int el = code.createFlow();
-                    int ex = code.createFlow();
-                    insertDup2();
-                    insertALoad(line(arrayAccess));
-                    code.addFlow(el, new Ifnonnull());
-                    code.decStack();
+                    int el = code.makeChain();
+                    int ex = code.makeChain();
+                    emitDup2();
+                    emitALoad(TreeInfo.line(arrayAccess));
+                    code.addChainedState(new Ifnonnull(), el, -1);
                     visitExpression(rhs);
                     if (isUsed()) {
-                        insertDupX2();
+                        emitDupX2();
                     }
-                    insertAStore(line(arrayAccess));
-                    insertGoto(0, ex);
-                    code.resolveFlow(el);
+                    emitAStore(TreeInfo.line(arrayAccess));
+                    emitGoto(0, ex);
+                    code.resolveChain(el);
                     if (isUsed()) {
-                        insertALoad(line(arrayAccess));
+                        emitALoad(TreeInfo.line(arrayAccess));
                     } else {
-                        code.addState(Pop2.INSTANCE);
-                        code.decStack(2);
+                        code.addState(Pop2.INSTANCE, -2);
                     }
-                    code.resolveFlow(ex);
+                    code.resolveChain(ex);
                 } else {
                     if (!expression.isTag(Tag.ASG)) {
-                        insertDup2();
-                        insertALoad(line(arrayAccess));
+                        emitDup2();
+                        emitALoad(TreeInfo.line(arrayAccess));
                         visitExpression(rhs);
-                        code.addState(line(expression), asg2state(expression.tag));
-                        code.decStack();
+                        code.addState(TreeInfo.line(expression), asg2state(expression.tag), -1);
                     } else {
                         visitExpression(rhs);
                     }
                     if (isUsed()) {
-                        insertDupX2();
+                        emitDupX2();
                     }
-                    insertAStore(line(arrayAccess));
+                    emitAStore(TreeInfo.line(arrayAccess));
                 }
                 break;
             }
             case VARIABLE: {
                 VariableExpression variable = (VariableExpression) lhs;
                 if (expression.isTag(Tag.ASG_NULLCOALESCE)) {
-                    int ex = code.createFlow();
+                    int ex = code.makeChain();
                     visitExpression(lhs);
-                    code.addFlow(ex, new Ifnonnull());
-                    code.decStack();
+                    code.addChainedState(new Ifnonnull(), ex, -1);
                     visitExpression(rhs);
                     if (isUsed()) {
-                        insertDup();
+                        emitDup();
                     }
-                    insertVStore(line(expression), variable.name);
+                    emitVStore(TreeInfo.line(expression), variable.name);
                     if (isUsed()) {
-                        int el = code.createFlow();
-                        insertGoto(0, el);
-                        code.resolveFlow(ex);
+                        int el = code.makeChain();
+                        emitGoto(0, el);
+                        code.resolveChain(ex);
                         visitExpression(lhs);
-                        code.resolveFlow(el);
+                        code.resolveChain(el);
                     } else {
-                        code.resolveFlow(ex);
+                        code.resolveChain(ex);
                     }
                 } else {
                     if (!expression.isTag(Tag.ASG)) {
                         visitExpression(lhs);
                         visitExpression(rhs);
-                        code.addState(line(expression), asg2state(expression.tag));
-                        code.decStack();
+                        code.addState(TreeInfo.line(expression), asg2state(expression.tag), -1);
                     } else {
                         visitExpression(rhs);
                     }
                     if (isUsed()) {
-                        insertDup();
+                        emitDup();
                     }
-                    insertVStore(line(expression), variable.name);
+                    emitVStore(TreeInfo.line(expression), variable.name);
                 }
                 break;
             }
@@ -1144,9 +1212,9 @@ public class Gen implements Visitor {
         expressionDepth--;
     }
 
-    private void visitIncrease(IncreaseExpression expression,
-                               @Deprecated boolean isIncrement,
-                               @Deprecated boolean isPost) {
+    private void generateIncrease(IncreaseExpression expression,
+                                  @Deprecated boolean isIncrement,
+                                  @Deprecated boolean isPost) {
 //        Expression hs = expression.hs.child();
 //        checkAssignable(hs);
 //        int line = line(expression);
@@ -1154,28 +1222,28 @@ public class Gen implements Visitor {
 //            ArrayAccessExpression hs0 = (ArrayAccessExpression) hs;
 //            visitExpression(hs0.hs);
 //            visitExpression(hs0.key);
-//            insertDup2(line(expression));
-//            insertALoad(line(hs0.key));
+//            emitDup2(line(expression));
+//            emitALoad(line(hs0.key));
 //            if (isPost && (isUsed())) {
-//                insertDupX2(line(hs0.key));
+//                emitDupX2(line(hs0.key));
 //            }
 //            code.addState(line, isIncrement
 //                    ? Inc.INSTANCE
 //                    : Dec.INSTANCE);
 //            if (!isPost && (isUsed())) {
-//                insertDupX2(line(hs0.key));
+//                emitDupX2(line(hs0.key));
 //            }
-//            insertAStore(line);
+//            emitAStore(line);
 //        } else if (hs instanceof VariableExpression) {
 //            String name = ((VariableExpression) hs).name;
 //            if (isPost && (isUsed())) {
-//                insertVLoad(line, name);
+//                emitVLoad(line, name);
 //            }
 //            code.addState(line, isIncrement
 //                    ? new Vinc(name, code.getLocal(name))
 //                    : new Vinc(name, code.getLocal(name)));
 //            if (!isPost && (isUsed())) {
-//                insertVLoad(line, name);
+//                emitVLoad(line, name);
 //            }
 //        }
 
@@ -1186,26 +1254,27 @@ public class Gen implements Visitor {
                 ArrayAccessExpression arrayAccess = (ArrayAccessExpression) hs;
                 visitExpression(arrayAccess.hs);
                 visitExpression(arrayAccess.key);
-                insertDup2();
-                insertALoad(line(arrayAccess));
+                emitDup2();
+                emitALoad(TreeInfo.line(arrayAccess));
                 if (isUsed() && (expression.isTag(Tag.POST_INC) || expression.isTag(Tag.POST_DEC))) {
-                    insertDupX2();
+                    emitDupX2();
                 }
-                code.addState(line(expression), increase2state(expression.tag, -1));
+                code.addState(TreeInfo.line(expression), increase2state(expression.tag, -1));
                 if (isUsed() && (expression.isTag(Tag.PRE_INC) || expression.isTag(Tag.PRE_DEC))) {
-                    insertDupX2();
+                    emitDupX2();
                 }
-                insertAStore(line(arrayAccess));
+                emitAStore(TreeInfo.line(arrayAccess));
                 break;
             }
             case VARIABLE: {
                 VariableExpression variable = (VariableExpression) hs;
                 if (isUsed() && (expression.isTag(Tag.POST_INC) || expression.isTag(Tag.POST_DEC))) {
-                    insertVLoad(line(variable), variable.name);
+                    emitVLoad(TreeInfo.line(variable), variable.name);
                 }
-                code.addState(line(expression), increase2state(expression.tag, code.getLocal(variable.name)));
+                code.addState(TreeInfo.line(expression),
+                        increase2state(expression.tag, code.resolveLocal(variable.name)));
                 if (isUsed() && (expression.isTag(Tag.PRE_INC) || expression.isTag(Tag.PRE_DEC))) {
-                    insertVLoad(line(variable), variable.name);
+                    emitVLoad(TreeInfo.line(variable), variable.name);
                 }
                 break;
             }
@@ -1224,10 +1293,10 @@ public class Gen implements Visitor {
     }
 
     private boolean visitBody(Statement statement) {
-        code.enterScope();
+        code.pushScope();
         visitStatement(statement);
-        boolean alive = code.scopeAlive();
-        code.exitScope();
+        boolean alive = code.isAlive();
+        code.popScope();
         return alive;
     }
 
@@ -1241,226 +1310,84 @@ public class Gen implements Visitor {
         if (conditionDepth != 0) {
             return;
         }
-        pushNewFlow();
+        pushMakeConditionChain();
     }
 
-    private void endCondition(int line) {
+    private void endCondition() {
         if (conditionDepth != 0) {
             return;
         }
-        int ex = code.createFlow();
-        insertTrue(line);
-        insertGoto(0, ex);
-        code.resolveFlow(popFlow());
-        insertFalse(line);
-        code.resolveFlow(ex);
+        int ex = code.makeChain();
+        emitPushTrue(0);
+        emitGoto(0, ex);
+        code.resolveChain(popConditionChain());
+        emitPushFalse(0);
+        code.resolveChain(ex);
 
     }
 
-    private void insertPushLong(int line, long value) {
-        code.incStack();
+    private void emitPushLong(int line, long value) {
         if (isShort(value)) {
-            code.addState(line, new Push(Push.TYPE_INT, value));
+            code.addState(line, new Push(Push.TYPE_INT, value), 1);
         } else {
-            code.addState(line, new Ldc(code.resolveLong(value)));
+            code.addState(line, new Ldc(code.resolveConstant(value)), 1);
         }
     }
 
-    private void insertPushDouble(int line, double value) {
-        code.incStack();
+    private void emitPushDouble(int line, double value) {
         long lv = (long) value;
         if (lv == value && isShort(lv)) {
-            code.addState(line, new Push(Push.TYPE_INT, lv));
+            code.addState(line, new Push(Push.TYPE_INT, lv), 1);
         } else {
-            code.addState(line, new Ldc(code.resolveDouble(value)));
+            code.addState(line, new Ldc(code.resolveConstant(value)), 1);
         }
     }
 
-    private void insertPushString(int line, String value) {
-        code.incStack();
-        code.addState(line, new Ldc(code.resolveString(value)));
+    private void emitPushString(int line, String value) {
+        code.addState(line, new Ldc(code.resolveConstant(value)), 1);
     }
 
     private static boolean isShort(long value) {
         return value >= Short.MIN_VALUE && value <= Short.MAX_VALUE;
     }
 
-    private void insertTrue(int line) {
-        code.incStack();
-        code.addState(line, Push.PUSH_TRUE);
-    }
+    // emit methods
 
-    private void insertFalse(int line) {
-        code.incStack();
-        code.addState(line, Push.PUSH_FALSE);
-    }
-
-    private void insertGoto(int line, int flow) {
-        code.addFlow(flow, line, new Goto());
-    }
-
-    private void insertDup() {
-        code.incStack();
-        code.addState(Dup.INSTANCE);
-    }
-
-    private void insertDupX1() {
-        code.incStack();
-        code.addState(Dup_x1.INSTANCE);
-    }
-
-    private void insertDupX2() {
-        code.incStack();
-        code.addState(Dup_x2.INSTANCE);
-    }
-
-    private void insertDup2() {
-        code.incStack(2);
-        code.addState(Dup2.INSTANCE);
-    }
-
-    private void insertDup2X1() {
-        code.incStack(2);
-        code.addState(Dup2_x1.INSTANCE);
-    }
-
-    private void insertDup2X2() {
-        code.incStack(2);
-        code.addState(Dup2_x2.INSTANCE);
-    }
-
-    private void insertAdd(int line) {
-        code.addState(line, Add.INSTANCE);
-        code.decStack();
-    }
-
-    private void insertAnd(int line) {
-        code.addState(line, And.INSTANCE);
-        code.decStack();
-    }
-
-    private void insertOr(int line) {
-        code.addState(line, Or.INSTANCE);
-        code.decStack();
-    }
-
-    private void insertXor(int line) {
-        code.addState(line, Xor.INSTANCE);
-        code.decStack();
-    }
-
-    private void insertDiv(int line) {
-        code.addState(line, Div.INSTANCE);
-        code.decStack();
-    }
-
-    private void insertLhs(int line) {
-        code.addState(line, Shl.INSTANCE);
-        code.decStack();
-    }
-
-    private void insertMul(int line) {
-        code.addState(line, Mul.INSTANCE);
-        code.decStack();
-    }
-
-    private void insertRem(int line) {
-        code.addState(line, Rem.INSTANCE);
-        code.decStack();
-    }
-
-    private void insertRhs(int line) {
-        code.addState(line, Shr.INSTANCE);
-        code.decStack();
-    }
-
-    private void insertSub(int line) {
-        code.addState(line, Sub.INSTANCE);
-        code.decStack();
-    }
-
-    private void insertALoad(int line) {
-        code.addState(line, Aload.INSTANCE);
-        code.decStack();
-    }
-
-    private void insertVLoad(int line, String name) {
-        code.incStack();
-        code.addState(line, new Vload(code.getLocal(name)));
-    }
-
-    private void insertAStore(int line) {
-        code.addState(line, Astore.INSTANCE);
-        code.decStack(3);
-    }
-
-    private void insertVStore(int line, String name) {
-        code.addState(line, new Vstore(code.getLocal(name)));
-        code.decStack();
-    }
-
-    private void insertCaseBody(Statement body) {
-        code.resolveFlow(popInt(fallthroughChains));
-        fallthroughChains.add(code.createFlow());
-        addLoop(false);
+    private void emitPushTrue(int line) { code.addState(line, Push.PUSH_TRUE, 1); }
+    private void emitPushFalse(int line) { code.addState(line, Push.PUSH_FALSE, 1); }
+    private void emitGoto(int line, int chainId) { code.addChainedState(line, new Goto(), chainId); }
+    private void emitDup() { code.addState(Dup.INSTANCE, 1); }
+    private void emitDupX1() { code.addState(Dup_x1.INSTANCE, 1); }
+    private void emitDupX2() { code.addState(Dup_x2.INSTANCE, 1); }
+    private void emitDup2() { code.addState(Dup2.INSTANCE, 2); }
+    private void emitDup2X1() { code.addState(Dup2_x1.INSTANCE, 2); }
+    private void emitDup2X2() { code.addState(Dup2_x2.INSTANCE, 2); }
+    private void emitAdd(int line) { code.addState(line, Add.INSTANCE, -1); }
+    private void emitAnd(int line) { code.addState(line, And.INSTANCE, -1); }
+    private void emitOr(int line) { code.addState(line, Or.INSTANCE, -1); }
+    private void emitXor(int line) { code.addState(line, Xor.INSTANCE, -1); }
+    private void emitDiv(int line) { code.addState(line, Div.INSTANCE, -1); }
+    private void emitLhs(int line) { code.addState(line, Shl.INSTANCE, -1); }
+    private void emitMul(int line) { code.addState(line, Mul.INSTANCE, -1); }
+    private void emitRem(int line) { code.addState(line, Rem.INSTANCE, -1); }
+    private void emitRhs(int line) { code.addState(line, Shr.INSTANCE, -1); }
+    private void emitSub(int line) { code.addState(line, Sub.INSTANCE, -1); }
+    private void emitALoad(int line) { code.addState(line, Aload.INSTANCE, -1); }
+    private void emitVLoad(int line, String name) { code.addState(line, new Vload(code.resolveLocal(name)), 1); }
+    private void emitAStore(int line) { code.addState(line, Astore.INSTANCE, -3); }
+    private void emitVStore(int line, String name) { code.addState(line, new Vstore(code.resolveLocal(name)), -1); }
+    private void emitCaseBody(Statement body) {
+        code.resolveChain(ListDequeUtils.removeLastInt(fallthroughChains));
+        fallthroughChains.add(code.makeChain());
+        boolean prevLoopInfinity = loopInfinity;
+        loopInfinity = false;
         visitStatement(body);
-        if (loops.pop().isInfinity()) insertGoto(line(body), peekInt(breakChains));
+        if (loopInfinity) emitGoto(TreeInfo.line(body), ListDequeUtils.peekLastInt(breakChains));
+        loopInfinity = prevLoopInfinity;
     }
-
-    private void insertReturn() {
-        code.addState(Return.INSTANCE);
-        code.decStack();
-        code.deathScope();
-    }
-
-    private void checkAssignable(Expression expr) {
-        expr = expr.child();
-        checkConstant(expr);
-        if (!expr.isAssignable()) {
-            cError(expr.getPosition(), "assignable expected.");
-        } else if (expr instanceof ArrayAccessExpression) {
-            checkAccessible(((ArrayAccessExpression) expr).hs);
-        }
-    }
-
-    private void checkCloneable(Expression expr) {
-//        expr = expr.child();
-//        if (!expr.isCloneable()) {
-//            cError(expr.getPosition(), "cloneable expected.");
-//        }
-    }
-
-    private void checkAccessible(Expression expr) {
-        switch (expr.tag) {
-            case FUNC_CALL: case ARRAY_ACCESS:
-            case VARIABLE: case PARENS:
-                return;
-        }
-        cError(expr.position, "accessible expression expected.");
-    }
-
-    private void checkConstant(Expression expr) {
-        expr = expr.child();
-        if (!(expr instanceof VariableExpression)) {
-            return;
-        }
-        if (builtIn.testConstant(((VariableExpression) expr).name)) {
-            cError(expr.getPosition(), "assignment to constant is not allowed.");
-        }
-    }
-
-    private void addLoop(boolean infinity) {
-        Loop loop = new Loop();
-        loop.setInfinity(infinity);
-        loops.add(loop);
-    }
-
-    private void checkInfinity() {
-        if (loops.pop().isInfinity()) code.deathScope();
-    }
-
-    private int line(Statement stmt) {
-        return TreeInfo.line(stmt);
+    private void emitReturn(int line) {
+        code.addState(line, Return.INSTANCE, -1);
+        code.dead();
     }
 
     private void cError(Position position, String message) {

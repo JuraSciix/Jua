@@ -5,7 +5,7 @@ import jua.interpreter.InterpreterError;
 import jua.interpreter.lang.Operand;
 import jua.tools.CodePrinter;
 
-public class Ifcmpge extends JumpState {
+public final class Ifcmpge extends JumpState {
 
     @Override
     public void print(CodePrinter printer) {

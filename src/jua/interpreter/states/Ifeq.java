@@ -3,11 +3,13 @@ package jua.interpreter.states;
 import jua.interpreter.Environment;
 import jua.tools.CodePrinter;
 
-public class Ifeq extends JumpState {
+public final class Ifeq extends JumpState {
 
-    private final long value;
+    public static final Ifeq IF_FALSE = new Ifeq(0);
 
-    public Ifeq(long value) {
+    private final int value;
+
+    public Ifeq(int value) {
         this.value = value;
     }
 
@@ -20,7 +22,7 @@ public class Ifeq extends JumpState {
 
     @Override
     public int run(Environment env) {
-        if (env.popInt() != value) {
+        if (env.popInt() == value) {
             return destination;
         } else {
             return NEXT;
