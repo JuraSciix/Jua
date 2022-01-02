@@ -3,7 +3,7 @@ package jua.interpreter.runtime;
 import jua.interpreter.Program;
 import jua.interpreter.ProgramFrame;
 
-@De
+@Deprecated
 public class CallStackElement {
 
     public static CallStackElement mainEntry() {
