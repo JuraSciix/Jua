@@ -12,8 +12,8 @@ public final class Push implements Opcode {
     public static final int TYPE_DOUBLE = 2;
     public static final int TYPE_BOOLEAN = 3;
 
-    public static final Push PUSH_TRUE = new Push(TYPE_INT, 1);
-    public static final Push PUSH_FALSE = new Push(TYPE_INT, 0);
+    public static final Push PUSH_TRUE = new Push(TYPE_BOOLEAN, 1);
+    public static final Push PUSH_FALSE = new Push(TYPE_BOOLEAN, 0);
 
     private final int type;
 
