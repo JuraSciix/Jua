@@ -1,25 +1,30 @@
 package jua.compiler;
 
 import it.unimi.dsi.fastutil.booleans.BooleanArrayList;
-import it.unimi.dsi.fastutil.booleans.BooleanList;
+import it.unimi.dsi.fastutil.booleans.BooleanStack;
 import it.unimi.dsi.fastutil.doubles.Double2ObjectMap;
 import it.unimi.dsi.fastutil.doubles.Double2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.ints.*;
+import it.unimi.dsi.fastutil.ints.Int2IntLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import jua.interpreter.Program;
 import jua.interpreter.Program.LineTableEntry;
+import jua.interpreter.opcodes.ChainOpcode;
+import jua.interpreter.opcodes.Opcode;
 import jua.interpreter.runtime.DoubleOperand;
 import jua.interpreter.runtime.LongOperand;
 import jua.interpreter.runtime.Operand;
 import jua.interpreter.runtime.StringOperand;
-import jua.interpreter.opcodes.ChainOpcode;
-import jua.interpreter.opcodes.Opcode;
-import jua.tools.ListDequeUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -39,7 +44,10 @@ public final class Code {
 
         final Object2IntMap<String> localNames = new Object2IntLinkedOpenHashMap<>();
 
-        final BooleanList scopes = new BooleanArrayList();
+        /**
+         * aliveState[]
+         */
+        final BooleanStack scopes = new BooleanArrayList();
 
         // todo: Оптимизировать пул констант.
         final List<Operand> constantPool = new ArrayList<>();
@@ -92,16 +100,15 @@ public final class Code {
     }
 
     public void pushScope() {
-        ListDequeUtils.addLastBoolean(context.scopes, true);
+        context.scopes.push(true);
     }
 
     public void popScope() {
-        ListDequeUtils.removeLastBoolean(context.scopes);
+        context.scopes.popBoolean();
     }
 
     public int makeChain() {
         int newChainId = context.chains.size();
-//        System.err.printf("makeChain() (currentBci: %d, newChainId: %d)%n", currentBci(), newChainId);
         context.chains.put(newChainId, new Chain());
         return newChainId;
     }
@@ -115,11 +122,8 @@ public final class Code {
     }
 
     private void resolveChain0(int chainId, int resultBci) {
-        Chain chain = context.chains.get(chainId);
-//        System.err.printf("resolveChain0(%d, %d) (currentBci: %d, resultBci: %d, alive: %b)%n",
-//                chainId, resultBci, currentBci(), chain.resultBci, isAlive());
-
         if (!isAlive()) return;
+        Chain chain = context.chains.get(chainId);
         for (Int2ObjectMap.Entry<ChainOpcode> entry : chain.states.int2ObjectEntrySet()) {
             entry.getValue().setDestination(resultBci - entry.getIntKey());
         }
@@ -159,10 +163,8 @@ public final class Code {
     }
 
     private void addChainedState0(ChainOpcode state, int chainId, int stackAdjustment, int line) {
-        Chain chain = context.chains.get(chainId);
-//        System.err.printf("addChainedState(%s, %d, %d, %d) (currentBci: %d, resultBci: %d, alive: %b)%n",
-//                state.getClass().getName(), chainId, stackAdjustment, line, currentBci(), chain.resultBci, isAlive());
         if (!isAlive()) return;
+        Chain chain = context.chains.get(chainId);
         if (chain.resultBci != -1) {
             state.setDestination(chain.resultBci - currentBci());
         }
@@ -171,10 +173,6 @@ public final class Code {
     }
 
     private void addState0(Opcode opcode, int stackAdjustment, int line) {
-//        System.err.printf("addState0(%s, %d, %d) (nstack: %d, maxNstack: %d, scopes: %s)%n",
-//                state.getClass().getName(), stackAdjustment, line,
-//                context.nstack, context.maxNstack, context.scopes);
-
         if (!isAlive()) return;
         context.opcodes.add(opcode);
         context.nstack += stackAdjustment;
@@ -195,11 +193,14 @@ public final class Code {
     }
 
     public boolean isAlive() {
-        return ListDequeUtils.peekLastBoolean(context.scopes);
+        return context.scopes.topBoolean();
     }
 
     public void dead() {
-        ListDequeUtils.setLastBoolean(context.scopes, false);
+        if (context.scopes.topBoolean()) {
+            context.scopes.popBoolean();
+            context.scopes.push(false);
+        }
     }
 
     public int resolveLocal(String name) {

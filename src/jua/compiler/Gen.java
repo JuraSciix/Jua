@@ -1,32 +1,34 @@
 package jua.compiler;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntList;
-import jua.interpreter.runtime.*;
+import it.unimi.dsi.fastutil.ints.IntStack;
 import jua.interpreter.opcodes.*;
+import jua.interpreter.runtime.ArrayOperand;
+import jua.interpreter.runtime.Constant;
+import jua.interpreter.runtime.Operand;
+import jua.interpreter.runtime.ScriptFunction;
 import jua.parser.Tree.*;
-import jua.tools.ListDequeUtils;
 
 import java.util.*;
 
 import static jua.interpreter.opcodes.Switch.Part;
 
 public final class Gen implements Visitor {
-    
-    // todo: Rename it...
+
     private final CodeData codeData;
     
     private final Code code;
 
-    private final IntList breakChains;
+    private final IntStack breakChains;
 
-    private final IntList continueChains;
+    private final IntStack continueChains;
 
-    private final IntList fallthroughChains;
+    private final IntStack fallthroughChains;
 
+    // todo: Это дикий костыль.
     private final Deque<List<Part>> switchPartsStack;
 
-    private final IntList conditionalChains;
+    private final IntStack conditionalChains;
 
     // todo: Избавиться от ниже определенных полей
 
@@ -271,7 +273,7 @@ public final class Gen implements Visitor {
             cError(statement.getPosition(), "'break' is not allowed outside of loop/switch.");
             return;
         }
-        emitGoto(TreeInfo.line(statement), ListDequeUtils.peekLastInt(breakChains));
+        emitGoto(TreeInfo.line(statement), breakChains.topInt());
         loopInfinity = false;
     }
 
@@ -322,7 +324,7 @@ public final class Gen implements Visitor {
             cError(statement.getPosition(), "'continue' is not allowed outside of loop.");
             return;
         }
-        emitGoto(TreeInfo.line(statement), peekConditionChain());
+        emitGoto(TreeInfo.line(statement), continueChains.topInt());
         code.dead();
     }
 
@@ -380,16 +382,16 @@ public final class Gen implements Visitor {
 
     private int pushMakeConditionChain() {
         int newChain = code.makeChain();
-        ListDequeUtils.addLastInt(conditionalChains, newChain);
+        conditionalChains.push(newChain);
         return newChain;
     }
 
     private int popConditionChain() {
-        return ListDequeUtils.removeLastInt(conditionalChains);
+        return conditionalChains.popInt();
     }
 
     private int peekConditionChain() {
-        return ListDequeUtils.peekLastInt(conditionalChains);
+        return conditionalChains.topInt();
     }
 
     @Override
@@ -398,7 +400,7 @@ public final class Gen implements Visitor {
             cError(statement.getPosition(), "'fallthrough' is not allowed outside of switch.");
             return;
         }
-        emitGoto(TreeInfo.line(statement), ListDequeUtils.peekLastInt(fallthroughChains));
+        emitGoto(TreeInfo.line(statement), fallthroughChains.topInt());
         loopInfinity = false; // for cases
         code.dead();
     }
@@ -508,7 +510,7 @@ public final class Gen implements Visitor {
     @Override
     public void visitIf(IfStatement statement) {
         if (statement.elseBody == null) {
-            conditionalChains.add(code.makeChain());
+            pushMakeConditionChain();
             generateCondition(statement.cond);
             visitBody(statement.body);
             code.resolveChain(popConditionChain());
@@ -911,9 +913,9 @@ public final class Gen implements Visitor {
         Part[] parts = new Part[count];
         Switch _switch = new Switch(parts);
         int a = code.makeChain();
-        breakChains.add(a);
+        breakChains.push(a);
         code.addChainedState(TreeInfo.line(statement), _switch, a);
-        fallthroughChains.add(code.makeChain());
+        fallthroughChains.push(code.makeChain());
         switchPartsStack.add(new ArrayList<>(count));
         for (CaseStatement _case : statement.cases) {
             if (_case.expressions == null) {
@@ -927,8 +929,8 @@ public final class Gen implements Visitor {
         for (int i = 0; i < parts0.size(); i++) {
             parts[i] = parts0.get(i);
         }
-        code.resolveChain(ListDequeUtils.removeLastInt(fallthroughChains));
-        code.resolveChain(ListDequeUtils.removeLastInt(breakChains));
+        code.resolveChain(fallthroughChains.popInt());
+        code.resolveChain(breakChains.popInt());
     }
 
     @Override
@@ -989,8 +991,8 @@ public final class Gen implements Visitor {
             emitGoto(TreeInfo.line(loop), cdc);
         }
         code.resolveChain(bgc);
-        breakChains.add(exc);
-        continueChains.add(cdc);
+        breakChains.push(exc);
+        continueChains.push(cdc);
         visitBody(body);
         if (steps != null) {
             steps.forEach(this::visitStatement);
@@ -999,8 +1001,7 @@ public final class Gen implements Visitor {
         if (condition == null) {
             emitGoto(0, bgc);
         } else {
-//            System.err.printf("bgc: %d%n", bgc);
-            conditionalChains.add(bgc);
+            conditionalChains.push(bgc);
             invertCond = true;
             generateCondition(condition);
             invertCond = false;
@@ -1376,12 +1377,12 @@ public final class Gen implements Visitor {
     private void emitAStore(int line) { code.addState(line, Astore.INSTANCE, -3); }
     private void emitVStore(int line, String name) { code.addState(line, new Vstore(code.resolveLocal(name)), -1); }
     private void emitCaseBody(Statement body) {
-        code.resolveChain(ListDequeUtils.removeLastInt(fallthroughChains));
-        fallthroughChains.add(code.makeChain());
+        code.resolveChain(fallthroughChains.popInt());
+        fallthroughChains.push(code.makeChain());
         boolean prevLoopInfinity = loopInfinity;
         loopInfinity = false;
         visitStatement(body);
-        if (loopInfinity) emitGoto(TreeInfo.line(body), ListDequeUtils.peekLastInt(breakChains));
+        if (loopInfinity) emitGoto(TreeInfo.line(body), breakChains.topInt());
         loopInfinity = prevLoopInfinity;
     }
     private void emitReturn(int line) {
