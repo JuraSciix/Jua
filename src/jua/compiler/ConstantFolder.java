@@ -15,6 +15,16 @@ public class ConstantFolder implements Visitor {
 
     private Tree lower;
 
+    /**
+     * Остаточный результат от логических выражений. Пример: <pre>{@code
+     * somecall() || true; // Это выражение заведомо true,
+     *                     // но выкидывать вызов функции компилятор не имеет права.
+     *                     // Вызов функции здесь - как раз остаточный результат,
+     *                     // который будет помещен в список операторов родительского дерева (BlockStatement).}</pre>
+     */
+    // По идее это должно быть списком, но на практике сюда записывается только одно значение.
+    private Expression residualExpression;
+
     public ConstantFolder(CodeData codeData) {
         constantFolding = new HashMap<>();
         putFoldingNames(codeData.constants.keySet());
@@ -60,20 +70,23 @@ public class ConstantFolder implements Visitor {
 
     @Override
     public void visitAnd(AndExpression expression) {
-        Expression lhs = getLowerExpression(expression.lhs).child();
-        Expression rhs = getLowerExpression(expression.rhs).child();
-        if (isFalse(lhs) || isFalse(rhs)) {
+        Expression lhs = getLowerExpression(expression.lhs);
+        if (isFalse(lhs)) {
             setFalse(expression);
             return;
         }
         if (isTrue(lhs)) {
-            lhs = null; // compiler will detect this
+            lower = getLowerExpression(expression.rhs);
+            return;
+        }
+        Expression rhs = getLowerExpression(expression.rhs);
+        if (isFalse(rhs)) {
+            residualExpression = lhs;
+            setFalse(expression);
+            return;
         }
         if (isTrue(rhs)) {
-            rhs = null; // compiler will detect this
-        }
-        if (lhs == null && rhs == null) {
-            setTrue(expression);
+            lower = lhs;
             return;
         }
         lowerBinary(expression, lhs, rhs);
@@ -233,8 +246,29 @@ public class ConstantFolder implements Visitor {
 
     @Override
     public void visitBlock(BlockStatement statement) {
-        statement.statements = lowerList(statement.statements);
+        // special case
+        ListIterator<Statement> iterator = statement.statements.listIterator();
+        Expression prevResidual = residualExpression;
+        residualExpression = null;
+        while (iterator.hasNext()) {
+            Statement lower = getLowerStatement(iterator.next());
+            if (residualExpression != null) {
+                iterator.remove();
+                iterator.add(
+                        // Остаточный результат заведомо является unused
+                        new UnusedExpression(residualExpression.position, residualExpression));
+                residualExpression = null;
+                if (lower != null && !lower.isTag(Tag.EMPTY))
+                    iterator.add(lower);
+            } else {
+                if (lower == null || lower.isTag(Tag.EMPTY))
+                    iterator.remove();
+                else
+                    iterator.set(lower);
+            }
+        }
         lower = statement;
+        residualExpression = prevResidual;
     }
 
     @Override
@@ -607,19 +641,22 @@ public class ConstantFolder implements Visitor {
     @Override
     public void visitOr(OrExpression expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
-        Expression rhs = getLowerExpression(expression.rhs).child();
-        if (isTrue(lhs) || isTrue(rhs)) {
+        if (isTrue(lhs)) {
             setTrue(expression);
             return;
         }
         if (isFalse(lhs)) {
-            lhs = null; // compiler will detect this
+            lower = getLowerExpression(expression.rhs);
+            return;
         }
+        Expression rhs = getLowerExpression(expression.rhs).child();
         if (isFalse(rhs)) {
-            rhs = null; // compiler will detect this
+            lower = lhs;
+            return;
         }
-        if (lhs == null && rhs == null) {
-            setFalse(expression);
+        if (isTrue(rhs)) {
+            residualExpression = lhs;
+            setTrue(expression);
             return;
         }
         lowerBinary(expression, lhs, rhs);
