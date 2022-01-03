@@ -443,7 +443,7 @@ public final class Gen implements Visitor {
             return code.resolveLocal(n);
         }).toArray();
         visitStatement(statement.body);
-        emitRetnull(0);
+        emitRetnull(TreeInfo.line(statement));
         codeData.setFunction(statement.name, new ScriptFunction(
                 locals, // function arguments must be first at local list
                 statement.optionals.stream().mapToInt(a -> {
