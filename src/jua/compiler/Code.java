@@ -248,7 +248,9 @@ public final class Code {
     }
 
     private int resolveConstant0(Predicate<Operand> filter, Supplier<Operand> producer) {
-        if (!isAlive()) return -1;
+        // Во время обработки опциональных аргументов функции, isAlive() почему-то возвращает false.
+        // И мне лень разбираться, почему
+//        if (!isAlive()) return -1;
         for (int i = 0; i < context.constantPool.size(); i++) {
             if (filter.test(context.constantPool.get(i))) {
                 return i;

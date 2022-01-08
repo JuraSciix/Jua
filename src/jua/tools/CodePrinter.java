@@ -88,7 +88,8 @@ public class CodePrinter {
 
             for (int i = 0, o = (sf.locals.length - sf.optionals.length); i < sf.locals.length; i++) {
                 if (i >= o) {
-                    args.add(sf.locals[i] + ": " + sf.program.localsNames[i] + " = " + sf.optionals[i - o]);
+                    args.add(sf.locals[i] + ": " + sf.program.localsNames[i] + " = " +
+                            sf.program.constantPool[sf.optionals[i - o]]);
                 } else {
                     args.add(sf.locals[i] + ": " + sf.program.localsNames[i]);
                 }
