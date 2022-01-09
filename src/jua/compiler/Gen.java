@@ -1386,7 +1386,7 @@ public final class Gen implements Visitor {
         loopInfinity = prevLoopInfinity;
     }
     private void emitReturn(int line) {
-        code.addState(line, Return.INSTANCE, -1);
+        code.addState(line, Ret.INSTANCE, -1);
         code.dead();
     }
 

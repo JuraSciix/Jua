@@ -4,13 +4,13 @@ import jua.interpreter.InterpreterRuntime;
 import jua.interpreter.Trap;
 import jua.tools.CodePrinter;
 
-public enum Return implements Opcode {
+public enum Ret implements Opcode {
 
     INSTANCE;
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName("return");
+        printer.printName("ret");
     }
 
     @Override
