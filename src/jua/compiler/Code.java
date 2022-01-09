@@ -13,7 +13,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import jua.interpreter.Program;
-import jua.interpreter.Program.LineTableEntry;
+import jua.interpreter.Program.LineTable;
 import jua.interpreter.opcodes.ChainOpcode;
 import jua.interpreter.opcodes.Opcode;
 import jua.interpreter.runtime.DoubleOperand;
@@ -270,11 +270,10 @@ public final class Code {
                 context.constantPool.toArray(new Operand[0]));
     }
 
-    private LineTableEntry[] buildLineTable() {
-        return context.lineTable.int2IntEntrySet().stream()
-                .map(entry -> new LineTableEntry(entry.getIntKey(), entry.getIntValue()))
-                // Вместо этого используется LinkedHashMap
-//                .sorted(Comparator.comparingInt(entry -> entry.startBci))
-                .toArray(LineTableEntry[]::new);
+    private LineTable buildLineTable() {
+        return new LineTable(
+                context.lineTable.keySet().toIntArray(),
+                context.lineTable.values().toIntArray()
+        );
     }
 }

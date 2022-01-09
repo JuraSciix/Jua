@@ -1,3 +1,0 @@
-fn test(a, i = 0) {
-    return a[i] == null ? i : test(a, i + 1);
-}

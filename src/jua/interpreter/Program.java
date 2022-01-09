@@ -3,20 +3,22 @@ package jua.interpreter;
 import jua.interpreter.runtime.Operand;
 import jua.interpreter.opcodes.Opcode;
 
+import java.util.Arrays;
+
 /**
  * Программа представляет собой фабрику фреймов.
  */
 public final class Program {
 
-    public static final class LineTableEntry {
+    public static final class LineTable {
 
-        public final int startBci;
+        final int[] bcindexes;
 
-        public final int lineNumber;
+        final int[] lineNumbers;
 
-        public LineTableEntry(int startBci, int lineNumber) {
-            this.startBci = startBci;
-            this.lineNumber = lineNumber;
+        public LineTable(int[] bcindexes, int[] lineNumbers) {
+            this.bcindexes = bcindexes;
+            this.lineNumbers = lineNumbers;
         }
     }
 
@@ -35,17 +37,15 @@ public final class Program {
                 new Operand[0]);
     }
 
-    private static LineTableEntry[] createEmptyLineTable(int lineNumber) {
-        return new LineTableEntry[] {
-                new LineTableEntry(0, lineNumber)
-        };
+    private static LineTable createEmptyLineTable(int lineNumber) {
+        return new LineTable(new int[]{0}, new int[]{lineNumber});
     }
 
     public final String filename;
 
     public final Opcode[] opcodes;
 
-    public final LineTableEntry[] lineTable;
+    public final LineTable lineTable;
 
     public final int stackSize;
 
@@ -55,7 +55,7 @@ public final class Program {
 
     public final Operand[] constantPool;
 
-    public Program(String filename, Opcode[] opcodes, LineTableEntry[] lineTable, int stackSize, int localsSize, String[] localsNames, Operand[] constantPool) {
+    public Program(String filename, Opcode[] opcodes, LineTable lineTable, int stackSize, int localsSize, String[] localsNames, Operand[] constantPool) {
         this.filename = filename;
         this.opcodes = opcodes;
         this.lineTable = lineTable;
@@ -66,21 +66,12 @@ public final class Program {
     }
 
     public int getInstructionLine(int bci) {
-        int l = 1;
-        int r = lineTable.length - 1;
-        while (l <= r) {
-            int c = (l + r) >>> 1;
-            int current = lineTable[c].startBci;
-
-            if (current < bci) {
-                l = c + 1;
-            } else if (current > bci) {
-                r = c - 1;
-            } else {
-                return lineTable[c].lineNumber;
-            }
-        }
-        return lineTable[l - 1].lineNumber;
+        if ((bci < 0) || (bci > opcodes.length) || lineTable == null)
+            return -1;
+        int a = Arrays.binarySearch(lineTable.bcindexes, bci);
+        if (a < 0)
+            a = ~a - 1;
+        return lineTable.lineNumbers[a];
     }
 
     public ProgramFrame makeFrame() {
