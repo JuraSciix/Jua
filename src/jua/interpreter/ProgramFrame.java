@@ -1,13 +1,13 @@
 package jua.interpreter;
 
 import jua.interpreter.runtime.Operand;
-import jua.interpreter.opcodes.Opcode;
+import jua.interpreter.instructions.Instruction;
 
 public final class ProgramFrame {
 
     private final Program program;
 
-    private final Opcode[] opcodes;
+    private final Instruction[] instructions;
 
     private final Operand[] stack;
 
@@ -21,7 +21,7 @@ public final class ProgramFrame {
 
     ProgramFrame(Program program) {
         this.program = program;
-        this.opcodes = program.opcodes;
+        this.instructions = program.instructions;
         this.stack = new Operand[program.stackSize];
         this.locals = new Operand[program.localsSize];
     }
@@ -48,12 +48,12 @@ public final class ProgramFrame {
     }
 
     void run(InterpreterRuntime env) {
-        Opcode[] opcodes = this.opcodes;
+        Instruction[] instructions = this.instructions;
         int bci = pc;
         runningstate = true;
         try {
             while (true) {
-                bci += opcodes[bci].run(env);
+                bci += instructions[bci].run(env);
             }
         } finally {
             pc = bci;

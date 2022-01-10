@@ -1,7 +1,7 @@
 package jua.interpreter;
 
 import jua.interpreter.runtime.Operand;
-import jua.interpreter.opcodes.Opcode;
+import jua.interpreter.instructions.Instruction;
 
 import java.util.Arrays;
 
@@ -25,14 +25,14 @@ public final class Program {
     public static Program createMain() {
         // stackSize = 1 because child program always delegate value to him
         // ^^^ Я не понимаю что это значит, но трогать пока лучше не буду
-        return new Program("main", new Opcode[0],
+        return new Program("main", new Instruction[0],
                 createEmptyLineTable(1), 1, 0, new String[0], new Operand[0]);
     }
 
     public static Program coroutine(InterpreterRuntime parent, int argc) {
         // min stackSize value = 1 because child program always delegate value to him
         // ^^^ Я не понимаю что это значит, но трогать пока лучше не буду
-        return new Program(parent.currentFile(), new Opcode[0],
+        return new Program(parent.currentFile(), new Instruction[0],
                 createEmptyLineTable(parent.currentLine()), Math.max(argc, 1), 0, new String[0],
                 new Operand[0]);
     }
@@ -43,7 +43,7 @@ public final class Program {
 
     public final String filename;
 
-    public final Opcode[] opcodes;
+    public final Instruction[] instructions;
 
     public final LineTable lineTable;
 
@@ -55,9 +55,9 @@ public final class Program {
 
     public final Operand[] constantPool;
 
-    public Program(String filename, Opcode[] opcodes, LineTable lineTable, int stackSize, int localsSize, String[] localsNames, Operand[] constantPool) {
+    public Program(String filename, Instruction[] instructions, LineTable lineTable, int stackSize, int localsSize, String[] localsNames, Operand[] constantPool) {
         this.filename = filename;
-        this.opcodes = opcodes;
+        this.instructions = instructions;
         this.lineTable = lineTable;
         this.stackSize = stackSize;
         this.localsSize = localsSize;
@@ -66,7 +66,7 @@ public final class Program {
     }
 
     public int getInstructionLine(int bci) {
-        if ((bci < 0) || (bci > opcodes.length) || lineTable == null)
+        if ((bci < 0) || (bci > instructions.length) || lineTable == null)
             return -1;
         int a = Arrays.binarySearch(lineTable.bcindexes, bci);
         if (a < 0)

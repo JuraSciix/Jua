@@ -28,7 +28,7 @@ public class InterpreterRuntime {
 
     // todo: Ну тут и так понятно что надо сделать
 
-    private final Map<String, Function> functions;
+    private final Map<String, RuntimeFunction> functions;
 
     private final Map<String, Constant> constants;
 
@@ -41,7 +41,7 @@ public class InterpreterRuntime {
         return cp;
     }
 
-    public InterpreterRuntime(Map<String, Function> functions, Map<String, Constant> constants) {
+    public InterpreterRuntime(Map<String, RuntimeFunction> functions, Map<String, Constant> constants) {
         this.functions = functions;
         this.constants = constants;
 
@@ -49,7 +49,7 @@ public class InterpreterRuntime {
         callStack.add(CallStackElement.mainEntry());
     }
 
-    public Function getFunctionByName(String name) {
+    public RuntimeFunction getFunctionByName(String name) {
         return functions.get(name);
     }
 

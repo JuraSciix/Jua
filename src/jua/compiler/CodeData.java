@@ -1,7 +1,7 @@
 package jua.compiler;
 
 import jua.interpreter.runtime.Constant;
-import jua.interpreter.runtime.Function;
+import jua.interpreter.runtime.RuntimeFunction;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,7 +23,7 @@ public class CodeData {
         }
     }
 
-    final Map<String, Function> functions = new HashMap<>();
+    final Map<String, RuntimeFunction> functions = new HashMap<>();
 
     final Map<String, Constant> constants = new HashMap<>();
 
@@ -39,7 +39,7 @@ public class CodeData {
         return constants.containsKey(name);
     }
 
-    public void setFunction(String name, Function function) {
+    public void setFunction(String name, RuntimeFunction function) {
         if (functions.containsKey(name)) {
             throw BuiltInException.functionRedefinition(name);
         }

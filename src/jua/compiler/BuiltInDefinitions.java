@@ -82,7 +82,7 @@ class BuiltInDefinitions {
         codeData.setFunction("_sizeof_function", ((env, name, argc) -> {
             checkArgs(name, argc, 1);
             String fn = popArgument(env, name, 1, STRING).stringValue();
-            Function func = env.getFunctionByName(fn);
+            RuntimeFunction func = env.getFunctionByName(fn);
             if (func == null) error(name, "function '" + fn + "' not found.");
             env.pushStack(ObjectsSize.sizeOf(func));
 
@@ -91,9 +91,9 @@ class BuiltInDefinitions {
             checkArgs(name, argc, 1, 2);
             Operand[] args = (argc == 2) ? popArgument(env, name, 2, ARRAY).arrayValue().values() : new Operand[0];
             String fn = popArgument(env, name, 1, STRING).stringValue();
-            Function func = env.getFunctionByName(fn);
+            RuntimeFunction func = env.getFunctionByName(fn);
             if (func == null) error(name, "function '" + fn + "' not found.");
-            if (!(func instanceof ScriptFunction)) error(name, "cannot create thread for extern function.");
+            if (!(func instanceof ScriptRuntimeFunction)) error(name, "cannot create thread for extern function.");
             InterpreterRuntime newEnv = InterpreterRuntime.copy(env);
             newEnv.setProgram(Program.coroutine(env, args.length).makeFrame());
             for (Operand a: args) newEnv.pushStack(a);

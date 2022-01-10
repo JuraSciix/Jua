@@ -1,0 +1,21 @@
+package jua.interpreter.instructions;
+
+import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.runtime.Operand;
+import jua.tools.CodePrinter;
+
+public enum Clone implements Instruction {
+
+    INSTANCE;
+
+    @Override
+    public void print(CodePrinter printer) {
+        printer.printName("clone");
+    }
+
+    @Override
+    public int run(InterpreterRuntime env) {
+        env.pushStack((Operand) env.popStack().clone());
+        return NEXT;
+    }
+}

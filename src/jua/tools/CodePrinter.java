@@ -2,9 +2,9 @@ package jua.tools;
 
 import jua.interpreter.Program;
 import jua.interpreter.runtime.Constant;
-import jua.interpreter.runtime.Function;
+import jua.interpreter.runtime.RuntimeFunction;
 import jua.interpreter.runtime.Operand;
-import jua.interpreter.runtime.ScriptFunction;
+import jua.interpreter.runtime.ScriptRuntimeFunction;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -79,11 +79,11 @@ public class CodePrinter {
         }
     }
 
-    public static void printFunctions(Map<String, Function> functions) {
+    public static void printFunctions(Map<String, RuntimeFunction> functions) {
         functions.forEach((name, function) -> {
-            if (!(function instanceof ScriptFunction))
+            if (!(function instanceof ScriptRuntimeFunction))
                 return;
-            ScriptFunction sf = (ScriptFunction) function;
+            ScriptRuntimeFunction sf = (ScriptRuntimeFunction) function;
             StringJoiner args = new StringJoiner(", ");
 
             for (int i = 0, o = (sf.locals.length - sf.optionals.length); i < sf.locals.length; i++) {
@@ -103,9 +103,9 @@ public class CodePrinter {
         CodePrinter printer = new CodePrinter(program);
         printer.printHead(program);
         int lastLineNumber = 0;
-        int length = program.opcodes.length;
+        int length = program.instructions.length;
         for (int i = 0; i < length; i++) {
-            program.opcodes[i].print(printer);
+            program.instructions[i].print(printer);
             int line = program.getInstructionLine(i);
             if (line != lastLineNumber) {
                 printer.printLine(line);

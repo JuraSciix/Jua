@@ -2,16 +2,16 @@ package jua.compiler;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntStack;
-import jua.interpreter.opcodes.*;
+import jua.interpreter.instructions.*;
 import jua.interpreter.runtime.ArrayOperand;
 import jua.interpreter.runtime.Constant;
 import jua.interpreter.runtime.Operand;
-import jua.interpreter.runtime.ScriptFunction;
+import jua.interpreter.runtime.ScriptRuntimeFunction;
 import jua.parser.Tree.*;
 
 import java.util.*;
 
-import static jua.interpreter.opcodes.Switch.Part;
+import static jua.interpreter.instructions.Switch.Part;
 
 public final class Gen implements Visitor {
 
@@ -444,7 +444,7 @@ public final class Gen implements Visitor {
         }).toArray();
         visitStatement(statement.body);
         emitRetnull(TreeInfo.line(statement));
-        codeData.setFunction(statement.name, new ScriptFunction(
+        codeData.setFunction(statement.name, new ScriptRuntimeFunction(
                 locals, // function arguments must be first at local list
                 statement.optionals.stream().mapToInt(a -> {
                     assert a instanceof LiteralExpression;
@@ -599,7 +599,7 @@ public final class Gen implements Visitor {
         beginCondition();
         Expression lhs = expression.lhs;
         Expression rhs = expression.rhs;
-        ChainOpcode resultState;
+        ChainInstruction resultState;
         int resultStackAdjustment;
         int shortVal = Integer.MIN_VALUE;
         boolean lhsNull = (lhs instanceof NullExpression);
@@ -1185,7 +1185,7 @@ public final class Gen implements Visitor {
         }
     }
 
-    public static Opcode asg2state(Tag tag) {
+    public static Instruction asg2state(Tag tag) {
         switch (tag) {
             case ASG_ADD: return Add.INSTANCE;
             case ASG_SUB: return Sub.INSTANCE;
@@ -1282,7 +1282,7 @@ public final class Gen implements Visitor {
         }
     }
 
-    public static Opcode increase2state(Tag tag, int id) {
+    public static Instruction increase2state(Tag tag, int id) {
         switch (tag) {
             case PRE_INC: case POST_INC:
                 return id >= 0 ? new Vinc(id) : Inc.INSTANCE;

@@ -14,8 +14,8 @@ import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import jua.interpreter.Program;
 import jua.interpreter.Program.LineTable;
-import jua.interpreter.opcodes.ChainOpcode;
-import jua.interpreter.opcodes.Opcode;
+import jua.interpreter.instructions.ChainInstruction;
+import jua.interpreter.instructions.Instruction;
 import jua.interpreter.runtime.DoubleOperand;
 import jua.interpreter.runtime.LongOperand;
 import jua.interpreter.runtime.Operand;
@@ -36,7 +36,7 @@ public final class Code {
 
         final Context prev;
 
-        final List<Opcode> opcodes = new ArrayList<>();
+        final List<Instruction> instructions = new ArrayList<>();
 
         final Int2IntMap lineTable = new Int2IntLinkedOpenHashMap();
 
@@ -69,7 +69,7 @@ public final class Code {
     private static class Chain {
 
         // Map<BCI, State>
-        final Int2ObjectMap<ChainOpcode> states = new Int2ObjectOpenHashMap<>();
+        final Int2ObjectMap<ChainInstruction> states = new Int2ObjectOpenHashMap<>();
 
         int resultBci = -1;
     }
@@ -124,45 +124,45 @@ public final class Code {
     private void resolveChain0(int chainId, int resultBci) {
         if (!isAlive()) return;
         Chain chain = context.chains.get(chainId);
-        for (Int2ObjectMap.Entry<ChainOpcode> entry : chain.states.int2ObjectEntrySet()) {
+        for (Int2ObjectMap.Entry<ChainInstruction> entry : chain.states.int2ObjectEntrySet()) {
             entry.getValue().setDestination(resultBci - entry.getIntKey());
         }
         chain.resultBci = resultBci;
     }
 
-    public void addState(Opcode opcode) {
-        addState0(opcode, 0, 0);
+    public void addState(Instruction instruction) {
+        addState0(instruction, 0, 0);
     }
 
-    public void addState(int line, Opcode opcode) {
-        addState0(opcode, 0, line);
+    public void addState(int line, Instruction instruction) {
+        addState0(instruction, 0, line);
     }
 
-    public void addState(Opcode opcode, int stackAdjustment) {
-        addState0(opcode, stackAdjustment, 0);
+    public void addState(Instruction instruction, int stackAdjustment) {
+        addState0(instruction, stackAdjustment, 0);
     }
 
-    public void addState(int line, Opcode opcode, int stackAdjustment) {
-        addState0(opcode, stackAdjustment, line);
+    public void addState(int line, Instruction instruction, int stackAdjustment) {
+        addState0(instruction, stackAdjustment, line);
     }
 
-    public void addChainedState(ChainOpcode state, int chainId) {
+    public void addChainedState(ChainInstruction state, int chainId) {
         addChainedState0(state, chainId, 0, 0);
     }
 
-    public void addChainedState(int line, ChainOpcode state, int chainId) {
+    public void addChainedState(int line, ChainInstruction state, int chainId) {
         addChainedState0(state, chainId, 0, line);
     }
 
-    public void addChainedState(int line, ChainOpcode state, int chainId, int stackAdjustment) {
+    public void addChainedState(int line, ChainInstruction state, int chainId, int stackAdjustment) {
         addChainedState0(state, chainId, stackAdjustment, line);
     }
 
-    public void addChainedState(ChainOpcode state, int chainId, int stackAdjustment) {
+    public void addChainedState(ChainInstruction state, int chainId, int stackAdjustment) {
         addChainedState0(state, chainId, stackAdjustment, 0);
     }
 
-    private void addChainedState0(ChainOpcode state, int chainId, int stackAdjustment, int line) {
+    private void addChainedState0(ChainInstruction state, int chainId, int stackAdjustment, int line) {
         if (!isAlive()) return;
         Chain chain = context.chains.get(chainId);
         if (chain.resultBci != -1) {
@@ -172,9 +172,9 @@ public final class Code {
         addState0(state, stackAdjustment, line);
     }
 
-    private void addState0(Opcode opcode, int stackAdjustment, int line) {
+    private void addState0(Instruction instruction, int stackAdjustment, int line) {
         if (!isAlive()) return;
-        context.opcodes.add(opcode);
+        context.instructions.add(instruction);
         context.nstack += stackAdjustment;
         if (context.nstack > context.maxNstack)
             context.maxNstack = context.nstack;
@@ -189,7 +189,7 @@ public final class Code {
     }
 
     public int currentBci() {
-        return context.opcodes.size();
+        return context.instructions.size();
     }
 
     public boolean isAlive() {
@@ -262,7 +262,7 @@ public final class Code {
 
     public Program toProgram() {
         return new Program(context.sourceName,
-                context.opcodes.toArray(new Opcode[0]),
+                context.instructions.toArray(new Instruction[0]),
                 buildLineTable(),
                 context.maxNstack,
                 context.nlocals,

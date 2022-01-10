@@ -1,6 +1,6 @@
 package jua;
 
-import jua.tools.FileLoader;
+import jua.compiler.JuaCompiler;
 
 import java.io.File;
 
@@ -18,7 +18,7 @@ public class Main {
         } catch (Throwable t) {
             error("can't parse console arguments: " + t);
         }
-        FileLoader.load(testFilename());
+        JuaCompiler.load(testFilename());
     }
 
     private static String testFilename() {
