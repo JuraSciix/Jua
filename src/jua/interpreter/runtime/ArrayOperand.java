@@ -2,6 +2,7 @@ package jua.interpreter.runtime;
 
 public class ArrayOperand extends Operand implements Cloneable {
 
+    // todo: delegate Array class to ArrayOperand
     private Array value;
 
     public ArrayOperand() {

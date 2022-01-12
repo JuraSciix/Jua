@@ -1,10 +1,8 @@
 package jua.interpreter.runtime;
 
-public class FalseOperand extends BooleanOperand {
+public final class FalseOperand extends BooleanOperand {
 
     public static final FalseOperand FALSE = new FalseOperand();
-
-    private static final int HASH = (Boolean.hashCode(false) ^ OperandType.BOOLEAN.hashCode()) * 7;
 
     private FalseOperand() {
         super();
@@ -37,6 +35,6 @@ public class FalseOperand extends BooleanOperand {
 
     @Override
     public int hashCode() {
-        return HASH;
+        return 1237; // Boolean.hashCode(false);
     }
 }

@@ -1,6 +1,6 @@
 package jua.interpreter.runtime;
 
-public class NullOperand extends Operand {
+public final class NullOperand extends Operand {
 
     public static final NullOperand NULL = new NullOperand();
 
@@ -65,6 +65,6 @@ public class NullOperand extends Operand {
 
     @Override
     public int hashCode() {
-        return OperandType.NULL.hashCode();
+        return 0;
     }
 }

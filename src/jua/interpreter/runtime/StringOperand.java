@@ -2,10 +2,8 @@ package jua.interpreter.runtime;
 
 public class StringOperand extends Operand {
 
-    public static final StringOperand EMPTY = new StringOperand("");
-
     public static StringOperand valueOf(String value) {
-        return value.isEmpty() ? EMPTY : new StringOperand(value);
+        return new StringOperand(value);
     }
 
     private final String value;
