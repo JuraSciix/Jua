@@ -5,8 +5,6 @@ import jua.tools.CodePrinter;
 
 public class Ifne extends ChainInstruction {
 
-    public static final Ifne IF_TRUE = new Ifne(0);
-
     private final int value;
 
     public Ifne(int value) {
