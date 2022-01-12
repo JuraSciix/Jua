@@ -20,11 +20,11 @@ public enum Div implements Instruction {
         Operand lhs = env.popStack();
 
         if (lhs.isNumber() && rhs.isNumber()) {
-            if (lhs.isFloat() || rhs.isFloat()) {
-                env.pushStack(lhs.floatValue() / rhs.floatValue());
+            if (lhs.isDouble() || rhs.isDouble()) {
+                env.pushStack(lhs.doubleValue() / rhs.doubleValue());
             } else {
-                long l = lhs.intValue();
-                long r = rhs.intValue();
+                long l = lhs.longValue();
+                long r = rhs.longValue();
 
                 if (r == 0) {
                     throw InterpreterError.divisionByZero();

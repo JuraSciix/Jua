@@ -14,12 +14,12 @@ public final class FalseOperand extends BooleanOperand {
     }
 
     @Override
-    public double floatValue() {
+    public double doubleValue() {
         return 0D;
     }
 
     @Override
-    public long intValue() {
+    public long longValue() {
         return 0L;
     }
 

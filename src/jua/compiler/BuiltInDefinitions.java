@@ -11,7 +11,7 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.StringJoiner;
 
-import static jua.interpreter.runtime.OperandType.*;
+import static jua.interpreter.runtime.Operand.Type.*;
 
 // temporary class
 class BuiltInDefinitions {
@@ -29,7 +29,7 @@ class BuiltInDefinitions {
         }));
         codeData.setFunction("get_stack_trace", ((env, name, argc) -> {
             checkArgs(name, argc, 0, 1);
-            long longLimit = (argc == 1) ? popArgument(env, name, 1, INT).intValue() : -1;
+            long longLimit = (argc == 1) ? popArgument(env, name, 1, LONG).longValue() : -1;
             if ((argc == 1) && (longLimit < 0)) {
                 error(name, "limit cannot be less than zero.");
             } else if (longLimit > Short.MAX_VALUE) {
@@ -52,12 +52,12 @@ class BuiltInDefinitions {
         }));
         codeData.setFunction("array_keys", ((env, name, argc) -> {
             checkArgs(name, argc, 1);
-            env.pushStack(popArgument(env, name, 1, ARRAY).arrayValue().getKeys());
+            env.pushStack(popArgument(env, name, 1, MAP).arrayValue().getKeys());
 
         }));
         codeData.setFunction("array_values", ((env, name, argc) -> {
             checkArgs(name, argc, 1);
-            env.pushStack(popArgument(env, name, 1, ARRAY).arrayValue().getValues());
+            env.pushStack(popArgument(env, name, 1, MAP).arrayValue().getValues());
 
         }));
         codeData.setFunction("length", ((env, name, argc) -> {
@@ -65,7 +65,7 @@ class BuiltInDefinitions {
             Operand val = env.popStack();
             switch (val.type()) {
                 case STRING: { env.pushStack(val.stringValue().length()); break; }
-                case ARRAY: { env.pushStack(val.arrayValue().count()); break; }
+                case MAP: { env.pushStack(val.arrayValue().count()); break; }
                 default: error(name, "expected string or array at first argument.");
             }
 
@@ -89,7 +89,7 @@ class BuiltInDefinitions {
         }));
         codeData.setFunction("thread", ((env, name, argc) -> {
             checkArgs(name, argc, 1, 2);
-            Operand[] args = (argc == 2) ? popArgument(env, name, 2, ARRAY).arrayValue().values() : new Operand[0];
+            Operand[] args = (argc == 2) ? popArgument(env, name, 2, MAP).arrayValue().values() : new Operand[0];
             String fn = popArgument(env, name, 1, STRING).stringValue();
             RuntimeFunction func = env.getFunctionByName(fn);
             if (func == null) error(name, "function '" + fn + "' not found.");
@@ -104,8 +104,8 @@ class BuiltInDefinitions {
         }));
         codeData.setFunction("random", ((env, name, argc) -> {
             if (random == null) random = new Random();
-            long max = (argc >= 2) ? popArgument(env, name, 2, INT).intValue() : Long.MAX_VALUE;
-            long min = (argc >= 1) ? popArgument(env, name, 1, INT).intValue() : Long.MIN_VALUE;
+            long max = (argc >= 2) ? popArgument(env, name, 2, LONG).longValue() : Long.MAX_VALUE;
+            long min = (argc >= 1) ? popArgument(env, name, 1, LONG).longValue() : Long.MIN_VALUE;
             if (min >= max) error(name, "min value cannot be greater than or equal to max value.");
             long rand = random.nextLong();
             env.pushStack((max == 0) ? (min + (rand >>> 1) % -min) : (min == 0) ? (max - ((rand >>> 1) % max)) : (rand + min) % max);
@@ -151,18 +151,18 @@ class BuiltInDefinitions {
         }
     }
 
-    private static Operand popArgument(InterpreterRuntime env, String name, int index, OperandType type) {
+    private static Operand popArgument(InterpreterRuntime env, String name, int index, Operand.Type type) {
         Operand argument = env.popStack();
-        OperandType type1 = argument.type();
+        Operand.Type type1 = argument.type();
         if ((type != null) && (type != type1)) {
-            unexpectedTypes(name, index, new OperandType[]{type}, type1);
+            unexpectedTypes(name, index, new Operand.Type[]{type}, type1);
         }
         return argument;
     }
 
-    private static void unexpectedTypes(String name, int index, OperandType[] expected, OperandType got) {
+    private static void unexpectedTypes(String name, int index, Operand.Type[] expected, Operand.Type got) {
         StringJoiner sj = new StringJoiner(" or ");
-        for (OperandType type: expected) sj.add(type.toString());
+        for (Operand.Type type: expected) sj.add(type.toString());
         error(name, "unexpected type at #" + index + " argument. (expected " + sj + ", got " + got + ')');
     }
 

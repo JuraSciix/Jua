@@ -4,26 +4,49 @@ import jua.interpreter.InterpreterError;
 
 public abstract class Operand {
 
-    public abstract OperandType type();
+    public enum Type {
 
-    public boolean isArray() {
-        return false;
+        LONG("int"),
+        DOUBLE("float"),
+        BOOLEAN("boolean"),
+        STRING("string"),
+        NULL("<null>"),
+        MAP("array");
+
+        public final String name;
+
+        Type(String name) {
+            this.name = name;
+        }
+
+        // Note: NULL.sigc() returns '<', so do not use it.
+        public char sigc() { return name.charAt(0); }
+    }
+
+    public abstract Type type();
+
+    public final boolean is(Type type) {
+        return type() == type;
+    }
+
+    public boolean isMap() {
+        return is(Type.MAP);
     }
 
     public boolean isBoolean() {
-        return false;
+        return is(Type.BOOLEAN);
     }
 
-    public boolean isFloat() {
-        return false;
+    public boolean isDouble() {
+        return is(Type.DOUBLE);
     }
 
-    public boolean isInt() {
-        return false;
+    public boolean isLong() {
+        return is(Type.LONG);
     }
 
     public boolean isNull() {
-        return false;
+        return is(Type.NULL);
     }
 
     public boolean isNumber() {
@@ -54,7 +77,11 @@ public abstract class Operand {
         return false;
     }
 
-    public Array arrayValue() {
+    public long longValue() {
+        throw new IllegalStateException();
+    }
+
+    public double doubleValue() {
         throw new IllegalStateException();
     }
 
@@ -62,15 +89,11 @@ public abstract class Operand {
         throw new IllegalStateException();
     }
 
-    public double floatValue() {
-        throw new IllegalStateException();
-    }
-
-    public long intValue() {
-        throw new IllegalStateException();
-    }
-
     public String stringValue() {
+        throw new IllegalStateException();
+    }
+
+    public Array arrayValue() {
         throw new IllegalStateException();
     }
 
@@ -89,21 +112,13 @@ public abstract class Operand {
     @Override
     public String toString() {
         switch (type()) {
-            case ARRAY: return arrayValue().toString();
+            case MAP: return arrayValue().toString();
             case STRING: return '"' + stringValue() + '"';
             default: return stringValue();
         }
     }
 
     // TODO
-
-    public Operand inc() {
-        throw InterpreterError.unaryApplication("++", type());
-    }
-
-    public Operand dec() {
-        throw InterpreterError.unaryApplication("--", type());
-    }
 
     public Operand add(Operand operand) {
         throw InterpreterError.binaryApplication("+", type(), operand.type());
@@ -143,5 +158,13 @@ public abstract class Operand {
 
     public Operand rem(Operand operand) {
         throw InterpreterError.binaryApplication("%", type(), operand.type());
+    }
+
+    public Operand increment() {
+        throw InterpreterError.unaryApplication("++", type());
+    }
+
+    public Operand decrement() {
+        throw InterpreterError.unaryApplication("--", type());
     }
 }

@@ -9,9 +9,9 @@ public class Call implements Instruction {
 
     private final String name;
 
-    private final int argc;
+    private final byte argc;
 
-    public Call(String name, int argc) {
+    public Call(String name, byte argc) {
         this.name = name;
         this.argc = argc;
     }

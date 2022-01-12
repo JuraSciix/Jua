@@ -422,9 +422,12 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitFunctionCall(FunctionCallExpression expression) {
+        if (expression.args.size() > 0xff) {
+            cError(expression.position, "too many parameters.");
+        }
         visitList(expression.args);
         code.addState(TreeInfo.line(expression),
-                new Call(expression.name, expression.args.size()),
+                new Call(expression.name, (byte) expression.args.size()),
                 Math.max(1, expression.args.size()));
     }
 
@@ -1327,7 +1330,7 @@ public final class Gen implements Visitor {
 
     private void emitPushLong(int line, long value) {
         if (isShort(value)) {
-            code.addState(line, new Push(Push.TYPE_INT, value), 1);
+            code.addState(line, new Push(Operand.Type.LONG, (short) value), 1);
         } else {
             code.addState(line, new Ldc(code.resolveConstant(value)), 1);
         }
@@ -1336,7 +1339,7 @@ public final class Gen implements Visitor {
     private void emitPushDouble(int line, double value) {
         long lv = (long) value;
         if (lv == value && isShort(lv)) {
-            code.addState(line, new Push(Push.TYPE_INT, lv), 1);
+            code.addState(line, new Push(Operand.Type.LONG, (short) lv), 1);
         } else {
             code.addState(line, new Ldc(code.resolveConstant(value)), 1);
         }

@@ -23,14 +23,14 @@ public enum Add implements Instruction {
         Operand lhs = env.popStack();
 
         if (lhs.isNumber() && rhs.isNumber()) {
-            if (lhs.isFloat() || rhs.isFloat()) {
-                env.pushStack(lhs.floatValue() + rhs.floatValue());
+            if (lhs.isDouble() || rhs.isDouble()) {
+                env.pushStack(lhs.doubleValue() + rhs.doubleValue());
             } else {
-                env.pushStack(lhs.intValue() + rhs.intValue());
+                env.pushStack(lhs.longValue() + rhs.longValue());
             }
         } else if (lhs.isString() || rhs.isString()) {
             env.pushStack(lhs.stringValue().concat(rhs.stringValue()));
-        } else if (lhs.isArray() && rhs.isArray()) {
+        } else if (lhs.isMap() && rhs.isMap()) {
             Array value = new Array();
             value.setAll(lhs.arrayValue());
             value.setAll(rhs.arrayValue());

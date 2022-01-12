@@ -20,10 +20,10 @@ public enum Sub implements Instruction {
         Operand lhs = env.popStack();
 
         if (lhs.isNumber() && rhs.isNumber()) {
-            if (lhs.isFloat() || rhs.isFloat()) {
-                env.pushStack(lhs.floatValue() - rhs.floatValue());
+            if (lhs.isDouble() || rhs.isDouble()) {
+                env.pushStack(lhs.doubleValue() - rhs.doubleValue());
             } else {
-                env.pushStack(lhs.intValue() - rhs.intValue());
+                env.pushStack(lhs.longValue() - rhs.longValue());
             }
         } else {
             throw InterpreterError.binaryApplication("-", lhs.type(), rhs.type());

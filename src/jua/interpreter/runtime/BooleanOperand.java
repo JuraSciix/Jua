@@ -11,8 +11,8 @@ public abstract class BooleanOperand extends Operand {
     }
 
     @Override
-    public OperandType type() {
-        return OperandType.BOOLEAN;
+    public Type type() {
+        return Type.BOOLEAN;
     }
 
     @Override

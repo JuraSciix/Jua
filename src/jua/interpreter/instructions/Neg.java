@@ -18,10 +18,10 @@ public enum Neg implements Instruction {
     public int run(InterpreterRuntime env) {
         Operand val = env.popStack();
 
-        if (val.isInt()) {
-            env.pushStack(-val.intValue());
-        } else if (val.isFloat()) {
-            env.pushStack(-val.floatValue());
+        if (val.isLong()) {
+            env.pushStack(-val.longValue());
+        } else if (val.isDouble()) {
+            env.pushStack(-val.doubleValue());
         } else {
             throw InterpreterError.unaryApplication("-", val.type());
         }

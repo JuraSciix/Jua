@@ -117,35 +117,35 @@ public class InterpreterRuntime {
         if (operand.canBeArray()) {
             return operand.arrayValue();
         }
-        throw InterpreterError.inconvertibleTypes(operand.type(), OperandType.ARRAY);
+        throw InterpreterError.inconvertibleTypes(operand.type(), Operand.Type.MAP);
     }
 
     public boolean getBoolean(Operand operand) {
         if (operand.canBeBoolean()) {
             return operand.booleanValue();
         }
-        throw InterpreterError.inconvertibleTypes(operand.type(), OperandType.BOOLEAN);
+        throw InterpreterError.inconvertibleTypes(operand.type(), Operand.Type.BOOLEAN);
     }
 
     public double getFloat(Operand operand) {
         if (operand.canBeFloat()) {
-            return operand.floatValue();
+            return operand.doubleValue();
         }
-        throw InterpreterError.inconvertibleTypes(operand.type(), OperandType.FLOAT);
+        throw InterpreterError.inconvertibleTypes(operand.type(), Operand.Type.DOUBLE);
     }
 
     public long getInt(Operand operand) {
         if (operand.canBeInt()) {
-            return operand.intValue();
+            return operand.longValue();
         }
-        throw InterpreterError.inconvertibleTypes(operand.type(), OperandType.INT);
+        throw InterpreterError.inconvertibleTypes(operand.type(), Operand.Type.LONG);
     }
 
     public String getString(Operand operand) {
         if (operand.canBeString()) {
             return operand.stringValue();
         }
-        throw InterpreterError.inconvertibleTypes(operand.type(), OperandType.STRING);
+        throw InterpreterError.inconvertibleTypes(operand.type(), Operand.Type.STRING);
     }
 
     public Operand getOperand(Array value) {

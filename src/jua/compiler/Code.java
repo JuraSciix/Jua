@@ -216,7 +216,7 @@ public final class Code {
 
     public int resolveConstant(long value) {
         return resolveConstant0(
-                constant -> constant.isInt() && constant.intValue() == value,
+                constant -> constant.isLong() && constant.longValue() == value,
                 () -> {
                     if (!longConstants.containsKey(value)) {
                         longConstants.put(value, LongOperand.valueOf(value));
@@ -227,7 +227,7 @@ public final class Code {
 
     public int resolveConstant(double value) {
         return resolveConstant0(
-                constant -> constant.isFloat() && Double.compare(constant.floatValue(), value) == 0,
+                constant -> constant.isDouble() && Double.compare(constant.doubleValue(), value) == 0,
                 () -> {
                     if (!doubleConstants.containsKey(value)) {
                         doubleConstants.put(value, DoubleOperand.valueOf(value));

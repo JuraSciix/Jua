@@ -1,20 +1,20 @@
 package jua.interpreter;
 
-import jua.interpreter.runtime.OperandType;
+import jua.interpreter.runtime.Operand;
 
 // will be caught by Jua Exception Handler
 // and thrown with location in RuntimeError
 public class InterpreterError extends RuntimeException {
 
-    public static InterpreterError inconvertibleTypes(OperandType from, OperandType to) {
+    public static InterpreterError inconvertibleTypes(Operand.Type from, Operand.Type to) {
         return new InterpreterError(from + " cannot be converted to " + to + '.');
     }
 
-    public static InterpreterError binaryApplication(String op, OperandType lhs, OperandType rhs) {
+    public static InterpreterError binaryApplication(String op, Operand.Type lhs, Operand.Type rhs) {
         return new InterpreterError("binary '" + op + "' cannot be applied with " + lhs + " and " + rhs + '.');
     }
 
-    public static InterpreterError unaryApplication(String op, OperandType hs) {
+    public static InterpreterError unaryApplication(String op, Operand.Type hs) {
         return new InterpreterError("unary '" + op + "' cannot be applied with " + hs + '.');
     }
 
@@ -22,7 +22,7 @@ public class InterpreterError extends RuntimeException {
         return new InterpreterError("/ by 0.");
     }
 
-    public static InterpreterError illegalKeyType(OperandType type) {
+    public static InterpreterError illegalKeyType(Operand.Type type) {
         return new InterpreterError(type + " cannot be as key in array.");
     }
 

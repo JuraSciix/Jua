@@ -18,8 +18,8 @@ public enum Not implements Instruction {
     public int run(InterpreterRuntime env) {
         Operand val = env.popStack();
 
-        if (val.isInt()) {
-            env.pushStack(~val.intValue());
+        if (val.isLong()) {
+            env.pushStack(~val.longValue());
         } else {
             throw InterpreterError.unaryApplication("~", val.type());
         }

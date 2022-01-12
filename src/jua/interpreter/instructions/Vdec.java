@@ -24,7 +24,7 @@ public final class Vdec implements Instruction {
         if (local == null) {
             env.getFrame().reportUndefinedVariable(id);
         } else {
-            env.setLocal(id, local.dec());
+            env.setLocal(id, local.decrement());
         }
         return NEXT;
     }

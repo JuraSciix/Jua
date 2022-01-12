@@ -14,12 +14,12 @@ public class ArrayOperand extends Operand implements Cloneable {
     }
 
     @Override
-    public OperandType type() {
-        return OperandType.ARRAY;
+    public Type type() {
+        return Type.MAP;
     }
 
     @Override
-    public boolean isArray() {
+    public boolean isMap() {
         return true;
     }
 
@@ -64,7 +64,7 @@ public class ArrayOperand extends Operand implements Cloneable {
 
     @Override
     public int hashCode() {
-        return (OperandType.ARRAY.hashCode() ^ value.hashCode()) * 7;
+        return (Type.MAP.hashCode() ^ value.hashCode()) * 7;
     }
 
     @Override

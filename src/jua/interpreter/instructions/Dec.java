@@ -14,7 +14,7 @@ public enum Dec implements Instruction {
 
     @Override
     public int run(InterpreterRuntime env) {
-        env.pushStack(env.popStack().dec());
+        env.pushStack(env.popStack().decrement());
         return NEXT;
     }
 }

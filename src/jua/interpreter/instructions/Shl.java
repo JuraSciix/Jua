@@ -19,8 +19,8 @@ public enum Shl implements Instruction {
         Operand rhs = env.popStack();
         Operand lhs = env.popStack();
 
-        if (lhs.isInt() && rhs.isInt()) {
-            env.pushStack(lhs.intValue() << rhs.intValue());
+        if (lhs.isLong() && rhs.isLong()) {
+            env.pushStack(lhs.longValue() << rhs.longValue());
         } else {
             throw InterpreterError.binaryApplication("<<", lhs.type(), rhs.type());
         }

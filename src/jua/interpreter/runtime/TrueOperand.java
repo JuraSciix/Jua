@@ -4,7 +4,7 @@ public class TrueOperand extends BooleanOperand {
 
     public static final TrueOperand TRUE = new TrueOperand();
 
-    private static final int HASH = (Boolean.hashCode(true) ^ OperandType.BOOLEAN.hashCode()) * 7;
+    private static final int HASH = (Boolean.hashCode(true) ^ Type.BOOLEAN.hashCode()) * 7;
 
     private TrueOperand() {
         super();
@@ -16,12 +16,12 @@ public class TrueOperand extends BooleanOperand {
     }
 
     @Override
-    public double floatValue() {
+    public double doubleValue() {
         return 1D;
     }
 
     @Override
-    public long intValue() {
+    public long longValue() {
         return 1L;
     }
 

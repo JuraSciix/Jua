@@ -19,19 +19,19 @@ public final class DoubleOperand extends NumberOperand {
     public DoubleOperand(double value) { this.value = value; }
 
     @Override
-    public OperandType type() { return OperandType.FLOAT; }
+    public Type type() { return Type.DOUBLE; }
 
     @Override
     public boolean booleanValue() { return (value != 0D); }
 
     @Override
-    public boolean isFloat() { return true; }
+    public boolean isDouble() { return true; }
 
     @Override
-    public double floatValue() { return value; }
+    public double doubleValue() { return value; }
 
     @Override
-    public long intValue() { return (long) value; }
+    public long longValue() { return (long) value; }
 
     @Override
     public String stringValue() { return Double.toString(value); }
@@ -40,15 +40,15 @@ public final class DoubleOperand extends NumberOperand {
     public boolean equals(Object o) {
         if (this == o) return !Double.isNaN(value);
         if (o instanceof DoubleOperand) return value == ((DoubleOperand) o).value;
-        return (o instanceof NumberOperand) && value == ((NumberOperand) o).floatValue();
+        return (o instanceof NumberOperand) && value == ((NumberOperand) o).doubleValue();
     }
 
     @Override
     public int hashCode() { return Double.hashCode(value); }
 
     @Override
-    public Operand inc() { return valueOf(value + 1D); }
+    public Operand increment() { return valueOf(value + 1D); }
 
     @Override
-    public Operand dec() { return valueOf(value - 1D); }
+    public Operand decrement() { return valueOf(value - 1D); }
 }

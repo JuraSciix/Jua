@@ -99,13 +99,13 @@ public class Array implements Cloneable {
     }
 
     private Operand checkKey(Operand key) {
-        OperandType type = key.type();
+        Operand.Type type = key.type();
 
         switch (type) {
-            case FLOAT: return LongOperand.valueOf(key.intValue());
+            case DOUBLE: return LongOperand.valueOf(key.longValue());
             case BOOLEAN:
             case STRING:
-            case INT: return key;
+            case LONG: return key;
             default: throw InterpreterError.illegalKeyType(type);
         }
     }

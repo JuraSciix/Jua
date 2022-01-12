@@ -9,8 +9,8 @@ public final class NullOperand extends Operand {
     }
 
     @Override
-    public OperandType type() {
-        return OperandType.NULL;
+    public Type type() {
+        return Type.NULL;
     }
 
     @Override
@@ -44,12 +44,12 @@ public final class NullOperand extends Operand {
     }
 
     @Override
-    public double floatValue() {
+    public double doubleValue() {
         return 0D;
     }
 
     @Override
-    public long intValue() {
+    public long longValue() {
         return 0L;
     }
 

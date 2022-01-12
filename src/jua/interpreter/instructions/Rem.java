@@ -20,20 +20,20 @@ public enum Rem implements Instruction {
         Operand lhs = env.popStack();
 
         if (lhs.isNumber() && rhs.isNumber()) {
-            if (lhs.isFloat() || rhs.isFloat()) {
-                double r = rhs.floatValue();
+            if (lhs.isDouble() || rhs.isDouble()) {
+                double r = rhs.doubleValue();
 
                 if (r == 0D) {
                     throw InterpreterError.divisionByZero();
                 }
-                env.pushStack(lhs.floatValue() % r);
+                env.pushStack(lhs.doubleValue() % r);
             } else {
-                long r = rhs.intValue();
+                long r = rhs.longValue();
 
                 if (r == 0L) {
                     throw InterpreterError.divisionByZero();
                 }
-                env.pushStack(lhs.intValue() % r);
+                env.pushStack(lhs.longValue() % r);
             }
         } else {
             throw InterpreterError.binaryApplication("%", lhs.type(), rhs.type());

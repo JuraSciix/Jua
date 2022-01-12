@@ -23,19 +23,19 @@ public final class LongOperand extends NumberOperand {
     public LongOperand(long value) { this.value = value; }
 
     @Override
-    public OperandType type() { return OperandType.INT; }
+    public Type type() { return Type.LONG; }
 
     @Override
-    public boolean isInt() { return true; }
+    public boolean isLong() { return true; }
 
     @Override
     public boolean booleanValue() { return (value != 0L); }
 
     @Override
-    public double floatValue() { return (double) value; }
+    public double doubleValue() { return (double) value; }
 
     @Override
-    public long intValue() { return value; }
+    public long longValue() { return value; }
 
     @Override
     public String stringValue() { return Long.toString(value); }
@@ -44,15 +44,15 @@ public final class LongOperand extends NumberOperand {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o instanceof LongOperand) return value == ((LongOperand) o).value;
-        return (o instanceof NumberOperand) && value == ((NumberOperand) o).floatValue();
+        return (o instanceof NumberOperand) && value == ((NumberOperand) o).doubleValue();
     }
 
     @Override
     public int hashCode() { return Long.hashCode(value); }
 
     @Override
-    public Operand inc() { return valueOf(value + 1L); }
+    public Operand increment() { return valueOf(value + 1L); }
 
     @Override
-    public Operand dec() { return valueOf(value - 1L); }
+    public Operand decrement() { return valueOf(value - 1L); }
 }

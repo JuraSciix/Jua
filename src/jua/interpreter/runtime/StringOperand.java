@@ -13,8 +13,8 @@ public class StringOperand extends Operand {
     }
 
     @Override
-    public OperandType type() {
-        return OperandType.STRING;
+    public Type type() {
+        return Type.STRING;
     }
 
     @Override
@@ -55,6 +55,6 @@ public class StringOperand extends Operand {
 
     @Override
     public int hashCode() {
-        return (OperandType.STRING.hashCode() ^ value.hashCode()) * 7;
+        return (Type.STRING.hashCode() ^ value.hashCode()) * 7;
     }
 }

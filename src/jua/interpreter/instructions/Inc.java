@@ -14,7 +14,7 @@ public enum Inc implements Instruction {
 
     @Override
     public int run(InterpreterRuntime env) {
-        env.pushStack(env.popStack().inc());
+        env.pushStack(env.popStack().increment());
         return NEXT;
     }
 }

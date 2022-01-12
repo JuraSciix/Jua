@@ -5,45 +5,36 @@ import jua.interpreter.runtime.BooleanOperand;
 import jua.interpreter.runtime.DoubleOperand;
 import jua.interpreter.runtime.LongOperand;
 import jua.compiler.CodePrinter;
+import jua.interpreter.runtime.Operand;
 
 public final class Push implements Instruction {
 
-    public static final int TYPE_INT = 1;
-    public static final int TYPE_DOUBLE = 2;
-    public static final int TYPE_BOOLEAN = 3;
+    public static final Push PUSH_TRUE = new Push(Operand.Type.BOOLEAN, (short) 1);
 
-    public static final Push PUSH_TRUE = new Push(TYPE_BOOLEAN, 1);
-    public static final Push PUSH_FALSE = new Push(TYPE_BOOLEAN, 0);
+    public static final Push PUSH_FALSE = new Push(Operand.Type.BOOLEAN, (short) 0);
 
-    private final int type;
+    private final Operand.Type type;
 
-    private final long value;
+    private final short value;
 
-    public Push(int type, long value) {
+    public Push(Operand.Type type, short value) {
         this.type = type;
         this.value = value;
     }
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName((type == TYPE_INT ? 'i' : (type == TYPE_DOUBLE) ? 'f' : 'b') + "push");
+        printer.printName(type.sigc() + "push");
         printer.print(value);
     }
 
     @Override
     public int run(InterpreterRuntime env) {
         switch (type) {
-            case TYPE_INT:
-                env.pushStack(LongOperand.valueOf(value));
-                break;
-            case TYPE_DOUBLE:
-                env.pushStack(DoubleOperand.valueOf(value));
-                break;
-            case TYPE_BOOLEAN:
-                env.pushStack(BooleanOperand.valueOf(value));
-                break;
-            default:
-                throw new AssertionError();
+            case LONG: env.pushStack(LongOperand.valueOf(value)); break;
+            case DOUBLE: env.pushStack(DoubleOperand.valueOf(value)); break;
+            case BOOLEAN: env.pushStack(BooleanOperand.valueOf(value)); break;
+            default: throw new AssertionError();
         }
         return NEXT;
     }

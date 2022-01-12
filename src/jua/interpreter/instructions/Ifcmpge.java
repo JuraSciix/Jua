@@ -22,9 +22,9 @@ public final class Ifcmpge extends ChainInstruction {
             // op inverted due to VM mechanics
             throw InterpreterError.binaryApplication("<", lhs.type(), rhs.type());
         }
-        if ((lhs.isFloat() || rhs.isFloat())
-                ? lhs.floatValue() < rhs.floatValue()
-                : lhs.intValue() < rhs.intValue()) {
+        if ((lhs.isDouble() || rhs.isDouble())
+                ? lhs.doubleValue() < rhs.doubleValue()
+                : lhs.longValue() < rhs.longValue()) {
             return NEXT;
         } else {
             return destination;

@@ -24,7 +24,7 @@ public class Vinc implements Instruction {
         if (local == null) {
             env.getFrame().reportUndefinedVariable(id);
         } else {
-            env.setLocal(id, local.inc());
+            env.setLocal(id, local.increment());
         }
         return NEXT;
     }
