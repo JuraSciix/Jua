@@ -619,7 +619,7 @@ public final class Gen implements Visitor {
                     break;
                 } else if (lhsShort || rhsShort) {
                     resultState = (shortVal == 0) ?
-                            (invertCond ? Ifeq.IF_FALSE : Ifne.IF_TRUE) :
+                            (invertCond ? new Ifeq(0) : new Ifne(0)) :
                             (invertCond ? new Ifeq(shortVal) : new Ifne(shortVal));
                     resultStackAdjustment = -1;
                 } else {
@@ -637,7 +637,7 @@ public final class Gen implements Visitor {
                     break;
                 } else if (lhsShort || rhsShort) {
                     resultState = (shortVal == 0) ?
-                            (invertCond ? Ifne.IF_TRUE : Ifeq.IF_FALSE) :
+                            (invertCond ? new Ifne(0) : new Ifeq(0)) :
                             (invertCond ? new Ifne(shortVal) : new Ifeq(shortVal));
                     resultStackAdjustment = -1;
                 } else {
@@ -1050,7 +1050,7 @@ public final class Gen implements Visitor {
         // todo: Здешний код отвратителен. Следует переписать всё с нуля...
         code.addState(Bool.INSTANCE);
         code.addChainedState(TreeInfo.line(expression),
-                invertCond ? Ifne.IF_TRUE : Ifeq.IF_FALSE,
+                invertCond ? new Ifne(0) : new Ifeq(0),
                 peekConditionChain(), -1);
     }
 
@@ -1323,7 +1323,6 @@ public final class Gen implements Visitor {
         code.resolveChain(popConditionChain());
         emitPushFalse(0);
         code.resolveChain(ex);
-
     }
 
     private void emitPushLong(int line, long value) {

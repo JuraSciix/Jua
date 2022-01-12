@@ -5,8 +5,6 @@ import jua.tools.CodePrinter;
 
 public final class Ifeq extends ChainInstruction {
 
-    public static final Ifeq IF_FALSE = new Ifeq(0);
-
     private final int value;
 
     public Ifeq(int value) {
