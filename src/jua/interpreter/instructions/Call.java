@@ -3,7 +3,7 @@ package jua.interpreter.instructions;
 import jua.interpreter.InterpreterRuntime;
 import jua.interpreter.InterpreterError;
 import jua.interpreter.runtime.RuntimeFunction;
-import jua.tools.CodePrinter;
+import jua.compiler.CodePrinter;
 
 public class Call implements Instruction {
 

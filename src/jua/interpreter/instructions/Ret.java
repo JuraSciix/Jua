@@ -2,7 +2,7 @@ package jua.interpreter.instructions;
 
 import jua.interpreter.InterpreterRuntime;
 import jua.interpreter.Trap;
-import jua.tools.CodePrinter;
+import jua.compiler.CodePrinter;
 
 public enum Ret implements Instruction {
 

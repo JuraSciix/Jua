@@ -1,4 +1,4 @@
-package jua.tools;
+package jua.compiler;
 
 import jua.interpreter.Program;
 import jua.interpreter.runtime.Constant;

@@ -3,7 +3,7 @@ package jua.interpreter.instructions;
 import jua.interpreter.InterpreterRuntime;
 import jua.interpreter.Trap;
 import jua.interpreter.runtime.NullOperand;
-import jua.tools.CodePrinter;
+import jua.compiler.CodePrinter;
 
 public enum Retnull implements Instruction {
 

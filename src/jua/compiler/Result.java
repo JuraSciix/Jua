@@ -2,7 +2,6 @@ package jua.compiler;
 
 import jua.interpreter.InterpreterRuntime;
 import jua.interpreter.ProgramFrame;
-import jua.tools.CodePrinter;
 
 import jua.interpreter.Program;
 

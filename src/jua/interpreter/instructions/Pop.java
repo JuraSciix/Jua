@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
 import jua.interpreter.InterpreterRuntime;
-import jua.tools.CodePrinter;
+import jua.compiler.CodePrinter;
 
 public enum Pop implements Instruction {
 

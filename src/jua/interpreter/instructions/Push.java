@@ -4,7 +4,7 @@ import jua.interpreter.InterpreterRuntime;
 import jua.interpreter.runtime.BooleanOperand;
 import jua.interpreter.runtime.DoubleOperand;
 import jua.interpreter.runtime.LongOperand;
-import jua.tools.CodePrinter;
+import jua.compiler.CodePrinter;
 
 public final class Push implements Instruction {
 

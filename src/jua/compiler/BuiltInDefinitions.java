@@ -1,7 +1,7 @@
 package jua.compiler;
 
 import jua.Options;
-import jua.compiler.utils.ObjectsSize;
+import jua.util.ObjectsSize;
 import jua.interpreter.Program;
 import jua.interpreter.InterpreterRuntime;
 import jua.interpreter.InterpreterError;
