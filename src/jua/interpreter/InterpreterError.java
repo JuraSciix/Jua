@@ -2,20 +2,20 @@ package jua.interpreter;
 
 import jua.interpreter.runtime.Operand;
 
-// will be caught by Jua Exception Handler
-// and thrown with location in RuntimeError
+// todo: Вместо этого должно быть Trap.STATE_ERR
+
 public class InterpreterError extends RuntimeException {
 
     public static InterpreterError inconvertibleTypes(Operand.Type from, Operand.Type to) {
-        return new InterpreterError(from + " cannot be converted to " + to + '.');
+        return new InterpreterError(from.name + " cannot be converted to " + to.name + '.');
     }
 
     public static InterpreterError binaryApplication(String op, Operand.Type lhs, Operand.Type rhs) {
-        return new InterpreterError("binary '" + op + "' cannot be applied with " + lhs + " and " + rhs + '.');
+        return new InterpreterError("binary '" + op + "' cannot be applied with " + lhs.name + " and " + rhs.name + '.');
     }
 
     public static InterpreterError unaryApplication(String op, Operand.Type hs) {
-        return new InterpreterError("unary '" + op + "' cannot be applied with " + hs + '.');
+        return new InterpreterError("unary '" + op + "' cannot be applied with " + hs.name + '.');
     }
 
     public static InterpreterError divisionByZero() {
@@ -23,7 +23,7 @@ public class InterpreterError extends RuntimeException {
     }
 
     public static InterpreterError illegalKeyType(Operand.Type type) {
-        return new InterpreterError(type + " cannot be as key in array.");
+        return new InterpreterError(type.name + " cannot be as key in array.");
     }
 
     public static InterpreterError variableNotExists(String name) {
@@ -34,6 +34,7 @@ public class InterpreterError extends RuntimeException {
         return new InterpreterError("function '" + name + "' not exists.");
     }
 
+    @Deprecated
     public static InterpreterError stackOverflow() {
         return new InterpreterError("stack overflow.");
     }

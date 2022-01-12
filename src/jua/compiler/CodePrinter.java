@@ -182,7 +182,7 @@ public class CodePrinter {
 
     public void printLiteral(int index) {
         Operand constant = program.constantPool[index];
-        preparePrint().operands.add(constant.type().toString() + " " + constant.toString());
+        preparePrint().operands.add(constant.type().name + " " + constant.toString());
     }
 
     private PrintState preparePrint() {
