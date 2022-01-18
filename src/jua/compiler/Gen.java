@@ -248,8 +248,9 @@ public final class Gen implements Visitor {
         if (statementDepth == 0) { // is root?
             code.pushContext(TreeInfo.sourceName(statement));
             code.pushScope();
+            code.putLine(0, TreeInfo.line(statement));
             generateStatementsWhileAlive(statement.statements);
-            code.addState(1, Halt.INSTANCE);
+            code.addState(Halt.INSTANCE);
             code.popScope();
         } else {
             generateStatementsWhileAlive(statement.statements);
@@ -439,6 +440,7 @@ public final class Gen implements Visitor {
             cError(statement.getPosition(), "function '" + statement.name + "' already declared.");
         code.pushContext(TreeInfo.sourceName(statement));
         code.pushScope();
+        code.putLine(0, TreeInfo.line(statement));
         int[] locals = statement.names.stream().mapToInt(n -> {
             if (statement.names.indexOf(n) != statement.names.lastIndexOf(n)) {
                 cError(statement.getPosition(), "duplicate argument '" + n + "'.");
@@ -446,7 +448,7 @@ public final class Gen implements Visitor {
             return code.resolveLocal(n);
         }).toArray();
         visitStatement(statement.body);
-        emitRetnull(TreeInfo.line(statement));
+        emitRetnull(0);
         codeData.setFunction(statement.name, new ScriptRuntimeFunction(
                 locals, // function arguments must be first at local list
                 statement.optionals.stream().mapToInt(a -> {

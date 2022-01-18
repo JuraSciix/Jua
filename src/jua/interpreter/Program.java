@@ -3,21 +3,19 @@ package jua.interpreter;
 import jua.interpreter.runtime.Operand;
 import jua.interpreter.instructions.Instruction;
 
-import java.util.Arrays;
-
 /**
  * Программа представляет собой фабрику фреймов.
  */
 public final class Program {
 
-    public static final class LineTable {
+    public static final class LineNumberTable {
 
-        final int[] bcindexes;
+        final short[] bytecodeIndexes;
 
-        final int[] lineNumbers;
+        final short[] lineNumbers;
 
-        public LineTable(int[] bcindexes, int[] lineNumbers) {
-            this.bcindexes = bcindexes;
+        public LineNumberTable(short[] bytecodeIndexes, short[] lineNumbers) {
+            this.bytecodeIndexes = bytecodeIndexes;
             this.lineNumbers = lineNumbers;
         }
     }
@@ -37,15 +35,15 @@ public final class Program {
                 new Operand[0]);
     }
 
-    private static LineTable createEmptyLineTable(int lineNumber) {
-        return new LineTable(new int[]{0}, new int[]{lineNumber});
+    private static LineNumberTable createEmptyLineTable(int lineNumber) {
+        return new LineNumberTable(new short[]{0}, new short[]{(short) lineNumber});
     }
 
     public final String filename;
 
     public final Instruction[] instructions;
 
-    public final LineTable lineTable;
+    public final LineNumberTable lineNumberTable;
 
     public final int stackSize;
 
@@ -55,10 +53,10 @@ public final class Program {
 
     public final Operand[] constantPool;
 
-    public Program(String filename, Instruction[] instructions, LineTable lineTable, int stackSize, int localsSize, String[] localsNames, Operand[] constantPool) {
+    public Program(String filename, Instruction[] instructions, LineNumberTable lineNumberTable, int stackSize, int localsSize, String[] localsNames, Operand[] constantPool) {
         this.filename = filename;
         this.instructions = instructions;
-        this.lineTable = lineTable;
+        this.lineNumberTable = lineNumberTable;
         this.stackSize = stackSize;
         this.localsSize = localsSize;
         this.localsNames = localsNames;
@@ -66,12 +64,23 @@ public final class Program {
     }
 
     public int getInstructionLine(int bci) {
-        if ((bci < 0) || (bci > instructions.length) || lineTable == null)
+        if ((bci < 0) || (bci >= instructions.length) || lineNumberTable == null)
             return -1;
-        int a = Arrays.binarySearch(lineTable.bcindexes, bci);
-        if (a < 0)
-            a = ~a - 1;
-        return lineTable.lineNumbers[a];
+        // copied from EternalVM
+        int low = 0;
+        int high = lineNumberTable.bytecodeIndexes.length - 1;
+
+        while (low <= high) {
+            int mid = (low + high) >>> 1;
+            int mid_bci = lineNumberTable.bytecodeIndexes[mid] & 0xffff;
+
+            if (mid_bci <= bci) {
+                low = (mid + 1);
+            } else {
+                high = (mid - 1);
+            }
+        }
+        return lineNumberTable.lineNumbers[low - 1] & 0xffff;
     }
 
     public ProgramFrame makeFrame() {

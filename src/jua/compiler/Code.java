@@ -4,16 +4,16 @@ import it.unimi.dsi.fastutil.booleans.BooleanArrayList;
 import it.unimi.dsi.fastutil.booleans.BooleanStack;
 import it.unimi.dsi.fastutil.doubles.Double2ObjectMap;
 import it.unimi.dsi.fastutil.doubles.Double2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.ints.Int2IntLinkedOpenHashMap;
-import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.shorts.Short2ShortMap;
+import it.unimi.dsi.fastutil.shorts.Short2ShortRBTreeMap;
 import jua.interpreter.Program;
-import jua.interpreter.Program.LineTable;
+import jua.interpreter.Program.LineNumberTable;
 import jua.interpreter.instructions.ChainInstruction;
 import jua.interpreter.instructions.Instruction;
 import jua.interpreter.runtime.DoubleOperand;
@@ -38,7 +38,7 @@ public final class Code {
 
         final List<Instruction> instructions = new ArrayList<>();
 
-        final Int2IntMap lineTable = new Int2IntLinkedOpenHashMap();
+        final Short2ShortMap lineTable = new Short2ShortRBTreeMap();
 
         final Int2ObjectMap<Chain> chains = new Int2ObjectOpenHashMap<>();
 
@@ -179,12 +179,12 @@ public final class Code {
         if (context.nstack > context.maxNstack)
             context.maxNstack = context.nstack;
         if ((line > 0) && (context.lastLineNumber != line)) {
-            putLine(currentBci(), line);
+            putLine(currentBci() - 1, line);
         }
     }
 
     public void putLine(int bci, int line) {
-        context.lineTable.put(bci - 1, line);
+        context.lineTable.put((short) bci, (short) line);
         context.lastLineNumber = line;
     }
 
@@ -270,10 +270,10 @@ public final class Code {
                 context.constantPool.toArray(new Operand[0]));
     }
 
-    private LineTable buildLineTable() {
-        return new LineTable(
-                context.lineTable.keySet().toIntArray(),
-                context.lineTable.values().toIntArray()
+    private LineNumberTable buildLineTable() {
+        return new LineNumberTable(
+                context.lineTable.keySet().toShortArray(),
+                context.lineTable.values().toShortArray()
         );
     }
 }

@@ -1,3 +1,10 @@
-for i = 0; i <= 10; i++ {
-    println(i - 1);
-}
+# too slow...
+fn cmp(a, b) { return sgn(a - b); }
+fn sgn(n) { return ((n >> 0x3f) | ushl(-n, 0x3f)); }
+fn ushl(x, y) { return (x >> y) & (0x7fffffffffffffff >> (y - 1)); }
+
+for i = 0; i < 3; i++
+    for j = 0; j < i * i; j++
+        println(bs(i, j));
+
+fn bs(i, j) { return "cmp(" + i + ", " + j + ") => " + cmp(i, j); }
