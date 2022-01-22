@@ -2,7 +2,9 @@ package jua.compiler;
 
 import it.unimi.dsi.fastutil.booleans.BooleanArrayList;
 import it.unimi.dsi.fastutil.booleans.BooleanStack;
-import it.unimi.dsi.fastutil.ints.*;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.shorts.Short2ShortMap;
@@ -16,7 +18,10 @@ import jua.interpreter.runtime.Operand;
 import jua.interpreter.runtime.StringOperand;
 import jua.parser.Tree;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 public final class Code {
@@ -29,10 +34,10 @@ public final class Code {
     private static class Chain {
 
         // Map<IP, ChainInstructionFactory>
-        private final Int2ObjectMap<ChainInstructionFactory> factories
+        final Int2ObjectMap<ChainInstructionFactory> factories
                 = new Int2ObjectOpenHashMap<>();
 
-        private int resultIP = -1;
+        int resultIP = -1;
     }
 
     private static class Context {
@@ -45,7 +50,7 @@ public final class Code {
 
         final Int2ObjectMap<Chain> chains = new Int2ObjectOpenHashMap<>();
 
-        final Object2IntMap<String> localNames = new Object2IntOpenHashMap<>();
+        final Object2IntMap<String> localNames = new Object2IntLinkedOpenHashMap<>();
 
         final BooleanStack scopes = new BooleanArrayList();
 
@@ -97,6 +102,10 @@ public final class Code {
 
     public void resolveChain(int chainId, int resultBci) {
         resolveChain0(chainId, resultBci);
+    }
+
+    public int getChainDest(int chainId) {
+        return context.chains.get(chainId).resultIP;
     }
 
     public int currentIP() {
@@ -177,7 +186,7 @@ public final class Code {
     }
 
     public int resolveLocal(String name) {
-        if (!isAlive()) return -1;
+//        if (!isAlive()) return -1;
         if (!context.localNames.containsKey(name)) {
             int newIndex = context.nlocals++;
             context.localNames.put(name, newIndex);

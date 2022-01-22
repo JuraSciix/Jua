@@ -29,7 +29,7 @@ public class CodePrinter {
             String operands0 = (operands == null) ? "default" : Arrays.stream(operands)
                     .mapToObj(a -> program.constantPool[a].toString())
                     .collect(Collectors.joining(", "));
-            return String.format("%s: #%d", operands0, index);
+            return String.format("%s: ->%d", operands0, index);
         }
     }
 
@@ -54,10 +54,14 @@ public class CodePrinter {
                 sb.append("        ");
             }
             if (!cases.isEmpty()) { // operands empty
-                sb.append(String.format("%5d: %-5s ", index, name));
+                String format = String.format("%5d: %-5s ", index, name);
+                sb.append(format);
                 sb.append('{').append(System.lineSeparator());
-                cases.forEach(c -> sb.append("\t\t").append(c).append(System.lineSeparator()));
-                sb.append("      }");
+                String align = String.format("%" + (format.length()+1) + "s", " ");
+                cases.forEach(c -> {
+                    sb.append(align).append("\t\t").append(c).append(System.lineSeparator());
+                });
+                sb.append(align).append("}");
             } else {
                 sb.append(String.format("%5d: %-15s %s", index, name, String.join(", ", operands)));
             }
@@ -175,7 +179,7 @@ public class CodePrinter {
     }
 
     public void printCase(int[] operands, int index) {
-        preparePrint().cases.add(new Case(operands, index, program));
+        preparePrint().cases.add(new Case(operands, this.index + index - 1, program));
     }
 
     public void printLiteral(int index) {

@@ -1,58 +1,52 @@
 package jua.interpreter.instructions;
 
+import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterRuntime;
 import jua.interpreter.runtime.Operand;
-import jua.compiler.CodePrinter;
 
 public final class Switch extends ChainInstruction {
 
-    // todo: Переделать этот ужас.
+    private final int[] literals;
 
-    public static class Part {
+    private final int[] destIps;
 
-        private final int index;
-
-        private final int[] operands;
-
-        public Part(int index, int[] operands) {
-            this.index = index;
-            this.operands = operands;
-        }
-    }
-
-    private final Part[] parts;
-
-    private Part _default;
-
-    public Switch(int destIp, Part[] parts, Part _default) {
-        super(destIp);
-        this.parts = parts;
-        this._default = _default;
+    public Switch(int[] literals, int[] destIps, int defaultIp) {
+        super(defaultIp);
+        assert literals.length == destIps.length;
+        this.literals = literals;
+        this.destIps = destIps;
     }
 
     @Override
     public void print(CodePrinter printer) {
         printer.printName("switch");
-
-        for (Part part : parts) printer.printCase(part.operands, part.index);
-        if (_default != null) printer.printCase(_default.operands, _default.index);
+        if (literals.length > 0) {
+            int last = destIps[0];
+            int last_index = 0;
+            for (int i = 1; i < literals.length; i++) {
+                if (destIps[i] == last) {
+                    continue;
+                }
+                printer.printCase(java.util.Arrays.copyOfRange(literals, last_index, i), destIps[last_index]);
+                last = destIps[i];
+                last_index = i;
+            }
+            printer.printCase(java.util.Arrays.copyOfRange(literals, last_index, literals.length), destIps[last_index]);
+        }
+        printer.printCase(null, destIp /* default ip */);
     }
 
     @Override
     public int run(InterpreterRuntime env) {
+        int[] l = literals;
+
         Operand selector = env.popStack();
 
-        for (Part part : parts) {
-            for (int operand : part.operands) {
-                if (env.getFrame().getConstant(operand).equals(selector)) {
-                    return part.index;
-                }
+        for (int i = 0; i < l.length; i++) {
+            if (selector.equals(env.getFrame().getConstant(l[i]))) {
+                return destIps[i];
             }
         }
-        if (_default == null) {
-            return destIp;
-        } else {
-            return _default.index;
-        }
+        return destIp; /* default ip */
     }
 }

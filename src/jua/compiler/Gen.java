@@ -1,7 +1,6 @@
 package jua.compiler;
 
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntStack;
+import it.unimi.dsi.fastutil.ints.*;
 import jua.interpreter.instructions.*;
 import jua.interpreter.runtime.ArrayOperand;
 import jua.interpreter.runtime.Operand;
@@ -9,8 +8,6 @@ import jua.interpreter.runtime.ScriptRuntimeFunction;
 import jua.parser.Tree.*;
 
 import java.util.*;
-
-import static jua.interpreter.instructions.Switch.Part;
 
 public final class Gen implements Visitor {
 
@@ -23,9 +20,6 @@ public final class Gen implements Visitor {
     private final IntStack continueChains;
 
     private final IntStack fallthroughChains;
-
-    // todo: Это дикий костыль.
-    private final Deque<List<Part>> switchPartsStack;
 
     private final IntStack conditionalChains;
 
@@ -59,6 +53,11 @@ public final class Gen implements Visitor {
      */
     static final int STATE_INFINITY_LOOP = (1 << 5);
 
+    /**
+     * Состояние кода, в котором оператор switch не является конечным.
+     */
+    static final int STATE_ALIVE_SWITCH = (1 << 6);
+
 
 //    private int statementDepth = 0;
 //
@@ -77,11 +76,11 @@ public final class Gen implements Visitor {
 
     public Gen(CodeData codeData) {
         this.codeData = codeData;
+
         code = new Code(codeData.filename);
         breakChains = new IntArrayList();
         continueChains = new IntArrayList();
         fallthroughChains = new IntArrayList();
-        switchPartsStack = new ArrayDeque<>();
         conditionalChains = new IntArrayList();
     }
 
@@ -407,15 +406,82 @@ public final class Gen implements Visitor {
         unsetState(STATE_INFINITY_LOOP);
     }
 
+    private int switch_start_ip;
+
+    private Int2IntMap cases;
+
+    private int default_case;
+
     @Override
-    public void visitCase(CaseStatement statement) {
-        switchPartsStack.getLast().add(new Part(code.currentIP(), statement.expressions.stream()
-                .mapToInt(a -> {
-                    assert a instanceof LiteralExpression;
-                    return TreeInfo.resolveLiteral(code, (LiteralExpression) a);
-                })
-                .toArray()));
-        emitCaseBody(statement.body);
+    public void visitCase(CaseStatement tree) {
+        if (tree.expressions != null) { // is not default case?
+            for (Expression expr : tree.expressions) {
+                int cp;
+                if (expr.getClass() == StringExpression.class)
+                    cp = code.resolveString(((StringExpression) expr).value);
+                else if (expr.getClass() == IntExpression.class)
+                    cp = code.resolveLong(((IntExpression) expr).value);
+                else if (expr.getClass() == FloatExpression.class)
+                    cp = code.resolveDouble(((FloatExpression) expr).value);
+                else {
+                    cError(expr.position, "constant expected.");
+                    continue;
+                }
+                cases.put(cp, code.currentIP() - switch_start_ip);
+            }
+
+        } else {
+            if (default_case != -1) {
+                code.resolveChain(default_case);
+                default_case = -1;
+            }
+        }
+        int f = code.makeChain();
+        fallthroughChains.push(f);
+        boolean alive = visitBody(tree.body);
+        if (alive) {
+            setState(STATE_ALIVE_SWITCH);
+            emitGoto(breakChains.topInt());
+        }
+        fallthroughChains.popInt();
+        code.resolveChain(f);
+    }
+
+    @Override
+    public void visitSwitch(SwitchStatement tree) {
+        visitExpression(tree.selector);
+        // emit switch
+        int b = code.makeChain();
+        breakChains.push(b);
+        default_case = code.makeChain();
+        Int2IntMap _cases = new Int2IntLinkedOpenHashMap();
+        cases = _cases;
+        // todo: Координация по кейзам должна основываться на Code.Chain. В этот раз сделать лучше не получилось.
+        switch_start_ip = code.currentIP();
+        code.addChainedInstruction(dest_ip -> {
+            int[] literals = _cases.keySet().toIntArray();
+            int[] destIps = _cases.values().toIntArray();
+            return new Switch(literals, destIps, dest_ip /* default ip */);
+        }, default_case);
+        int cached_sp = code.getSp();
+        int max_sp = cached_sp;
+        int prev_state = state;
+        unsetState(STATE_ALIVE_SWITCH);
+        for (CaseStatement _case : tree.cases) {
+            code.setSp(cached_sp);
+            _case.accept(this);
+            if (code.getSp() > max_sp) max_sp = code.getSp();
+        }
+        code.setSp(max_sp);
+        breakChains.popInt();
+        if (default_case != -1)
+            code.resolveChain(default_case);
+        code.resolveChain(b);
+        cases = null;
+        if (!isState(STATE_ALIVE_SWITCH)) {
+            code.dead();
+        }
+        state = prev_state;
     }
 
     @Override
@@ -1027,43 +1093,6 @@ public final class Gen implements Visitor {
     @Override
     public void visitSubtract(SubtractExpression expression) {
         generateBinary(expression);
-    }
-
-    private Switch.Part default_part = null;
-
-    @Override
-    public void visitSwitch(SwitchStatement statement) {
-        int count = 0;
-        for (CaseStatement _case : statement.cases) {
-            if (_case.expressions != null) count++;
-        }
-        visitExpression(statement.selector);
-        int a = code.makeChain();
-        breakChains.push(a);
-        code.putPos(statement.position);
-        code.addChainedInstruction(dest_ip -> {
-            Switch res = new Switch(dest_ip,
-                    switchPartsStack.pop().toArray(new Part[0]), default_part);
-            default_part = null;
-            return res;
-        }, a);
-        fallthroughChains.push(code.makeChain());
-        switchPartsStack.add(new ArrayList<>(count));
-        int cached_sp = code.getSp();
-        int max_sp = 0;
-        for (CaseStatement _case : statement.cases) {
-            code.setSp(cached_sp);
-            if (_case.expressions == null) {
-                default_part = new Part(code.currentIP(), null);
-                emitCaseBody(_case.body);
-            } else {
-                visitStatement(_case);
-            }
-            if (code.getSp() > max_sp) max_sp = code.getSp();
-        }
-        code.setSp(max_sp);
-        code.resolveChain(fallthroughChains.popInt());
-        code.resolveChain(breakChains.popInt());
     }
 
     @Override
