@@ -9,11 +9,14 @@ import jua.parser.Tree.*;
 
 public final class TreeInfo {
 
-    public static Expression removeParens(Expression expression) {
-        Tree.Expression current = expression;
+    public static Expression removeParens(Expression tree) {
+        if (tree == null)
+            return null;
 
-        while (current instanceof Tree.ParensExpression) {
-            current = ((Tree.ParensExpression) current).expr;
+        Expression current = tree;
+
+        while (current.isTag(Tag.PARENS)) {
+            current = ((ParensExpression) current).expr;
         }
 
         return current;
@@ -37,15 +40,20 @@ public final class TreeInfo {
 
     public static int resolveLiteral(Code code, LiteralExpression expression) {
         if (expression instanceof IntExpression) {
-            return code.resolveConstant(((IntExpression) expression).value);
+            return code.resolveLong(((IntExpression) expression).value);
         }
         if (expression instanceof FloatExpression) {
-            return code.resolveConstant(((FloatExpression) expression).value);
+            return code.resolveDouble(((FloatExpression) expression).value);
         }
         if (expression instanceof StringExpression) {
-            return code.resolveConstant(((StringExpression) expression).value);
+            return code.resolveString(((StringExpression) expression).value);
         }
         throw new AssertionError();
+    }
+
+    public static boolean isNull(Expression expression) {
+        Expression expr = removeParens(expression);
+        return expr == null || expr instanceof NullExpression;
     }
 
     public static Operand resolveLiteral(LiteralExpression expression) {

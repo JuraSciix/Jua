@@ -7,7 +7,8 @@ public final class Ifeq extends ChainInstruction {
 
     private final int value;
 
-    public Ifeq(int value) {
+    public Ifeq(int dest_ip, int value) {
+        super(dest_ip);
         this.value = value;
     }
 
@@ -21,7 +22,7 @@ public final class Ifeq extends ChainInstruction {
     @Override
     public int run(InterpreterRuntime env) {
         if (env.popInt() == value) {
-            return destination;
+            return destIp;
         } else {
             return NEXT;
         }

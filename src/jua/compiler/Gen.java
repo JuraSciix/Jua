@@ -29,21 +29,55 @@ public final class Gen implements Visitor {
 
     private final IntStack conditionalChains;
 
-    // todo: Избавиться от ниже определенных полей
+    /**
+     *
+     */
+    static final int STATE_ROOTED = (1 << 0);
 
-    private int statementDepth = 0;
+    /**
+     * Состояние кода, в котором нельзя определять функции и константы.
+     */
+    static final int STATE_NO_DECLS = (1 << 1);
 
-    private int expressionDepth = 0;
+    /**
+     * Состояние кода, в котором любое обрабатываемое выражение должно оставлять за собой какое-либо значение.
+     */
+    static final int STATE_RESIDUAL = (1 << 2);
 
-    private int conditionDepth = 0;
+    /**
+     * Состояние кода, в котором любое обрабатываемое выражение должно приводиться к логическому виду.
+     */
+    static final int STATE_COND = (1 << 3);
 
-    private boolean invertCond = false;
-    
-    private boolean loopInfinity = false;
+    /**
+     * Состояние кода, в котором все логические выражения должны инвертироваться.
+     */
+    static final int STATE_COND_INVERT = (1 << 4);
+
+    /**
+     * Состояние кода, в котором текущий обрабатываемый цикл считается бесконечным.
+     */
+    static final int STATE_INFINITY_LOOP = (1 << 5);
+
+
+//    private int statementDepth = 0;
+//
+//    private int expressionDepth = 0;
+//
+//    private int conditionDepth = 0;
+
+    /**
+     * Состояние кода.
+     */
+    private int state = 0; // unassigned state
+//
+//    private boolean invertCond = false;
+//
+//    private boolean loopInfinity = false;
 
     public Gen(CodeData codeData) {
         this.codeData = codeData;
-        code = new Code();
+        code = new Code(codeData.filename);
         breakChains = new IntArrayList();
         continueChains = new IntArrayList();
         fallthroughChains = new IntArrayList();
@@ -58,25 +92,52 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitAdd(AddExpression expression) {
-        visitBinary(expression);
-        emitAdd(TreeInfo.line(expression));
+        generateBinary(expression);
+    }
+
+    private boolean isState(int state_flag) {
+        return (state & state_flag) != 0;
+    }
+
+    private void unsetState(int state_flag) {
+        state &= ~state_flag;
+    }
+
+    private void setState(int state_flag) {
+        state |= state_flag;
     }
 
     @Override
     public void visitAnd(AndExpression expression) {
+//        beginCondition();
+//        if (invertCond) {
+//            if (expression.rhs == null) {
+//                generateCondition(expression.lhs);
+//            } else {
+//                int fa = pushMakeConditionChain();
+//                invertCond = false;
+//                generateCondition(expression.lhs);
+//                popConditionChain();
+//                invertCond = true;
+//                generateCondition(expression.rhs);
+//                code.resolveChain(fa);
+//            }
+//        } else {
+//            generateCondition(expression.lhs);
+//            generateCondition(expression.rhs);
+//        }
+//        endCondition();
+
         beginCondition();
-        if (invertCond) {
-            if (expression.rhs == null) {
-                generateCondition(expression.lhs);
-            } else {
-                int fa = pushMakeConditionChain();
-                invertCond = false;
-                generateCondition(expression.lhs);
-                popConditionChain();
-                invertCond = true;
-                generateCondition(expression.rhs);
-                code.resolveChain(fa);
-            }
+        if (isState(STATE_COND_INVERT)) {
+            int fa = pushMakeConditionChain();
+            int prev_state = state;
+            unsetState(STATE_COND_INVERT);
+            generateCondition(expression.lhs);
+            popConditionChain();
+            state = prev_state;
+            generateCondition(expression.rhs);
+            code.resolveChain(fa);
         } else {
             generateCondition(expression.lhs);
             generateCondition(expression.rhs);
@@ -85,16 +146,55 @@ public final class Gen implements Visitor {
     }
 
     @Override
+    public void visitOr(OrExpression expression) {
+//        beginCondition();
+//        if (invertCond) {
+//            generateCondition(expression.lhs);
+//            generateCondition(expression.rhs);
+//        } else {
+//            if (expression.rhs == null) {
+//                generateCondition(expression.lhs);
+//            } else {
+//                int tr = pushMakeConditionChain();
+//                invertCond = true;
+//                generateCondition(expression.lhs);
+//                popConditionChain();
+//                invertCond = false;
+//                generateCondition(expression.rhs);
+//                code.resolveChain(tr);
+//            }
+//        }
+//        endCondition();
+
+        beginCondition();
+        if (isState(STATE_COND_INVERT)) {
+            generateCondition(expression.lhs);
+            generateCondition(expression.rhs);
+        } else {
+            int tr = pushMakeConditionChain();
+            int prev_state = state;
+            setState(STATE_COND_INVERT);
+            generateCondition(expression.lhs);
+            popConditionChain();
+            state = prev_state;
+            generateCondition(expression.rhs);
+            code.resolveChain(tr);
+        }
+        endCondition();
+    }
+
+    @Override
     public void visitArrayAccess(ArrayAccessExpression expression) {
         visitExpression(expression.hs);
         visitExpression(expression.key);
-        emitALoad(TreeInfo.line(expression));
+        code.putPos(expression.position);
+        emitALoad();
     }
 
     @Override
     public void visitArray(ArrayExpression expression) {
 //        code.incStack();
-//        code.addState(Newarray.INSTANCE);
+//        code.addInstruction(Newarray.INSTANCE);
 //        AtomicInteger index = new AtomicInteger();
 //        enableUsed();
 //        expression.map.forEach((key, value) -> {
@@ -113,7 +213,8 @@ public final class Gen implements Visitor {
 //        disableUsed();
 //        emitNecessaryPop();
 
-        emitNewArray(TreeInfo.line(expression));
+        code.putPos(expression.position);
+        emitNewArray();
         generateArrayCreation(expression.map);
     }
 
@@ -125,19 +226,18 @@ public final class Gen implements Visitor {
             Map.Entry<Expression, Expression> entry = iterator.next();
             emitDup();
             if (entry.getKey().isEmpty()) {
-                emitPushLong(TreeInfo.line(entry.getValue()), implicitIndex++);
+                code.putPos(entry.getValue().position);
+                emitPushLong(implicitIndex++);
             } else {
                 visitExpression(entry.getKey());
             }
             visitExpression(entry.getValue());
-            emitAStore(entry.getKey().isEmpty()
-                    ? TreeInfo.line(entry.getValue())
-                    : TreeInfo.line(entry.getKey()));
+            emitAStore();
         }
     }
 
-    private void emitNewArray(int line) {
-        code.addState(line, Newarray.INSTANCE, 1);
+    private void emitNewArray() {
+        code.addInstruction(Newarray.INSTANCE, 1);
     }
 
     @Override
@@ -219,37 +319,67 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitBitAnd(BitAndExpression expression) {
-        visitExpression(expression.lhs);
-        visitExpression(expression.rhs);
-        emitAnd(TreeInfo.line(expression));
+        generateBinary(expression);
     }
 
     @Override
     public void visitBitNot(BitNotExpression expression) {
-        visitUnary(expression);
-        code.addState(TreeInfo.line(expression), Not.INSTANCE);
+        generateUnary(expression);
     }
 
     @Override
     public void visitBitOr(BitOrExpression expression) {
-        visitBinary(expression);
-        emitOr(TreeInfo.line(expression));
+        generateBinary(expression);
     }
 
     @Override
     public void visitBitXor(BitXorExpression expression) {
-        visitBinary(expression);
-        emitXor(TreeInfo.line(expression));
+        generateBinary(expression);
+    }
+    
+    private void generateBinary(BinaryExpression tree) {
+        tree.lhs.accept(this);
+        if (tree.isTag(Tag.NULLCOALESCE)) {
+            emitDup();
+            int el = code.makeChain();
+            code.putPos(tree.position);
+            code.addChainedInstruction(Ifnonnull::new, el, -1);
+            code.addInstruction(Pop.INSTANCE, -1);
+            visitExpression(tree.rhs);
+            code.resolveChain(el);
+            return;
+        }
+        tree.rhs.accept(this);
+        code.putPos(tree.position);
+        code.addInstruction(bin2instr(tree.tag));
+    }
+    
+    public static Instruction bin2instr(Tag tag) {
+        switch (tag) {
+            case ADD: return Add.INSTANCE;
+            case SUB: return Sub.INSTANCE;
+            case MUL: return Mul.INSTANCE;
+            case DIV: return Div.INSTANCE;
+            case REM: return Rem.INSTANCE;
+            case SL: return Shl.INSTANCE;
+            case SR: return Shr.INSTANCE;
+            case BITAND: return And.INSTANCE;
+            case BITOR: return Or.INSTANCE;
+            case BITXOR: return Xor.INSTANCE;
+            default: throw new AssertionError();
+        }
     }
 
     @Override
     public void visitBlock(BlockStatement statement) {
-        if (statementDepth == 0) { // is root?
-            code.pushContext(TreeInfo.sourceName(statement));
+        if (!isState(STATE_ROOTED)) { // is root?
+            code.pushContext(statement.position);
             code.pushScope();
-            code.putLine(0, TreeInfo.line(statement));
+            int prev_state = state;
+            setState(STATE_ROOTED);
             generateStatementsWhileAlive(statement.statements);
-            code.addState(Halt.INSTANCE);
+            state = prev_state;
+            code.addInstruction(Halt.INSTANCE);
             code.popScope();
         } else {
             generateStatementsWhileAlive(statement.statements);
@@ -257,14 +387,13 @@ public final class Gen implements Visitor {
     }
     
     private void generateStatementsWhileAlive(List<Statement> statements) {
-        statementDepth++;
         for (Statement statement : statements) {
-            if (!code.isAlive()) {
-                break;
-            }
+            // Таким образом, мы упускаем ошибки в мертвом коде
+//            if (!code.isAlive()) {
+//                break;
+//            }
             statement.accept(this);
         }
-        statementDepth--;
     }
 
     @Override
@@ -273,13 +402,14 @@ public final class Gen implements Visitor {
             cError(statement.getPosition(), "'break' is not allowed outside of loop/switch.");
             return;
         }
-        emitGoto(TreeInfo.line(statement), breakChains.topInt());
-        loopInfinity = false;
+        code.putPos(statement.position);
+        emitGoto(breakChains.topInt());
+        unsetState(STATE_INFINITY_LOOP);
     }
 
     @Override
     public void visitCase(CaseStatement statement) {
-        switchPartsStack.getLast().add(new Part(code.currentBci(), statement.expressions.stream()
+        switchPartsStack.getLast().add(new Part(code.currentIP(), statement.expressions.stream()
                 .mapToInt(a -> {
                     assert a instanceof LiteralExpression;
                     return TreeInfo.resolveLiteral(code, (LiteralExpression) a);
@@ -290,13 +420,12 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitClone(CloneExpression expression) {
-        visitUnary(expression);
-        code.addState(Clone.INSTANCE);
+        generateUnary(expression);
     }
 
     @Override
     public void visitConstantDeclare(ConstantDeclareStatement statement) {
-        if (statementDepth > 1) {
+        if (isState(STATE_NO_DECLS)) {
             cError(statement.getPosition(), "constants declaration is not allowed here.");
         }
         for (int i = 0; i < statement.names.size(); i++) {
@@ -309,7 +438,7 @@ public final class Gen implements Visitor {
             if (expr instanceof ArrayExpression) {
                 value = new ArrayOperand();
                 if (((ArrayExpression) expr).map.size() > 0) {
-                    code.addState(new Getconst(name), 1);
+                    code.addInstruction(new Getconst(name), 1);
                     generateArrayCreation(((ArrayExpression) expr).map);
                 }
             } else {
@@ -326,15 +455,14 @@ public final class Gen implements Visitor {
             cError(statement.getPosition(), "'continue' is not allowed outside of loop.");
             return;
         }
-        emitGoto(TreeInfo.line(statement), continueChains.topInt());
+        code.putPos(statement.position);
+        emitGoto(continueChains.topInt());
         code.dead();
     }
 
     @Override
     public void visitDivide(DivideExpression expression) {
-        visitBinary(expression);
-        emitDiv(TreeInfo.line(expression));
-
+        generateBinary(expression);
     }
 
     @Override
@@ -350,30 +478,30 @@ public final class Gen implements Visitor {
 //        int line = TreeInfo.line(expression);
 //        if (lhs instanceof NullExpression) {
 //            visitExpression(rhs);
-//            code.addChainedState(line,
+//            code.addChainedInstruction(line,
 //                    invertCond ? new Ifnull() : new Ifnonnull(),
 //                    peekConditionChain(), -1);
 //        } else if (rhs instanceof NullExpression) {
 //            visitExpression(lhs);
-//            code.addChainedState(line,
+//            code.addChainedInstruction(line,
 //                    (invertCond ? new Ifnull() : new Ifnonnull()),
 //                    peekConditionChain(), -1);
 //        } else if (TreeInfo.resolveShort(lhs) >= 0) {
 //            visitExpression(rhs);
 //            int shortVal = TreeInfo.resolveShort(lhs);
-//            code.addChainedState(line,
+//            code.addChainedInstruction(line,
 //                    (invertCond ? new Ifeq(shortVal) : new Ifne(shortVal)),
 //                    peekConditionChain(), -1);
 //        } else if (TreeInfo.resolveShort(rhs) >= 0) {
 //            visitExpression(rhs);
 //            int shortVal = TreeInfo.resolveShort(lhs);
-//            code.addChainedState(line,
+//            code.addChainedInstruction(line,
 //                    (invertCond ? new Ifeq(shortVal) : new Ifne(shortVal)),
 //                    peekConditionChain(), -1);
 //        } else {
 //            visitExpression(lhs);
 //            visitExpression(rhs);
-//            code.addChainedState(line,
+//            code.addChainedInstruction(line,
 //                    (invertCond ? new Ifcmpeq() : new Ifcmpne()),
 //                    peekConditionChain(), -2);
 //        }
@@ -402,19 +530,22 @@ public final class Gen implements Visitor {
             cError(statement.getPosition(), "'fallthrough' is not allowed outside of switch.");
             return;
         }
-        emitGoto(TreeInfo.line(statement), fallthroughChains.topInt());
-        loopInfinity = false; // for cases
+        code.putPos(statement.position);
+        emitGoto(fallthroughChains.topInt());
+        unsetState(STATE_INFINITY_LOOP); // for cases
         code.dead();
     }
 
     @Override
     public void visitFalse(FalseExpression expression) {
-        emitPushFalse(TreeInfo.line(expression));
+        code.putPos(expression.position);
+        emitPushFalse();
     }
 
     @Override
     public void visitFloat(FloatExpression expression) {
-        emitPushDouble(TreeInfo.line(expression), expression.value);
+        code.putPos(expression.position);
+        emitPushDouble(expression.value);
     }
 
     @Override
@@ -427,21 +558,20 @@ public final class Gen implements Visitor {
         if (expression.args.size() > 0xff) {
             cError(expression.position, "too many parameters.");
         }
-        visitList(expression.args);
-        code.addState(TreeInfo.line(expression),
-                new Call(expression.name, (byte) expression.args.size()),
+        visitExprList(expression.args);
+        code.putPos(expression.position);
+        code.addInstruction(new Call(expression.name, (byte) expression.args.size()),
                 Math.max(1, expression.args.size()));
     }
 
     @Override
     public void visitFunctionDefine(FunctionDefineStatement statement) {
-        if (statementDepth > 1)
+        if (isState(STATE_NO_DECLS))
             cError(statement.getPosition(), "function declaration is not allowed here.");
         if (codeData.testFunction(statement.name))
             cError(statement.getPosition(), "function '" + statement.name + "' already declared.");
-        code.pushContext(TreeInfo.sourceName(statement));
+        code.pushContext(statement.position);
         code.pushScope();
-        code.putLine(0, TreeInfo.line(statement));
         int[] locals = statement.names.stream().mapToInt(n -> {
             if (statement.names.indexOf(n) != statement.names.lastIndexOf(n)) {
                 cError(statement.getPosition(), "duplicate argument '" + n + "'.");
@@ -449,11 +579,11 @@ public final class Gen implements Visitor {
             return code.resolveLocal(n);
         }).toArray();
         visitStatement(statement.body);
-        emitRetnull(0);
+        emitRetnull();
         codeData.setFunction(statement.name, new ScriptRuntimeFunction(
                 locals, // function arguments must be first at local list
                 statement.optionals.stream().mapToInt(a -> {
-                    assert a instanceof LiteralExpression;
+                    assert (a instanceof LiteralExpression);
                     return TreeInfo.resolveLiteral(code, (LiteralExpression) a);
                 }).toArray(),
                 code.toProgram()));
@@ -525,7 +655,7 @@ public final class Gen implements Visitor {
             int ex = code.makeChain();
             generateCondition(statement.cond);
             boolean thenAlive = visitBody(statement.body);
-            emitGoto(0, ex);
+            emitGoto(ex);
             code.resolveChain(el);
             boolean elseAlive = visitBody(statement.elseBody);
             code.resolveChain(ex);
@@ -535,14 +665,13 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitInt(IntExpression expression) {
-        emitPushLong(TreeInfo.line(expression), expression.value);
+        code.putPos(expression.position);
+        emitPushLong(expression.value);
     }
 
     @Override
     public void visitLeftShift(ShiftLeftExpression expression) {
-        visitBinary(expression);
-        emitLhs(TreeInfo.line(expression));
-
+        generateBinary(expression);
     }
 
     @Override
@@ -554,19 +683,19 @@ public final class Gen implements Visitor {
 //        if (TreeInfo.resolveShort(lhs) >= 0) {
 //            visitExpression(rhs);
 //            int shortVal = TreeInfo.resolveShort(lhs);
-//            code.addChainedState(line,
+//            code.addChainedInstruction(line,
 //                    (invertCond ? new Ifge(shortVal) : new Iflt(shortVal)),
 //                    peekConditionChain(), -1);
 //        } else if (TreeInfo.resolveShort(rhs) >= 0) {
 //            visitExpression(rhs);
 //            int shortVal = TreeInfo.resolveShort(lhs);
-//            code.addChainedState(line,
+//            code.addChainedInstruction(line,
 //                    (invertCond ? new Ifle(shortVal) : new Ifgt(shortVal)),
 //                    peekConditionChain(), -1);
 //        } else {
 //            visitExpression(lhs);
 //            visitExpression(rhs);
-//            code.addChainedState(line,
+//            code.addChainedInstruction(line,
 //                    (invertCond ? new Ifcmple() : new Ifcmpgt()),
 //                    peekConditionChain(), -2);
 //        }
@@ -605,125 +734,120 @@ public final class Gen implements Visitor {
         beginCondition();
         Expression lhs = expression.lhs;
         Expression rhs = expression.rhs;
-        ChainInstruction resultState;
+        Code.ChainInstructionFactory resultState;
         int resultStackAdjustment;
-        int shortVal = Integer.MIN_VALUE;
+        int shortVal;
         boolean lhsNull = (lhs instanceof NullExpression);
         boolean rhsNull = (rhs instanceof NullExpression);
         boolean lhsShort = TreeInfo.testShort(lhs);
         boolean rhsShort = TreeInfo.testShort(rhs);
         if (lhsShort || rhsShort) {
-            shortVal = (int) ((IntExpression) (lhsShort ? lhs : rhs)).value;
+            shortVal = ((Number) ((IntExpression) (lhsShort ? lhs : rhs)).value).shortValue();
             visitExpression(lhsShort ? rhs : lhs);
+        } else {
+            shortVal = Integer.MIN_VALUE;
         }
+        boolean invert = isShort(STATE_COND_INVERT);
         switch (expression.tag) {
             case EQ:
                 if (lhsNull || rhsNull) {
                     visitExpression(lhsNull ? rhs : lhs);
-                    resultState = (invertCond ? new Ifnull() : new Ifnonnull());
+                    resultState = (invert ? Ifnull::new : Ifnonnull::new);
                     resultStackAdjustment = -1;
                     break;
                 } else if (lhsShort || rhsShort) {
-                    resultState = (shortVal == 0) ?
-                            (invertCond ? new Ifeq(0) : new Ifne(0)) :
-                            (invertCond ? new Ifeq(shortVal) : new Ifne(shortVal));
+                    resultState = (dest_ip -> invert ? new Ifeq(dest_ip, shortVal) : new Ifne(dest_ip, shortVal));
                     resultStackAdjustment = -1;
                 } else {
                     visitExpression(lhs);
                     visitExpression(rhs);
-                    resultState = (invertCond ? new Ifcmpeq() : new Ifcmpne());
+                    resultState = (invert ? Ifcmpeq::new : Ifcmpne::new);
                     resultStackAdjustment = -2;
                 }
                 break;
             case NEQ:
                 if (lhsNull || rhsNull) {
                     visitExpression(lhsNull ? rhs : lhs);
-                    resultState = (invertCond ? new Ifnonnull() : new Ifnull());
+                    resultState = (invert ? Ifnonnull::new : Ifnull::new);
                     resultStackAdjustment = -1;
                     break;
                 } else if (lhsShort || rhsShort) {
-                    resultState = (shortVal == 0) ?
-                            (invertCond ? new Ifne(0) : new Ifeq(0)) :
-                            (invertCond ? new Ifne(shortVal) : new Ifeq(shortVal));
+                    resultState = (dest_ip -> invert ? new Ifne(dest_ip, shortVal) : new Ifeq(dest_ip, shortVal));
                     resultStackAdjustment = -1;
                 } else {
                     visitExpression(lhs);
                     visitExpression(rhs);
-                    resultState = (invertCond ? new Ifcmpne() : new Ifcmpeq());
+                    resultState = (invert ? Ifcmpne::new : Ifcmpeq::new);
                     resultStackAdjustment = -2;
                 }
                 break;
             case LT:
                 if (lhsShort || rhsShort) {
                     resultState = lhsShort ?
-                            (invertCond ? new Ifgt(shortVal) : new Iflt(shortVal)) :
-                            (invertCond ? new Iflt(shortVal) : new Ifge(shortVal));
+                            (dest_ip -> invert ? new Ifgt(dest_ip, shortVal) : new Iflt(dest_ip, shortVal)) :
+                            (dest_ip -> invert ? new Iflt(dest_ip, shortVal) : new Ifge(dest_ip, shortVal));
                     resultStackAdjustment = -1;
                 } else {
                     visitExpression(lhs);
                     visitExpression(rhs);
-                    resultState = (invertCond ? new Ifcmplt() : new Ifcmpge());
+                    resultState = (invert ? Ifcmplt::new : Ifcmpge::new);
                     resultStackAdjustment = -2;
                 }
                 break;
             case LE:
                 if (lhsShort || rhsShort) {
                     resultState = lhsShort ?
-                            (invertCond ? new Ifge(shortVal) : new Ifle(shortVal)) :
-                            (invertCond ? new Ifle(shortVal) : new Ifgt(shortVal));
+                            (dest_ip -> invert ? new Ifge(dest_ip, shortVal) : new Ifle(dest_ip, shortVal)) :
+                            (dest_ip -> invert ? new Ifle(dest_ip, shortVal) : new Ifgt(dest_ip, shortVal));
                     resultStackAdjustment = -1;
                 } else {
                     visitExpression(lhs);
                     visitExpression(rhs);
-                    resultState = (invertCond ? new Ifcmple() : new Ifcmpgt());
+                    resultState = (invert ? Ifcmple::new : Ifcmpgt::new);
                     resultStackAdjustment = -2;
                 }
                 break;
             case GT:
                 if (lhsShort || rhsShort) {
                     resultState = lhsShort ?
-                            (invertCond ? new Iflt(shortVal) : new Ifgt(shortVal)) :
-                            (invertCond ? new Ifgt(shortVal) : new Ifle(shortVal));
+                            (dest_ip -> invert ? new Iflt(dest_ip, shortVal) : new Ifgt(dest_ip, shortVal)) :
+                            (dest_ip -> invert ? new Ifgt(dest_ip, shortVal) : new Ifle(dest_ip, shortVal));
                     resultStackAdjustment = -1;
                 } else {
                     visitExpression(lhs);
                     visitExpression(rhs);
-                    resultState = (invertCond ? new Ifcmpgt() : new Ifcmple());
+                    resultState = (invert ? Ifcmpgt::new : Ifcmple::new);
                     resultStackAdjustment = -2;
                 }
                 break;
             case GE:
                 if (lhsShort || rhsShort) {
                     resultState = lhsShort ?
-                            (invertCond ? new Ifle(shortVal) : new Ifge(shortVal)) :
-                            (invertCond ? new Ifge(shortVal) : new Iflt(shortVal));
+                            (dest_ip -> invert ? new Ifle(dest_ip, shortVal) : new Ifge(dest_ip, shortVal)) :
+                            (dest_ip -> invert ? new Ifge(dest_ip, shortVal) : new Iflt(dest_ip, shortVal));
                     resultStackAdjustment = -1;
                 } else {
                     visitExpression(lhs);
                     visitExpression(rhs);
-                    resultState = (invertCond ? new Ifcmpge() : new Ifcmplt());
+                    resultState = (invert ? Ifcmpge::new : Ifcmplt::new);
                     resultStackAdjustment = -2;
                 }
                 break;
             default: throw new AssertionError();
         }
-        code.addChainedState(TreeInfo.line(expression),
-                resultState,
-                peekConditionChain(),
-                resultStackAdjustment);
+        code.putPos(expression.position);
+        code.addChainedInstruction(resultState, peekConditionChain(), resultStackAdjustment);
         endCondition();
     }
 
     @Override
     public void visitMultiply(MultiplyExpression expression) {
-        visitBinary(expression);
-        emitMul(TreeInfo.line(expression));
+        generateBinary(expression);
     }
 
     @Override
     public void visitNegative(NegativeExpression expression) {
-        visitUnary(expression);
-        code.addState(TreeInfo.line(expression), Neg.INSTANCE);
+        generateUnary(expression);
     }
 
     @Override
@@ -734,30 +858,30 @@ public final class Gen implements Visitor {
 //        int line = TreeInfo.line(expression);
 //        if (lhs instanceof NullExpression) {
 //            visitExpression(rhs);
-//            code.addChainedState(line,
+//            code.addChainedInstruction(line,
 //                    invertCond ? new Ifnonnull() : new Ifnull(),
 //                    peekConditionChain(), -1);
 //        } else if (rhs instanceof NullExpression) {
 //            visitExpression(lhs);
-//            code.addChainedState(line,
+//            code.addChainedInstruction(line,
 //                    (invertCond ? new Ifnonnull() : new Ifnull()),
 //                    peekConditionChain(), -1);
 //        } else if (TreeInfo.resolveShort(lhs) >= 0) {
 //            visitExpression(rhs);
 //            int shortVal = TreeInfo.resolveShort(lhs);
-//            code.addChainedState(line,
+//            code.addChainedInstruction(line,
 //                    (invertCond ? new Ifne(shortVal) : new Ifeq(shortVal)),
 //                    peekConditionChain(), -1);
 //        } else if (TreeInfo.resolveShort(rhs) >= 0) {
 //            visitExpression(rhs);
 //            int shortVal = TreeInfo.resolveShort(lhs);
-//            code.addChainedState(line,
+//            code.addChainedInstruction(line,
 //                    (invertCond ? new Ifne(shortVal) : new Ifeq(shortVal)),
 //                    peekConditionChain(), -1);
 //        } else {
 //            visitExpression(lhs);
 //            visitExpression(rhs);
-//            code.addChainedState(line,
+//            code.addChainedInstruction(line,
 //                    (invertCond ? new Ifcmpne() : new Ifcmpeq()),
 //                    peekConditionChain(), -2);
 //        }
@@ -768,56 +892,26 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitNot(NotExpression expression) {
-        beginCondition();
-        if (invertCond) {
-            invertCond = false;
-            generateCondition(expression.hs);
-            invertCond = true;
-        } else {
-            invertCond = true;
-            generateCondition(expression.hs);
-            invertCond = false;
-        }
-        endCondition();
+        generateUnary(expression);
     }
 
     @Override
     public void visitNullCoalesce(NullCoalesceExpression expression) {
         // todo: Это очевидно неполноценная реализация.
-        visitExpression(expression.lhs);
-        emitDup();
-        int el = code.makeChain();
-        code.addChainedState(new Ifnonnull(), el, -1);
-        code.addState(Pop.INSTANCE, -1);
-        visitExpression(expression.rhs);
-        code.resolveChain(el);
+//        visitExpression(expression.lhs);
+//        emitDup();
+//        int el = code.makeChain();
+//        code.addChainedInstruction(new Ifnonnull(), el, -1);
+//        code.addInstruction(Pop.INSTANCE, -1);
+//        visitExpression(expression.rhs);
+//        code.resolveChain(el);
+
+        generateBinary(expression);
     }
 
     @Override
     public void visitNull(NullExpression expression) {
-        code.addState(PushNull.INSTANCE, 1);
-    }
-
-    @Override
-    public void visitOr(OrExpression expression) {
-        beginCondition();
-        if (invertCond) {
-            generateCondition(expression.lhs);
-            generateCondition(expression.rhs);
-        } else {
-            if (expression.rhs == null) {
-                generateCondition(expression.lhs);
-            } else {
-                int tr = pushMakeConditionChain();
-                invertCond = true;
-                generateCondition(expression.lhs);
-                popConditionChain();
-                invertCond = false;
-                generateCondition(expression.rhs);
-                code.resolveChain(tr);
-            }
-        }
-        endCondition();
+        code.addInstruction(PushNull.INSTANCE, 1);
     }
 
     @Override
@@ -828,8 +922,31 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitPositive(PositiveExpression expression) {
-        visitUnary(expression);
-        code.addState(TreeInfo.line(expression), Pos.INSTANCE);
+        generateUnary(expression);
+    }
+
+    private void generateUnary(UnaryExpression tree) {
+        if (tree.isTag(Tag.LOGCMPL)) {
+            beginCondition();
+            int prev_state = state;
+            state ^= STATE_COND_INVERT;
+            generateCondition(tree.hs);
+            state = prev_state;
+            endCondition();
+            return;
+        }
+        tree.hs.accept(this);
+        code.putPos(tree.position);
+        code.addInstruction(unary2instr(tree.tag));
+    }
+
+    public static Instruction unary2instr(Tag tag) {
+        switch (tag) {
+            case POS: return Pos.INSTANCE;
+            case NEG: return Neg.INSTANCE;
+            case BITCMPL: return Not.INSTANCE;
+            default: throw new AssertionError();
+        }
     }
 
     @Override
@@ -854,60 +971,61 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitPrintln(PrintlnStatement statement) {
-        visitList(statement.expressions);
+        visitExprList(statement.expressions);
         int count = statement.expressions.size();
-        code.addState(TreeInfo.line(statement), new Println(count), -count);
+        code.putPos(statement.position);
+        code.addInstruction(new Println(count), -count);
     }
 
     @Override
     public void visitPrint(PrintStatement statement) {
-        visitList(statement.expressions);
+        visitExprList(statement.expressions);
         int count = statement.expressions.size();
-        code.addState(TreeInfo.line(statement), new Print(count), -count);
+        code.putPos(statement.position);
+        code.addInstruction(new Print(count), -count);
     }
 
     @Override
     public void visitRemainder(RemainderExpression expression) {
-        visitBinary(expression);
-        emitRem(TreeInfo.line(expression));
+        generateBinary(expression);
     }
 
     @Override
     public void visitReturn(ReturnStatement statement) {
         if (isNull(statement.expr)) {
-            emitRetnull(TreeInfo.line(statement));
+            emitRetnull();
         } else {
             visitExpression(statement.expr);
-            emitReturn(TreeInfo.line(statement));
+            emitReturn();
         }
     }
 
-    private void emitRetnull(int line) {
-        code.addState(line, Retnull.INSTANCE);
+    private void emitRetnull() {
+        code.addInstruction(Retnull.INSTANCE);
         code.dead();
     }
 
     private static boolean isNull(Expression expression) {
-        Expression expr = TreeInfo.removeParens(expression);
-        return expr == null || expr instanceof NullExpression;
+        return TreeInfo.isNull(expression);
     }
 
     @Override
     public void visitRightShift(ShiftRightExpression expression) {
-        visitBinary(expression);
-        emitRhs(TreeInfo.line(expression));
+        generateBinary(expression);
     }
 
     @Override
     public void visitString(StringExpression expression) {
-        emitPushString(TreeInfo.line(expression), expression.value);
+        code.putPos(expression.position);
+        emitPushString(expression.value);
     }
 
     @Override
     public void visitSubtract(SubtractExpression expression) {
-        visitBinary(expression);
-        emitSub(TreeInfo.line(expression));
+        generateBinary(expression);
     }
+
+    private Switch.Part default_part = null;
 
     @Override
     public void visitSwitch(SwitchStatement statement) {
@@ -916,11 +1034,15 @@ public final class Gen implements Visitor {
             if (_case.expressions != null) count++;
         }
         visitExpression(statement.selector);
-        Part[] parts = new Part[count];
-        Switch _switch = new Switch(parts);
         int a = code.makeChain();
         breakChains.push(a);
-        code.addChainedState(TreeInfo.line(statement), _switch, a);
+        code.putPos(statement.position);
+        code.addChainedInstruction(dest_ip -> {
+            Switch res = new Switch(dest_ip,
+                    switchPartsStack.pop().toArray(new Part[0]), default_part);
+            default_part = null;
+            return res;
+        }, a);
         fallthroughChains.push(code.makeChain());
         switchPartsStack.add(new ArrayList<>(count));
         int cached_sp = code.getSp();
@@ -928,7 +1050,7 @@ public final class Gen implements Visitor {
         for (CaseStatement _case : statement.cases) {
             code.setSp(cached_sp);
             if (_case.expressions == null) {
-                _switch.setDefault(new Part(code.currentBci(), null));
+                default_part = new Part(code.currentIP(), null);
                 emitCaseBody(_case.body);
             } else {
                 visitStatement(_case);
@@ -936,10 +1058,6 @@ public final class Gen implements Visitor {
             if (code.getSp() > max_sp) max_sp = code.getSp();
         }
         code.setSp(max_sp);
-        List<Part> parts0 = switchPartsStack.pop();
-        for (int i = 0; i < parts0.size(); i++) {
-            parts[i] = parts0.get(i);
-        }
         code.resolveChain(fallthroughChains.popInt());
         code.resolveChain(breakChains.popInt());
     }
@@ -948,19 +1066,18 @@ public final class Gen implements Visitor {
     public void visitTernary(TernaryExpression expression) {
         int el = pushMakeConditionChain();
         int ex = code.makeChain();
-        if (invertCond) {
-            invertCond = false;
-            generateCondition(expression.cond);
-            invertCond = true;
-        } else {
-            generateCondition(expression.cond);
-        }
+
+        int prev_state = state;
+        unsetState(STATE_COND_INVERT);
+        generateCondition(expression.cond);
+        state = prev_state;
+
         int cached_sp = code.getSp();
         popConditionChain();
         visitExpression(expression.lhs);
         int lhs_sp = code.getSp();
         code.setSp(cached_sp);
-        emitGoto(0, ex);
+        emitGoto(ex);
         code.resolveChain(el);
         int rhs_sp = code.getSp();
         visitExpression(expression.rhs);
@@ -970,16 +1087,18 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitTrue(TrueExpression expression) {
-        emitPushTrue(TreeInfo.line(expression));
+        code.putPos(expression.position);
+        emitPushTrue();
     }
 
     @Override
     public void visitVariable(VariableExpression expression) {
         String name = expression.name;
+        code.putPos(expression.position);
         if (codeData.testConstant(name)) {
-            code.addState(new Getconst(name), 1);
+            code.addInstruction(new Getconst(name), 1);
         } else {
-            emitVLoad(TreeInfo.line(expression), expression.name);
+            emitVLoad(expression.name);
         }
     }
 
@@ -996,15 +1115,17 @@ public final class Gen implements Visitor {
         int bgc = code.makeChain();
         // exit chain
         int exc = code.makeChain();
-        
-        boolean prevLoopInfinity = loopInfinity;
-        loopInfinity = false;
+
+        int prev_state = state;
+        setState(STATE_INFINITY_LOOP);
         
         if (initials != null) {
             initials.forEach(this::visitStatement);
         }
+        if (condition != null) unsetState(STATE_INFINITY_LOOP);
         if (testFirst && condition != null) {
-            emitGoto(TreeInfo.line(loop), cdc);
+            code.putPos(loop.position);
+            emitGoto(cdc);
         }
         code.resolveChain(bgc);
         breakChains.push(exc);
@@ -1015,25 +1136,27 @@ public final class Gen implements Visitor {
         }
         code.resolveChain(cdc);
         if (condition == null) {
-            emitGoto(0, bgc);
+            emitGoto(bgc);
         } else {
             conditionalChains.push(bgc);
-            invertCond = true;
+            setState(STATE_COND_INVERT);
             generateCondition(condition);
-            invertCond = false;
+            unsetState(STATE_COND_INVERT);
             popConditionChain();
         }
         code.resolveChain(exc);
-        if (loopInfinity) code.dead();
-        loopInfinity = prevLoopInfinity;
+        if (isState(STATE_INFINITY_LOOP)) code.dead();
+        state = prev_state;
     }
 
     private void visitExpression(Expression expression) {
-        enableUsed();
-        visitStatement(expression);
-        disableUsed();
+        int prev_state = state;
+        setState(STATE_RESIDUAL);
+        expression.accept(this);
+        state = prev_state;
     }
 
+    @Deprecated
     private void visitBinary(BinaryExpression expression) {
         enableUsed();
         visitStatement(expression.lhs);
@@ -1041,32 +1164,36 @@ public final class Gen implements Visitor {
         disableUsed();
     }
 
+    @Deprecated
     private void visitUnary(UnaryExpression expression) {
         enableUsed();
         visitStatement(expression.hs);
         disableUsed();
     }
 
-    private void visitList(List<? extends Expression> expressions) {
-        enableUsed();
-        expressions.forEach(this::visitStatement);
-        disableUsed();
+    private void visitExprList(List<? extends Expression> expressions) {
+        int prev_state = state;
+        setState(STATE_RESIDUAL);
+        for (Expression expr : expressions)
+            expr.accept(this);
+        state = prev_state;
     }
 
     private void generateCondition(Expression expression) {
-        if (expression == null) {
-            return;
-        }
-        conditionDepth++;
+        assert expression != null;
+        int prev_state = state;
+        setState(STATE_COND);
         visitExpression(expression);
-        conditionDepth--;
+        state = prev_state;
         if (expression.isCondition()) {
             return;
         }
         // todo: Здешний код отвратителен. Следует переписать всё с нуля...
-        code.addState(Bool.INSTANCE);
-        code.addChainedState(TreeInfo.line(expression),
-                invertCond ? new Ifne(0) : new Ifeq(0),
+        code.addInstruction(Bool.INSTANCE);
+        code.putPos(expression.position);
+        code.addChainedInstruction(isState(STATE_COND_INVERT) ?
+                        dest_ip -> new Ifne(dest_ip, 0) :
+                        dest_ip -> new Ifeq(dest_ip, 0),
                 peekConditionChain(), -1);
     }
 
@@ -1081,7 +1208,7 @@ public final class Gen implements Visitor {
             case PRINT: case PRINTLN:
                 break;
             default:
-                code.addState(Pop.INSTANCE, -1);
+                code.addInstruction(Pop.INSTANCE, -1);
         }
     }
 
@@ -1125,40 +1252,46 @@ public final class Gen implements Visitor {
         switch (lhs.tag) {
             case ARRAY_ACCESS: {
                 ArrayAccessExpression arrayAccess = (ArrayAccessExpression) lhs;
+                code.putPos(arrayAccess.position);
                 visitExpression(arrayAccess.hs);
                 visitExpression(arrayAccess.key);
                 if (expression.isTag(Tag.ASG_NULLCOALESCE)) {
                     int el = code.makeChain();
                     int ex = code.makeChain();
                     emitDup2();
-                    emitALoad(TreeInfo.line(arrayAccess));
-                    code.addChainedState(new Ifnonnull(), el, -1);
+                    emitALoad();
+                    code.addChainedInstruction(Ifnonnull::new, el, -1);
                     visitExpression(rhs);
                     if (isUsed()) {
                         emitDupX2();
                     }
-                    emitAStore(TreeInfo.line(arrayAccess));
-                    emitGoto(0, ex);
+                    code.putPos(arrayAccess.position);
+                    emitAStore();
+                    emitGoto(ex);
                     code.resolveChain(el);
                     if (isUsed()) {
-                        emitALoad(TreeInfo.line(arrayAccess));
+                        code.putPos(arrayAccess.position);
+                        emitALoad();
                     } else {
-                        code.addState(Pop2.INSTANCE, -2);
+                        code.addInstruction(Pop2.INSTANCE, -2);
                     }
                     code.resolveChain(ex);
                 } else {
                     if (!expression.isTag(Tag.ASG)) {
                         emitDup2();
-                        emitALoad(TreeInfo.line(arrayAccess));
+                        code.putPos(arrayAccess.position);
+                        emitALoad();
                         visitExpression(rhs);
-                        code.addState(TreeInfo.line(expression), asg2state(expression.tag), -1);
+                        code.putPos(expression.position);
+                        code.addInstruction(asg2state(expression.tag), -1);
                     } else {
                         visitExpression(rhs);
                     }
                     if (isUsed()) {
                         emitDupX2();
                     }
-                    emitAStore(TreeInfo.line(arrayAccess));
+                    code.putPos(arrayAccess.position);
+                    emitAStore();
                 }
                 break;
             }
@@ -1167,15 +1300,16 @@ public final class Gen implements Visitor {
                 if (expression.isTag(Tag.ASG_NULLCOALESCE)) {
                     int ex = code.makeChain();
                     visitExpression(lhs);
-                    code.addChainedState(new Ifnonnull(), ex, -1);
+                    code.addChainedInstruction(Ifnonnull::new, ex, -1);
                     visitExpression(rhs);
                     if (isUsed()) {
                         emitDup();
                     }
-                    emitVStore(TreeInfo.line(expression), variable.name);
+                    code.putPos(expression.position);
+                    emitVStore(variable.name);
                     if (isUsed()) {
                         int el = code.makeChain();
-                        emitGoto(0, el);
+                        emitGoto(el);
                         code.resolveChain(ex);
                         visitExpression(lhs);
                         code.resolveChain(el);
@@ -1186,14 +1320,16 @@ public final class Gen implements Visitor {
                     if (!expression.isTag(Tag.ASG)) {
                         visitExpression(lhs);
                         visitExpression(rhs);
-                        code.addState(TreeInfo.line(expression), asg2state(expression.tag), -1);
+                        code.putPos(expression.position);
+                        code.addInstruction(asg2state(expression.tag), -1);
                     } else {
                         visitExpression(rhs);
                     }
                     if (isUsed()) {
                         emitDup();
                     }
-                    emitVStore(TreeInfo.line(expression), variable.name);
+                    code.putPos(expression.position);
+                    emitVStore(variable.name);
                 }
                 break;
             }
@@ -1219,13 +1355,15 @@ public final class Gen implements Visitor {
 
     // todo: В будущем планируется заменить поле expressionDepth на более удобный механизм.
     private boolean isUsed() {
-        return expressionDepth > 0;
+        return isState(STATE_RESIDUAL);
     }
+    @Deprecated
     private void enableUsed() {
-        expressionDepth++;
+
     }
+    @Deprecated
     private void disableUsed() {
-        expressionDepth--;
+
     }
 
     private void generateIncrease(IncreaseExpression expression,
@@ -1243,7 +1381,7 @@ public final class Gen implements Visitor {
 //            if (isPost && (isUsed())) {
 //                emitDupX2(line(hs0.key));
 //            }
-//            code.addState(line, isIncrement
+//            code.addInstruction(line, isIncrement
 //                    ? Inc.INSTANCE
 //                    : Dec.INSTANCE);
 //            if (!isPost && (isUsed())) {
@@ -1255,7 +1393,7 @@ public final class Gen implements Visitor {
 //            if (isPost && (isUsed())) {
 //                emitVLoad(line, name);
 //            }
-//            code.addState(line, isIncrement
+//            code.addInstruction(line, isIncrement
 //                    ? new Vinc(name, code.getLocal(name))
 //                    : new Vinc(name, code.getLocal(name)));
 //            if (!isPost && (isUsed())) {
@@ -1268,29 +1406,32 @@ public final class Gen implements Visitor {
         switch (hs.tag) {
             case ARRAY_ACCESS: {
                 ArrayAccessExpression arrayAccess = (ArrayAccessExpression) hs;
+                code.putPos(arrayAccess.position);
                 visitExpression(arrayAccess.hs);
                 visitExpression(arrayAccess.key);
                 emitDup2();
-                emitALoad(TreeInfo.line(arrayAccess));
+                emitALoad();
                 if (isUsed() && (expression.isTag(Tag.POST_INC) || expression.isTag(Tag.POST_DEC))) {
                     emitDupX2();
                 }
-                code.addState(TreeInfo.line(expression), increase2state(expression.tag, -1));
+                code.putPos(expression.position);
+                code.addInstruction(increase2state(expression.tag, -1));
                 if (isUsed() && (expression.isTag(Tag.PRE_INC) || expression.isTag(Tag.PRE_DEC))) {
                     emitDupX2();
                 }
-                emitAStore(TreeInfo.line(arrayAccess));
+                code.putPos(arrayAccess.position);
+                emitAStore();
                 break;
             }
             case VARIABLE: {
                 VariableExpression variable = (VariableExpression) hs;
                 if (isUsed() && (expression.isTag(Tag.POST_INC) || expression.isTag(Tag.POST_DEC))) {
-                    emitVLoad(TreeInfo.line(variable), variable.name);
+                    variable.accept(this);
                 }
-                code.addState(TreeInfo.line(expression),
-                        increase2state(expression.tag, code.resolveLocal(variable.name)));
+                code.putPos(expression.position);
+                code.addInstruction(increase2state(expression.tag, code.resolveLocal(variable.name)));
                 if (isUsed() && (expression.isTag(Tag.PRE_INC) || expression.isTag(Tag.PRE_DEC))) {
-                    emitVLoad(TreeInfo.line(variable), variable.name);
+                    variable.accept(this);
                 }
                 break;
             }
@@ -1317,49 +1458,51 @@ public final class Gen implements Visitor {
     }
 
     private void visitStatement(Statement statement) {
-        statementDepth++;
+        assert statement != null;
+        int prev_state = state;
+        setState(STATE_NO_DECLS);
         statement.accept(this);
-        statementDepth--;
+        state = prev_state;
     }
 
     private void beginCondition() {
-        if (conditionDepth != 0) {
+        if (isState(STATE_COND)) {
             return;
         }
         pushMakeConditionChain();
     }
 
     private void endCondition() {
-        if (conditionDepth != 0) {
+        if (isState(STATE_COND)) {
             return;
         }
         int ex = code.makeChain();
-        emitPushTrue(0);
-        emitGoto(0, ex);
+        emitPushTrue();
+        emitGoto(ex);
         code.resolveChain(popConditionChain());
-        emitPushFalse(0);
+        emitPushFalse();
         code.resolveChain(ex);
     }
 
-    private void emitPushLong(int line, long value) {
+    private void emitPushLong(long value) {
         if (isShort(value)) {
-            code.addState(line, new Push(Operand.Type.LONG, (short) value), 1);
+            code.addInstruction(new Push(Operand.Type.LONG, (short) value), 1);
         } else {
-            code.addState(line, new Ldc(code.resolveConstant(value)), 1);
+            code.addInstruction(new Ldc(code.resolveLong(value)), 1);
         }
     }
 
-    private void emitPushDouble(int line, double value) {
+    private void emitPushDouble(double value) {
         long lv = (long) value;
         if (lv == value && isShort(lv)) {
-            code.addState(line, new Push(Operand.Type.LONG, (short) lv), 1);
+            code.addInstruction(new Push(Operand.Type.LONG, (short) lv), 1);
         } else {
-            code.addState(line, new Ldc(code.resolveConstant(value)), 1);
+            code.addInstruction(new Ldc(code.resolveDouble(value)), 1);
         }
     }
 
-    private void emitPushString(int line, String value) {
-        code.addState(line, new Ldc(code.resolveConstant(value)), 1);
+    private void emitPushString(String value) {
+        code.addInstruction(new Ldc(code.resolveString(value)), 1);
     }
 
     private static boolean isShort(long value) {
@@ -1368,40 +1511,40 @@ public final class Gen implements Visitor {
 
     // emit methods
 
-    private void emitPushTrue(int line) { code.addState(line, Push.PUSH_TRUE, 1); }
-    private void emitPushFalse(int line) { code.addState(line, Push.PUSH_FALSE, 1); }
-    private void emitGoto(int line, int chainId) { code.addChainedState(line, new Goto(), chainId); }
-    private void emitDup() { code.addState(Dup.INSTANCE, 1); }
-    private void emitDupX1() { code.addState(Dup_x1.INSTANCE, 1); }
-    private void emitDupX2() { code.addState(Dup_x2.INSTANCE, 1); }
-    private void emitDup2() { code.addState(Dup2.INSTANCE, 2); }
-    private void emitDup2X1() { code.addState(Dup2_x1.INSTANCE, 2); }
-    private void emitDup2X2() { code.addState(Dup2_x2.INSTANCE, 2); }
-    private void emitAdd(int line) { code.addState(line, Add.INSTANCE, -1); }
-    private void emitAnd(int line) { code.addState(line, And.INSTANCE, -1); }
-    private void emitOr(int line) { code.addState(line, Or.INSTANCE, -1); }
-    private void emitXor(int line) { code.addState(line, Xor.INSTANCE, -1); }
-    private void emitDiv(int line) { code.addState(line, Div.INSTANCE, -1); }
-    private void emitLhs(int line) { code.addState(line, Shl.INSTANCE, -1); }
-    private void emitMul(int line) { code.addState(line, Mul.INSTANCE, -1); }
-    private void emitRem(int line) { code.addState(line, Rem.INSTANCE, -1); }
-    private void emitRhs(int line) { code.addState(line, Shr.INSTANCE, -1); }
-    private void emitSub(int line) { code.addState(line, Sub.INSTANCE, -1); }
-    private void emitALoad(int line) { code.addState(line, Aload.INSTANCE, -1); }
-    private void emitVLoad(int line, String name) { code.addState(line, new Vload(code.resolveLocal(name)), 1); }
-    private void emitAStore(int line) { code.addState(line, Astore.INSTANCE, -3); }
-    private void emitVStore(int line, String name) { code.addState(line, new Vstore(code.resolveLocal(name)), -1); }
+    private void emitPushTrue() { code.addInstruction(Push.PUSH_TRUE, 1); }
+    private void emitPushFalse() { code.addInstruction(Push.PUSH_FALSE, 1); }
+    private void emitGoto(int chainId) { code.addChainedInstruction(Goto::new, chainId); }
+    private void emitDup() { code.addInstruction(Dup.INSTANCE, 1); }
+    private void emitDupX1() { code.addInstruction(Dup_x1.INSTANCE, 1); }
+    private void emitDupX2() { code.addInstruction(Dup_x2.INSTANCE, 1); }
+    private void emitDup2() { code.addInstruction(Dup2.INSTANCE, 2); }
+    private void emitDup2X1() { code.addInstruction(Dup2_x1.INSTANCE, 2); }
+    private void emitDup2X2() { code.addInstruction(Dup2_x2.INSTANCE, 2); }
+    private void emitAdd() { code.addInstruction(Add.INSTANCE, -1); }
+    private void emitAnd() { code.addInstruction(And.INSTANCE, -1); }
+    private void emitOr() { code.addInstruction(Or.INSTANCE, -1); }
+    private void emitXor() { code.addInstruction(Xor.INSTANCE, -1); }
+    private void emitDiv() { code.addInstruction(Div.INSTANCE, -1); }
+    private void emitLhs() { code.addInstruction(Shl.INSTANCE, -1); }
+    private void emitMul() { code.addInstruction(Mul.INSTANCE, -1); }
+    private void emitRem() { code.addInstruction(Rem.INSTANCE, -1); }
+    private void emitRhs() { code.addInstruction(Shr.INSTANCE, -1); }
+    private void emitSub() { code.addInstruction(Sub.INSTANCE, -1); }
+    private void emitALoad() { code.addInstruction(Aload.INSTANCE, -1); }
+    private void emitVLoad(String name) { code.addInstruction(new Vload(code.resolveLocal(name)), 1); }
+    private void emitAStore() { code.addInstruction(Astore.INSTANCE, -3); }
+    private void emitVStore(String name) { code.addInstruction(new Vstore(code.resolveLocal(name)), -1); }
     private void emitCaseBody(Statement body) {
         code.resolveChain(fallthroughChains.popInt());
         fallthroughChains.push(code.makeChain());
-        boolean prevLoopInfinity = loopInfinity;
-        loopInfinity = false;
+        int prev_state = state;
+        setState(STATE_INFINITY_LOOP);
         visitStatement(body);
-        if (loopInfinity) emitGoto(TreeInfo.line(body), breakChains.topInt());
-        loopInfinity = prevLoopInfinity;
+        if (!isState(STATE_INFINITY_LOOP)) emitGoto(breakChains.topInt());
+        state = prev_state;
     }
-    private void emitReturn(int line) {
-        code.addState(line, Ret.INSTANCE, -1);
+    private void emitReturn() {
+        code.addInstruction(Ret.INSTANCE, -1);
         code.dead();
     }
 

@@ -7,6 +7,10 @@ import jua.compiler.CodePrinter;
 
 public final class Ifcmple extends ChainInstruction {
 
+    public Ifcmple(int destIp) {
+        super(destIp);
+    }
+
     @Override
     public void print(CodePrinter printer) {
         printer.printName("ifcmple");
@@ -27,7 +31,7 @@ public final class Ifcmple extends ChainInstruction {
                 : lhs.longValue() > rhs.longValue()) {
            return NEXT;
         } else {
-            return destination;
+            return destIp;
         }
     }
 }

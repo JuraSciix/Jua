@@ -1,23 +1,17 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterRuntime;
 import jua.compiler.CodePrinter;
 
 public abstract class ChainInstruction implements Instruction {
 
-    protected int destination;
+    protected final int destIp;
+
+    protected ChainInstruction(int destIp) {
+        this.destIp = destIp;
+    }
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printIp(destination);
-    }
-
-    @Override
-    public int run(InterpreterRuntime env) {
-        throw new IllegalStateException("run(Environment) not implemented by " + getClass().getName());
-    }
-
-    public void setDestination(int destination) {
-        this.destination = destination;
+        printer.printIp(destIp);
     }
 }

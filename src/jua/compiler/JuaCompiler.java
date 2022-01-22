@@ -62,7 +62,7 @@ public class JuaCompiler {
     }
 
     private static Result compile(Tree.Statement root) {
-        CodeData codeData = new CodeData();
+        CodeData codeData = new CodeData(root.position.filename);
         Gen gen = new Gen(codeData);
 
         try {

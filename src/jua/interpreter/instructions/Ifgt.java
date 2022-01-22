@@ -7,7 +7,8 @@ public final class Ifgt extends ChainInstruction {
 
     private final int value;
 
-    public Ifgt(int value) {
+    public Ifgt(int destIp, int value) {
+        super(destIp);
         this.value = value;
     }
 
@@ -21,7 +22,7 @@ public final class Ifgt extends ChainInstruction {
     @Override
     public int run(InterpreterRuntime env) {
         if (env.popInt() > value) {
-            return destination;
+            return destIp;
         } else {
             return NEXT;
         }

@@ -5,6 +5,10 @@ import jua.compiler.CodePrinter;
 
 public final class Ifcmpne extends ChainInstruction {
 
+    public Ifcmpne(int destIp) {
+        super(destIp);
+    }
+
     @Override
     public void print(CodePrinter printer) {
         printer.printName("ifcmpne");
@@ -14,7 +18,7 @@ public final class Ifcmpne extends ChainInstruction {
     @Override
     public int run(InterpreterRuntime env) {
         if (!env.popStack().equals(env.popStack())) {
-            return destination;
+            return destIp;
         } else {
             return NEXT;
         }

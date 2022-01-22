@@ -4,7 +4,7 @@ import jua.interpreter.InterpreterRuntime;
 import jua.interpreter.runtime.Operand;
 import jua.compiler.CodePrinter;
 
-public class Switch extends ChainInstruction {
+public final class Switch extends ChainInstruction {
 
     // todo: Переделать этот ужас.
 
@@ -24,12 +24,10 @@ public class Switch extends ChainInstruction {
 
     private Part _default;
 
-    public Switch(Part[] parts) {
+    public Switch(int destIp, Part[] parts, Part _default) {
+        super(destIp);
         this.parts = parts;
-    }
-
-    public void setDefault(Part part) {
-        _default = part;
+        this._default = _default;
     }
 
     @Override
@@ -52,7 +50,7 @@ public class Switch extends ChainInstruction {
             }
         }
         if (_default == null) {
-            return destination;
+            return destIp;
         } else {
             return _default.index;
         }

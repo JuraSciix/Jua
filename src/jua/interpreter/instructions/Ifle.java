@@ -7,7 +7,8 @@ public final class Ifle extends ChainInstruction {
 
     private final int value;
 
-    public Ifle(int value) {
+    public Ifle(int destIp, int value) {
+        super(destIp);
         this.value = value;
     }
 
@@ -21,7 +22,7 @@ public final class Ifle extends ChainInstruction {
     @Override
     public int run(InterpreterRuntime env) {
         if (env.popInt() <= value) {
-            return destination;
+            return destIp;
         } else {
             return NEXT;
         }

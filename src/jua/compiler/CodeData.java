@@ -23,13 +23,16 @@ public class CodeData {
         }
     }
 
+    final String filename;
+
     final Map<String, RuntimeFunction> functions = new HashMap<>();
 
     final Map<String, Operand> constants = new HashMap<>();
 
-    public CodeData() {
+    public CodeData(String filename) {
         // This class has been removed
 //        BuiltInDefinitions.init(this);
+        this.filename = filename;
     }
 
     public boolean testFunction(String name) {

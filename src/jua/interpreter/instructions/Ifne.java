@@ -3,11 +3,12 @@ package jua.interpreter.instructions;
 import jua.interpreter.InterpreterRuntime;
 import jua.compiler.CodePrinter;
 
-public class Ifne extends ChainInstruction {
+public final class Ifne extends ChainInstruction {
 
     private final int value;
 
-    public Ifne(int value) {
+    public Ifne(int destIp, int value) {
+        super(destIp);
         this.value = value;
     }
 
@@ -21,7 +22,7 @@ public class Ifne extends ChainInstruction {
     @Override
     public int run(InterpreterRuntime env) {
         if (env.popInt() != value) {
-            return destination;
+            return destIp;
         } else {
             return NEXT;
         }

@@ -3,7 +3,11 @@ package jua.interpreter.instructions;
 import jua.interpreter.InterpreterRuntime;
 import jua.compiler.CodePrinter;
 
-public class Ifnull extends ChainInstruction {
+public final class Ifnull extends ChainInstruction {
+
+    public Ifnull(int destIp) {
+        super(destIp);
+    }
 
     @Override
     public void print(CodePrinter printer) {
@@ -14,7 +18,7 @@ public class Ifnull extends ChainInstruction {
     @Override
     public int run(InterpreterRuntime env) {
         if (env.popStack().isNull()) {
-            return destination;
+            return destIp;
         } else {
             return NEXT;
         }

@@ -3,7 +3,11 @@ package jua.interpreter.instructions;
 import jua.interpreter.InterpreterRuntime;
 import jua.compiler.CodePrinter;
 
-public class Goto extends ChainInstruction {
+public final class Goto extends ChainInstruction {
+
+    public Goto(int destIp) {
+        super(destIp);
+    }
 
     @Override
     public void print(CodePrinter printer) {
@@ -13,6 +17,6 @@ public class Goto extends ChainInstruction {
 
     @Override
     public int run(InterpreterRuntime env) {
-        return destination;
+        return destIp;
     }
 }
