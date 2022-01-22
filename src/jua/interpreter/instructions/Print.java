@@ -20,7 +20,7 @@ public class Print implements Instruction {
     @Override
     public int run(InterpreterRuntime env) {
         for (int i = 0; i < count; i++) {
-            System.out.print(env.popStack().stringValue());
+            System.out.print(env.popString());
         }
         return NEXT;
     }
