@@ -113,8 +113,9 @@ public class InterpreterRuntime {
         return cp.currentLine();
     }
 
+    @Deprecated
     public Array getArray(Operand operand) {
-        if (operand.canBeArray()) {
+        if (operand.canBeMap()) {
             return operand.arrayValue();
         }
         throw InterpreterError.inconvertibleTypes(operand.type(), Operand.Type.MAP);
@@ -148,6 +149,7 @@ public class InterpreterRuntime {
         throw InterpreterError.inconvertibleTypes(operand.type(), Operand.Type.STRING);
     }
 
+    @Deprecated
     public Operand getOperand(Array value) {
         return new ArrayOperand(value);
     }
@@ -200,6 +202,7 @@ public class InterpreterRuntime {
         return cp.pop();
     }
 
+    @Deprecated
     public Array popArray() {
         return getArray(popStack());
     }
@@ -224,6 +227,7 @@ public class InterpreterRuntime {
         return cp.peek();
     }
 
+    @Deprecated
     public Array peekArray() {
         return getArray(peekStack());
     }

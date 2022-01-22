@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.StringJoiner;
 
+@Deprecated
 public class Array implements Cloneable {
 
     interface OperandToString {
@@ -14,61 +15,8 @@ public class Array implements Cloneable {
         String toString(Operand operand);
     }
 
-    public static <K, V> Array fromMap(Map<K, V> map, OperandProducer<K> kc, OperandProducer<V> vc) {
-        Array array = new Array();
-        map.forEach((key, value) -> array.set(kc.get(key), vc.get(value)));
-        return array;
-    }
-
-    public static <E> Array fromCollection(Collection<E> collection, OperandProducer<E> conv) {
-        Array array = new Array();
-        collection.forEach(e -> array.add(conv.get(e)));
-        return array;
-    }
-
-    public static Array fromArray(int[] values) {
-        Array array = new Array();
-        for (int value: values) array.add(LongOperand.valueOf(value));
-        return array;
-    }
-
-    public static Array fromArray(long[] values) {
-        Array array = new Array();
-        for (long value: values) array.add(LongOperand.valueOf(value));
-        return array;
-    }
-
-    public static Array fromArray(short[] values) {
-        Array array = new Array();
-        for (short value: values) array.add(LongOperand.valueOf(value));
-        return array;
-    }
-
-    public static Array fromArray(byte[] values) {
-        Array array = new Array();
-        for (byte value: values) array.add(LongOperand.valueOf(value));
-        return array;
-    }
-
-    public static Array fromArray(boolean[] values) {
-        Array array = new Array();
-        for (boolean value: values) array.add(BooleanOperand.valueOf(value));
-        return array;
-    }
-
-    public static Array fromArray(char[] values) {
-        Array array = new Array();
-        for (char value: values) array.add(StringOperand.valueOf(value + ""));
-        return array;
-    }
-
-    public static <T> Array fromArray(T[] values, OperandProducer<T> conv) {
-        Array array = new Array();
-        for (T value: values) array.add(conv.get(value));
-        return array;
-    }
-
-    private Map<Operand, Operand> map;
+    // accessed for ArrayOperand
+    Map<Operand, Operand> map;
 
     public Array() {
         map = new LinkedHashMap<>();

@@ -1,4 +1,7 @@
-const A = 1;
-const B = 2;
+a = {
+    'foo': 'bar',
+};
+a['bar'] = a;
 
-println(A + B);
+println(a['bar']['foo']); # bar
+println(a[0]); # null

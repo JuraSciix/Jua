@@ -15,7 +15,7 @@ public enum Clone implements Instruction {
 
     @Override
     public int run(InterpreterRuntime env) {
-        env.pushStack((Operand) env.popStack().clone());
+        env.pushStack(env.popStack().doClone());
         return NEXT;
     }
 }

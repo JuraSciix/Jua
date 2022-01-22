@@ -21,6 +21,10 @@ public abstract class Operand {
 
         // Note: NULL.sigc() returns '<', so do not use it.
         public char sigc() { return name.charAt(0); }
+
+        public boolean isScalar() {
+            return ordinal() <= STRING.ordinal();
+        }
     }
 
     public abstract Type type();
@@ -57,7 +61,8 @@ public abstract class Operand {
         return false;
     }
 
-    public boolean canBeArray() {
+    @Deprecated
+    public boolean canBeMap() {
         return false;
     }
 
@@ -166,5 +171,17 @@ public abstract class Operand {
 
     public Operand decrement() {
         throw InterpreterError.unaryApplication("--", type());
+    }
+
+    public void put(Operand key, Operand value) {
+        throw InterpreterError.inconvertibleTypes(type(), Type.MAP);
+    }
+
+    public Operand get(Operand key) {
+        throw InterpreterError.inconvertibleTypes(type(), Type.MAP);
+    }
+
+    public Operand doClone() {
+        return this;
     }
 }

@@ -17,7 +17,8 @@ public enum Astore implements Instruction {
     public int run(InterpreterRuntime env) {
         Operand val = env.popStack();
         Operand key = env.popStack();
-        env.popArray().set(key, val);
+        Operand map = env.popStack();
+        map.put(key, val);
         return NEXT;
     }
 }

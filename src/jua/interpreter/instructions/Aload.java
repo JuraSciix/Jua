@@ -1,6 +1,7 @@
 package jua.interpreter.instructions;
 
 import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.runtime.NullOperand;
 import jua.interpreter.runtime.Operand;
 import jua.compiler.CodePrinter;
 
@@ -16,7 +17,10 @@ public enum Aload implements Instruction {
     @Override
     public int run(InterpreterRuntime env) {
         Operand key = env.popStack();
-        env.pushStack(env.popArray().get(key));
+        Operand map = env.popStack();
+        Operand result = map.get(key);
+        // todo: В новой версии языка вместо подмены должна происходит ошибка.
+        env.pushStack(result == null ? NullOperand.NULL : result);
         return NEXT;
     }
 }

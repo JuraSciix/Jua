@@ -1,16 +1,26 @@
 package jua.interpreter.runtime;
 
-public class ArrayOperand extends Operand implements Cloneable {
+import jua.interpreter.InterpreterError;
 
-    // todo: delegate Array class to ArrayOperand
-    private Array value;
+import java.util.LinkedHashMap;
+
+public final class ArrayOperand extends Operand {
+
+    // todo: Желательно, чтобы мы использовали свою реализацию LinkedHashMap..
+
+    private final LinkedHashMap<Operand, Operand> map;
 
     public ArrayOperand() {
-        this(new Array());
+        map = new LinkedHashMap<>();
     }
 
-    public ArrayOperand(Array value) {
-        this.value = value;
+    public ArrayOperand(LinkedHashMap<Operand, Operand> map) {
+        this.map = new LinkedHashMap<>(map);
+    }
+
+    @Deprecated
+    public ArrayOperand(Array array) {
+        map = new LinkedHashMap<>(array.map);
     }
 
     @Override
@@ -24,7 +34,7 @@ public class ArrayOperand extends Operand implements Cloneable {
     }
 
     @Override
-    public boolean canBeArray() {
+    public boolean canBeMap() { // todo: Зачем этот метод???
         return true;
     }
 
@@ -35,42 +45,37 @@ public class ArrayOperand extends Operand implements Cloneable {
 
     @Override
     public boolean canBeString() {
-        return true;
-    }
-
-    @Override
-    public Array arrayValue() {
-        return value;
+        return false;
     }
 
     @Override
     public boolean booleanValue() {
-        return value.count() != 0;
+        return map.size() != 0;
     }
 
     @Override
     public String stringValue() {
-        return value.toString0(o -> (o != this) ? o.stringValue() : "*head*");
+        return super.stringValue();
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (o == this)
-            return true;
-        if (!(o instanceof ArrayOperand))
-            return false;
-        return ((ArrayOperand) o).value.equals(value);
+    public void put(Operand key, Operand value) {
+        if (!key.type().isScalar()) {
+            throw InterpreterError.illegalKeyType(key.type());
+        }
+        map.put(key, value);
     }
 
     @Override
-    public int hashCode() {
-        return (Type.MAP.hashCode() ^ value.hashCode()) * 7;
+    public Operand get(Operand key) {
+        if (!key.type().isScalar()) {
+            throw InterpreterError.illegalKeyType(key.type());
+        }
+        return map.get(key);
     }
 
     @Override
-    public Object clone() {
-        ArrayOperand clone = (ArrayOperand) super.clone();
-        clone.value = (Array) value.clone();
-        return clone;
+    public Operand doClone() {
+        return new ArrayOperand(map);
     }
 }
