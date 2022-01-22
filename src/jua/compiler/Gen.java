@@ -308,8 +308,10 @@ public final class Gen implements Visitor {
             Operand value;
             if (expr instanceof ArrayExpression) {
                 value = new ArrayOperand();
-                code.addState(new Getconst(name), 1);
-                generateArrayCreation(((ArrayExpression) expr).map);
+                if (((ArrayExpression) expr).map.size() > 0) {
+                    code.addState(new Getconst(name), 1);
+                    generateArrayCreation(((ArrayExpression) expr).map);
+                }
             } else {
                 assert expr instanceof LiteralExpression;
                 value = TreeInfo.resolveLiteral((LiteralExpression) expr);

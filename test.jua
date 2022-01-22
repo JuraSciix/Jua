@@ -1,7 +1,14 @@
-a = {
-    'foo': 'bar',
-};
-a['bar'] = a;
+const _SQUARES = [];
+const _MAX_SQUARE = 1024;
 
-println(a['bar']['foo']); # bar
-println(a[0]); # null
+for i = 0; i < _MAX_SQUARE; i++ {
+    _SQUARES[i * i] = i;
+}
+
+fn sqrt(x) {
+    return _SQUARES[x] ?? (0.0 / 0.0); # NaN
+}
+
+for i = 1; i < _MAX_SQUARE; i *= (i + 1) {
+    println(sqrt(i));
+}
