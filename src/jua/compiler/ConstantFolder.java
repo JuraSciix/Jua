@@ -278,6 +278,7 @@ public class ConstantFolder implements Visitor {
 
     @Override
     public void visitCase(CaseStatement statement) {
+        // todo: NPE: statement.expressions
         statement.expressions = lowerList(statement.expressions);
         statement.body = getLowerStatement(statement.body);
         lower = statement;

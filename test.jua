@@ -1,10 +1,16 @@
-# too slow...
-fn cmp(a, b) { return sgn(a - b); }
-fn sgn(n) { return ((n >> 0x3f) | ushl(-n, 0x3f)); }
-fn ushl(x, y) { return (x >> y) & (0x7fffffffffffffff >> (y - 1)); }
+fn cmp(a, b, except) {
+    return (a > b) ? 1 :
+           (a < b) ? -1 :
+           (except == 1 || except == -1) ? except : 0;
+}
 
-for i = 0; i < 3; i++
-    for j = 0; j < i * i; j++
-        println(bs(i, j));
-
-fn bs(i, j) { return "cmp(" + i + ", " + j + ") => " + cmp(i, j); }
+###
+# fixme: ConstantFolder.java:281
+fn switch_test(x) {
+    switch (x) {
+        case 1: 1;
+        case 2: 2;
+        default: 3;
+    }
+}
+###

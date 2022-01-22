@@ -922,14 +922,19 @@ public final class Gen implements Visitor {
         code.addChainedState(TreeInfo.line(statement), _switch, a);
         fallthroughChains.push(code.makeChain());
         switchPartsStack.add(new ArrayList<>(count));
+        int cached_sp = code.getSp();
+        int max_sp = 0;
         for (CaseStatement _case : statement.cases) {
+            code.setSp(cached_sp);
             if (_case.expressions == null) {
                 _switch.setDefault(new Part(code.currentBci(), null));
                 emitCaseBody(_case.body);
             } else {
                 visitStatement(_case);
             }
+            if (code.getSp() > max_sp) max_sp = code.getSp();
         }
+        code.setSp(max_sp);
         List<Part> parts0 = switchPartsStack.pop();
         for (int i = 0; i < parts0.size(); i++) {
             parts[i] = parts0.get(i);
@@ -949,12 +954,17 @@ public final class Gen implements Visitor {
         } else {
             generateCondition(expression.cond);
         }
+        int cached_sp = code.getSp();
         popConditionChain();
         visitExpression(expression.lhs);
+        int lhs_sp = code.getSp();
+        code.setSp(cached_sp);
         emitGoto(0, ex);
         code.resolveChain(el);
+        int rhs_sp = code.getSp();
         visitExpression(expression.rhs);
         code.resolveChain(ex);
+        code.setSp(Math.max(lhs_sp, rhs_sp));
     }
 
     @Override

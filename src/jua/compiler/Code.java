@@ -172,6 +172,14 @@ public final class Code {
         addState0(state, stackAdjustment, line);
     }
 
+    public int getSp() {
+        return context.nstack;
+    }
+
+    public void setSp(int nstack) {
+        context.nstack = nstack;
+    }
+
     private void addState0(Instruction instruction, int stackAdjustment, int line) {
         if (!isAlive()) return;
         context.instructions.add(instruction);
