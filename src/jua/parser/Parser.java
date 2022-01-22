@@ -21,13 +21,17 @@ public class Parser {
 
     public Statement parse() throws ParseException {
         List<Statement> statements = new ArrayList<>();
-
+        Position startPos = null;
         while (tokenizer.hasMoreTokens()) {
-            if (currentToken == null)
+            if (currentToken == null) {
                 next();
+                startPos = currentToken.position;
+            }
             statements.add(parseStatement());
         }
-        return new BlockStatement(new Position(tokenizer.getFilename(), 0, 0), statements);
+        if (startPos == null)
+            startPos = new Position(tokenizer.getFilename(), 0, 0);
+        return new BlockStatement(startPos, statements);
     }
 
     private Statement parseStatement() throws ParseException {
