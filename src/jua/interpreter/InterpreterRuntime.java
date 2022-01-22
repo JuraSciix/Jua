@@ -32,7 +32,7 @@ public class InterpreterRuntime {
 
     private final Map<String, Operand> constants;
 
-    private final Deque<CallStackElement> callStack;
+    private final Deque<ProgramFrame> callStack = new ArrayDeque<>();
 
     private ProgramFrame cp;
 
@@ -45,8 +45,6 @@ public class InterpreterRuntime {
         this.functions = functions;
         this.constants = constants;
 
-        callStack = new ArrayDeque<>();
-        callStack.add(CallStackElement.mainEntry());
     }
 
     public RuntimeFunction getFunctionByName(String name) {
@@ -57,13 +55,9 @@ public class InterpreterRuntime {
         return constants.get(name);
     }
 
-    @Deprecated
-    public void enterCall(String name, Operand[] args) {
-        callStack.addFirst(new CallStackElement(name, cp.sourceName(), cp.currentLine(), args, cp));
-
-        if (callStack.size() >= MAX_CALLSTACK_SIZE) {
-            throw InterpreterError.stackOverflow();
-        }
+    public void enterCall(ProgramFrame p) {
+        callStack.addLast(cp);
+        cp = p;
     }
 
     public void exitCall(Operand returnValue) {
@@ -72,14 +66,10 @@ public class InterpreterRuntime {
         }
 //        cp.clearStack();
 //        cp.clearLocals();
-        cp = callStack.poll().lastFrame;
+        cp = callStack.removeLast();
         if (cp != null) {
             cp.push(returnValue);
         }
-    }
-
-    public CallStackElement[] getCallStack() {
-        return callStack.toArray(new CallStackElement[0]);
     }
 
     public void setProgram(ProgramFrame newCP) {

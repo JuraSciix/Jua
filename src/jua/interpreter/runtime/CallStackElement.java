@@ -3,7 +3,6 @@ package jua.interpreter.runtime;
 import jua.interpreter.Program;
 import jua.interpreter.ProgramFrame;
 
-// todo: Когда я уже избавлюсь от этого кринжа?
 @Deprecated
 public class CallStackElement {
 

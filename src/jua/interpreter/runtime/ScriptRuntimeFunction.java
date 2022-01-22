@@ -27,13 +27,11 @@ public class ScriptRuntimeFunction implements RuntimeFunction {
             error(name, "arguments too few. (required " + req + ", got " + argc + ')');
         }
         ProgramFrame frame = program.makeFrame();
-        Operand[] args = new Operand[tot];
 
         for (int i = tot - 1; i >= 0; i--) {
-            frame.store(locals[i], args[i] = (i >= argc) ? program.constantPool[i - req] : env.popStack());
+            frame.store(locals[i], (i >= argc) ? program.constantPool[i - req] : env.popStack());
         }
-        env.enterCall(name, args);
-        env.setProgram(frame);
+        env.enterCall(frame);
         Trap.bti();
     }
 
