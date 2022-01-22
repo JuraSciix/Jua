@@ -1,5 +1,6 @@
 package jua.interpreter.runtime;
 
+@Deprecated
 @FunctionalInterface
 public interface OperandProducer<T> {
 
