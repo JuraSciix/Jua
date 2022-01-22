@@ -1,9 +1,8 @@
 package jua.compiler;
 
 import jua.interpreter.Program;
-import jua.interpreter.runtime.Constant;
-import jua.interpreter.runtime.RuntimeFunction;
 import jua.interpreter.runtime.Operand;
+import jua.interpreter.runtime.RuntimeFunction;
 import jua.interpreter.runtime.ScriptRuntimeFunction;
 
 import java.util.*;
@@ -66,17 +65,16 @@ public class CodePrinter {
         }
     }
 
-    public static void printConstants(Map<String, Constant> constants) {
-        boolean[] test = new boolean[1];
-        constants.forEach((name, constant) -> {
-            if (constant.isExtern)
-                return;
-            test[0] = true;
-            System.out.printf("const %s = %s%n", name, constant.value);
-        });
-        if (test[0]) {
-            System.out.println();
-        }
+    public static void printConstants(Map<String, Operand> constants) {
+        // Do not print constants
+//        boolean[] test = new boolean[1];
+//        constants.forEach((name, constant) -> {
+//            test[0] = true;
+//            System.out.printf("const %s = %s%n", name, constant);
+//        });
+//        if (test[0]) {
+//            System.out.println();
+//        }
     }
 
     public static void printFunctions(Map<String, RuntimeFunction> functions) {

@@ -1,6 +1,6 @@
 package jua.compiler;
 
-import jua.interpreter.runtime.Constant;
+import jua.interpreter.runtime.Operand;
 import jua.interpreter.runtime.RuntimeFunction;
 
 import java.util.HashMap;
@@ -25,10 +25,11 @@ public class CodeData {
 
     final Map<String, RuntimeFunction> functions = new HashMap<>();
 
-    final Map<String, Constant> constants = new HashMap<>();
+    final Map<String, Operand> constants = new HashMap<>();
 
     public CodeData() {
-        BuiltInDefinitions.init(this);
+        // This class has been removed
+//        BuiltInDefinitions.init(this);
     }
 
     public boolean testFunction(String name) {
@@ -46,7 +47,7 @@ public class CodeData {
         functions.put(name, function);
     }
 
-    public void setConstant(String name, Constant constant) {
+    public void setConstant(String name, Operand constant) {
         if (constants.containsKey(name)) {
             throw BuiltInException.constantRedefinition(name);
         }

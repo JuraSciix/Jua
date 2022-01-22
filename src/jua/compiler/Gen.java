@@ -4,7 +4,6 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntStack;
 import jua.interpreter.instructions.*;
 import jua.interpreter.runtime.ArrayOperand;
-import jua.interpreter.runtime.Constant;
 import jua.interpreter.runtime.Operand;
 import jua.interpreter.runtime.ScriptRuntimeFunction;
 import jua.parser.Tree.*;
@@ -315,7 +314,7 @@ public final class Gen implements Visitor {
                 assert expr instanceof LiteralExpression;
                 value = TreeInfo.resolveLiteral((LiteralExpression) expr);
             }
-            codeData.setConstant(name, new Constant(value, false));
+            codeData.setConstant(name, value);
         }
     }
 

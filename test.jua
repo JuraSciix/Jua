@@ -1,16 +1,4 @@
-fn cmp(a, b, except) {
-    return (a > b) ? 1 :
-           (a < b) ? -1 :
-           (except == 1 || except == -1) ? except : 0;
-}
+const A = 1;
+const B = 2;
 
-###
-# fixme: ConstantFolder.java:281
-fn switch_test(x) {
-    switch (x) {
-        case 1: 1;
-        case 2: 2;
-        default: 3;
-    }
-}
-###
+println(A + B);

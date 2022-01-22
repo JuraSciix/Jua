@@ -1,5 +1,6 @@
 package jua.interpreter.runtime;
 
+@Deprecated
 public class Constant {
 
     public final Operand value;

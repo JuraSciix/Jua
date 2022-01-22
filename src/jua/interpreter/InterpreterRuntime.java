@@ -30,7 +30,7 @@ public class InterpreterRuntime {
 
     private final Map<String, RuntimeFunction> functions;
 
-    private final Map<String, Constant> constants;
+    private final Map<String, Operand> constants;
 
     private final Deque<CallStackElement> callStack;
 
@@ -41,7 +41,7 @@ public class InterpreterRuntime {
         return cp;
     }
 
-    public InterpreterRuntime(Map<String, RuntimeFunction> functions, Map<String, Constant> constants) {
+    public InterpreterRuntime(Map<String, RuntimeFunction> functions, Map<String, Operand> constants) {
         this.functions = functions;
         this.constants = constants;
 
@@ -53,7 +53,7 @@ public class InterpreterRuntime {
         return functions.get(name);
     }
 
-    public Constant getConstantByName(String name) {
+    public Operand getConstantByName(String name) {
         return constants.get(name);
     }
 
