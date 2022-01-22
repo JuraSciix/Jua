@@ -654,10 +654,14 @@ public final class Gen implements Visitor {
             int el = pushMakeConditionChain();
             int ex = code.makeChain();
             generateCondition(statement.cond);
+            int cached_sp = code.getSp();
             boolean thenAlive = visitBody(statement.body);
             emitGoto(ex);
             code.resolveChain(el);
+            int body_sp = code.getSp();
+            code.setSp(cached_sp);
             boolean elseAlive = visitBody(statement.elseBody);
+            code.setSp(Math.max(body_sp, code.getSp()));
             code.resolveChain(ex);
             if (!thenAlive && !elseAlive) code.dead();
         }
