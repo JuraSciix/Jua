@@ -174,6 +174,7 @@ public class InterpreterRuntime {
         cp.push(NullOperand.NULL);
     }
 
+    @Deprecated
     public void pushStack(Array operand) {
         pushStack(getOperand(operand));
     }

@@ -3,6 +3,7 @@ package jua.interpreter.runtime;
 import jua.interpreter.InterpreterError;
 
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 public final class ArrayOperand extends Operand {
 
@@ -72,6 +73,13 @@ public final class ArrayOperand extends Operand {
             throw InterpreterError.illegalKeyType(key.type());
         }
         return map.get(key);
+    }
+
+    @Override
+    public void putAll(Operand other) {
+        for (Map.Entry<Operand, Operand> entry : other.entrySet()) {
+            put(entry.getKey(), entry.getValue());
+        }
     }
 
     @Override

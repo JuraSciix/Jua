@@ -1,10 +1,10 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterRuntime;
-import jua.interpreter.InterpreterError;
-import jua.interpreter.runtime.Array;
-import jua.interpreter.runtime.Operand;
 import jua.compiler.CodePrinter;
+import jua.interpreter.InterpreterError;
+import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.runtime.ArrayOperand;
+import jua.interpreter.runtime.Operand;
 
 public enum Add implements Instruction {
 
@@ -31,10 +31,10 @@ public enum Add implements Instruction {
         } else if (lhs.isString() || rhs.isString()) {
             env.pushStack(lhs.stringValue().concat(rhs.stringValue()));
         } else if (lhs.isMap() && rhs.isMap()) {
-            Array value = new Array();
-            value.setAll(lhs.arrayValue());
-            value.setAll(rhs.arrayValue());
-            env.pushStack(value);
+            ArrayOperand result = new ArrayOperand();
+            result.putAll(lhs);
+            result.putAll(rhs);
+            env.pushStack(result);
         } else {
             throw InterpreterError.binaryApplication("+", lhs.type(), rhs.type());
         }

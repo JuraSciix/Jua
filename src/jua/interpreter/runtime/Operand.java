@@ -2,6 +2,9 @@ package jua.interpreter.runtime;
 
 import jua.interpreter.InterpreterError;
 
+import java.util.Map;
+import java.util.Set;
+
 public abstract class Operand {
 
     public enum Type {
@@ -98,6 +101,7 @@ public abstract class Operand {
         throw new IllegalStateException();
     }
 
+    @Deprecated
     public Array arrayValue() {
         throw new IllegalStateException();
     }
@@ -117,7 +121,7 @@ public abstract class Operand {
     @Override
     public String toString() {
         switch (type()) {
-            case MAP: return arrayValue().toString();
+//            case MAP: return arrayValue().toString();
             case STRING: return '"' + stringValue() + '"';
             default: return stringValue();
         }
@@ -178,6 +182,14 @@ public abstract class Operand {
     }
 
     public Operand get(Operand key) {
+        throw InterpreterError.inconvertibleTypes(type(), Type.MAP);
+    }
+
+    public void putAll(Operand other) {
+        throw InterpreterError.inconvertibleTypes(type(), Type.MAP);
+    }
+
+    public Set<Map.Entry<Operand, Operand>> entrySet() {
         throw InterpreterError.inconvertibleTypes(type(), Type.MAP);
     }
 
