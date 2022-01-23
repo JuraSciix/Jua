@@ -817,7 +817,7 @@ public final class Gen implements Visitor {
         } else {
             shortVal = Integer.MIN_VALUE;
         }
-        boolean invert = isShort(STATE_COND_INVERT);
+        boolean invert = isState(STATE_COND_INVERT);
         switch (expression.tag) {
             case EQ:
                 if (lhsNull || rhsNull) {
