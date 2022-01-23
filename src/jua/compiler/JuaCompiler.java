@@ -1,8 +1,6 @@
 package jua.compiler;
 
 import jua.Options;
-import jua.compiler.Gen;
-import jua.compiler.*;
 import jua.interpreter.InterpreterRuntime;
 import jua.interpreter.InterpreterRuntimeException;
 import jua.parser.ParseException;
@@ -67,7 +65,7 @@ public class JuaCompiler {
 
         try {
             if (Options.optimize()) {
-                root.accept(new ConstantFolder(codeData));
+                root.accept(new Fold(codeData));
             } else {
                 System.err.println("Warning: disabling optimization is strongly discouraged. " +
                         "This feature may be removed in a future version");
