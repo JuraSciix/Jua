@@ -162,8 +162,14 @@ public class Parser {
 
     private Statement parseBody() throws ParseException {
         Position position = currentToken.position;
+        if (match(LBRACE)) return parseBlock(position);
+        if (match(EQ)) {
+            Expression expr = parseExpression();
+            expect(SEMICOLON);
+            return expr;
+        }
         expect(LBRACE);
-        return parseBlock(position);
+        return null;
     }
 
     private Statement parseFor(Position position) throws ParseException {

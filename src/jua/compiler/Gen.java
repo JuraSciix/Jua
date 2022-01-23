@@ -645,7 +645,10 @@ public final class Gen implements Visitor {
             return code.resolveLocal(n);
         }).toArray();
         visitStatement(statement.body);
-        emitRetnull();
+        if (!statement.body.isTag(Tag.COMPOUND))
+            emitReturn();
+        else
+            emitRetnull();
         codeData.setFunction(statement.name, new ScriptRuntimeFunction(
                 locals, // function arguments must be first at local list
                 statement.optionals.stream().mapToInt(a -> {
@@ -824,7 +827,6 @@ public final class Gen implements Visitor {
                     visitExpression(lhsNull ? rhs : lhs);
                     resultState = (invert ? Ifnull::new : Ifnonnull::new);
                     resultStackAdjustment = -1;
-                    break;
                 } else if (lhsShort || rhsShort) {
                     resultState = (dest_ip -> invert ? new Ifeq(dest_ip, shortVal) : new Ifne(dest_ip, shortVal));
                     resultStackAdjustment = -1;
@@ -840,7 +842,6 @@ public final class Gen implements Visitor {
                     visitExpression(lhsNull ? rhs : lhs);
                     resultState = (invert ? Ifnonnull::new : Ifnull::new);
                     resultStackAdjustment = -1;
-                    break;
                 } else if (lhsShort || rhsShort) {
                     resultState = (dest_ip -> invert ? new Ifne(dest_ip, shortVal) : new Ifeq(dest_ip, shortVal));
                     resultStackAdjustment = -1;

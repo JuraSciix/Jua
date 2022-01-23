@@ -1,6 +1,0 @@
-x = 2;
-switch x {
-    case 1, 2, 3: {println("x=1,2,3");return A;}
-    case 4: return B;
-    default: return C;
-}
