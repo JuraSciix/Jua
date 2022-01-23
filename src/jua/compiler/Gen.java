@@ -1226,8 +1226,8 @@ public final class Gen implements Visitor {
         code.addInstruction(Bool.INSTANCE);
         code.putPos(expression.position);
         code.addChainedInstruction(isState(STATE_COND_INVERT) ?
-                        dest_ip -> new Ifne(dest_ip, 0) :
-                        dest_ip -> new Ifeq(dest_ip, 0),
+                        dest_ip -> new Ifeq(dest_ip, 0) :
+                        dest_ip -> new Ifne(dest_ip, 0),
                 peekConditionChain(), -1);
     }
 
