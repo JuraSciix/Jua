@@ -63,7 +63,7 @@ public class InterpreterRuntime {
     public void exitCall(Operand returnValue) {
 //        cp.clearStack();
 //        cp.clearLocals();
-        cp = callStack.removeLast();
+        cp = callStack.pollLast();
         if (cp != null) {
             cp.push(returnValue);
         }

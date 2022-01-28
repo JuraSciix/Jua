@@ -17,7 +17,7 @@ public enum Retnull implements Instruction {
     @Override
     public int run(InterpreterRuntime env) {
         env.exitCall(NullOperand.NULL);
-        env.getFrame().incPC();
+        if (env.getFrame() != null) env.getFrame().incPC();
         Trap.bti();
         return 0; // unreachable
     }
