@@ -61,9 +61,6 @@ public class InterpreterRuntime {
     }
 
     public void exitCall(Operand returnValue) {
-        if (callStack.isEmpty()) {
-            throw new IllegalStateException("callStack is empty");
-        }
 //        cp.clearStack();
 //        cp.clearLocals();
         cp = callStack.removeLast();
