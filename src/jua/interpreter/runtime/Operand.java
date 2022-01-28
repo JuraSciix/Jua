@@ -196,4 +196,8 @@ public abstract class Operand {
     public Operand doClone() {
         return this;
     }
+
+    public int length() {
+        throw new InterpreterError("cannot calculate length for " + type().name + " type");
+    }
 }

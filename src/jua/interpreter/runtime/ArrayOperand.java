@@ -86,4 +86,9 @@ public final class ArrayOperand extends Operand {
     public Operand doClone() {
         return new ArrayOperand(map);
     }
+
+    @Override
+    public int length() {
+        return map.size();
+    }
 }

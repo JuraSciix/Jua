@@ -76,12 +76,12 @@ public class Parser {
         if (match(LBRACE)) {
             return parseBlock(position);
         }
-        if (match(PRINT)) {
-            return parsePrint(position);
-        }
-        if (match(PRINTLN)) {
-            return parsePrintln(position);
-        }
+//        if (match(PRINT)) {
+//            return parsePrint(position);
+//        }
+//        if (match(PRINTLN)) {
+//            return parsePrintln(position);
+//        }
         if (match(RETURN)) {
             return parseReturn(position);
         }
@@ -222,17 +222,17 @@ public class Parser {
         return new BlockStatement(position, statements);
     }
 
-    private Statement parsePrint(Position position) throws ParseException {
-        List<Expression> expressions = parseExpressions();
-        expect(SEMICOLON);
-        return new PrintStatement(position, expressions);
-    }
-
-    private Statement parsePrintln(Position position) throws ParseException {
-        List<Expression> expressions = parseExpressions();
-        expect(SEMICOLON);
-        return new PrintlnStatement(position, expressions);
-    }
+//    private Statement parsePrint(Position position) throws ParseException {
+//        List<Expression> expressions = parseExpressions();
+//        expect(SEMICOLON);
+//        return new PrintStatement(position, expressions);
+//    }
+//
+//    private Statement parsePrintln(Position position) throws ParseException {
+//        List<Expression> expressions = parseExpressions();
+//        expect(SEMICOLON);
+//        return new PrintlnStatement(position, expressions);
+//    }
 
     private Statement parseReturn(Position position) throws ParseException {
         if (match(SEMICOLON)) {

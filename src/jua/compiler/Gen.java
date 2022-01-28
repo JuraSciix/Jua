@@ -1,13 +1,18 @@
 package jua.compiler;
 
-import it.unimi.dsi.fastutil.ints.*;
+import it.unimi.dsi.fastutil.ints.Int2IntLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntStack;
 import jua.interpreter.instructions.*;
 import jua.interpreter.runtime.ArrayOperand;
 import jua.interpreter.runtime.Operand;
 import jua.interpreter.runtime.ScriptRuntimeFunction;
 import jua.parser.Tree.*;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 public final class Gen implements Visitor {
 
@@ -621,13 +626,50 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitFunctionCall(FunctionCallExpression expression) {
-        if (expression.args.size() > 0xff) {
-            cError(expression.position, "too many parameters.");
+        Instruction instruction;
+        int stack;
+        boolean canBePopped = false;
+        switch (expression.name) {
+            case "print":
+                visitExprList(expression.args);
+                instruction = new Print(expression.args.size());
+                stack = -expression.args.size();
+                canBePopped = true;
+                break;
+            case "println":
+                visitExprList(expression.args);
+                instruction = new Println(expression.args.size());
+                stack = -expression.args.size();
+                canBePopped = true;
+                break;
+            case "ns_time":
+                if (expression.args.size() != 0) {
+                    cError(expression.position, "mismatch call parameters: 0 expected, " + expression.args.size() + " got.");
+                }
+                instruction = NsTime.INSTANCE;
+                stack = 1;
+                break;
+            case "length":
+                if (expression.args.size() != 1) {
+                    cError(expression.position, "mismatch call parameters: 1 expected, " + expression.args.size() + " got.");
+                }
+                visitExpression(expression.args.get(0));
+                instruction = Length.INSTANCE;
+                stack = 0;
+                break;
+            default:
+                if (expression.args.size() > 0xff) {
+                    cError(expression.position, "too many parameters.");
+                }
+                visitExprList(expression.args);
+                instruction = new Call(expression.name, (byte) expression.args.size());
+                stack = -expression.args.size() + 1;
+                break;
         }
-        visitExprList(expression.args);
         code.putPos(expression.position);
-        code.addInstruction(new Call(expression.name, (byte) expression.args.size()),
-                Math.max(1, expression.args.size()));
+        code.addInstruction(instruction, stack);
+        if (canBePopped)
+            code.addInstruction(PushNull.INSTANCE, 1);
     }
 
     @Override
@@ -1040,20 +1082,24 @@ public final class Gen implements Visitor {
         generateIncrease(expression, true, false);
     }
 
+    @Deprecated
     @Override
     public void visitPrintln(PrintlnStatement statement) {
-        visitExprList(statement.expressions);
-        int count = statement.expressions.size();
-        code.putPos(statement.position);
-        code.addInstruction(new Println(count), -count);
+//        visitExprList(statement.expressions);
+//        int count = statement.expressions.size();
+//        code.putPos(statement.position);
+//        code.addInstruction(new Println(count), -count);
+        throw new AssertionError("deprecated");
     }
 
+    @Deprecated
     @Override
     public void visitPrint(PrintStatement statement) {
-        visitExprList(statement.expressions);
-        int count = statement.expressions.size();
-        code.putPos(statement.position);
-        code.addInstruction(new Print(count), -count);
+//        visitExprList(statement.expressions);
+//        int count = statement.expressions.size();
+//        code.putPos(statement.position);
+//        code.addInstruction(new Print(count), -count);
+        throw new AssertionError("deprecated");
     }
 
     @Override

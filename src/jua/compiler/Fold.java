@@ -700,16 +700,16 @@ public class Fold implements Visitor {
         visitIncrease(expression);
     }
 
+    @Deprecated
     @Override
     public void visitPrintln(PrintlnStatement statement) {
-        statement.expressions = lowerList(statement.expressions);
-        lower = statement;
+        throw new AssertionError("deprecated");
     }
 
+    @Deprecated
     @Override
     public void visitPrint(PrintStatement statement) {
-        statement.expressions = lowerList(statement.expressions);
-        lower = statement;
+        throw new AssertionError("deprecated");
     }
 
     @Override

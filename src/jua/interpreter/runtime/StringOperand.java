@@ -57,4 +57,9 @@ public class StringOperand extends Operand {
     public int hashCode() {
         return (Type.STRING.hashCode() ^ value.hashCode()) * 7;
     }
+
+    @Override
+    public int length() {
+        return value.length();
+    }
 }

@@ -72,7 +72,9 @@ public abstract class Tree {
         ERROR,
 
         // временные теги
+        @Deprecated
         PRINT,
+        @Deprecated
         PRINTLN
     }
     public final Tag tag;
@@ -1099,6 +1101,7 @@ public abstract class Tree {
         }
     }
 
+    @Deprecated
     public static class PrintlnStatement extends Statement {
 
         public List<Expression> expressions;
@@ -1114,6 +1117,7 @@ public abstract class Tree {
         }
     }
 
+    @Deprecated
     // todo: Заменить это на вызов функций с соответствующими именами
     public static class PrintStatement extends Statement {
 
@@ -1429,7 +1433,9 @@ public abstract class Tree {
         void visitPostIncrement(PostIncrementExpression expression);
         void visitPreDecrement(PreDecrementExpression expression);
         void visitPreIncrement(PreIncrementExpression expression);
+        @Deprecated
         void visitPrintln(PrintlnStatement statement);
+        @Deprecated
         void visitPrint(PrintStatement statement);
         void visitRemainder(RemainderExpression expression);
         void visitReturn(ReturnStatement statement);
