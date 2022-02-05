@@ -1,4 +1,7 @@
-println(length("hello"));
-println(length([1, 2, 3]));
-println("Current nanos: " + ns_time());
-return;
+println( typeof(null) );
+println( typeof("") );
+println( typeof([]) );
+println( typeof(1) );
+println( typeof(1.) );
+println( typeof(true) );
+println( typeof(false) );

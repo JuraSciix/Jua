@@ -627,20 +627,28 @@ public final class Gen implements Visitor {
     @Override
     public void visitFunctionCall(FunctionCallExpression expression) {
         Instruction instruction;
-        int stack;
-        boolean canBePopped = false;
+        int stack = 0;
+        boolean noReturnValue = false;
         switch (expression.name) {
             case "print":
                 visitExprList(expression.args);
                 instruction = new Print(expression.args.size());
                 stack = -expression.args.size();
-                canBePopped = true;
+                noReturnValue = true;
                 break;
             case "println":
                 visitExprList(expression.args);
                 instruction = new Println(expression.args.size());
                 stack = -expression.args.size();
-                canBePopped = true;
+                noReturnValue = true;
+                break;
+            case "typeof":
+            case "gettype":
+                if (expression.args.size() != 1) {
+                    cError(expression.position, "mismatch call parameters: 1 expected, " + expression.args.size() + " got.");
+                }
+                visitExpression(expression.args.get(0));
+                instruction = Gettype.INSTANCE;
                 break;
             case "ns_time":
                 if (expression.args.size() != 0) {
@@ -655,7 +663,6 @@ public final class Gen implements Visitor {
                 }
                 visitExpression(expression.args.get(0));
                 instruction = Length.INSTANCE;
-                stack = 0;
                 break;
             default:
                 if (expression.args.size() > 0xff) {
@@ -668,7 +675,7 @@ public final class Gen implements Visitor {
         }
         code.putPos(expression.position);
         code.addInstruction(instruction, stack);
-        if (canBePopped)
+        if (noReturnValue)
             code.addInstruction(PushNull.INSTANCE, 1);
     }
 
