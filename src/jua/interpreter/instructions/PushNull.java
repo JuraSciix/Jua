@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
 import jua.interpreter.InterpreterRuntime;
-import jua.interpreter.runtime.NullOperand;
+import jua.runtime.NullOperand;
 import jua.compiler.CodePrinter;
 
 public class PushNull implements Instruction {

@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
 import jua.interpreter.InterpreterRuntime;
-import jua.interpreter.runtime.Operand;
+import jua.runtime.Operand;
 import jua.compiler.CodePrinter;
 
 public final class Vdec implements Instruction {

@@ -2,7 +2,7 @@ package jua.interpreter.instructions;
 
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterRuntime;
-import jua.interpreter.runtime.StringOperand;
+import jua.runtime.StringOperand;
 
 /**
  * Снимает операнд со стека и возвращает его тип.

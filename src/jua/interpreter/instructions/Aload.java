@@ -1,8 +1,8 @@
 package jua.interpreter.instructions;
 
 import jua.interpreter.InterpreterRuntime;
-import jua.interpreter.runtime.NullOperand;
-import jua.interpreter.runtime.Operand;
+import jua.runtime.NullOperand;
+import jua.runtime.Operand;
 import jua.compiler.CodePrinter;
 
 public enum Aload implements Instruction {

@@ -1,4 +1,4 @@
-package jua.interpreter.runtime;
+package jua.runtime;
 
 import jua.interpreter.Program;
 import jua.interpreter.ProgramFrame;

@@ -1,7 +1,7 @@
 package jua.interpreter;
 
 import jua.Options;
-import jua.interpreter.runtime.*;
+import jua.runtime.*;
 
 import java.util.ArrayDeque;
 import java.util.Deque;

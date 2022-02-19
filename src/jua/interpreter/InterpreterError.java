@@ -1,6 +1,6 @@
 package jua.interpreter;
 
-import jua.interpreter.runtime.Operand;
+import jua.runtime.Operand;
 
 // todo: Вместо этого должно быть Trap.STATE_ERR
 

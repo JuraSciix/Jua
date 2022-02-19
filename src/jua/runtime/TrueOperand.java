@@ -1,4 +1,4 @@
-package jua.interpreter.runtime;
+package jua.runtime;
 
 public class TrueOperand extends BooleanOperand {
 

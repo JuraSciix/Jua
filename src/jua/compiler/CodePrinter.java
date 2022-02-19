@@ -1,9 +1,9 @@
 package jua.compiler;
 
 import jua.interpreter.Program;
-import jua.interpreter.runtime.Operand;
-import jua.interpreter.runtime.RuntimeFunction;
-import jua.interpreter.runtime.ScriptRuntimeFunction;
+import jua.runtime.Operand;
+import jua.runtime.RuntimeFunction;
+import jua.runtime.ScriptRuntimeFunction;
 
 import java.util.*;
 import java.util.stream.Collectors;

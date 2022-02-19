@@ -1,7 +1,6 @@
 package jua.interpreter.instructions;
 
 import jua.interpreter.InterpreterRuntime;
-import jua.interpreter.runtime.Operand;
 import jua.compiler.CodePrinter;
 
 public enum Clone implements Instruction {

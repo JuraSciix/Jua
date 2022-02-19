@@ -5,9 +5,9 @@ import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntStack;
 import jua.interpreter.instructions.*;
-import jua.interpreter.runtime.ArrayOperand;
-import jua.interpreter.runtime.Operand;
-import jua.interpreter.runtime.ScriptRuntimeFunction;
+import jua.runtime.ArrayOperand;
+import jua.runtime.Operand;
+import jua.runtime.ScriptRuntimeFunction;
 import jua.parser.Tree.*;
 
 import java.util.Iterator;

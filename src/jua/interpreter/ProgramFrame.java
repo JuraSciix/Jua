@@ -1,6 +1,6 @@
 package jua.interpreter;
 
-import jua.interpreter.runtime.Operand;
+import jua.runtime.Operand;
 import jua.interpreter.instructions.Instruction;
 
 public final class ProgramFrame {

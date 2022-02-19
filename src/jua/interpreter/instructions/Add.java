@@ -3,8 +3,8 @@ package jua.interpreter.instructions;
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterError;
 import jua.interpreter.InterpreterRuntime;
-import jua.interpreter.runtime.ArrayOperand;
-import jua.interpreter.runtime.Operand;
+import jua.runtime.ArrayOperand;
+import jua.runtime.Operand;
 
 public enum Add implements Instruction {
 

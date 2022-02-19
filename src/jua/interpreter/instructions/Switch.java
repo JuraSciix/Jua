@@ -2,7 +2,7 @@ package jua.interpreter.instructions;
 
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterRuntime;
-import jua.interpreter.runtime.Operand;
+import jua.runtime.Operand;
 
 public final class Switch extends ChainInstruction {
 

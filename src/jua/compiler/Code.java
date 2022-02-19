@@ -12,10 +12,10 @@ import it.unimi.dsi.fastutil.shorts.Short2ShortRBTreeMap;
 import jua.interpreter.Program;
 import jua.interpreter.instructions.ChainInstruction;
 import jua.interpreter.instructions.Instruction;
-import jua.interpreter.runtime.DoubleOperand;
-import jua.interpreter.runtime.LongOperand;
-import jua.interpreter.runtime.Operand;
-import jua.interpreter.runtime.StringOperand;
+import jua.runtime.DoubleOperand;
+import jua.runtime.LongOperand;
+import jua.runtime.Operand;
+import jua.runtime.StringOperand;
 import jua.parser.Tree;
 
 import java.util.ArrayList;

@@ -1,11 +1,11 @@
 package jua.interpreter.instructions;
 
 import jua.interpreter.InterpreterRuntime;
-import jua.interpreter.runtime.BooleanOperand;
-import jua.interpreter.runtime.DoubleOperand;
-import jua.interpreter.runtime.LongOperand;
+import jua.runtime.BooleanOperand;
+import jua.runtime.DoubleOperand;
+import jua.runtime.LongOperand;
 import jua.compiler.CodePrinter;
-import jua.interpreter.runtime.Operand;
+import jua.runtime.Operand;
 
 public final class Push implements Instruction {
 

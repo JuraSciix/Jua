@@ -1,7 +1,7 @@
 package jua.compiler;
 
-import jua.interpreter.runtime.Operand;
-import jua.interpreter.runtime.RuntimeFunction;
+import jua.runtime.Operand;
+import jua.runtime.RuntimeFunction;
 
 import java.util.HashMap;
 import java.util.Map;

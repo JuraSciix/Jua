@@ -1,10 +1,9 @@
 package jua.compiler;
 
-import jua.interpreter.runtime.DoubleOperand;
-import jua.interpreter.runtime.LongOperand;
-import jua.interpreter.runtime.Operand;
-import jua.interpreter.runtime.StringOperand;
-import jua.parser.Tree;
+import jua.runtime.DoubleOperand;
+import jua.runtime.LongOperand;
+import jua.runtime.Operand;
+import jua.runtime.StringOperand;
 import jua.parser.Tree.*;
 
 public final class TreeInfo {
