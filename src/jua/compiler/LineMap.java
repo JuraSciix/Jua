@@ -10,13 +10,17 @@ public class LineMap {
     private int[] lineMap;
 
     public LineMap(String content) {
+        this(content.toCharArray());
+    }
+
+    public LineMap(char[] content) {
         if (content == null) {
             throw new NullPointerException("content");
         }
         IntArrayList lineMap = new IntArrayList();
         lineMap.add(0);
-        for (int i = 0; i < content.length(); i++) {
-            if (content.charAt(i) == '\n') {
+        for (int i = 0; i < content.length; i++) {
+            if (content[i] == '\n') {
                 lineMap.add(i + 1);
             }
         }

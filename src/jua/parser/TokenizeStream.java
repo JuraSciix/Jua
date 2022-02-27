@@ -4,22 +4,25 @@ import jua.compiler.LineMap;
 
 import java.io.*;
 
+// todo: Если не удалю, то переименовать во что-нибудь покрасивее
 public class TokenizeStream implements Closeable {
 
     public static TokenizeStream fromFile(String filename) throws IOException {
+        final int BUFFER_SIZE = 1024;
         try (Reader reader = new FileReader(filename)) {
-            StringWriter beta = new StringWriter();
-            for (int c; (c = reader.read()) >= 0; ) {
-                beta.write(c);
+            CharArrayWriter beta = new CharArrayWriter();
+            char[] buffer = new char[BUFFER_SIZE];
+            int len;
+            while ((len = reader.read(buffer, 0, BUFFER_SIZE)) >= 0) {
+                beta.write(buffer, 0, len);
             }
-            return new TokenizeStream(filename, beta.toString());
+            return new TokenizeStream(filename, beta.toCharArray());
         }
     }
 
     private final String filename;
 
-    // todo: почему здесь используется строка???
-    private String content;
+    private char[] content;
 
     private int pos = 0;
 
@@ -31,7 +34,7 @@ public class TokenizeStream implements Closeable {
 
 //    private Tree.Position savedPosition;
 
-    public TokenizeStream(String filename, String content) {
+    public TokenizeStream(String filename, char[] content) {
         this.filename = filename;
         this.content = content;
         debugContent();
@@ -54,17 +57,17 @@ public class TokenizeStream implements Closeable {
     }
 
     public boolean availableMore() {
-        return pos < content.length();
+        return pos < content.length;
     }
 
     public int peek() {
-        return availableMore() ? content.charAt(pos) : -1;
+        return availableMore() ? content[(pos)] : -1;
     }
 
     public int next() {
         int next;
         // for correctly printing positions of errors
-        if ((next = availableMore() ? content.charAt(pos++) : -1) == '\n') {
+        if ((next = availableMore() ? content[(pos++)] : -1) == '\n') {
             nextLine();
         } else {
             offset++;
