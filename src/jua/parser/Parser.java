@@ -7,13 +7,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static jua.parser.TokenType.*;
+import jua.parser.Tokens.*;
+
+import static jua.parser.Tokens.TokenKind.*;
 
 public class Parser {
 
     private final Tokenizer tokenizer;
 
-    private Token currentToken;
+    private Tokens.Token currentToken;
 
     public Parser(Tokenizer tokenizer) {
         this.tokenizer = tokenizer;
@@ -25,7 +27,7 @@ public class Parser {
         while (tokenizer.hasMoreTokens()) {
             if (currentToken == null) {
                 next();
-                startPos = currentToken.position;
+                startPos = currentToken.pos;
             }
             statements.add(parseStatement());
         }
@@ -33,7 +35,7 @@ public class Parser {
     }
 
     private Statement parseStatement() throws ParseException {
-        int position = currentToken.position;
+        int position = currentToken.pos;
 
         if (match(BREAK)) {
             return parseBreak(position);
@@ -105,7 +107,7 @@ public class Parser {
         List<Expression> expressions = new ArrayList<>();
 
         do {
-            Token name = currentToken;
+            Tokens.Token name = currentToken;
             expect(IDENTIFIER, EQ);
             names.add(name.getString());
             expressions.add(parseExpression());
@@ -134,7 +136,7 @@ public class Parser {
     }
 
     private Statement parseFunction(int position) throws ParseException {
-        Token name = currentToken;
+        Tokens.Token name = currentToken;
         expect(IDENTIFIER, LPAREN);
         List<String> names = new ArrayList<>();
         List<Expression> optionals = new ArrayList<>();
@@ -144,14 +146,14 @@ public class Parser {
             if (match(EOF) || comma && !match(COMMA)) {
                 expect(RPAREN);
             }
-            Token name0 = currentToken;
+            Tokens.Token name0 = currentToken;
             expect(IDENTIFIER);
             names.add(name0.getString());
 
             if (match(EQ)) {
                 optionals.add(parseExpression());
             } else if (!optionals.isEmpty()) {
-                pError(name0.position, "here must be a optional argument.");
+                pError(name0.pos, "here must be a optional argument.");
             }
             comma = !match(COMMA);
         }
@@ -159,7 +161,7 @@ public class Parser {
     }
 
     private Statement parseBody() throws ParseException {
-        int position = currentToken.position;
+        int position = currentToken.pos;
         if (match(LBRACE)) return parseBlock(position);
         if (match(EQ)) {
             Expression expr = parseExpression();
@@ -247,7 +249,7 @@ public class Parser {
         expect(LBRACE);
 
         while (!match(RBRACE)) {
-            int position1 = currentToken.position;
+            int position1 = currentToken.pos;
 
             if (match(CASE)) {
                 cases.add(parseCase(position1, false));
@@ -256,7 +258,7 @@ public class Parser {
             } else if (match(EOF)) {
                 expect(RBRACE);
             } else {
-                pError(currentToken.position, currentToken + " is not allowed inside switch.");
+                pError(currentToken.pos, currentToken + " is not allowed inside switch.");
             }
         }
         return new SwitchStatement(position, selector, cases);
@@ -273,7 +275,7 @@ public class Parser {
     }
 
     private Statement parseUnusedExpression() throws ParseException {
-        int position = currentToken.position;
+        int position = currentToken.pos;
         Expression expr = parseExpression();
         expect(SEMICOLON);
         return new UnusedExpression(position, expr);
@@ -295,7 +297,7 @@ public class Parser {
 
     private Expression parseAssignment() throws ParseException {
         Expression expr = parseNullCoalesce();
-        int position = currentToken.position;
+        int position = currentToken.pos;
 
         if (match(AMPEQ)) {
             return new AssignBitAndExpression(position, expr, parseAssignment());
@@ -340,7 +342,7 @@ public class Parser {
         Expression expr = parseTernary();
 
         while (true) {
-            int position = currentToken.position;
+            int position = currentToken.pos;
 
             if (match(QUESQUES)) {
                 expr = new NullCoalesceExpression(position, expr, parseTernary());
@@ -354,7 +356,7 @@ public class Parser {
         Expression expr = parseOr();
 
         while (true) {
-            int position = currentToken.position;
+            int position = currentToken.pos;
 
             if (match(QUES)) {
                 expr = parseTernary0(position, expr);
@@ -372,11 +374,11 @@ public class Parser {
 
     private Expression parseOr() throws ParseException {
         Expression expr = parseAnd();
-        int position = currentToken.position;
+        int position = currentToken.pos;
 
         while (match(BARBAR)) {
             expr = new OrExpression(position, expr, parseAnd());
-            position = currentToken.position;
+            position = currentToken.pos;
         }
         return expr;
     }
@@ -385,7 +387,7 @@ public class Parser {
         Expression expr = parseBitOr();
 
         while (true) {
-            int position = currentToken.position;
+            int position = currentToken.pos;
 
             if (match(AMPAMP)) {
                 expr = new AndExpression(position, expr, parseEquality());
@@ -400,7 +402,7 @@ public class Parser {
         Expression expr = parseBitXor();
 
         while (true) {
-            int position = currentToken.position;
+            int position = currentToken.pos;
 
             if (match(BAR)) {
                 expr = new BitOrExpression(position, expr, parseBitXor());
@@ -414,7 +416,7 @@ public class Parser {
         Expression expr = parseBitAnd();
 
         while (true) {
-            int position = currentToken.position;
+            int position = currentToken.pos;
 
             if (match(CARET)) {
                 expr = new BitXorExpression(position, expr, parseBitAnd());
@@ -428,7 +430,7 @@ public class Parser {
         Expression expr = parseEquality();
 
         while (true) {
-            int position = currentToken.position;
+            int position = currentToken.pos;
 
             if (match(AMP)) {
                 expr = new BitAndExpression(position, expr, parseEquality());
@@ -442,7 +444,7 @@ public class Parser {
         Expression expr = parseConditional();
 
         while (true) {
-            int position = currentToken.position;
+            int position = currentToken.pos;
 
             if (match(EQEQ)) {
                 expr = new EqualExpression(position, expr, parseConditional());
@@ -458,7 +460,7 @@ public class Parser {
         Expression expr = parseShift();
 
         while (true) {
-            int position = currentToken.position;
+            int position = currentToken.pos;
 
             if (match(GT)) {
                 expr = new GreaterExpression(position, expr, parseShift());
@@ -478,7 +480,7 @@ public class Parser {
         Expression expr = parseAdditive();
 
         while (true) {
-            int position = currentToken.position;
+            int position = currentToken.pos;
 
             if (match(GTGT)) {
                 expr = new ShiftRightExpression(position, expr, parseAdditive());
@@ -494,7 +496,7 @@ public class Parser {
         Expression expr = parseMultiplicative();
 
         while (true) {
-            int position = currentToken.position;
+            int position = currentToken.pos;
 
             if (match(MINUS)) {
                 expr = new SubtractExpression(position, expr, parseMultiplicative());
@@ -510,7 +512,7 @@ public class Parser {
         Expression expr = parseUnary();
 
         while (true) {
-            int position = currentToken.position;
+            int position = currentToken.pos;
 
             if (match(PERCENT)) {
                 expr = new RemainderExpression(position, expr, parseUnary());
@@ -525,7 +527,7 @@ public class Parser {
     }
 
     private Expression parseUnary() throws ParseException {
-        int position = currentToken.position;
+        int position = currentToken.pos;
 
         if (match(EXCL)) {
             return new NotExpression(position, parseUnary());
@@ -549,7 +551,7 @@ public class Parser {
     }
 
     private Expression parseClone() throws ParseException {
-        int position = currentToken.position;
+        int position = currentToken.pos;
 
         if (match(CLONE)) {
             return new CloneExpression(position, parsePost());
@@ -561,7 +563,7 @@ public class Parser {
         Expression expr = parseAccess();
 
         while (true) {
-            int position = currentToken.position;
+            int position = currentToken.pos;
 
             if (match(MINUSMINUS)) {
                 expr = new PostDecrementExpression(position, expr);
@@ -582,13 +584,13 @@ public class Parser {
         Expression expression = parsePrimary();
 
         while (true) {
-            int position = currentToken.position;
+            int position = currentToken.pos;
 
             if (match(DOT)) {
-                Token token = currentToken;
+                Tokens.Token token = currentToken;
                 expect(IDENTIFIER);
                 expression = new ArrayAccessExpression(position,
-                        expression, new StringExpression(token.position, token.getString()));
+                        expression, new StringExpression(token.pos, token.getString()));
             } else if (match(LBRACKET)) {
                 expression = new ArrayAccessExpression(position,
                         expression, parseExpression());
@@ -621,13 +623,13 @@ public class Parser {
 //    }
 
     private Expression parsePrimary() throws ParseException {
-        Token token = currentToken;
+        Tokens.Token token = currentToken;
 
         if (match(EOF)) {
-            pError(token.position, "missing expected expression.");
+            pError(token.pos, "missing expected expression.");
         }
         if (match(FALSE)) {
-            return new FalseExpression(token.position);
+            return new FalseExpression(token.pos);
         }
         if (match(FLOATLITERAL)) {
             return parseFloat(token);
@@ -639,47 +641,47 @@ public class Parser {
             return parseInt(token);
         }
         if (match(LBRACE)) {
-            return parseArray(token.position, RBRACE);
+            return parseArray(token.pos, RBRACE);
         }
         if (match(LBRACKET)) {
-            return parseArray(token.position, RBRACKET);
+            return parseArray(token.pos, RBRACKET);
         }
         if (match(LPAREN)) {
-            return parseParens(token.position);
+            return parseParens(token.pos);
         }
         if (match(NULL)) {
-            return new NullExpression(token.position);
+            return new NullExpression(token.pos);
         }
         if (match(STRINGLITERAL)) {
-            return new StringExpression(token.position, token.getString());
+            return new StringExpression(token.pos, token.getString());
         }
         if (match(TRUE)) {
-            return new TrueExpression(token.position);
+            return new TrueExpression(token.pos);
         }
         unexpected(currentToken);
         return null;
     }
 
-    private Expression parseFloat(Token token) throws ParseException {
+    private Expression parseFloat(Tokens.Token token) throws ParseException {
         double d = token.getDouble();
 
         if (Double.isInfinite(d)) {
-            pError(token.position, "number too large.");
+            pError(token.pos, "number too large.");
         }
         if ((d == 0.0) && !token.getString().matches("\\.?0\\.?\\d*(?:[Ee][+-]\\d+)?$")) {
-            pError(token.position, "number too small.");
+            pError(token.pos, "number too small.");
         }
-        return new FloatExpression(token.position, d);
+        return new FloatExpression(token.pos, d);
     }
 
-    private Expression parseIdentifier(Token token) throws ParseException {
+    private Expression parseIdentifier(Tokens.Token token) throws ParseException {
         if (match(LPAREN)) {
             return parseInvocation(token);
         }
-        return new VariableExpression(token.position, token.getString());
+        return new VariableExpression(token.pos, token.getString());
     }
 
-    private Expression parseInvocation(Token token) throws ParseException {
+    private Expression parseInvocation(Tokens.Token token) throws ParseException {
         List<Expression> args = new ArrayList<>();
         boolean comma = false;
 
@@ -690,19 +692,19 @@ public class Parser {
             args.add(parseExpression());
             comma = !match(COMMA);
         }
-        return new FunctionCallExpression(token.position, token.getString(), args);
+        return new FunctionCallExpression(token.pos, token.getString(), args);
     }
 
-    private Expression parseInt(Token token) throws ParseException {
+    private Expression parseInt(Tokens.Token token) throws ParseException {
         try {
-            return new IntExpression(token.position, token.getLong());
+            return new IntExpression(token.pos, token.getLong());
         } catch (NumberFormatException e) {
-            pError(token.position, "number too large.");
+            pError(token.pos, "number too large.");
             return null;
         }
     }
 
-    private Expression parseArray(int position, TokenType enclosing) throws ParseException {
+    private Expression parseArray(int position, Tokens.TokenKind enclosing) throws ParseException {
         Map<Expression, Expression> map = new LinkedHashMap<>();
         boolean comma = false;
 
@@ -735,7 +737,7 @@ public class Parser {
         currentToken = tokenizer.nextToken();
     }
 
-    private boolean match(TokenType type) throws ParseException {
+    private boolean match(Tokens.TokenKind type) throws ParseException {
         if (currentToken.type == type) {
             next();
             return true;
@@ -743,31 +745,31 @@ public class Parser {
         return false;
     }
 
-    private void expect(TokenType... types) throws ParseException {
-        for (TokenType type: types) {
+    private void expect(Tokens.TokenKind... types) throws ParseException {
+        for (Tokens.TokenKind type : types) {
             if (match(type)) {
                 continue;
             }
             //next();
 
-            if (type.value == null) {
+            if (type.name == null) {
                 if (type == IDENTIFIER) {
-                    pError(currentToken.position, "identifier expected.");
+                    pError(currentToken.pos, "identifier expected.");
                 } else {
                     unexpected(currentToken);
                 }
                 return;
             }
-            if (currentToken instanceof Token.DummyToken) {
-                pError(currentToken.position, type + " expected.");
+            if (currentToken instanceof DummyToken) {
+                pError(currentToken.pos, type + " expected.");
                 return;
             }
-            pError(currentToken.position, type + " expected, " + currentToken + " found.");
+            pError(currentToken.pos, type + " expected, " + currentToken + " found.");
         }
     }
 
-    private void unexpected(Token token) throws ParseException {
-        pError(token.position, "unexpected " + token + '.');
+    private void unexpected(Tokens.Token token) throws ParseException {
+        pError(token.pos, "unexpected " + token + '.');
     }
 
     private void pError(int position, String message) throws ParseException {

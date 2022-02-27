@@ -3,11 +3,7 @@ package jua.compiler;
 import jua.Options;
 import jua.interpreter.InterpreterRuntime;
 import jua.interpreter.InterpreterRuntimeException;
-import jua.parser.ParseException;
-import jua.parser.Parser;
-import jua.parser.TokenizeStream;
-import jua.parser.Tokenizer;
-import jua.parser.Tree;
+import jua.parser.*;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -49,7 +45,67 @@ public class JuaCompiler {
         interpret(result.env());
     }
 
+    private static class TokenPrinter implements Tokens.TokenVisitor {
+
+        private final LineMap lineMap;
+
+        TokenPrinter(LineMap lineMap) {
+            this.lineMap = lineMap;
+        }
+
+        @Override
+        public void visitOperator(Tokens.OperatorToken token) {
+            System.out.printf("[%d:%d] %s (%s)%n",
+                    lineMap.getLineNumber(token.pos),
+                    lineMap.getOffsetNumber(token.pos),
+                    token.type.name(),
+                    token.type.toString());
+        }
+
+        @Override
+        public void visitDummy(Tokens.DummyToken token) {
+            System.out.printf("[%d:%d] %s%n",
+                    lineMap.getLineNumber(token.pos),
+                    lineMap.getOffsetNumber(token.pos),
+                    token.type.name());
+        }
+
+        @Override
+        public void visitString(Tokens.StringToken token) {
+            System.out.printf("[%d:%d] %s: \"%s\" %n",
+                    lineMap.getLineNumber(token.pos),
+                    lineMap.getOffsetNumber(token.pos),
+                    token.type.name(),
+                    token.value);
+        }
+
+        @Override
+        public void visitNumeric(Tokens.NumberToken token) {
+            System.out.printf("[%d:%d] %s: %s * %s %n",
+                    lineMap.getLineNumber(token.pos),
+                    lineMap.getOffsetNumber(token.pos),
+                    token.type.name(),
+                    token.value,
+                    token.radix);
+        }
+    }
+
     private static Tree.Statement parse(TokenizeStream s) {
+        if (Options.lint()) {
+            Tokenizer tokenizer = new Tokenizer(s);
+            TokenPrinter printer = new TokenPrinter(s.getLmt());
+            while (tokenizer.hasMoreTokens()) {
+                try {
+                    tokenizer.nextToken().accept(printer);
+                } catch (ParseException e) {
+                    if (Options.stop()) {
+                        parseError(e, s.filename(), s.getLmt());
+                    }
+                    break;
+                }
+            }
+            if (Options.stop()) throw new ThreadDeath();
+        }
         try (TokenizeStream stream = s) {
             return new Parser(new Tokenizer(stream)).parse();
         } catch (ParseException e) {

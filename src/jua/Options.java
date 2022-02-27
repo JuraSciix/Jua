@@ -34,6 +34,15 @@ public final class Options {
                     OPTIONS.optimize = false;
                     continue;
                 }
+
+                case "-L": {
+                    OPTIONS.stop = false;
+                }
+
+                case "-l": {
+                    OPTIONS.lint = true;
+                    continue;
+                }
             }
             if (args[i].matches("-r\\d+\\.?\\d*(?:[Ee][+-]?\\d+)?")) { // wtf?
                 OPTIONS.callStackSize = (int) Double.parseDouble(args[i].substring(2));
@@ -85,11 +94,16 @@ public final class Options {
         return OPTIONS.argv.clone();
     }
 
+    public static boolean lint() {
+        return OPTIONS.lint;
+    }
+
     private String filename;
     private boolean disassembler;
     private boolean optimize = true;
     private int callStackSize = (1 << 14);
     private String[] argv;
+    private boolean lint;
     /**
      * Завершение работы
      */

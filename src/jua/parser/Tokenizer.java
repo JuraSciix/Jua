@@ -1,40 +1,21 @@
 package jua.parser;
 
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.List;
 
 import static java.lang.Character.*;
-import static jua.parser.Token.*;
-import static jua.parser.TokenType.*;
+import static jua.parser.Tokens.*;
+import static jua.parser.Tokens.TokenKind.*;
 
 public class Tokenizer {
 
-    private static final TokenType[] KEYWORDS, SPECIALS;  // todo: Да.
-
-    static {
-        List<TokenType> keywords = new ArrayList<>();
-        List<TokenType> specials = new ArrayList<>();
-
-        for (TokenType type: values()) {
-            String value = type.value;
-
-            if ((value != null) && !value.isEmpty()) {
-                (isJavaIdentifierStart(value.charAt(0)) ? keywords : specials).add(type);
-            }
-        }
-        KEYWORDS = keywords.toArray(new TokenType[0]);
-        SPECIALS = specials.toArray(new TokenType[0]);
-    }
-
     private static class TokenBuilder {
 
-        private final int position;
+        private final int pos;
 
         private final StringWriter buffer = new StringWriter();
 
-        private TokenBuilder(int position) {
-            this.position = position;
+        private TokenBuilder(int pos) {
+            this.pos = pos;
         }
 
         public TokenBuilder putChar(int c) {
@@ -42,30 +23,27 @@ public class Tokenizer {
             return this;
         }
 
-        public Token buildNamed(TokenType type) {
-            return new NamedToken(type, position);
+        public Tokens.Token buildNamed(Tokens.TokenKind type) {
+            return new OperatorToken(type, pos);
         }
 
-        public Token buildNamedOrString() {
+        public Tokens.Token buildNamedOrString() {
             String s = buffer.toString();
-            for (TokenType type: KEYWORDS) {
-                if (s.equals(type.value)) {
-                    return new NamedToken(type, position);
-                }
-            }
+            TokenKind k  = lookupKind(s);
+            if (k == null) k = IDENTIFIER;
             // identifier requires saving the name, StringToken allows this
-            return new StringToken(IDENTIFIER, position, s);
+            return new StringToken(k, pos, s);
         }
 
-        public Token buildString() {
-            return new StringToken(STRINGLITERAL, position, buffer.toString());
+        public Tokens.Token buildString() {
+            return new StringToken(STRINGLITERAL, pos, buffer.toString());
         }
 
-        public Token buildNumber(boolean isFloat, int radix) {
+        public Tokens.Token buildNumber(boolean isFloat, int radix) {
             if (isFloat) {
-                return new NumberToken(FLOATLITERAL, position, buffer.toString(), 10);
+                return new NumberToken(FLOATLITERAL, pos, buffer.toString(), 10);
             } else {
-                return new NumberToken(INTLITERAL, position, buffer.toString(), radix);
+                return new NumberToken(INTLITERAL, pos, buffer.toString(), radix);
             }
         }
     }
@@ -84,7 +62,7 @@ public class Tokenizer {
         return stream.peek() >= 0;
     }
 
-    public Token nextToken() throws ParseException {
+    public Tokens.Token nextToken() throws ParseException {
         while (true) {
             int c;
 
@@ -108,7 +86,7 @@ public class Tokenizer {
         }
     }
 
-    private Token parseCharacter(int c) throws ParseException {
+    private Tokens.Token parseCharacter(int c) throws ParseException {
         if (c == '\'' || c == '"') {
             return parseString(c);
         }
@@ -121,7 +99,7 @@ public class Tokenizer {
         return parseSpecial(c);
     }
 
-    private Token parseString(int mark) throws ParseException {
+    private Tokens.Token parseString(int mark) throws ParseException {
         TokenBuilder builder = getBuilder();
 
         for (int c; (c = stream.next()) != mark; ) {
@@ -170,7 +148,7 @@ public class Tokenizer {
         builder.putChar(oct);
     }
 
-    private Token parseNumber(int c) throws ParseException {
+    private Tokens.Token parseNumber(int c) throws ParseException {
         TokenBuilder builder = getBuilder();
         int next = stream.peek();
         int radix = 10;
@@ -186,40 +164,40 @@ public class Tokenizer {
         return parseFraction(builder, radix, (c == '.'));
     }
 
-    private Token parseHex(TokenBuilder builder) throws ParseException {
+    private Tokens.Token parseHex(TokenBuilder builder) throws ParseException {
         stream.next();
         int next = stream.peek();
 
         if (digit(next, 16) < 0 && next != '_') {
-            tError(builder.position, "illegal hexadecimal literal.");
+            tError(builder.pos, "illegal hexadecimal literal.");
         }
         parseDigits(builder, 'x', 16);
         return builder.buildNumber(false, 16);
     }
 
-    private Token parseBin(TokenBuilder builder) throws ParseException {
+    private Tokens.Token parseBin(TokenBuilder builder) throws ParseException {
         stream.next();
         int next = stream.peek();
 
         if (digit(next, 2) < 0 && next != '_') {
-            tError(builder.position, "illegal binary decimal literal.");
+            tError(builder.pos, "illegal binary decimal literal.");
         }
         parseDigits(builder, 'b', 10);
         return builder.buildNumber(false, 2);
     }
 
-    private Token parseDuo(TokenBuilder builder) throws ParseException {
+    private Tokens.Token parseDuo(TokenBuilder builder) throws ParseException {
         stream.next();
         int next = stream.peek();
 
         if (digit(next, 12) < 0 && next != '_') {
-            tError(builder.position, "illegal duodecimal literal.");
+            tError(builder.pos, "illegal duodecimal literal.");
         }
         parseDigits(builder, 'b', 12);
         return builder.buildNumber(false, 12);
     }
 
-    private Token parseFraction(TokenBuilder builder, int radix, boolean isFloat) throws ParseException {
+    private Tokens.Token parseFraction(TokenBuilder builder, int radix, boolean isFloat) throws ParseException {
         int c;
 
         if ((c = stream.peek()) == '.') {
@@ -240,7 +218,7 @@ public class Tokenizer {
                 c = stream.peek();
             }
             if (!isDigit(c) && c != '_') {
-                tError(builder.position, "malformed floating literal.");
+                tError(builder.pos, "malformed floating literal.");
             }
             parseDigits(builder, c, 10);
             isFloat = true;
@@ -268,7 +246,7 @@ public class Tokenizer {
         tError(stream.getPosition(), "underscore is not allowed here.");
     }
 
-    private Token parseKeyword(int c) {
+    private Tokens.Token parseKeyword(int c) {
         TokenBuilder builder = getBuilder(c);
 
         while (isJavaIdentifierPart(stream.peek())) {
@@ -277,33 +255,49 @@ public class Tokenizer {
         return builder.buildNamedOrString();
     }
 
-    private Token parseSpecial(int c) throws ParseException {
-        TokenBuilder builder = getBuilder(c);
-        TokenType type = null;
-
-        for (int i = 0, j = 1; i < SPECIALS.length; ) {
-            String value = SPECIALS[i].value;
-            String result = builder.buffer.toString();
-
-            if (value.startsWith(result)) {
-                if (value.length() == j) {
-                    type = SPECIALS[i];
-                } else if (value.charAt(j) == stream.peek()) {
-                    builder.putChar(stream.next());
-                    j++;
-                    continue;
-                }
+    private Tokens.Token parseSpecial(int c) throws ParseException {
+        TokenBuilder builder = getBuilder(-1);
+        TokenKind type = null;
+        // Обожаю костыли.
+        // todo: Переписать лексер.
+        boolean f = true;
+        do {
+            if (f) {
+                f = false;
+            } else {
+                stream.next();
             }
-            i++;
-        }
+            builder.putChar(c);
+            TokenKind lookup = lookupKind(builder.buffer.toString());
+
+            if (lookup == null) {
+                break;
+            }
+            type = lookup;
+            c = stream.peek();
+        } while (seenSpecial());
+
         return checkSpecial(builder, type);
     }
 
-    private Token checkSpecial(TokenBuilder builder, TokenType type) throws ParseException {
+    private boolean seenSpecial() {
+        switch (stream.peek()) {
+            case '&': case '|': case '^': case ':': case ',':
+            case '.': case '=': case '!': case '>': case '{':
+            case '[': case '(': case '<': case '-': case '%':
+            case '+': case '?': case '}': case ']': case ')':
+            case ';': case '*': case '~':
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private Tokens.Token checkSpecial(TokenBuilder builder, Tokens.TokenKind type) throws ParseException {
         if (type == null) {
-            tError(builder.position, "illegal character.");
-        } else if (!type.value.equals(builder.buffer.toString())) {
-            tError(builder.position, "invalid token.");
+            tError(builder.pos, "illegal character.");
+        } else if (false && !type.name.equals(builder.buffer.toString())) {
+            tError(builder.pos, "invalid token.");
         }
         return builder.buildNamed(type);
     }
