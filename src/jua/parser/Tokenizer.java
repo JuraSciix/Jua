@@ -262,11 +262,6 @@ public class Tokenizer {
         // todo: Переписать лексер.
         boolean f = true;
         do {
-            if (f) {
-                f = false;
-            } else {
-                stream.next();
-            }
             builder.putChar(c);
             TokenKind lookup = lookupKind(builder.buffer.toString());
 
@@ -275,6 +270,11 @@ public class Tokenizer {
             }
             type = lookup;
             c = stream.peek();
+            if (f) {
+                f = false;
+            } else {
+                stream.next();
+            }
         } while (seenSpecial());
 
         return checkSpecial(builder, type);
