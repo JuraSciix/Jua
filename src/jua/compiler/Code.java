@@ -16,7 +16,6 @@ import jua.runtime.DoubleOperand;
 import jua.runtime.LongOperand;
 import jua.runtime.Operand;
 import jua.runtime.StringOperand;
-import jua.parser.Tree;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -73,11 +72,12 @@ public final class Code {
 
     private final String filename;
 
-    public Code(String filename) {
+    public Code(String filename, LineMap lineMap) {
         this.filename = filename;
+        this.lineMap = lineMap;
     }
 
-    public void pushContext(Tree.Position startPos) {
+    public void pushContext(int startPos) {
         context = new Context(context);
         putPos(startPos);
     }
@@ -141,10 +141,12 @@ public final class Code {
         adjustStack(stackAdjustment);
     }
 
-    public void putPos(Tree.Position pos) {
-        int line = pos.line;
+    private LineMap lineMap;
 
-        if (line != context.current_lineNumber) {
+    public void putPos(int pos) {
+        int line = lineMap.getLineNumber(pos);
+
+        if (line > 0 && line < (1<<16) && line != context.current_lineNumber) {
             context.lineTable.put((short) currentIP(), (short) line);
             context.current_lineNumber = line;
         }

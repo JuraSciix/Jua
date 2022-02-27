@@ -79,10 +79,10 @@ public final class Gen implements Visitor {
 //
 //    private boolean loopInfinity = false;
 
-    public Gen(CodeData codeData) {
+    public Gen(CodeData codeData, LineMap lineMap) {
         this.codeData = codeData;
 
-        code = new Code(codeData.filename);
+        code = new Code(codeData.filename, lineMap);
         breakChains = new IntArrayList();
         continueChains = new IntArrayList();
         fallthroughChains = new IntArrayList();
@@ -191,7 +191,7 @@ public final class Gen implements Visitor {
     public void visitArrayAccess(ArrayAccessExpression expression) {
         visitExpression(expression.hs);
         visitExpression(expression.key);
-        code.putPos(expression.position);
+        code.putPos(expression.pos);
         emitALoad();
     }
 
@@ -217,7 +217,7 @@ public final class Gen implements Visitor {
 //        disableUsed();
 //        emitNecessaryPop();
 
-        code.putPos(expression.position);
+        code.putPos(expression.pos);
         emitNewArray();
         generateArrayCreation(expression.map);
     }
@@ -230,7 +230,7 @@ public final class Gen implements Visitor {
             Map.Entry<Expression, Expression> entry = iterator.next();
             emitDup();
             if (entry.getKey().isEmpty()) {
-                code.putPos(entry.getValue().position);
+                code.putPos(entry.getValue().pos);
                 emitPushLong(implicitIndex++);
             } else {
                 visitExpression(entry.getKey());
@@ -346,7 +346,7 @@ public final class Gen implements Visitor {
         if (tree.isTag(Tag.NULLCOALESCE)) {
             emitDup();
             int el = code.makeChain();
-            code.putPos(tree.position);
+            code.putPos(tree.pos);
             code.addChainedInstruction(Ifnonnull::new, el, -1);
             code.addInstruction(Pop.INSTANCE, -1);
             visitExpression(tree.rhs);
@@ -354,7 +354,7 @@ public final class Gen implements Visitor {
             return;
         }
         tree.rhs.accept(this);
-        code.putPos(tree.position);
+        code.putPos(tree.pos);
         code.addInstruction(bin2instr(tree.tag));
     }
     
@@ -377,7 +377,7 @@ public final class Gen implements Visitor {
     @Override
     public void visitBlock(BlockStatement statement) {
         if (!isState(STATE_ROOTED)) { // is root?
-            code.pushContext(statement.position);
+            code.pushContext(statement.pos);
             code.pushScope();
             int prev_state = state;
             setState(STATE_ROOTED);
@@ -403,10 +403,10 @@ public final class Gen implements Visitor {
     @Override
     public void visitBreak(BreakStatement statement) {
         if (breakChains.isEmpty()) {
-            cError(statement.getPosition(), "'break' is not allowed outside of loop/switch.");
+            cError(statement.pos, "'break' is not allowed outside of loop/switch.");
             return;
         }
-        code.putPos(statement.position);
+        code.putPos(statement.pos);
         emitGoto(breakChains.topInt());
         unsetState(STATE_INFINITY_LOOP);
     }
@@ -429,7 +429,7 @@ public final class Gen implements Visitor {
                 else if (expr.getClass() == FloatExpression.class)
                     cp = code.resolveDouble(((FloatExpression) expr).value);
                 else {
-                    cError(expr.position, "constant expected.");
+                    cError(expr.pos, "constant expected.");
                     continue;
                 }
                 cases.put(cp, code.currentIP() - switch_start_ip);
@@ -497,12 +497,12 @@ public final class Gen implements Visitor {
     @Override
     public void visitConstantDeclare(ConstantDeclareStatement statement) {
         if (isState(STATE_NO_DECLS)) {
-            cError(statement.getPosition(), "constants declaration is not allowed here.");
+            cError(statement.pos, "constants declaration is not allowed here.");
         }
         for (int i = 0; i < statement.names.size(); i++) {
             String name = statement.names.get(i);
             if (codeData.testConstant(name)) {
-                cError(statement.getPosition(), "constant '" + name + "' already declared");
+                cError(statement.pos, "constant '" + name + "' already declared");
             }
             Expression expr = statement.expressions.get(i);
             Operand value;
@@ -523,10 +523,10 @@ public final class Gen implements Visitor {
     @Override
     public void visitContinue(ContinueStatement statement) {
         if (continueChains.isEmpty()) {
-            cError(statement.getPosition(), "'continue' is not allowed outside of loop.");
+            cError(statement.pos, "'continue' is not allowed outside of loop.");
             return;
         }
-        code.putPos(statement.position);
+        code.putPos(statement.pos);
         emitGoto(continueChains.topInt());
         code.dead();
     }
@@ -598,10 +598,10 @@ public final class Gen implements Visitor {
     @Override
     public void visitFallthrough(FallthroughStatement statement) {
         if (fallthroughChains.isEmpty()) {
-            cError(statement.getPosition(), "'fallthrough' is not allowed outside of switch.");
+            cError(statement.pos, "'fallthrough' is not allowed outside of switch.");
             return;
         }
-        code.putPos(statement.position);
+        code.putPos(statement.pos);
         emitGoto(fallthroughChains.topInt());
         unsetState(STATE_INFINITY_LOOP); // for cases
         code.dead();
@@ -609,13 +609,13 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitFalse(FalseExpression expression) {
-        code.putPos(expression.position);
+        code.putPos(expression.pos);
         emitPushFalse();
     }
 
     @Override
     public void visitFloat(FloatExpression expression) {
-        code.putPos(expression.position);
+        code.putPos(expression.pos);
         emitPushDouble(expression.value);
     }
 
@@ -645,35 +645,35 @@ public final class Gen implements Visitor {
             case "typeof":
             case "gettype":
                 if (expression.args.size() != 1) {
-                    cError(expression.position, "mismatch call parameters: 1 expected, " + expression.args.size() + " got.");
+                    cError(expression.pos, "mismatch call parameters: 1 expected, " + expression.args.size() + " got.");
                 }
                 visitExpression(expression.args.get(0));
                 instruction = Gettype.INSTANCE;
                 break;
             case "ns_time":
                 if (expression.args.size() != 0) {
-                    cError(expression.position, "mismatch call parameters: 0 expected, " + expression.args.size() + " got.");
+                    cError(expression.pos, "mismatch call parameters: 0 expected, " + expression.args.size() + " got.");
                 }
                 instruction = NsTime.INSTANCE;
                 stack = 1;
                 break;
             case "length":
                 if (expression.args.size() != 1) {
-                    cError(expression.position, "mismatch call parameters: 1 expected, " + expression.args.size() + " got.");
+                    cError(expression.pos, "mismatch call parameters: 1 expected, " + expression.args.size() + " got.");
                 }
                 visitExpression(expression.args.get(0));
                 instruction = Length.INSTANCE;
                 break;
             default:
                 if (expression.args.size() > 0xff) {
-                    cError(expression.position, "too many parameters.");
+                    cError(expression.pos, "too many parameters.");
                 }
                 visitExprList(expression.args);
                 instruction = new Call(expression.name, (byte) expression.args.size());
                 stack = -expression.args.size() + 1;
                 break;
         }
-        code.putPos(expression.position);
+        code.putPos(expression.pos);
         code.addInstruction(instruction, stack);
         if (noReturnValue)
             code.addInstruction(PushNull.INSTANCE, 1);
@@ -682,14 +682,14 @@ public final class Gen implements Visitor {
     @Override
     public void visitFunctionDefine(FunctionDefineStatement statement) {
         if (isState(STATE_NO_DECLS))
-            cError(statement.getPosition(), "function declaration is not allowed here.");
+            cError(statement.pos, "function declaration is not allowed here.");
         if (codeData.testFunction(statement.name))
-            cError(statement.getPosition(), "function '" + statement.name + "' already declared.");
-        code.pushContext(statement.position);
+            cError(statement.pos, "function '" + statement.name + "' already declared.");
+        code.pushContext(statement.pos);
         code.pushScope();
         int[] locals = statement.names.stream().mapToInt(n -> {
             if (statement.names.indexOf(n) != statement.names.lastIndexOf(n)) {
-                cError(statement.getPosition(), "duplicate argument '" + n + "'.");
+                cError(statement.pos, "duplicate argument '" + n + "'.");
             }
             return code.resolveLocal(n);
         }).toArray();
@@ -787,7 +787,7 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitInt(IntExpression expression) {
-        code.putPos(expression.position);
+        code.putPos(expression.pos);
         emitPushLong(expression.value);
     }
 
@@ -955,7 +955,7 @@ public final class Gen implements Visitor {
                 break;
             default: throw new AssertionError();
         }
-        code.putPos(expression.position);
+        code.putPos(expression.pos);
         code.addChainedInstruction(resultState, peekConditionChain(), resultStackAdjustment);
         endCondition();
     }
@@ -1056,7 +1056,7 @@ public final class Gen implements Visitor {
             return;
         }
         tree.hs.accept(this);
-        code.putPos(tree.position);
+        code.putPos(tree.pos);
         code.addInstruction(unary2instr(tree.tag));
     }
 
@@ -1140,7 +1140,7 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitString(StringExpression expression) {
-        code.putPos(expression.position);
+        code.putPos(expression.pos);
         emitPushString(expression.value);
     }
 
@@ -1174,14 +1174,14 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitTrue(TrueExpression expression) {
-        code.putPos(expression.position);
+        code.putPos(expression.pos);
         emitPushTrue();
     }
 
     @Override
     public void visitVariable(VariableExpression expression) {
         String name = expression.name;
-        code.putPos(expression.position);
+        code.putPos(expression.pos);
         if (codeData.testConstant(name)) {
             code.addInstruction(new Getconst(name), 1);
         } else {
@@ -1211,7 +1211,7 @@ public final class Gen implements Visitor {
         }
         if (condition != null) unsetState(STATE_INFINITY_LOOP);
         if (testFirst && condition != null) {
-            code.putPos(loop.position);
+            code.putPos(loop.pos);
             emitGoto(cdc);
         }
         code.resolveChain(bgc);
@@ -1277,7 +1277,7 @@ public final class Gen implements Visitor {
         }
         // todo: Здешний код отвратителен. Следует переписать всё с нуля...
         code.addInstruction(Bool.INSTANCE);
-        code.putPos(expression.position);
+        code.putPos(expression.pos);
         code.addChainedInstruction(isState(STATE_COND_INVERT) ?
                         dest_ip -> new Ifeq(dest_ip, 0) :
                         dest_ip -> new Ifne(dest_ip, 0),
@@ -1339,7 +1339,7 @@ public final class Gen implements Visitor {
         switch (lhs.tag) {
             case ARRAY_ACCESS: {
                 ArrayAccessExpression arrayAccess = (ArrayAccessExpression) lhs;
-                code.putPos(arrayAccess.position);
+                code.putPos(arrayAccess.pos);
                 visitExpression(arrayAccess.hs);
                 visitExpression(arrayAccess.key);
                 if (expression.isTag(Tag.ASG_NULLCOALESCE)) {
@@ -1352,12 +1352,12 @@ public final class Gen implements Visitor {
                     if (isUsed()) {
                         emitDupX2();
                     }
-                    code.putPos(arrayAccess.position);
+                    code.putPos(arrayAccess.pos);
                     emitAStore();
                     emitGoto(ex);
                     code.resolveChain(el);
                     if (isUsed()) {
-                        code.putPos(arrayAccess.position);
+                        code.putPos(arrayAccess.pos);
                         emitALoad();
                     } else {
                         code.addInstruction(Pop2.INSTANCE, -2);
@@ -1366,10 +1366,10 @@ public final class Gen implements Visitor {
                 } else {
                     if (!expression.isTag(Tag.ASG)) {
                         emitDup2();
-                        code.putPos(arrayAccess.position);
+                        code.putPos(arrayAccess.pos);
                         emitALoad();
                         visitExpression(rhs);
-                        code.putPos(expression.position);
+                        code.putPos(expression.pos);
                         code.addInstruction(asg2state(expression.tag), -1);
                     } else {
                         visitExpression(rhs);
@@ -1377,7 +1377,7 @@ public final class Gen implements Visitor {
                     if (isUsed()) {
                         emitDupX2();
                     }
-                    code.putPos(arrayAccess.position);
+                    code.putPos(arrayAccess.pos);
                     emitAStore();
                 }
                 break;
@@ -1392,7 +1392,7 @@ public final class Gen implements Visitor {
                     if (isUsed()) {
                         emitDup();
                     }
-                    code.putPos(expression.position);
+                    code.putPos(expression.pos);
                     emitVStore(variable.name);
                     if (isUsed()) {
                         int el = code.makeChain();
@@ -1407,7 +1407,7 @@ public final class Gen implements Visitor {
                     if (!expression.isTag(Tag.ASG)) {
                         visitExpression(lhs);
                         visitExpression(rhs);
-                        code.putPos(expression.position);
+                        code.putPos(expression.pos);
                         code.addInstruction(asg2state(expression.tag), -1);
                     } else {
                         visitExpression(rhs);
@@ -1415,12 +1415,12 @@ public final class Gen implements Visitor {
                     if (isUsed()) {
                         emitDup();
                     }
-                    code.putPos(expression.position);
+                    code.putPos(expression.pos);
                     emitVStore(variable.name);
                 }
                 break;
             }
-            default: cError(lhs.position, "assignable expression expected.");
+            default: cError(lhs.pos, "assignable expression expected.");
         }
     }
 
@@ -1493,7 +1493,7 @@ public final class Gen implements Visitor {
         switch (hs.tag) {
             case ARRAY_ACCESS: {
                 ArrayAccessExpression arrayAccess = (ArrayAccessExpression) hs;
-                code.putPos(arrayAccess.position);
+                code.putPos(arrayAccess.pos);
                 visitExpression(arrayAccess.hs);
                 visitExpression(arrayAccess.key);
                 emitDup2();
@@ -1501,12 +1501,12 @@ public final class Gen implements Visitor {
                 if (isUsed() && (expression.isTag(Tag.POST_INC) || expression.isTag(Tag.POST_DEC))) {
                     emitDupX2();
                 }
-                code.putPos(expression.position);
+                code.putPos(expression.pos);
                 code.addInstruction(increase2state(expression.tag, -1));
                 if (isUsed() && (expression.isTag(Tag.PRE_INC) || expression.isTag(Tag.PRE_DEC))) {
                     emitDupX2();
                 }
-                code.putPos(arrayAccess.position);
+                code.putPos(arrayAccess.pos);
                 emitAStore();
                 break;
             }
@@ -1515,14 +1515,14 @@ public final class Gen implements Visitor {
                 if (isUsed() && (expression.isTag(Tag.POST_INC) || expression.isTag(Tag.POST_DEC))) {
                     variable.accept(this);
                 }
-                code.putPos(expression.position);
+                code.putPos(expression.pos);
                 code.addInstruction(increase2state(expression.tag, code.resolveLocal(variable.name)));
                 if (isUsed() && (expression.isTag(Tag.PRE_INC) || expression.isTag(Tag.PRE_DEC))) {
                     variable.accept(this);
                 }
                 break;
             }
-            default: cError(hs.position, "assignable expression expected.");
+            default: cError(hs.pos, "assignable expression expected.");
         }
     }
 
@@ -1635,7 +1635,7 @@ public final class Gen implements Visitor {
         code.dead();
     }
 
-    private void cError(Position position, String message) {
+    private void cError(int position, String message) {
         throw new CompileError(message, position);
     }
 }

@@ -4,9 +4,9 @@ import jua.parser.Tree;
 
 public class CompileError extends RuntimeException {
 
-    public final Tree.Position position;
+    public final int position;
 
-    public CompileError(String message, Tree.Position position) {
+    public CompileError(String message, int position) {
         super(message);
         this.position = position;
     }

@@ -21,7 +21,7 @@ public class Parser {
 
     public Statement parse() throws ParseException {
         List<Statement> statements = new ArrayList<>();
-        Position startPos = null;
+        int startPos = 0;
         while (tokenizer.hasMoreTokens()) {
             if (currentToken == null) {
                 next();
@@ -29,13 +29,11 @@ public class Parser {
             }
             statements.add(parseStatement());
         }
-        if (startPos == null)
-            startPos = new Position(tokenizer.getFilename(), 0, 0);
         return new BlockStatement(startPos, statements);
     }
 
     private Statement parseStatement() throws ParseException {
-        Position position = currentToken.position;
+        int position = currentToken.position;
 
         if (match(BREAK)) {
             return parseBreak(position);
@@ -97,12 +95,12 @@ public class Parser {
         return parseUnusedExpression();
     }
 
-    private Statement parseBreak(Position position) throws ParseException {
+    private Statement parseBreak(int position) throws ParseException {
         expect(SEMICOLON);
         return new BreakStatement(position);
     }
 
-    private Statement parseConst(Position position) throws ParseException {
+    private Statement parseConst(int position) throws ParseException {
         List<String> names = new ArrayList<>();
         List<Expression> expressions = new ArrayList<>();
 
@@ -117,12 +115,12 @@ public class Parser {
         return new ConstantDeclareStatement(position, names, expressions);
     }
 
-    private Statement parseContinue(Position position) throws ParseException {
+    private Statement parseContinue(int position) throws ParseException {
         expect(SEMICOLON);
         return new ContinueStatement(position);
     }
 
-    private Statement parseDo(Position position) throws ParseException {
+    private Statement parseDo(int position) throws ParseException {
         Statement body = parseStatement();
         expect(WHILE);
         Expression cond = parseExpression();
@@ -130,12 +128,12 @@ public class Parser {
         return new DoStatement(position, body, cond);
     }
 
-    private Statement parseFallthrough(Position position) throws ParseException {
+    private Statement parseFallthrough(int position) throws ParseException {
         expect(SEMICOLON);
         return new FallthroughStatement(position);
     }
 
-    private Statement parseFunction(Position position) throws ParseException {
+    private Statement parseFunction(int position) throws ParseException {
         Token name = currentToken;
         expect(IDENTIFIER, LPAREN);
         List<String> names = new ArrayList<>();
@@ -161,7 +159,7 @@ public class Parser {
     }
 
     private Statement parseBody() throws ParseException {
-        Position position = currentToken.position;
+        int position = currentToken.position;
         if (match(LBRACE)) return parseBlock(position);
         if (match(EQ)) {
             Expression expr = parseExpression();
@@ -172,7 +170,7 @@ public class Parser {
         return null;
     }
 
-    private Statement parseFor(Position position) throws ParseException {
+    private Statement parseFor(int position) throws ParseException {
         boolean parens = match(LPAREN);
         List<Expression> init = null;
 
@@ -199,7 +197,7 @@ public class Parser {
         return new ForStatement(position, init, cond, step, parseStatement());
     }
 
-    private Statement parseIf(Position position) throws ParseException {
+    private Statement parseIf(int position) throws ParseException {
 
         Expression cond = parseExpression();
         Statement body = parseStatement();
@@ -210,7 +208,7 @@ public class Parser {
         return new IfStatement(position, cond, body, parseStatement());
     }
 
-    private Statement parseBlock(Position position) throws ParseException {
+    private Statement parseBlock(int position) throws ParseException {
         List<Statement> statements = new ArrayList<>();
 
         while (!match(RBRACE)) {
@@ -222,19 +220,19 @@ public class Parser {
         return new BlockStatement(position, statements);
     }
 
-//    private Statement parsePrint(Position position) throws ParseException {
+//    private Statement parsePrint(int position) throws ParseException {
 //        List<Expression> expressions = parseExpressions();
 //        expect(SEMICOLON);
 //        return new PrintStatement(position, expressions);
 //    }
 //
-//    private Statement parsePrintln(Position position) throws ParseException {
+//    private Statement parsePrintln(int position) throws ParseException {
 //        List<Expression> expressions = parseExpressions();
 //        expect(SEMICOLON);
 //        return new PrintlnStatement(position, expressions);
 //    }
 
-    private Statement parseReturn(Position position) throws ParseException {
+    private Statement parseReturn(int position) throws ParseException {
         if (match(SEMICOLON)) {
             return new ReturnStatement(position);
         }
@@ -243,13 +241,13 @@ public class Parser {
         return new ReturnStatement(position, expr);
     }
 
-    private Statement parseSwitch(Position position) throws ParseException {
+    private Statement parseSwitch(int position) throws ParseException {
         Expression selector = parseExpression();
         List<CaseStatement> cases = new ArrayList<>();
         expect(LBRACE);
 
         while (!match(RBRACE)) {
-            Position position1 = currentToken.position;
+            int position1 = currentToken.position;
 
             if (match(CASE)) {
                 cases.add(parseCase(position1, false));
@@ -264,7 +262,7 @@ public class Parser {
         return new SwitchStatement(position, selector, cases);
     }
 
-    private CaseStatement parseCase(Position position, boolean isDefault) throws ParseException {
+    private CaseStatement parseCase(int position, boolean isDefault) throws ParseException {
         List<Expression> expressions = null;
 
         if (!isDefault) {
@@ -275,7 +273,7 @@ public class Parser {
     }
 
     private Statement parseUnusedExpression() throws ParseException {
-        Position position = currentToken.position;
+        int position = currentToken.position;
         Expression expr = parseExpression();
         expect(SEMICOLON);
         return new UnusedExpression(position, expr);
@@ -297,7 +295,7 @@ public class Parser {
 
     private Expression parseAssignment() throws ParseException {
         Expression expr = parseNullCoalesce();
-        Position position = currentToken.position;
+        int position = currentToken.position;
 
         if (match(AMPEQ)) {
             return new AssignBitAndExpression(position, expr, parseAssignment());
@@ -342,7 +340,7 @@ public class Parser {
         Expression expr = parseTernary();
 
         while (true) {
-            Position position = currentToken.position;
+            int position = currentToken.position;
 
             if (match(QUESQUES)) {
                 expr = new NullCoalesceExpression(position, expr, parseTernary());
@@ -356,7 +354,7 @@ public class Parser {
         Expression expr = parseOr();
 
         while (true) {
-            Position position = currentToken.position;
+            int position = currentToken.position;
 
             if (match(QUES)) {
                 expr = parseTernary0(position, expr);
@@ -366,7 +364,7 @@ public class Parser {
         }
     }
 
-    private Expression parseTernary0(Position position, Expression cond) throws ParseException {
+    private Expression parseTernary0(int position, Expression cond) throws ParseException {
         Expression right = parseExpression();
         expect(COLON);
         return new TernaryExpression(position, cond, right, parseExpression());
@@ -374,7 +372,7 @@ public class Parser {
 
     private Expression parseOr() throws ParseException {
         Expression expr = parseAnd();
-        Position position = currentToken.position;
+        int position = currentToken.position;
 
         while (match(BARBAR)) {
             expr = new OrExpression(position, expr, parseAnd());
@@ -387,7 +385,7 @@ public class Parser {
         Expression expr = parseBitOr();
 
         while (true) {
-            Position position = currentToken.position;
+            int position = currentToken.position;
 
             if (match(AMPAMP)) {
                 expr = new AndExpression(position, expr, parseEquality());
@@ -402,7 +400,7 @@ public class Parser {
         Expression expr = parseBitXor();
 
         while (true) {
-            Position position = currentToken.position;
+            int position = currentToken.position;
 
             if (match(BAR)) {
                 expr = new BitOrExpression(position, expr, parseBitXor());
@@ -416,7 +414,7 @@ public class Parser {
         Expression expr = parseBitAnd();
 
         while (true) {
-            Position position = currentToken.position;
+            int position = currentToken.position;
 
             if (match(CARET)) {
                 expr = new BitXorExpression(position, expr, parseBitAnd());
@@ -430,7 +428,7 @@ public class Parser {
         Expression expr = parseEquality();
 
         while (true) {
-            Position position = currentToken.position;
+            int position = currentToken.position;
 
             if (match(AMP)) {
                 expr = new BitAndExpression(position, expr, parseEquality());
@@ -444,7 +442,7 @@ public class Parser {
         Expression expr = parseConditional();
 
         while (true) {
-            Position position = currentToken.position;
+            int position = currentToken.position;
 
             if (match(EQEQ)) {
                 expr = new EqualExpression(position, expr, parseConditional());
@@ -460,7 +458,7 @@ public class Parser {
         Expression expr = parseShift();
 
         while (true) {
-            Position position = currentToken.position;
+            int position = currentToken.position;
 
             if (match(GT)) {
                 expr = new GreaterExpression(position, expr, parseShift());
@@ -480,7 +478,7 @@ public class Parser {
         Expression expr = parseAdditive();
 
         while (true) {
-            Position position = currentToken.position;
+            int position = currentToken.position;
 
             if (match(GTGT)) {
                 expr = new ShiftRightExpression(position, expr, parseAdditive());
@@ -496,7 +494,7 @@ public class Parser {
         Expression expr = parseMultiplicative();
 
         while (true) {
-            Position position = currentToken.position;
+            int position = currentToken.position;
 
             if (match(MINUS)) {
                 expr = new SubtractExpression(position, expr, parseMultiplicative());
@@ -512,7 +510,7 @@ public class Parser {
         Expression expr = parseUnary();
 
         while (true) {
-            Position position = currentToken.position;
+            int position = currentToken.position;
 
             if (match(PERCENT)) {
                 expr = new RemainderExpression(position, expr, parseUnary());
@@ -527,7 +525,7 @@ public class Parser {
     }
 
     private Expression parseUnary() throws ParseException {
-        Position position = currentToken.position;
+        int position = currentToken.position;
 
         if (match(EXCL)) {
             return new NotExpression(position, parseUnary());
@@ -551,7 +549,7 @@ public class Parser {
     }
 
     private Expression parseClone() throws ParseException {
-        Position position = currentToken.position;
+        int position = currentToken.position;
 
         if (match(CLONE)) {
             return new CloneExpression(position, parsePost());
@@ -563,7 +561,7 @@ public class Parser {
         Expression expr = parseAccess();
 
         while (true) {
-            Position position = currentToken.position;
+            int position = currentToken.position;
 
             if (match(MINUSMINUS)) {
                 expr = new PostDecrementExpression(position, expr);
@@ -577,14 +575,14 @@ public class Parser {
 
     private Expression parseAccess() throws ParseException {
 //        Expression expr = parsePrimary();
-//        Position position = currentToken.position;
+//        int position = currentToken.position;
 //        int i = match(DOT) ? 1 : match(LBRACKET) ? 0 : -1;
 //        return (i >= 0 ? parseArrayAccess(position, expr, i) : expr);
 
         Expression expression = parsePrimary();
 
         while (true) {
-            Position position = currentToken.position;
+            int position = currentToken.position;
 
             if (match(DOT)) {
                 Token token = currentToken;
@@ -602,7 +600,7 @@ public class Parser {
         return expression;
     }
 
-//    private Expression parseArrayAccess(Position position, Expression expr, int dot)
+//    private Expression parseArrayAccess(int position, Expression expr, int dot)
 //            throws ParseException {
 //        List<Expression> keys = new ArrayList<>();
 //
@@ -704,7 +702,7 @@ public class Parser {
         }
     }
 
-    private Expression parseArray(Position position, TokenType enclosing) throws ParseException {
+    private Expression parseArray(int position, TokenType enclosing) throws ParseException {
         Map<Expression, Expression> map = new LinkedHashMap<>();
         boolean comma = false;
 
@@ -727,7 +725,7 @@ public class Parser {
         return new ArrayExpression(position, map);
     }
 
-    private Expression parseParens(Position position) throws ParseException {
+    private Expression parseParens(int position) throws ParseException {
         Expression expr = parseExpression();
         expect(RPAREN);
         return new ParensExpression(position, expr);
@@ -772,7 +770,7 @@ public class Parser {
         pError(token.position, "unexpected " + token + '.');
     }
 
-    private void pError(Position position, String message) throws ParseException {
+    private void pError(int position, String message) throws ParseException {
         throw new ParseException(message, position);
     }
 }

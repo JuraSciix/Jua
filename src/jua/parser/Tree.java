@@ -79,23 +79,21 @@ public abstract class Tree {
     }
     public final Tag tag;
 
-    public Position position;
+    public int pos;
 
-    protected Tree(Tag tag, Position position) {
+    protected Tree(Tag tag, int pos) {
         this.tag = tag;
-        this.position = position;
+        this.pos = pos;
     }
 
     public final boolean isTag(Tag t) { return tag == t; }
-
-    public final Position getPosition() { return position; }
 
     public abstract void accept(Visitor visitor);
 
     public static class AddExpression extends BinaryExpression {
 
-        public AddExpression(Position position, Expression lhs, Expression rhs) {
-            super(Tag.ADD, position, lhs, rhs);
+        public AddExpression(int pos, Expression lhs, Expression rhs) {
+            super(Tag.ADD, pos, lhs, rhs);
         }
 
         @Override
@@ -106,8 +104,8 @@ public abstract class Tree {
 
     public static class AndExpression extends BinaryExpression {
 
-        public AndExpression(Position position, Expression lhs, Expression rhs) {
-            super(Tag.LOGAND, position, lhs, rhs);
+        public AndExpression(int pos, Expression lhs, Expression rhs) {
+            super(Tag.LOGAND, pos, lhs, rhs);
         }
 
         @Override
@@ -125,8 +123,8 @@ public abstract class Tree {
 
         public Expression key;
 
-        public ArrayAccessExpression(Position position, Expression hs, Expression key) {
-            super(Tag.ARRAY_ACCESS, position, hs);
+        public ArrayAccessExpression(int pos, Expression hs, Expression key) {
+            super(Tag.ARRAY_ACCESS, pos, hs);
             this.key = key;
         }
 
@@ -161,8 +159,8 @@ public abstract class Tree {
         // todo: Заменить это на List со своей структурой
         public Map<Expression, Expression> map;
 
-        public ArrayExpression(Position position, Map<Expression, Expression> map) {
-            super(Tag.ARRAY_LITERAL, position);
+        public ArrayExpression(int pos, Map<Expression, Expression> map) {
+            super(Tag.ARRAY_LITERAL, pos);
             this.map = map;
         }
 
@@ -184,8 +182,8 @@ public abstract class Tree {
 
     public static class AssignAddExpression extends AssignmentExpression {
 
-        public AssignAddExpression(Position position, Expression var, Expression expr) {
-            super(Tag.ASG_ADD, position, var, expr);
+        public AssignAddExpression(int pos, Expression var, Expression expr) {
+            super(Tag.ASG_ADD, pos, var, expr);
         }
 
         @Override
@@ -196,8 +194,8 @@ public abstract class Tree {
 
     public static class AssignBitAndExpression extends AssignmentExpression {
 
-        public AssignBitAndExpression(Position position, Expression var, Expression expr) {
-            super(Tag.ASG_BITAND, position, var, expr);
+        public AssignBitAndExpression(int pos, Expression var, Expression expr) {
+            super(Tag.ASG_BITAND, pos, var, expr);
         }
 
         @Override
@@ -208,8 +206,8 @@ public abstract class Tree {
 
     public static class AssignBitOrExpression extends AssignmentExpression {
 
-        public AssignBitOrExpression(Position position, Expression var, Expression expr) {
-            super(Tag.ASG_BITOR, position, var, expr);
+        public AssignBitOrExpression(int pos, Expression var, Expression expr) {
+            super(Tag.ASG_BITOR, pos, var, expr);
         }
 
         @Override
@@ -220,8 +218,8 @@ public abstract class Tree {
 
     public static class AssignBitXorExpression extends AssignmentExpression {
 
-        public AssignBitXorExpression(Position position, Expression var, Expression expr) {
-            super(Tag.ASG_BITXOR, position, var, expr);
+        public AssignBitXorExpression(int pos, Expression var, Expression expr) {
+            super(Tag.ASG_BITXOR, pos, var, expr);
         }
 
         @Override
@@ -232,8 +230,8 @@ public abstract class Tree {
 
     public static class AssignDivideExpression extends AssignmentExpression {
 
-        public AssignDivideExpression(Position position, Expression var, Expression expr) {
-            super(Tag.ASG_DIV, position, var, expr);
+        public AssignDivideExpression(int pos, Expression var, Expression expr) {
+            super(Tag.ASG_DIV, pos, var, expr);
         }
 
         @Override
@@ -244,8 +242,8 @@ public abstract class Tree {
 
     public static class AssignExpression extends AssignmentExpression {
 
-        public AssignExpression(Position position, Expression var, Expression expr) {
-            super(Tag.ASG, position, var, expr);
+        public AssignExpression(int pos, Expression var, Expression expr) {
+            super(Tag.ASG, pos, var, expr);
         }
 
         @Override
@@ -260,8 +258,8 @@ public abstract class Tree {
 
         public Expression expr;
 
-        protected AssignmentExpression(Tag tag, Position position, Expression var, Expression expr) {
-            super(tag, position);
+        protected AssignmentExpression(Tag tag, int pos, Expression var, Expression expr) {
+            super(tag, pos);
             this.var = var;
             this.expr = expr;
         }
@@ -284,8 +282,8 @@ public abstract class Tree {
 
     public static class AssignMultiplyExpression extends AssignmentExpression {
 
-        public AssignMultiplyExpression(Position position, Expression var, Expression expr) {
-            super(Tag.ASG_MUL, position, var, expr);
+        public AssignMultiplyExpression(int pos, Expression var, Expression expr) {
+            super(Tag.ASG_MUL, pos, var, expr);
         }
 
         @Override
@@ -296,8 +294,8 @@ public abstract class Tree {
 
     public static class AssignNullCoalesceExpression extends AssignmentExpression {
 
-        public AssignNullCoalesceExpression(Position position, Expression var, Expression expr) {
-            super(Tag.ASG_NULLCOALESCE, position, var, expr);
+        public AssignNullCoalesceExpression(int pos, Expression var, Expression expr) {
+            super(Tag.ASG_NULLCOALESCE, pos, var, expr);
         }
 
         @Override
@@ -308,8 +306,8 @@ public abstract class Tree {
 
     public static class AssignRemainderExpression extends AssignmentExpression {
 
-        public AssignRemainderExpression(Position position, Expression var, Expression expr) {
-            super(Tag.ASG_REM, position, var, expr);
+        public AssignRemainderExpression(int pos, Expression var, Expression expr) {
+            super(Tag.ASG_REM, pos, var, expr);
         }
 
         @Override
@@ -320,8 +318,8 @@ public abstract class Tree {
 
     public static class AssignShiftLeftExpression extends AssignmentExpression {
 
-        public AssignShiftLeftExpression(Position position, Expression var, Expression expr) {
-            super(Tag.ASG_SL, position, var, expr);
+        public AssignShiftLeftExpression(int pos, Expression var, Expression expr) {
+            super(Tag.ASG_SL, pos, var, expr);
         }
 
         @Override
@@ -332,8 +330,8 @@ public abstract class Tree {
 
     public static class AssignShiftRightExpression extends AssignmentExpression {
 
-        public AssignShiftRightExpression(Position position, Expression var, Expression expr) {
-            super(Tag.ASG_SR, position, var, expr);
+        public AssignShiftRightExpression(int pos, Expression var, Expression expr) {
+            super(Tag.ASG_SR, pos, var, expr);
         }
 
         @Override
@@ -344,8 +342,8 @@ public abstract class Tree {
 
     public static class AssignSubtractExpression extends AssignmentExpression {
 
-        public AssignSubtractExpression(Position position, Expression var, Expression expr) {
-            super(Tag.ASG_SUB, position, var, expr);
+        public AssignSubtractExpression(int pos, Expression var, Expression expr) {
+            super(Tag.ASG_SUB, pos, var, expr);
         }
 
         @Override
@@ -360,8 +358,8 @@ public abstract class Tree {
 
         public Expression rhs;
 
-        protected BinaryExpression(Tag tag, Position position, Expression lhs, Expression rhs) {
-            super(tag, position);
+        protected BinaryExpression(Tag tag, int pos, Expression lhs, Expression rhs) {
+            super(tag, pos);
             this.lhs = lhs;
             this.rhs = rhs;
         }
@@ -379,8 +377,8 @@ public abstract class Tree {
 
     public static class BitAndExpression extends BinaryExpression {
 
-        public BitAndExpression(Position position, Expression lhs, Expression rhs) {
-            super(Tag.BITAND, position, lhs, rhs);
+        public BitAndExpression(int pos, Expression lhs, Expression rhs) {
+            super(Tag.BITAND, pos, lhs, rhs);
         }
 
         @Override
@@ -391,8 +389,8 @@ public abstract class Tree {
 
     public static class BitNotExpression extends UnaryExpression {
 
-        public BitNotExpression(Position position, Expression hs) {
-            super(Tag.BITCMPL, position, hs);
+        public BitNotExpression(int pos, Expression hs) {
+            super(Tag.BITCMPL, pos, hs);
         }
 
         @Override
@@ -403,8 +401,8 @@ public abstract class Tree {
 
     public static class BitOrExpression extends BinaryExpression {
 
-        public BitOrExpression(Position position, Expression lhs, Expression rhs) {
-            super(Tag.BITOR, position, lhs, rhs);
+        public BitOrExpression(int pos, Expression lhs, Expression rhs) {
+            super(Tag.BITOR, pos, lhs, rhs);
         }
 
         @Override
@@ -415,8 +413,8 @@ public abstract class Tree {
 
     public static class BitXorExpression extends BinaryExpression {
 
-        public BitXorExpression(Position position, Expression lhs, Expression rhs) {
-            super(Tag.BITXOR, position, lhs, rhs);
+        public BitXorExpression(int pos, Expression lhs, Expression rhs) {
+            super(Tag.BITXOR, pos, lhs, rhs);
         }
 
         @Override
@@ -429,8 +427,8 @@ public abstract class Tree {
 
         public List<Statement> statements;
 
-        public BlockStatement(Position position, List<Statement> statements) {
-            super(Tag.COMPOUND, position);
+        public BlockStatement(int pos, List<Statement> statements) {
+            super(Tag.COMPOUND, pos);
             this.statements = statements;
         }
 
@@ -442,15 +440,15 @@ public abstract class Tree {
 
     public abstract static class BooleanExpression extends LiteralExpression {
 
-        protected BooleanExpression(Position position) {
-            super(position);
+        protected BooleanExpression(int pos) {
+            super(pos);
         }
     }
 
     public static class BreakStatement extends Statement {
 
-        public BreakStatement(Position position) {
-            super(Tag.BREAK, position);
+        public BreakStatement(int pos) {
+            super(Tag.BREAK, pos);
         }
 
         @Override
@@ -465,8 +463,8 @@ public abstract class Tree {
 
         public Statement body;
 
-        public CaseStatement(Position position, List<Expression> expressions, Statement body) {
-            super(Tag.CASE, position);
+        public CaseStatement(int pos, List<Expression> expressions, Statement body) {
+            super(Tag.CASE, pos);
             this.expressions = expressions;
             this.body = body;
         }
@@ -479,8 +477,8 @@ public abstract class Tree {
 
     public static class CloneExpression extends UnaryExpression {
 
-        public CloneExpression(Position position, Expression hs) {
-            super(Tag.CLONE, position, hs);
+        public CloneExpression(int pos, Expression hs) {
+            super(Tag.CLONE, pos, hs);
         }
 
         @Override
@@ -491,8 +489,8 @@ public abstract class Tree {
 
     public abstract static class ConditionalExpression extends BinaryExpression {
 
-        protected ConditionalExpression(Tag tag, Position position, Expression lhs, Expression rhs) {
-            super(tag, position, lhs, rhs);
+        protected ConditionalExpression(Tag tag, int pos, Expression lhs, Expression rhs) {
+            super(tag, pos, lhs, rhs);
         }
     }
 
@@ -502,8 +500,8 @@ public abstract class Tree {
 
         public List<Expression> expressions;
 
-        public ConstantDeclareStatement(Position position, List<String> names, List<Expression> expressions) {
-            super(Tag.CONSTDECL, position);
+        public ConstantDeclareStatement(int pos, List<String> names, List<Expression> expressions) {
+            super(Tag.CONSTDECL, pos);
             this.names = names;
             this.expressions = expressions;
         }
@@ -516,8 +514,8 @@ public abstract class Tree {
 
     public static class ContinueStatement extends Statement {
 
-        public ContinueStatement(Position position) {
-            super(Tag.CONTINUE, position);
+        public ContinueStatement(int pos) {
+            super(Tag.CONTINUE, pos);
         }
 
         @Override
@@ -528,8 +526,8 @@ public abstract class Tree {
 
     public static class DivideExpression extends BinaryExpression {
 
-        public DivideExpression(Position position, Expression lhs, Expression rhs) {
-            super(Tag.DIV, position, lhs, rhs);
+        public DivideExpression(int pos, Expression lhs, Expression rhs) {
+            super(Tag.DIV, pos, lhs, rhs);
         }
 
         @Override
@@ -544,8 +542,8 @@ public abstract class Tree {
 
         public Expression cond;
 
-        public DoStatement(Position position, Statement body, Expression cond) {
-            super(Tag.DOLOOP, position);
+        public DoStatement(int pos, Statement body, Expression cond) {
+            super(Tag.DOLOOP, pos);
             this.body = body;
             this.cond = cond;
         }
@@ -558,8 +556,8 @@ public abstract class Tree {
 
     public static class EqualExpression extends ConditionalExpression {
 
-        public EqualExpression(Position position, Expression lhs, Expression rhs) {
-            super(Tag.EQ, position, lhs, rhs);
+        public EqualExpression(int pos, Expression lhs, Expression rhs) {
+            super(Tag.EQ, pos, lhs, rhs);
         }
 
         @Override
@@ -576,7 +574,7 @@ public abstract class Tree {
     public abstract static class Expression extends Statement {
 
         public static Expression empty() {
-            return new Expression(Tag.EMPTY, null) {
+            return new Expression(Tag.EMPTY, 0) {
 
                 @Override
                 public boolean isEmpty() {
@@ -588,8 +586,8 @@ public abstract class Tree {
             };
         }
 
-        protected Expression(Tag tag, Position position) {
-            super(tag, position);
+        protected Expression(Tag tag, int pos) {
+            super(tag, pos);
         }
 
         // todo: Почти все эти методы лишние, часть из них нужно переместить в jua.compiler.TreeInfo
@@ -629,8 +627,8 @@ public abstract class Tree {
 
     public static class FallthroughStatement extends Statement {
 
-        public FallthroughStatement(Position position) {
-            super(Tag.FALLTHROUGH, position);
+        public FallthroughStatement(int pos) {
+            super(Tag.FALLTHROUGH, pos);
         }
 
         @Override
@@ -641,8 +639,8 @@ public abstract class Tree {
 
     public static class FalseExpression extends BooleanExpression {
 
-        public FalseExpression(Position position) {
-            super(position);
+        public FalseExpression(int pos) {
+            super(pos);
         }
 
         @Override
@@ -655,8 +653,8 @@ public abstract class Tree {
 
         public double value;
 
-        public FloatExpression(Position position, double value) {
-            super(position);
+        public FloatExpression(int pos, double value) {
+            super(pos);
             this.value = value;
         }
 
@@ -681,8 +679,8 @@ public abstract class Tree {
 
         public Statement body;
 
-        public ForStatement(Position position, List<Expression> init, Expression cond, List<Expression> step, Statement body) {
-            super(Tag.FORLOOP, position);
+        public ForStatement(int pos, List<Expression> init, Expression cond, List<Expression> step, Statement body) {
+            super(Tag.FORLOOP, pos);
             this.init = init;
             this.cond = cond;
             this.step = step;
@@ -701,8 +699,8 @@ public abstract class Tree {
 
         public List<Expression> args;
 
-        public FunctionCallExpression(Position position, String name, List<Expression> args) {
-            super(Tag.FUNC_CALL, position);
+        public FunctionCallExpression(int pos, String name, List<Expression> args) {
+            super(Tag.FUNC_CALL, pos);
             this.name = name;
             this.args = args;
         }
@@ -740,12 +738,12 @@ public abstract class Tree {
 
         public Statement body;
 
-        public FunctionDefineStatement(Position position,
+        public FunctionDefineStatement(int pos,
                                        String name,
                                        List<String> names,
                                        List<Expression> optionals,
                                        Statement body) {
-            super(Tag.FUNCDECL, position);
+            super(Tag.FUNCDECL, pos);
             this.name = name;
             this.names = names;
             this.optionals = optionals;
@@ -760,8 +758,8 @@ public abstract class Tree {
 
     public static class GreaterEqualExpression extends ConditionalExpression {
 
-        public GreaterEqualExpression(Position position, Expression lhs, Expression rhs) {
-            super(Tag.GE, position, lhs, rhs);
+        public GreaterEqualExpression(int pos, Expression lhs, Expression rhs) {
+            super(Tag.GE, pos, lhs, rhs);
         }
 
         @Override
@@ -777,8 +775,8 @@ public abstract class Tree {
 
     public static class GreaterExpression extends ConditionalExpression {
 
-        public GreaterExpression(Position position, Expression lhs, Expression rhs) {
-            super(Tag.GT, position, lhs, rhs);
+        public GreaterExpression(int pos, Expression lhs, Expression rhs) {
+            super(Tag.GT, pos, lhs, rhs);
         }
 
         @Override
@@ -800,12 +798,12 @@ public abstract class Tree {
 
         public Statement elseBody;
 
-        public IfStatement(Position position, Expression cond, Statement body) {
-            this(position, cond, body, null);
+        public IfStatement(int pos, Expression cond, Statement body) {
+            this(pos, cond, body, null);
         }
 
-        public IfStatement(Position position, Expression cond, Statement body, Statement elseBody) {
-            super(Tag.IFELSE, position);
+        public IfStatement(int pos, Expression cond, Statement body, Statement elseBody) {
+            super(Tag.IFELSE, pos);
             this.cond = cond;
             this.body = body;
             this.elseBody = elseBody;
@@ -819,15 +817,15 @@ public abstract class Tree {
 
     public abstract static class IncreaseExpression extends UnaryExpression {
 
-        protected IncreaseExpression(Tag tag, Position position, Expression hs) {
-            super(tag, position, hs);
+        protected IncreaseExpression(Tag tag, int pos, Expression hs) {
+            super(tag, pos, hs);
         }
     }
 
     public static abstract class LiteralExpression extends Expression {
 
-        protected LiteralExpression(Position position) {
-            super(Tag.LITERAL, position);
+        protected LiteralExpression(int pos) {
+            super(Tag.LITERAL, pos);
         }
     }
 
@@ -835,8 +833,8 @@ public abstract class Tree {
 
         public long value;
 
-        public IntExpression(Position position, long value) {
-            super(position);
+        public IntExpression(int pos, long value) {
+            super(pos);
             this.value = value;
         }
 
@@ -853,8 +851,8 @@ public abstract class Tree {
 
     public static class LessEqualExpression extends ConditionalExpression {
 
-        public LessEqualExpression(Position position, Expression lhs, Expression rhs) {
-            super(Tag.LE, position, lhs, rhs);
+        public LessEqualExpression(int pos, Expression lhs, Expression rhs) {
+            super(Tag.LE, pos, lhs, rhs);
         }
 
         @Override
@@ -870,8 +868,8 @@ public abstract class Tree {
 
     public static class LessExpression extends ConditionalExpression {
 
-        public LessExpression(Position position, Expression lhs, Expression rhs) {
-            super(Tag.LT, position, lhs, rhs);
+        public LessExpression(int pos, Expression lhs, Expression rhs) {
+            super(Tag.LT, pos, lhs, rhs);
         }
 
         @Override
@@ -887,8 +885,8 @@ public abstract class Tree {
 
     public static class MultiplyExpression extends BinaryExpression {
 
-        public MultiplyExpression(Position position, Expression lhs, Expression rhs) {
-            super(Tag.MUL, position, lhs, rhs);
+        public MultiplyExpression(int pos, Expression lhs, Expression rhs) {
+            super(Tag.MUL, pos, lhs, rhs);
         }
 
         @Override
@@ -899,8 +897,8 @@ public abstract class Tree {
 
     public static class NegativeExpression extends UnaryExpression {
 
-        public NegativeExpression(Position position, Expression hs) {
-            super(Tag.NEG, position, hs);
+        public NegativeExpression(int pos, Expression hs) {
+            super(Tag.NEG, pos, hs);
         }
 
         @Override
@@ -911,8 +909,8 @@ public abstract class Tree {
 
     public static class NotEqualExpression extends ConditionalExpression {
 
-        public NotEqualExpression(Position position, Expression lhs, Expression rhs) {
-            super(Tag.NEQ, position, lhs, rhs);
+        public NotEqualExpression(int pos, Expression lhs, Expression rhs) {
+            super(Tag.NEQ, pos, lhs, rhs);
         }
 
         @Override
@@ -928,8 +926,8 @@ public abstract class Tree {
 
     public static class NotExpression extends UnaryExpression {
 
-        public NotExpression(Position position, Expression hs) {
-            super(Tag.LOGCMPL, position, hs);
+        public NotExpression(int pos, Expression hs) {
+            super(Tag.LOGCMPL, pos, hs);
         }
 
         @Override
@@ -945,8 +943,8 @@ public abstract class Tree {
 
     public static class NullCoalesceExpression extends BinaryExpression {
 
-        public NullCoalesceExpression(Position position, Expression lhs, Expression rhs) {
-            super(Tag.NULLCOALESCE, position, lhs, rhs);
+        public NullCoalesceExpression(int pos, Expression lhs, Expression rhs) {
+            super(Tag.NULLCOALESCE, pos, lhs, rhs);
         }
 
         @Override
@@ -972,8 +970,8 @@ public abstract class Tree {
 
     public static class NullExpression extends LiteralExpression {
 
-        public NullExpression(Position position) {
-            super(position);
+        public NullExpression(int pos) {
+            super(pos);
         }
 
         @Override
@@ -989,8 +987,8 @@ public abstract class Tree {
 
     public static class OrExpression extends BinaryExpression {
 
-        public OrExpression(Position position, Expression lhs, Expression rhs) {
-            super(Tag.LOGOR, position, lhs, rhs);
+        public OrExpression(int pos, Expression lhs, Expression rhs) {
+            super(Tag.LOGOR, pos, lhs, rhs);
         }
 
         @Override
@@ -1008,8 +1006,8 @@ public abstract class Tree {
 
         public Expression expr;
 
-        public ParensExpression(Position position, Expression expr) {
-            super(Tag.PARENS, position);
+        public ParensExpression(int pos, Expression expr) {
+            super(Tag.PARENS, pos);
             this.expr = expr;
         }
 
@@ -1024,8 +1022,7 @@ public abstract class Tree {
         }
     }
 
-    // todo: У меня уже имеется механизм для координации по файлу по линиям и столбцам.
-    // todo: внедрить этот механизм в эту версию
+    @Deprecated
     public static class Position {
 
         public final String filename;
@@ -1043,8 +1040,8 @@ public abstract class Tree {
 
     public static class PositiveExpression extends UnaryExpression {
 
-        public PositiveExpression(Position position, Expression hs) {
-            super(Tag.POS, position, hs);
+        public PositiveExpression(int pos, Expression hs) {
+            super(Tag.POS, pos, hs);
         }
 
         @Override
@@ -1055,8 +1052,8 @@ public abstract class Tree {
 
     public static class PostDecrementExpression extends IncreaseExpression {
 
-        public PostDecrementExpression(Position position, Expression hs) {
-            super(Tag.POST_DEC, position, hs);
+        public PostDecrementExpression(int pos, Expression hs) {
+            super(Tag.POST_DEC, pos, hs);
         }
 
         @Override
@@ -1067,8 +1064,8 @@ public abstract class Tree {
 
     public static class PostIncrementExpression extends IncreaseExpression {
 
-        public PostIncrementExpression(Position position, Expression hs) {
-            super(Tag.POST_INC, position, hs);
+        public PostIncrementExpression(int pos, Expression hs) {
+            super(Tag.POST_INC, pos, hs);
         }
 
         @Override
@@ -1079,8 +1076,8 @@ public abstract class Tree {
 
     public static class PreDecrementExpression extends IncreaseExpression {
 
-        public PreDecrementExpression(Position position, Expression hs) {
-            super(Tag.PRE_DEC, position, hs);
+        public PreDecrementExpression(int pos, Expression hs) {
+            super(Tag.PRE_DEC, pos, hs);
         }
 
         @Override
@@ -1091,8 +1088,8 @@ public abstract class Tree {
 
     public static class PreIncrementExpression extends IncreaseExpression {
 
-        public PreIncrementExpression(Position position, Expression hs) {
-            super(Tag.PRE_INC, position, hs);
+        public PreIncrementExpression(int pos, Expression hs) {
+            super(Tag.PRE_INC, pos, hs);
         }
 
         @Override
@@ -1106,8 +1103,8 @@ public abstract class Tree {
 
         public List<Expression> expressions;
 
-        public PrintlnStatement(Position position, List<Expression> expressions) {
-            super(Tag.PRINTLN, position);
+        public PrintlnStatement(int pos, List<Expression> expressions) {
+            super(Tag.PRINTLN, pos);
             this.expressions = expressions;
         }
 
@@ -1123,9 +1120,9 @@ public abstract class Tree {
 
         public List<Expression> expressions;
 
-        public PrintStatement(Position position, List<Expression> expressions) {
+        public PrintStatement(int pos, List<Expression> expressions) {
             // print и println с какой-то там версии больше не являются языковыми конструкциями.
-            super(Tag.PRINT, position);
+            super(Tag.PRINT, pos);
             this.expressions = expressions;
         }
 
@@ -1137,8 +1134,8 @@ public abstract class Tree {
 
     public static class RemainderExpression extends BinaryExpression {
 
-        public RemainderExpression(Position position, Expression lhs, Expression rhs) {
-            super(Tag.REM, position, lhs, rhs);
+        public RemainderExpression(int pos, Expression lhs, Expression rhs) {
+            super(Tag.REM, pos, lhs, rhs);
         }
 
         @Override
@@ -1151,12 +1148,12 @@ public abstract class Tree {
 
         public Expression expr;
 
-        public ReturnStatement(Position position) {
-            this(position, null);
+        public ReturnStatement(int pos) {
+            this(pos, null);
         }
 
-        public ReturnStatement(Position position, Expression expr) {
-            super(Tag.RETURN, position);
+        public ReturnStatement(int pos, Expression expr) {
+            super(Tag.RETURN, pos);
             this.expr = expr;
         }
 
@@ -1168,8 +1165,8 @@ public abstract class Tree {
 
     public static class ShiftLeftExpression extends BinaryExpression {
 
-        public ShiftLeftExpression(Position position, Expression lhs, Expression rhs) {
-            super(Tag.SL, position, lhs, rhs);
+        public ShiftLeftExpression(int pos, Expression lhs, Expression rhs) {
+            super(Tag.SL, pos, lhs, rhs);
         }
 
         @Override
@@ -1180,8 +1177,8 @@ public abstract class Tree {
 
     public static class ShiftRightExpression extends BinaryExpression {
 
-        public ShiftRightExpression(Position position, Expression lhs, Expression rhs) {
-            super(Tag.SR, position, lhs, rhs);
+        public ShiftRightExpression(int pos, Expression lhs, Expression rhs) {
+            super(Tag.SR, pos, lhs, rhs);
         }
 
         @Override
@@ -1192,19 +1189,19 @@ public abstract class Tree {
 
     public abstract static class Statement extends Tree implements Cloneable {
 
-        public static final Statement EMPTY = new Statement(Tag.EMPTY, null) {
+        public static final Statement EMPTY = new Statement(Tag.EMPTY, 0) {
             @Override
             public void accept(Visitor visitor) {}
         };
 
-        protected Statement(Tag tag, Position position) {
-            super(tag, position);
+        protected Statement(Tag tag, int pos) {
+            super(tag, pos);
         }
 
-        public Statement copy(Position position) {
+        public Statement copy(int pos) {
             try {
                 Statement clone = (Statement) super.clone();
-                clone.position = position;
+                clone.pos = pos;
                 return clone;
             } catch (CloneNotSupportedException e) {
                 throw new InternalError(e);
@@ -1216,8 +1213,8 @@ public abstract class Tree {
 
         public String value;
 
-        public StringExpression(Position position, String value) {
-            super(position);
+        public StringExpression(int pos, String value) {
+            super(pos);
             this.value = value;
         }
 
@@ -1234,8 +1231,8 @@ public abstract class Tree {
 
     public static class SubtractExpression extends BinaryExpression {
 
-        public SubtractExpression(Position position, Expression lhs, Expression rhs) {
-            super(Tag.SUB, position, lhs, rhs);
+        public SubtractExpression(int pos, Expression lhs, Expression rhs) {
+            super(Tag.SUB, pos, lhs, rhs);
         }
 
         @Override
@@ -1250,8 +1247,8 @@ public abstract class Tree {
 
         public List<CaseStatement> cases;
 
-        public SwitchStatement(Position position, Expression selector, List<CaseStatement> cases) {
-            super(Tag.SWITCH, position);
+        public SwitchStatement(int pos, Expression selector, List<CaseStatement> cases) {
+            super(Tag.SWITCH, pos);
             this.selector = selector;
             this.cases = cases;
         }
@@ -1270,8 +1267,8 @@ public abstract class Tree {
 
         public Expression rhs;
 
-        public TernaryExpression(Position position, Expression cond, Expression lhs, Expression rhs) {
-            super(Tag.TERNARY, position);
+        public TernaryExpression(int pos, Expression cond, Expression lhs, Expression rhs) {
+            super(Tag.TERNARY, pos);
             this.cond = cond;
             this.lhs = lhs;
             this.rhs = rhs;
@@ -1300,8 +1297,8 @@ public abstract class Tree {
 
     public static class TrueExpression extends BooleanExpression {
 
-        public TrueExpression(Position position) {
-            super(position);
+        public TrueExpression(int pos) {
+            super(pos);
         }
 
         @Override
@@ -1314,8 +1311,8 @@ public abstract class Tree {
 
         public Expression hs;
 
-        protected UnaryExpression(Tag tag, Position position, Expression hs) {
-            super(tag, position);
+        protected UnaryExpression(Tag tag, int pos, Expression hs) {
+            super(tag, pos);
             this.hs = hs;
         }
 
@@ -1329,8 +1326,8 @@ public abstract class Tree {
 
         public Expression expression;
 
-        public UnusedExpression(Position position, Expression expression) {
-            super(Tag.UNUSED, position);
+        public UnusedExpression(int pos, Expression expression) {
+            super(Tag.UNUSED, pos);
             this.expression = expression;
         }
 
@@ -1345,8 +1342,8 @@ public abstract class Tree {
         // todo: Заменить это на свою структуру (механизм уже готов, его нужно только внедрить)
         public final String name;
 
-        public VariableExpression(Position position, String name) {
-            super(Tag.VARIABLE, position);
+        public VariableExpression(int pos, String name) {
+            super(Tag.VARIABLE, pos);
             this.name = name;
         }
 
@@ -1456,8 +1453,8 @@ public abstract class Tree {
 
         public Statement body;
 
-        public WhileStatement(Position position, Expression cond, Statement body) {
-            super(Tag.WHILELOOP, position);
+        public WhileStatement(int pos, Expression cond, Statement body) {
+            super(Tag.WHILELOOP, pos);
             this.cond = cond;
             this.body = body;
         }

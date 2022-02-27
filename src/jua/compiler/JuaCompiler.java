@@ -15,6 +15,8 @@ import java.io.IOException;
 
 public class JuaCompiler {
 
+    // todo: Полностью переписать
+
     private static class JuaExceptionHandler implements Thread.UncaughtExceptionHandler {
 
         @Override
@@ -31,7 +33,14 @@ public class JuaCompiler {
     public static final Thread.UncaughtExceptionHandler RUNTIME_EXCEPTION_HANDLER = new JuaExceptionHandler();
 
     public static void load(String filename) {
-        Result result = compile(parse(filename));
+        TokenizeStream s;
+        try {
+            s = TokenizeStream.fromFile(filename);
+        } catch (IOException e) {
+            fatal("IO error: ", e);
+            return;
+        }
+        Result result = compile(parse(s), s.filename(), s.getLmt());
 
         if (Options.disassembler()) {
             result.print();
@@ -40,28 +49,26 @@ public class JuaCompiler {
         interpret(result.env());
     }
 
-    private static Tree.Statement parse(String filename) {
-        try (TokenizeStream stream = TokenizeStream.fromFile(filename)) {
+    private static Tree.Statement parse(TokenizeStream s) {
+        try (TokenizeStream stream = s) {
             return new Parser(new Tokenizer(stream)).parse();
-        } catch (IOException e) {
-            fatal("I/O error occurred at tokenizer: ", e);
         } catch (ParseException e) {
-            parseError(e);
+            parseError(e, s.filename(), s.getLmt());
         } catch (Throwable t) {
             fatal("Fatal error occurred at parser: ", t);
         }
         return null;
     }
 
-    private static void parseError(ParseException e) {
+    private static void parseError(ParseException e, String filename, LineMap lnt) {
         System.err.println("Parse error: " + e.getMessage());
-        printPosition(e.position.filename, e.position.line, e.position.offset);
+        printPosition(filename, lnt.getLineNumber(e.position), lnt.getOffsetNumber(e.position));
         System.exit(1);
     }
 
-    private static Result compile(Tree.Statement root) {
-        CodeData codeData = new CodeData(root.position.filename);
-        Gen gen = new Gen(codeData);
+    private static Result compile(Tree.Statement root, String filename, LineMap lineMap) {
+        CodeData codeData = new CodeData(filename);
+        Gen gen = new Gen(codeData, lineMap);
 
         try {
             if (Options.optimize()) {
@@ -72,16 +79,17 @@ public class JuaCompiler {
             }
             root.accept(gen);
         } catch (CompileError e) {
-            compileError(e);
+            compileError(e, lineMap, filename);
         } catch (Throwable t) {
             fatal("Fatal error occurred at compiler: ", t);
         }
         return gen.getResult();
     }
 
-    private static void compileError(CompileError e) {
+    private static void compileError(CompileError e, LineMap lineMap, String filename) {
         System.err.println("Compile error: " + e.getMessage());
-        printPosition(e.position.filename, e.position.line, e.position.offset);
+        printPosition(filename, lineMap.getLineNumber(e.position),
+                lineMap.getOffsetNumber(e.position));
         System.exit(1);
     }
 

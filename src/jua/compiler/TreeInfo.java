@@ -20,15 +20,6 @@ public final class TreeInfo {
 
         return current;
     }
-
-    public static int line(Statement statement) {
-        return statement.getPosition().line;
-    }
-
-    public static String sourceName(Statement statement) {
-        return statement.getPosition().filename;
-    }
-
     public static boolean testShort(Expression expression) {
         if (expression instanceof IntExpression) {
             long value = ((IntExpression) expression).value;

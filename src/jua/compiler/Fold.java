@@ -51,7 +51,7 @@ public class Fold implements Visitor {
         if ((lhs instanceof IntExpression) && (rhs instanceof FloatExpression)) {
             long l = ((IntExpression) lhs).value;
             double r = ((FloatExpression) rhs).value;
-            lower = new FloatExpression(expression.getPosition(), l + r);
+            lower = new FloatExpression(expression.pos, l + r);
             return;
         }
         if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
@@ -256,7 +256,7 @@ public class Fold implements Visitor {
                 iterator.remove();
                 iterator.add(
                         // Остаточный результат заведомо является unused
-                        new UnusedExpression(residualExpression.position, residualExpression));
+                        new UnusedExpression(residualExpression.pos, residualExpression));
                 residualExpression = null;
                 if (lower != null && !lower.isTag(Tag.EMPTY))
                     iterator.add(lower);
@@ -295,7 +295,7 @@ public class Fold implements Visitor {
         for (int i = 0; i < size; i++) {
             String name = statement.names.get(i);
             if (statement.names.indexOf(name) != statement.names.lastIndexOf(name)) {
-                throw new CompileError("duplicate name '" + name + "'.", statement.getPosition());
+                throw new CompileError("duplicate name '" + name + "'.", statement.pos);
             }
             Expression expr = getLowerExpression(statement.expressions.get(i)).child();
             if (expr.isLiteral() ||
@@ -330,7 +330,7 @@ public class Fold implements Visitor {
         if ((lhs instanceof IntExpression) && (rhs instanceof FloatExpression)) {
             long l = ((IntExpression) lhs).value;
             double r = ((FloatExpression) rhs).value;
-            lower = new FloatExpression(expression.getPosition(), l / r);
+            lower = new FloatExpression(expression.pos, l / r);
             return;
         }
         if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
@@ -341,7 +341,7 @@ public class Fold implements Visitor {
                     ((IntExpression) lhs).value = (l / r);
                     lower = lhs;
                 } else {
-                    lower = new FloatExpression(expression.getPosition(), (double) l / r);
+                    lower = new FloatExpression(expression.pos, (double) l / r);
                 }
                 return;
             }
@@ -736,7 +736,7 @@ public class Fold implements Visitor {
             long l = ((IntExpression) lhs).value;
             double r = ((FloatExpression) rhs).value;
             if (r != 0D) {
-                lower = new FloatExpression(expression.getPosition(), l % r);
+                lower = new FloatExpression(expression.pos, l % r);
                 return;
             }
         }
@@ -793,7 +793,7 @@ public class Fold implements Visitor {
         if ((lhs instanceof IntExpression) && (rhs instanceof FloatExpression)) {
             long l = ((IntExpression) lhs).value;
             double r = ((FloatExpression) rhs).value;
-            lower = new FloatExpression(expression.getPosition(), l - r);
+            lower = new FloatExpression(expression.pos, l - r);
             return;
         }
         if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
@@ -838,7 +838,7 @@ public class Fold implements Visitor {
     @Override
     public void visitVariable(VariableExpression expression) {
         if (constantFolding.containsKey(expression.name)) {
-            lower = constantFolding.get(expression.name).copy(expression.getPosition());
+            lower = constantFolding.get(expression.name).copy(expression.pos);
         } else {
             nothing(expression);
         }
@@ -886,7 +886,7 @@ public class Fold implements Visitor {
             return;
         }
         if (constantFolding.containsKey(((VariableExpression) expression).name)) {
-            throw new CompileError("assignment to constant is not allowed.", expression.getPosition());
+            throw new CompileError("assignment to constant is not allowed.", expression.pos);
         }
     }
 
@@ -946,11 +946,11 @@ public class Fold implements Visitor {
     }
 
     private void setTrue(Expression expression) {
-        lower = new TrueExpression(expression.getPosition());
+        lower = new TrueExpression(expression.pos);
     }
 
     private void setFalse(Expression expression) {
-        lower = new FalseExpression(expression.getPosition());
+        lower = new FalseExpression(expression.pos);
     }
 
     private void nothing(Tree tree) {

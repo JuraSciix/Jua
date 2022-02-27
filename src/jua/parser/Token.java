@@ -5,14 +5,14 @@ public abstract class Token {
     public static class DummyToken extends Token {
 
         // used only for EOF
-        public DummyToken(TokenType type, Tree.Position position) {
+        public DummyToken(TokenType type, int position) {
             super(type, position);
         }
     }
 
     public static class NamedToken extends Token {
 
-        public NamedToken(TokenType type, Tree.Position position) {
+        public NamedToken(TokenType type, int position) {
             super(type, position);
         }
 
@@ -26,7 +26,7 @@ public abstract class Token {
 
         protected final String value;
 
-        public StringToken(TokenType type, Tree.Position position, String value) {
+        public StringToken(TokenType type, int position, String value) {
             super(type, position);
             this.value = value;
         }
@@ -46,7 +46,7 @@ public abstract class Token {
 
         protected final int radix;
 
-        public NumberToken(TokenType type, Tree.Position position, String value, int radix) {
+        public NumberToken(TokenType type, int position, String value, int radix) {
             super(type, position, value);
             this.radix = radix;
         }
@@ -64,9 +64,9 @@ public abstract class Token {
 
     public final TokenType type;
 
-    public final Tree.Position position;
+    public final int position;
 
-    protected Token(TokenType type, Tree.Position position) {
+    protected Token(TokenType type, int position) {
         this.type = type;
         this.position = position;
     }

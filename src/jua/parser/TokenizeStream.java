@@ -1,5 +1,7 @@
 package jua.parser;
 
+import jua.compiler.LineMap;
+
 import java.io.*;
 
 public class TokenizeStream implements Closeable {
@@ -16,23 +18,39 @@ public class TokenizeStream implements Closeable {
 
     private final String filename;
 
+    // todo: почему здесь используется строка???
     private String content;
 
     private int pos = 0;
 
+    @Deprecated
     private int line = 1;
 
+    @Deprecated
     private int offset = 0;
 
-    private Tree.Position savedPosition;
+//    private Tree.Position savedPosition;
 
     public TokenizeStream(String filename, String content) {
         this.filename = filename;
         this.content = content;
+        debugContent();
+    }
+
+    private void debugContent() {
+//        System.out.println("content is null?: " + (content == null)); // DEBUG
     }
 
     public String filename() {
         return filename;
+    }
+
+    private LineMap lmt;
+
+    public LineMap getLmt() {
+        debugContent();
+        if (lmt == null) lmt = new LineMap(content);
+        return lmt;
     }
 
     public boolean availableMore() {
@@ -51,24 +69,22 @@ public class TokenizeStream implements Closeable {
         } else {
             offset++;
         }
-        savedPosition = null;
+//        savedPosition = null;
         return next;
     }
 
+    @Deprecated
     public void nextLine() {
         line++;
         offset = 0;
     }
 
-    public Tree.Position getPosition() {
-        if (savedPosition == null) {
-            savedPosition = new Tree.Position(filename, line, offset);
-        }
-        return savedPosition;
+    public int getPosition() {
+        return pos;
     }
 
     @Override
     public void close() {
-        content = null;
+//        content = null;
     }
 }

@@ -10,7 +10,7 @@ import static jua.parser.TokenType.*;
 
 public class Tokenizer {
 
-    private static final TokenType[] KEYWORDS, SPECIALS;
+    private static final TokenType[] KEYWORDS, SPECIALS;  // todo: Да.
 
     static {
         List<TokenType> keywords = new ArrayList<>();
@@ -29,11 +29,11 @@ public class Tokenizer {
 
     private static class TokenBuilder {
 
-        private final Tree.Position position;
+        private final int position;
 
         private final StringWriter buffer = new StringWriter();
 
-        private TokenBuilder(Tree.Position position) {
+        private TokenBuilder(int position) {
             this.position = position;
         }
 
@@ -89,7 +89,7 @@ public class Tokenizer {
             int c;
 
             if ((c = stream.next()) < 0)
-                return new DummyToken(EOF, stream.getPosition());
+                return new DummyToken(EOF, stream.getPosition()+1);
 
             if (c == '#') {
                 parseComment();
@@ -321,7 +321,7 @@ public class Tokenizer {
         return builder;
     }
 
-    private void tError(Tree.Position position, String message) throws ParseException {
+    private void tError(int position, String message) throws ParseException {
         throw new ParseException(message, position);
     }
 }
