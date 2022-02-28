@@ -683,7 +683,7 @@ public final class Gen implements Visitor {
         code.putPos(expression.pos);
         code.addInstruction(instruction, stack);
         if (noReturnValue)
-            code.addInstruction(PushNull.INSTANCE, 1);
+            code.addInstruction(ConstNull.INSTANCE, 1);
     }
 
     @Override
@@ -1038,7 +1038,7 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitNull(NullExpression expression) {
-        code.addInstruction(PushNull.INSTANCE, 1);
+        code.addInstruction(ConstNull.INSTANCE, 1);
     }
 
     @Override

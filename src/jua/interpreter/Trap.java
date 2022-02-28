@@ -5,6 +5,7 @@ package jua.interpreter;
 /**
  * Mechanism for delegating execution between the interpreter and the frame, based on Java exceptions.
  */
+// todo: заменить на InterpreterState.Message
 public final class Trap extends Error {
 
     /**

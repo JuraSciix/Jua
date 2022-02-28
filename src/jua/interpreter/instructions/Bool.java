@@ -22,6 +22,8 @@ import jua.compiler.CodePrinter;
  * 6. pop
  * 7. halt}</pre>
  */
+// todo: Эта инструкция в качестве пролога для инструкций ifeq/ifne не нужна.
+//  Вернуть инструкции iftrue и iffalse.
 public enum Bool implements Instruction {
 
     INSTANCE;

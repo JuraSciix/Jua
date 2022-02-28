@@ -1,20 +1,18 @@
 package jua.interpreter.instructions;
 
+import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterRuntime;
 import jua.runtime.NullOperand;
-import jua.compiler.CodePrinter;
 
-public class PushNull implements Instruction {
+public final class ConstNull implements Instruction {
 
-    public static final PushNull INSTANCE = new PushNull();
+    public static final ConstNull INSTANCE = new ConstNull();
 
-    private PushNull() {
-        super();
-    }
+    private ConstNull() { super(); }
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName("push_null");
+        printer.printName("const_null");
     }
 
     @Override

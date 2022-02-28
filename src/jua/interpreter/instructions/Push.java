@@ -7,6 +7,8 @@ import jua.runtime.LongOperand;
 import jua.compiler.CodePrinter;
 import jua.runtime.Operand;
 
+// todo: push должна использоваться исключительно для целочисленных значений
+//  Для true/false должны использоваться const_true и const_false.
 public final class Push implements Instruction {
 
     public static final Push PUSH_TRUE = new Push(Operand.Type.BOOLEAN, (short) 1);
