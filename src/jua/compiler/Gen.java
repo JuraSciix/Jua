@@ -630,6 +630,13 @@ public final class Gen implements Visitor {
         int stack = 0;
         boolean noReturnValue = false;
         switch (expression.name) {
+            case "bool":
+                if (expression.args.size() != 1) {
+                    cError(expression.pos, "mismatch call parameters: 1 expected, " + expression.args.size() + " got.");
+                }
+                visitExpression(expression.args.get(0));
+                instruction = Bool.INSTANCE;
+                break;
             case "print":
                 visitExprList(expression.args);
                 instruction = new Print(expression.args.size());
@@ -1278,7 +1285,7 @@ public final class Gen implements Visitor {
         // todo: Здешний код отвратителен. Следует переписать всё с нуля...
         code.addInstruction(Bool.INSTANCE);
         code.putPos(expression.pos);
-        code.addChainedInstruction(isState(STATE_COND_INVERT) ?
+        code.addChainedInstruction(!isState(STATE_COND_INVERT) ?
                         dest_ip -> new Ifeq(dest_ip, 0) :
                         dest_ip -> new Ifne(dest_ip, 0),
                 peekConditionChain(), -1);
