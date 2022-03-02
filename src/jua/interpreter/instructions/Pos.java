@@ -18,7 +18,7 @@ public enum Pos implements Instruction {
     public int run(InterpreterRuntime env) {
         Operand val = env.peekStack();
 
-        if (val.isNull())
+        if (!val.isNumber())
             throw InterpreterError.unaryApplication("+", val.type());
         return NEXT;
     }
