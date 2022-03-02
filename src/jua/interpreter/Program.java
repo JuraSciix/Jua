@@ -1,7 +1,7 @@
 package jua.interpreter;
 
-import jua.runtime.Operand;
 import jua.interpreter.instructions.Instruction;
+import jua.runtime.Operand;
 
 /**
  * Программа представляет собой фабрику фреймов.
@@ -12,11 +12,37 @@ public final class Program {
 
         final short[] bytecodeIndexes;
 
-        final short[] lineNumbers;
+        final short[] lineNumbers; // todo: int[]
 
         public LineNumberTable(short[] bytecodeIndexes, short[] lineNumbers) {
             this.bytecodeIndexes = bytecodeIndexes;
             this.lineNumbers = lineNumbers;
+        }
+
+        int get(final int bcp) {
+            int l = 0;
+            int r = bytecodeIndexes.length - 1;
+            if (r < 0) return -1;
+
+            int minIndex = -1;
+            int minValue = -1;
+            do {
+                int i = (l+r)>>>2;
+                int j = bytecodeIndexes[i]&0xffff;
+
+                if (j == bcp) return lineNumbers[i]&0xffff;
+                else if (bcp < j) r = i - 1;
+                else l = i + 1;
+
+                if (j < bcp && j > minValue) {
+                    minValue = j;
+                    minIndex = i;
+                }
+            } while (l <= r);
+
+            if (minIndex < 0) return -1;
+
+            return lineNumbers[minIndex]&0xffff;
         }
     }
 
@@ -64,23 +90,7 @@ public final class Program {
     }
 
     public int getInstructionLine(int bci) {
-        if ((bci < 0) || (bci >= instructions.length) || lineNumberTable == null)
-            return -1;
-        // copied from EternalVM
-        int low = 0;
-        int high = lineNumberTable.bytecodeIndexes.length - 1;
-
-        while (low <= high) {
-            int mid = (low + high) >>> 1;
-            int mid_bci = lineNumberTable.bytecodeIndexes[mid] & 0xffff;
-
-            if (mid_bci <= bci) {
-                low = (mid + 1);
-            } else {
-                high = (mid - 1);
-            }
-        }
-        return lineNumberTable.lineNumbers[low - 1] & 0xffff;
+        return lineNumberTable != null ? lineNumberTable.get(bci) : -1;
     }
 
     public ProgramFrame makeFrame() {
