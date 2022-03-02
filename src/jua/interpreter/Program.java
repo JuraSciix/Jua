@@ -27,7 +27,7 @@ public final class Program {
             int minIndex = -1;
             int minValue = -1;
             do {
-                int i = (l+r)>>>2;
+                int i = (l+r)>>>1;
                 int j = bytecodeIndexes[i]&0xffff;
 
                 if (j == bcp) return lineNumbers[i]&0xffff;
