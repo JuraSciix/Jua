@@ -17,7 +17,7 @@ import java.util.Map;
 public final class Gen implements Visitor {
 
     private final CodeData codeData;
-    
+
     private final Code code;
 
     private final IntStack breakChains;
@@ -340,7 +340,7 @@ public final class Gen implements Visitor {
     public void visitBitXor(BitXorExpression expression) {
         generateBinary(expression);
     }
-    
+
     private void generateBinary(BinaryExpression tree) {
         tree.lhs.accept(this);
         if (tree.isTag(Tag.NULLCOALESCE)) {
@@ -357,7 +357,7 @@ public final class Gen implements Visitor {
         code.putPos(tree.pos);
         code.addInstruction(bin2instr(tree.tag));
     }
-    
+
     public static Instruction bin2instr(Tag tag) {
         switch (tag) {
             case ADD: return Add.INSTANCE;
@@ -389,7 +389,7 @@ public final class Gen implements Visitor {
             generateStatementsWhileAlive(statement.statements);
         }
     }
-    
+
     private void generateStatementsWhileAlive(List<Statement> statements) {
         for (Statement statement : statements) {
             // Таким образом, мы упускаем ошибки в мертвом коде
@@ -700,6 +700,10 @@ public final class Gen implements Visitor {
             }
             return code.resolveLocal(n);
         }).toArray();
+        int[] optionals = statement.optionals.stream().mapToInt(a -> {
+            assert (a instanceof LiteralExpression);
+            return TreeInfo.resolveLiteral(code, (LiteralExpression) a);
+        }).toArray();
         visitStatement(statement.body);
         if (!statement.body.isTag(Tag.COMPOUND))
             emitReturn();
@@ -707,10 +711,7 @@ public final class Gen implements Visitor {
             emitRetnull();
         codeData.setFunction(statement.name, new ScriptRuntimeFunction(
                 locals, // function arguments must be first at local list
-                statement.optionals.stream().mapToInt(a -> {
-                    assert (a instanceof LiteralExpression);
-                    return TreeInfo.resolveLiteral(code, (LiteralExpression) a);
-                }).toArray(),
+                optionals,
                 code.toProgram()));
         code.popScope();
         code.popContext();
@@ -1132,7 +1133,7 @@ public final class Gen implements Visitor {
     }
 
     private void emitRetnull() {
-        code.addInstruction(Retnull.INSTANCE);
+        code.addInstruction(ReturnNull.INSTANCE);
         code.dead();
     }
 
@@ -1212,7 +1213,7 @@ public final class Gen implements Visitor {
 
         int prev_state = state;
         setState(STATE_INFINITY_LOOP);
-        
+
         if (initials != null) {
             initials.forEach(this::visitStatement);
         }
@@ -1283,11 +1284,11 @@ public final class Gen implements Visitor {
             return;
         }
         // todo: Здешний код отвратителен. Следует переписать всё с нуля...
-        code.addInstruction(Bool.INSTANCE);
+//        code.addInstruction(Bool.INSTANCE);
         code.putPos(expression.pos);
         code.addChainedInstruction(!isState(STATE_COND_INVERT) ?
-                        dest_ip -> new Ifeq(dest_ip, 0) :
-                        dest_ip -> new Ifne(dest_ip, 0),
+                        dest_ip -> new Iffalse(dest_ip) :
+                        dest_ip -> new Iftrue(dest_ip),
                 peekConditionChain(), -1);
     }
 
@@ -1580,7 +1581,7 @@ public final class Gen implements Visitor {
 
     private void emitPushLong(long value) {
         if (isShort(value)) {
-            code.addInstruction(new Push(Operand.Type.LONG, (short) value), 1);
+            code.addInstruction(new Push((short) value), 1);
         } else {
             code.addInstruction(new Ldc(code.resolveLong(value)), 1);
         }
@@ -1588,8 +1589,8 @@ public final class Gen implements Visitor {
 
     private void emitPushDouble(double value) {
         long lv = (long) value;
-        if (lv == value && isShort(lv)) {
-            code.addInstruction(new Push(Operand.Type.LONG, (short) lv), 1);
+        if (false && lv == value && isShort(lv)) {
+//            code.addInstruction(new Push(Operand.Type.LONG, (short) lv), 1);
         } else {
             code.addInstruction(new Ldc(code.resolveDouble(value)), 1);
         }
@@ -1605,8 +1606,8 @@ public final class Gen implements Visitor {
 
     // emit methods
 
-    private void emitPushTrue() { code.addInstruction(Push.PUSH_TRUE, 1); }
-    private void emitPushFalse() { code.addInstruction(Push.PUSH_FALSE, 1); }
+    private void emitPushTrue() { code.addInstruction(ConstTrue.CONST_TRUE, 1); }
+    private void emitPushFalse() { code.addInstruction(ConstFalse.CONST_FALSE, 1); }
     private void emitGoto(int chainId) { code.addChainedInstruction(Goto::new, chainId); }
     private void emitDup() { code.addInstruction(Dup.INSTANCE, 1); }
     private void emitDupX1() { code.addInstruction(Dup_x1.INSTANCE, 1); }
@@ -1638,7 +1639,7 @@ public final class Gen implements Visitor {
         state = prev_state;
     }
     private void emitReturn() {
-        code.addInstruction(Ret.INSTANCE, -1);
+        code.addInstruction(Return.RETURN, -1);
         code.dead();
     }
 

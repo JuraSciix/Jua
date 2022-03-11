@@ -154,4 +154,17 @@ public final class ProgramFrame {
     public void reportUndefinedVariable(int id) {
         throw InterpreterError.variableNotExists(program.localsNames[id]);
     }
+
+    public void swap() {
+        Operand reserve = stack[tos - 2];
+        stack[tos - 2] = stack[tos - 1];
+        stack[tos - 1] = reserve;
+    }
+
+    public void swap_x1() {
+        Operand reserve = stack[tos - 3];
+        stack[tos - 3] = stack[tos - 2];
+        stack[tos - 2] = stack[tos - 1];
+        stack[tos - 1] = reserve;
+    }
 }

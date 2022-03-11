@@ -19,8 +19,12 @@ public class Print implements Instruction {
 
     @Override
     public int run(InterpreterRuntime env) {
+        String[] pieces = new String[count];
+        for (int i = 1; i <= count; i++) {
+            pieces[count - i] = env.popStack().stringValue();
+        }
         for (int i = 0; i < count; i++) {
-            System.out.print(env.popString());
+            System.out.print(pieces[i]);
         }
         return NEXT;
     }

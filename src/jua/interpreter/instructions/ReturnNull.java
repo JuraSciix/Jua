@@ -1,21 +1,26 @@
 package jua.interpreter.instructions;
 
+import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterRuntime;
 import jua.interpreter.Trap;
 import jua.runtime.NullOperand;
-import jua.compiler.CodePrinter;
 
-public enum Retnull implements Instruction {
+public final class ReturnNull implements Instruction {
 
-    INSTANCE;
+    public static final ReturnNull INSTANCE = new ReturnNull();
+
+    private ReturnNull() {
+        super();
+    }
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName("retnull");
+        printer.printName("return_null");
     }
 
     @Override
     public int run(InterpreterRuntime env) {
+        //todo
         env.exitCall(NullOperand.NULL);
         if (env.getFrame() != null) env.getFrame().incPC();
         Trap.bti();
