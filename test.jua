@@ -1,6 +1,0 @@
-#for i = 0; i < 10; i++
-#    if println(i) || true;
-
-for println("start loop");false;null {
-    nonexistingfunc();
-}

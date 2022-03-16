@@ -21,16 +21,18 @@ public class ScriptRuntimeFunction implements RuntimeFunction {
         int tot = locals.length;
         int req = (tot - optionals.length);
 
-        if (argc > tot) {
-            error(name, "arguments too many. (total " + tot + ", got " + argc + ')');
-        } else if (argc < req) {
-            error(name, "arguments too few. (required " + req + ", got " + argc + ')');
+        if (((tot - argc) | (argc - req)) < 0) {
+            error(name, (argc > tot) ?
+                    "arguments too many. (total " + tot + ", got " + argc + ')' :
+                    "arguments too few. (required " + req + ", got " + argc + ')');
+            return;
         }
         ProgramFrame frame = program.makeFrame();
+        Operand[] cp = program.constantPool;
 
-        for (int i = tot - 1; i >= 0; i--) {
-            frame.store(locals[i], (i >= argc) ? program.constantPool[i - req] : env.popStack());
-        }
+        for (int i = tot; i > argc; i--) frame.store(req+(tot-i), cp[i-req-1]);
+        for (int i = argc-1; i >= 0; i--) frame.store(i, env.popStack());
+
         env.enterCall(frame);
         Trap.bti();
     }
