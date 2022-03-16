@@ -25,6 +25,26 @@ public class Fold implements Visitor {
     // По идее это должно быть списком, но на практике сюда записывается только одно значение.
     private Expression residualExpression;
 
+    @SuppressWarnings("unchecked")
+    private <T extends Tree> T foldBody(Statement body) {
+        if (body == null) return null;
+        body.accept(this);
+        if (residualExpression != null && body.getClass() != BlockStatement.class) {
+            lower = new BlockStatement(residualExpression.pos, new ArrayList<Statement>() {
+                {
+                    add(new UnusedExpression(residualExpression.pos, residualExpression));
+                    residualExpression = null;
+                    add(body);
+                }
+            });
+        }
+        try {
+            return (T) lower;
+        } finally {
+            lower = null;
+        }
+    }
+
     public Fold(CodeData codeData) {
         constantFolding = new HashMap<>();
         putFoldingNames(codeData.constants.keySet());
@@ -350,19 +370,17 @@ public class Fold implements Visitor {
     }
 
     @Override
-    public void visitDo(DoStatement statement) {
-        Statement body = getLowerStatement(statement.body);
-        Expression cond = getLowerExpression(statement.cond).child();
-        if (isFalse(cond)) {
-            lower = body;
+    public void visitDo(DoStatement tree) {
+        tree.body = foldBody(tree.body);
+        tree.cond = getLowerExpression(tree.cond);
+
+        if (isTrue(tree.cond)) {
+            tree.cond = null; // codegen will handle it.
+        } else if (isFalse(tree.cond)) {
+            lower = tree.body;
             return;
         }
-        if (isTrue(cond)) {
-            cond = null; // compiler will detect this
-        }
-        statement.body = body;
-        statement.cond = cond;
-        lower = statement;
+        lower = tree;
     }
 
     @Override
@@ -399,27 +417,25 @@ public class Fold implements Visitor {
     }
 
     @Override
-    public void visitFor(ForStatement statement) {
-        if (statement.init != null) {
-            statement.init = lowerList(statement.init);
-        }
-        if (statement.cond != null) {
-            Expression cond = getLowerExpression(statement.cond);
+    public void visitFor(ForStatement tree) {
+        if (tree.init != null) tree.init = lowerList(tree.init);
 
-            if (isFalse(cond)) {
-                lower = Statement.EMPTY;
-                return;
-            }
-            if (isTrue(cond)) {
-                cond = null; // compiler will detect this
-            }
-            statement.cond = cond;
+        tree.cond = getLowerExpression(tree.cond);
+
+        if (isFalse(tree.cond)) {
+            // todo: Возможно, здесь стоит использовать CommaExpression
+            lower = new BlockStatement(tree.pos, tree.init.stream()
+                    .map(expr -> (Statement) expr)
+                    .collect(Collectors.toList()));
+            return;
         }
-        if (statement.step != null) {
-            statement.step = lowerList(statement.step);
-        }
-        statement.body = getLowerStatement(statement.body);
-        lower = statement;
+
+        if (isTrue(tree.cond)) tree.cond = null; // codegen will handle it.
+
+        if (tree.step != null) tree.step = lowerList(tree.step);
+
+        tree.body = foldBody(tree.body);
+        lower = tree;
     }
 
     @Override
@@ -431,7 +447,7 @@ public class Fold implements Visitor {
     @Override
     public void visitFunctionDefine(FunctionDefineStatement statement) {
         statement.optionals = lowerList(statement.optionals);
-        statement.body = getLowerStatement(statement.body);
+        statement.body = foldBody(statement.body);
         lower = statement;
     }
 
@@ -472,25 +488,20 @@ public class Fold implements Visitor {
     }
 
     @Override
-    public void visitIf(IfStatement statement) {
-        Expression cond = getLowerExpression(statement.cond).child();
-        Statement body = getLowerStatement(statement.body);
-        Statement elseBody = null;
-        if (statement.elseBody != null) {
-            elseBody = getLowerStatement(statement.elseBody);
-        }
-        if (isTrue(cond)) {
-            lower = body;
+    public void visitIf(IfStatement tree) {
+        tree.cond = getLowerExpression(tree.cond);
+
+        if (isTrue(tree.cond)) {
+            lower = foldBody(tree.body);
             return;
         }
-        if (isFalse(cond)) {
-            lower = Statement.EMPTY;
+        if (isFalse(tree.cond)) {
+            lower = foldBody(tree.elseBody);
             return;
         }
-        statement.cond = cond;
-        statement.body = body;
-        statement.elseBody = elseBody;
-        lower = statement;
+        tree.body = foldBody(tree.body);
+        tree.elseBody = foldBody(tree.elseBody);
+        lower = tree;
     }
 
     @Override
@@ -845,20 +856,17 @@ public class Fold implements Visitor {
     }
 
     @Override
-    public void visitWhile(WhileStatement statement) {
-        Expression cond = getLowerExpression(statement.cond).child();
-        Statement body = getLowerStatement(statement.body);
+    public void visitWhile(WhileStatement tree) {
+        tree.cond = getLowerExpression(tree.cond);
 
-        if (isFalse(cond)) {
-            lower = Statement.EMPTY;
+        if (isTrue(tree.cond)) {
+            tree.cond = null; // codegen will handle it.
+        } else if (isFalse(tree.cond)) {
+            lower = null;
             return;
         }
-        if (isTrue(cond)) {
-            cond = null; // compiler will detect this
-        }
-        statement.cond = cond;
-        statement.body = body;
-        lower = statement;
+        tree.body = foldBody(tree.body);
+        lower = tree;
     }
 
     @Override
@@ -918,6 +926,7 @@ public class Fold implements Visitor {
     // todo: Переместить нижние методы в TreeInfo
 
     private boolean isTrue(Expression expr) {
+        if (expr == null) return true;
         expr = expr.child();
         if (expr instanceof StringExpression) {
             return !((StringExpression) expr).value.isEmpty();
