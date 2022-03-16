@@ -6,21 +6,17 @@
 ## Project files:
 *.iml
 
+## Compiler output:
+out/
+
 ### Maven ###
 target/
-
-## Plugin-specific files:
-
-# IntelliJ
-/out/
 
 ### Java ###
 *.class
 
 # Package Files #
 *.jar
-*.war
-*.ear
 
 # VM crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
