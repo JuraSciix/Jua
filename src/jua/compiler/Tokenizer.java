@@ -1,10 +1,10 @@
-package jua.parser;
+package jua.compiler;
 
 import java.io.StringWriter;
 
 import static java.lang.Character.*;
-import static jua.parser.Tokens.*;
-import static jua.parser.Tokens.TokenKind.*;
+import static jua.compiler.Tokens.*;
+import static jua.compiler.Tokens.TokenKind.*;
 
 public class Tokenizer {
 

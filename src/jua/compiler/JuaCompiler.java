@@ -3,7 +3,6 @@ package jua.compiler;
 import jua.Options;
 import jua.interpreter.InterpreterRuntime;
 import jua.interpreter.InterpreterRuntimeException;
-import jua.parser.*;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

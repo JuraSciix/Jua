@@ -8,7 +8,7 @@ import jua.interpreter.instructions.*;
 import jua.runtime.ArrayOperand;
 import jua.runtime.Operand;
 import jua.runtime.ScriptRuntimeFunction;
-import jua.parser.Tree.*;
+import jua.compiler.Tree.*;
 
 import java.util.Iterator;
 import java.util.List;

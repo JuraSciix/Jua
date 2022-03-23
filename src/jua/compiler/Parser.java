@@ -1,15 +1,15 @@
-package jua.parser;
+package jua.compiler;
 
-import jua.parser.Tree.*;
+import jua.compiler.Tree.*;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import jua.parser.Tokens.*;
+import jua.compiler.Tokens.*;
 
-import static jua.parser.Tokens.TokenKind.*;
+import static jua.compiler.Tokens.TokenKind.*;
 
 public class Parser {
 

@@ -4,7 +4,7 @@ import jua.runtime.DoubleOperand;
 import jua.runtime.LongOperand;
 import jua.runtime.Operand;
 import jua.runtime.StringOperand;
-import jua.parser.Tree.*;
+import jua.compiler.Tree.*;
 
 public final class TreeInfo {
 

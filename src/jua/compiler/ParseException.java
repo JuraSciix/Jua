@@ -1,4 +1,4 @@
-package jua.parser;
+package jua.compiler;
 
 public class ParseException extends Exception {
 

@@ -1,7 +1,5 @@
 package jua.compiler;
 
-import jua.parser.Tree;
-
 public class CompileError extends RuntimeException {
 
     public final int position;

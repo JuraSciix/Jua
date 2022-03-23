@@ -1,6 +1,4 @@
-package jua.parser;
-
-import jua.compiler.LineMap;
+package jua.compiler;
 
 import java.io.*;
 
