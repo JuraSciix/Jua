@@ -228,7 +228,7 @@ public final class Gen implements Visitor {
                 = entries.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<Expression, Expression> entry = iterator.next();
-            emitDup();
+            if (iterator.hasNext() || isUsed()) emitDup();
             if (entry.getKey().isEmpty()) {
                 code.putPos(entry.getValue().pos);
                 emitPushLong(implicitIndex++);
@@ -1553,7 +1553,7 @@ public final class Gen implements Visitor {
     }
 
     private void visitStatement(Statement statement) {
-        assert statement != null;
+        if (statement == null) return;
         int prev_state = state;
         setState(STATE_NO_DECLS);
         statement.accept(this);
