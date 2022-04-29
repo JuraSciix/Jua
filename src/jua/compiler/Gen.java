@@ -1293,7 +1293,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitUnused(UnusedExpression expression) {
+    public void visitDiscarded(DiscardedExpression expression) {
         visitStatement(expression.expression);
         switch (expression.expression.tag) {
             case ASG: case ASG_ADD: case ASG_SUB: case ASG_MUL:

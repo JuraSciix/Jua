@@ -278,7 +278,7 @@ public class Parser {
         int position = currentToken.pos;
         Expression expr = parseExpression();
         expect(SEMICOLON);
-        return new UnusedExpression(position, expr);
+        return new DiscardedExpression(position, expr);
     }
 
     private List<Expression> parseExpressions() throws ParseException {

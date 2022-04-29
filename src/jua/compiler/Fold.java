@@ -31,7 +31,7 @@ public class Fold implements Visitor {
         if (residualExpression != null && body.getClass() != BlockStatement.class) {
             lower = new BlockStatement(residualExpression.pos, new ArrayList<Statement>() {
                 {
-                    add(new UnusedExpression(residualExpression.pos, residualExpression));
+                    add(new DiscardedExpression(residualExpression.pos, residualExpression));
                     residualExpression = null;
                     add(body);
                 }
@@ -275,7 +275,7 @@ public class Fold implements Visitor {
                 iterator.remove();
                 iterator.add(
                         // Остаточный результат заведомо является unused
-                        new UnusedExpression(residualExpression.pos, residualExpression));
+                        new DiscardedExpression(residualExpression.pos, residualExpression));
                 residualExpression = null;
                 if (lower != null && !lower.isTag(Tag.EMPTY))
                     iterator.add(lower);
@@ -869,7 +869,7 @@ public class Fold implements Visitor {
     }
 
     @Override
-    public void visitUnused(UnusedExpression expression) {
+    public void visitDiscarded(DiscardedExpression expression) {
         expression.expression = getLowerExpression(expression.expression);
         lower = expression;
     }

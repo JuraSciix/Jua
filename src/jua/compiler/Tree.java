@@ -21,7 +21,7 @@ public abstract class Tree {
         FALLTHROUGH,
         RETURN,
         EMPTY,
-        UNUSED,
+        DISCARDED,
         ADD,
         SUB,
         MUL,
@@ -1322,18 +1322,18 @@ public abstract class Tree {
         }
     }
 
-    public static class UnusedExpression extends Expression {
+    public static class DiscardedExpression extends Expression {
 
         public Expression expression;
 
-        public UnusedExpression(int pos, Expression expression) {
-            super(Tag.UNUSED, pos);
+        public DiscardedExpression(int pos, Expression expression) {
+            super(Tag.DISCARDED, pos);
             this.expression = expression;
         }
 
         @Override
         public void accept(Visitor visitor) {
-            visitor.visitUnused(this);
+            visitor.visitDiscarded(this);
         }
     }
 
@@ -1444,7 +1444,7 @@ public abstract class Tree {
         void visitTrue(TrueExpression expression);
         void visitVariable(VariableExpression expression);
         void visitWhile(WhileStatement statement);
-        void visitUnused(UnusedExpression expression);
+        void visitDiscarded(DiscardedExpression expression);
     }
 
     public static class WhileStatement extends Statement {
