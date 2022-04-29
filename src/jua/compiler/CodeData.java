@@ -1,5 +1,6 @@
 package jua.compiler;
 
+import jua.runtime.JuaFunction;
 import jua.runtime.Operand;
 import jua.runtime.RuntimeFunction;
 
@@ -25,7 +26,7 @@ public class CodeData {
 
     final String filename;
 
-    final Map<String, RuntimeFunction> functions = new HashMap<>();
+    final Map<String, JuaFunction> functions = new HashMap<>();
 
     final Map<String, Operand> constants = new HashMap<>();
 
@@ -43,7 +44,7 @@ public class CodeData {
         return constants.containsKey(name);
     }
 
-    public void setFunction(String name, RuntimeFunction function) {
+    public void setFunction(String name, JuaFunction function) {
         if (functions.containsKey(name)) {
             throw BuiltInException.functionRedefinition(name);
         }

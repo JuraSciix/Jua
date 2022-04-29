@@ -1,15 +1,10 @@
 package jua.runtime;
 
 import jua.interpreter.Program;
-import jua.interpreter.ProgramFrame;
+import jua.interpreter.InterpreterFrame;
 
 @Deprecated
 public class CallStackElement {
-
-    public static CallStackElement mainEntry() {
-        return new CallStackElement(null, null, -1, null,
-                Program.createMain().makeFrame());
-    }
 
     public final String name;
 
@@ -19,9 +14,9 @@ public class CallStackElement {
 
     public final Operand[] args;
 
-    public final ProgramFrame lastFrame;
+    public final InterpreterFrame lastFrame;
 
-    public CallStackElement(String name, String filename, int line, Operand[] args, ProgramFrame lastFrame) {
+    public CallStackElement(String name, String filename, int line, Operand[] args, InterpreterFrame lastFrame) {
         this.name = name;
         this.filename = filename;
         this.line = line;

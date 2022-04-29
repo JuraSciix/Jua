@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntStack;
 import jua.interpreter.instructions.*;
 import jua.runtime.ArrayOperand;
+import jua.runtime.JuaFunction;
 import jua.runtime.Operand;
 import jua.runtime.ScriptRuntimeFunction;
 import jua.compiler.Tree.*;
@@ -91,7 +92,7 @@ public final class Gen implements Visitor {
 
     // todo: исправить этот low-cohesion
     public Result getResult() {
-        return new Result(codeData, code.toProgram());
+        return new Result(codeData, code.toProgram(null));
     }
 
     @Override
@@ -676,7 +677,7 @@ public final class Gen implements Visitor {
                     cError(expression.pos, "too many parameters.");
                 }
                 visitExprList(expression.args);
-                instruction = new Call(expression.name, (byte) expression.args.size());
+                instruction = new Invoke(expression.name, (byte) expression.args.size());
                 stack = -expression.args.size() + 1;
                 break;
         }
@@ -709,10 +710,11 @@ public final class Gen implements Visitor {
             emitReturn();
         else
             emitRetnull();
-        codeData.setFunction(statement.name, new ScriptRuntimeFunction(
-                locals, // function arguments must be first at local list
-                optionals,
-                code.toProgram()));
+        codeData.setFunction(statement.name, new JuaFunction(
+                statement.name,
+                statement.names.size(),
+                statement.names.size() - statement.optionals.size(),
+                code.toProgram(optionals)));
         code.popScope();
         code.popContext();
     }

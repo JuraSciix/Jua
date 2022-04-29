@@ -20,10 +20,9 @@ public final class ReturnNull implements Instruction {
 
     @Override
     public int run(InterpreterRuntime env) {
-        //todo
-        env.exitCall(NullOperand.NULL);
-        if (env.getFrame() != null) env.getFrame().incPC();
+        env.getFrame().setReturnValue(NullOperand.NULL);
+        env.returnFrame();
         Trap.bti();
-        return 0; // unreachable
+        return UNREACHABLE;
     }
 }

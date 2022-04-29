@@ -7,8 +7,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import it.unimi.dsi.fastutil.shorts.Short2ShortMap;
-import it.unimi.dsi.fastutil.shorts.Short2ShortRBTreeMap;
+import it.unimi.dsi.fastutil.shorts.*;
 import jua.interpreter.Program;
 import jua.interpreter.instructions.ChainInstruction;
 import jua.interpreter.instructions.Instruction;
@@ -45,7 +44,7 @@ public final class Code {
 
         final List<Instruction> instructions = new ArrayList<>();
 
-        final Short2ShortMap lineTable = new Short2ShortRBTreeMap();
+        final Short2IntSortedMap lineTable = new Short2IntRBTreeMap();
 
         final Int2ObjectMap<Chain> chains = new Int2ObjectOpenHashMap<>();
 
@@ -215,14 +214,14 @@ public final class Code {
     }
 
     private static final String[] EMPTY_STRINGS = new String[0];
-    public Program toProgram() {
+    public Program toProgram(int[] optionals) {
         return new Program(filename,
                 buildInstructions(),
                 buildLineTable(),
+                buildConstantPool(),
                 context.nstack,
                 context.nlocals,
-                context.localNames.keySet().toArray(EMPTY_STRINGS),
-                buildConstantPool());
+                context.localNames.keySet().toArray(EMPTY_STRINGS), optionals);
     }
 
     private static final Instruction[] EMPTY_INSTRUCTIONS = new Instruction[0];
@@ -240,7 +239,7 @@ public final class Code {
     private Program.LineNumberTable buildLineTable() {
         return new Program.LineNumberTable(
                 context.lineTable.keySet().toShortArray(),
-                context.lineTable.values().toShortArray()
+                context.lineTable.values().toIntArray()
         );
     }
 

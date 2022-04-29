@@ -1,1 +1,4 @@
-const A = [null];
+fn printHello(addressee) = println("Hello, " + addressee);
+
+printHello("world");
+printHello("JuraSciix");

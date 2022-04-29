@@ -2,6 +2,7 @@ package jua.runtime;
 
 import jua.interpreter.*;
 
+@Deprecated
 public class ScriptRuntimeFunction implements RuntimeFunction {
 
     public final int[] locals;
@@ -27,11 +28,11 @@ public class ScriptRuntimeFunction implements RuntimeFunction {
                     "arguments too few. (required " + req + ", got " + argc + ')');
             return;
         }
-        ProgramFrame frame = program.makeFrame();
-        Operand[] cp = program.constantPool;
+        InterpreterFrame frame = null;
+        Operand[] cp = program.getConstantPool();
 
-        for (int i = tot; i > argc; i--) frame.store(req+(tot-i), cp[i-req-1]);
-        for (int i = argc-1; i >= 0; i--) frame.store(i, env.popStack());
+        for (int i = tot; i > argc; i--) frame.getState().store(req+(tot-i), cp[i-req-1]);
+        for (int i = argc-1; i >= 0; i--) frame.getState().store(i, env.popStack());
 
         env.enterCall(frame);
         Trap.bti();

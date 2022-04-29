@@ -21,11 +21,7 @@ public class Vinc implements Instruction {
     @Override
     public int run(InterpreterRuntime env) {
         Operand local = env.getLocal(id);
-        if (local == null) {
-            env.getFrame().reportUndefinedVariable(id);
-        } else {
-            env.setLocal(id, local.increment());
-        }
+        env.setLocal(id, local.increment());
         return NEXT;
     }
 }

@@ -15,7 +15,7 @@ public enum Dup2_x2 implements Instruction {
 
     @Override
     public int run(InterpreterRuntime env) {
-        env.getFrame().dup2_x2();
+        env.getFrame().getState().dup2_x2();
         return NEXT;
     }
 }

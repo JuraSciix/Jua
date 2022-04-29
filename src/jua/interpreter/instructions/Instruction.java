@@ -10,6 +10,8 @@ public interface Instruction {
      */
     int NEXT = 1;
 
+    int UNREACHABLE = Integer.MIN_VALUE;
+
     void print(CodePrinter printer);
 
     int run(InterpreterRuntime env);

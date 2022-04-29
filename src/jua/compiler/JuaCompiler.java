@@ -2,7 +2,7 @@ package jua.compiler;
 
 import jua.Options;
 import jua.interpreter.InterpreterRuntime;
-import jua.interpreter.InterpreterRuntimeException;
+import jua.runtime.RuntimeErrorException;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -16,8 +16,9 @@ public class JuaCompiler {
 
         @Override
         public void uncaughtException(Thread t, Throwable e) {
-            if (e instanceof InterpreterRuntimeException) {
-                runtimeError((InterpreterRuntimeException) e);
+            if (e instanceof RuntimeErrorException) {
+                runtimeError(((RuntimeErrorException) e).runtime,
+                             (RuntimeErrorException) e);
             } else {
                 fatal("Fatal error occurred at runtime: ", e);
             }
@@ -153,9 +154,10 @@ public class JuaCompiler {
         env.run();
     }
 
-    private static void runtimeError(InterpreterRuntimeException e) {
+    private static void runtimeError(InterpreterRuntime runtime, RuntimeErrorException e) {
         System.err.println("Runtime error: " + e.getMessage());
-        printPosition(e.filename, e.line, -1);
+        // todo: Че там с многопотоком)
+        printPosition(runtime.currentFile(), runtime.currentLine(), -1);
         System.exit(1);
     }
 

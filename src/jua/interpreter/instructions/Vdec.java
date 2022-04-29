@@ -21,11 +21,7 @@ public final class Vdec implements Instruction {
     @Override
     public int run(InterpreterRuntime env) {
         Operand local = env.getLocal(id);
-        if (local == null) {
-            env.getFrame().reportUndefinedVariable(id);
-        } else {
-            env.setLocal(id, local.decrement());
-        }
+        env.setLocal(id, local.decrement());
         return NEXT;
     }
 }

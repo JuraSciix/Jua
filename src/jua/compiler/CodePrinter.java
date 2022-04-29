@@ -1,11 +1,14 @@
 package jua.compiler;
 
 import jua.interpreter.Program;
+import jua.interpreter.instructions.Instruction;
+import jua.runtime.JuaFunction;
 import jua.runtime.Operand;
-import jua.runtime.RuntimeFunction;
-import jua.runtime.ScriptRuntimeFunction;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class CodePrinter {
@@ -27,7 +30,7 @@ public class CodePrinter {
         @Override
         public String toString() {
             String operands0 = (operands == null) ? "default" : Arrays.stream(operands)
-                    .mapToObj(a -> program.constantPool[a].toString())
+                    .mapToObj(a -> program.getConstantPool()[a].toString())
                     .collect(Collectors.joining(", "));
             return String.format("%s: ->%d", operands0, index);
         }
@@ -57,7 +60,7 @@ public class CodePrinter {
                 String format = String.format("%5d: %-5s ", index, name);
                 sb.append(format);
                 sb.append('{').append(System.lineSeparator());
-                String align = String.format("%" + (format.length()+1) + "s", " ");
+                String align = String.format("%" + (format.length() + 1) + "s", " ");
                 cases.forEach(c -> {
                     sb.append(align).append("\t\t").append(c).append(System.lineSeparator());
                 });
@@ -81,34 +84,37 @@ public class CodePrinter {
 //        }
     }
 
-    public static void printFunctions(Map<String, RuntimeFunction> functions) {
+    public static void printFunctions(Map<String, JuaFunction> functions) {
         functions.forEach((name, function) -> {
-            if (!(function instanceof ScriptRuntimeFunction))
-                return;
-            ScriptRuntimeFunction sf = (ScriptRuntimeFunction) function;
-            StringJoiner args = new StringJoiner(", ");
-
-            for (int i = 0, o = (sf.locals.length - sf.optionals.length); i < sf.locals.length; i++) {
-                if (i >= o) {
-                    args.add(sf.locals[i] + ": " + sf.program.localsNames[i] + " = " +
-                            sf.program.constantPool[sf.optionals[i - o]]);
-                } else {
-                    args.add(sf.locals[i] + ": " + sf.program.localsNames[i]);
+            System.out.print("fn " + name + "(");
+            Program p = function.getProgram();
+            for (int i = 0; i < function.getMaxArgc(); i++) {
+                if (i > 0) {
+                    System.out.print(", ");
+                }
+                System.out.print(p.getLocalNames()[i]);
+                if (i >= function.getMinArgc()) {
+                    System.out.print(" = ");
+                    System.out.print(p.getConstantPool()[
+                            p.getOptionals()[i]].toString());
                 }
             }
-            System.out.printf("fn %s(%s)%n", name, args);
-            print(sf.program);
+            System.out.println(") {");
+            print(p, 1);
+            System.out.println("}");
         });
     }
 
-    public static void print(Program program) {
+    public static void print(Program program, int align) {
         CodePrinter printer = new CodePrinter(program);
+        printer.setAlign(align);
         printer.printHead(program);
         int lastLineNumber = 0;
-        int length = program.instructions.length;
+        Instruction[] code = program.getCode();
+        int length = code.length;
         for (int i = 0; i < length; i++) {
-            program.instructions[i].print(printer);
-            int line = program.getInstructionLine(i);
+            code[i].print(printer);
+            int line = program.getLineNumberTable().get(i);
             if (line != lastLineNumber) {
                 printer.printLine(line);
                 lastLineNumber = line;
@@ -133,13 +139,19 @@ public class CodePrinter {
 
     private PrintState current;
 
+    private int align;
+
     private CodePrinter(Program program) {
         super();
         this.program = program;
     }
 
+    public void setAlign(int align) {
+        this.align = align;
+    }
+
     private void printHead(Program program) {
-        System.out.printf("Code:   stack: %d, locals: %d%n", program.stackSize, program.localsSize);
+        System.out.printf("Code:   stack: %d, locals: %d%n", program.getMaxStack(), program.getMaxLocals());
     }
 
     @Deprecated
@@ -167,7 +179,7 @@ public class CodePrinter {
     }
 
     public void printLocal(int id) {
-        print(String.format("%d (%s)", id, program.localsNames[id]));
+        print(String.format("%d (%s)", id, program.getLocalNames()[id]));
     }
 
     public void printIp(int ip) {
@@ -183,7 +195,7 @@ public class CodePrinter {
     }
 
     public void printLiteral(int index) {
-        Operand constant = program.constantPool[index];
+        Operand constant = program.getConstantPool()[index];
         preparePrint().operands.add(constant.type().name + " " + constant.toString());
     }
 
@@ -198,6 +210,9 @@ public class CodePrinter {
     }
 
     private void flushAndNext() {
+        for (int i = 0; i < align; i++) {
+            System.out.print(" ");
+        }
         System.out.println(current);
         current = null;
     }

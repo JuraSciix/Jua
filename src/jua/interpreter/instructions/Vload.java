@@ -21,12 +21,7 @@ public final class Vload implements Instruction {
     @Override
     public int run(InterpreterRuntime env) {
         Operand operand = env.getLocal(id);
-
-        if (operand == null) {
-            env.getFrame().reportUndefinedVariable(id);
-        } else {
-            env.pushStack(operand);
-        }
+        env.pushStack(operand);
         return NEXT;
     }
 }

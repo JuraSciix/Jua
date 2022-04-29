@@ -3,12 +3,12 @@ package jua.interpreter;
 import jua.Options;
 import jua.runtime.*;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.Map;
+import java.util.Objects;
 
 public class InterpreterRuntime {
 
+    @Deprecated
     public static final int MAX_CALLSTACK_SIZE;
 
     static {
@@ -22,32 +22,31 @@ public class InterpreterRuntime {
         MAX_CALLSTACK_SIZE = a;
     }
 
+    @Deprecated
     public static InterpreterRuntime copy(InterpreterRuntime env) {
         return new InterpreterRuntime(env.functions, env.constants);
     }
 
     // todo: Ну тут и так понятно что надо сделать
 
-    private final Map<String, RuntimeFunction> functions;
+    private final Map<String, JuaFunction> functions;
 
     private final Map<String, Operand> constants;
 
-    private final Deque<ProgramFrame> callStack = new ArrayDeque<>();
-
-    private ProgramFrame cp;
+    private InterpreterFrame upperFrame;
 
     // todo: ну... исправить
-    public ProgramFrame getFrame() {
-        return cp;
+    public InterpreterFrame getFrame() {
+        return upperFrame;
     }
 
-    public InterpreterRuntime(Map<String, RuntimeFunction> functions, Map<String, Operand> constants) {
+    public InterpreterRuntime(Map<String, JuaFunction> functions, Map<String, Operand> constants) {
         this.functions = functions;
         this.constants = constants;
 
     }
 
-    public RuntimeFunction getFunctionByName(String name) {
+    public JuaFunction getFunctionByName(String name) {
         return functions.get(name);
     }
 
@@ -55,30 +54,75 @@ public class InterpreterRuntime {
         return constants.get(name);
     }
 
-    public void enterCall(ProgramFrame p) {
-        callStack.addLast(cp);
-        cp = p;
+    public static InterpreterFrame buildFrame(InterpreterFrame prev,
+                                              JuaFunction function, Program program) {
+        assert function == null || function.getProgram() == program;
+        return new InterpreterFrame(prev,
+                new InterpreterState(program.getCode(), program.getMaxStack(), program.getMaxLocals()),
+                function);
     }
 
-    public void exitCall(Operand returnValue) {
-//        cp.clearStack();
-//        cp.clearLocals();
-        cp = callStack.pollLast();
-        if (cp != null) {
-            cp.push(returnValue);
+    public void joinFrame(JuaFunction callee, int argc) {
+        Objects.requireNonNull(callee, "callee");
+        // todo: Нативных функций пока нет
+        if (((callee.getMaxArgc() - argc) | (argc - callee.getMinArgc())) < 0) {
+            throw new RuntimeErrorException((argc > callee.getMaxArgc()) ?
+                    "arguments too many. (total " + callee.getMaxArgc() + ", got " + argc + ')' :
+                    "arguments too few. (required " + callee.getMinArgc() + ", got " + argc + ')');
         }
+
+        InterpreterFrame upperFrame1 = upperFrame;
+        upperFrame = buildFrame(upperFrame1, callee, callee.getProgram());
+
+        for (int i = callee.getMaxArgc(); i > argc; i--) upperFrame.getState().store(
+                callee.getMinArgc()+(callee.getMaxArgc()-i),
+                callee.getProgram().getConstantPool()[i-callee.getMinArgc()-1]);
+        for (int i = argc-1; i >= 0; i--) upperFrame.getState().store(i, upperFrame1.getState().popStack());
     }
 
-    public void setProgram(ProgramFrame newCP) {
-        cp = newCP;
+    public void returnFrame() {
+        InterpreterFrame uf = upperFrame;
+        Operand returnVal = uf.getReturnValue();
+        if (returnVal == null) throw new IllegalStateException("null return value");
+        InterpreterFrame uf1 = uf.getCallerFrame();
+        if (uf1 == null) {
+            upperFrame = null;
+            return;
+        }
+        // todo: Нативных функций пока нет
+        uf1.getState().pushStack(returnVal);
+        uf1.getState().advance();
+        upperFrame = uf1;
+    }
+
+    @Deprecated
+    public void enterCall(InterpreterFrame p) {
+
+    }
+
+    @Deprecated
+    public void exitCall(Operand returnValue) {
+
+    }
+
+    // todo
+    public void setProgram(InterpreterFrame newCP) {
+        upperFrame = newCP;
     }
 
     public void run() {
-        loop: while (cp != null) {
+        loop:
+        while (upperFrame != null) {
             try {
-                cp.run(this);
-            } catch (InterpreterError e) {
-                throw new InterpreterRuntimeException(e.getMessage(), cp.sourceName(), cp.currentLine());
+                upperFrame.execute(this);
+            } catch (InterpreterError e) { // Note: на всякий случай
+                RuntimeErrorException ex = new RuntimeErrorException(e.getMessage());
+                ex.runtime = this;
+                throw ex;
+            } catch (RuntimeErrorException e) {
+                // Обрабатывается в {@link jua.compiler.JuaCompiler.JuaExceptionHandler}.
+                e.runtime = this;
+                throw e;
             } catch (Trap trap) {
                 switch (trap.state()) {
                     case Trap.STATE_HALT:
@@ -93,11 +137,11 @@ public class InterpreterRuntime {
     }
 
     public String currentFile() {
-        return cp.sourceName();
+        return upperFrame.getOwnerFunc().getProgram().getSourceName();
     }
 
     public int currentLine() {
-        return cp.currentLine();
+        return upperFrame.getOwnerFunc().getProgram().getLineNumberTable().get(upperFrame.getState().getCP());
     }
 
     @Deprecated
@@ -158,7 +202,7 @@ public class InterpreterRuntime {
     }
 
     public void pushStackNull() {
-        cp.push(NullOperand.NULL);
+        pushStack(NullOperand.NULL);
     }
 
     @Deprecated
@@ -183,11 +227,11 @@ public class InterpreterRuntime {
     }
 
     public void pushStack(Operand operand) {
-        cp.push(operand);
+        upperFrame.getState().pushStack(operand);
     }
 
     public Operand popStack() {
-        return cp.pop();
+        return upperFrame.getState().popStack();
     }
 
     @Deprecated
@@ -212,7 +256,7 @@ public class InterpreterRuntime {
     }
 
     public Operand peekStack() {
-        return cp.peek();
+        return upperFrame.getState().peekStack();
     }
 
     @Deprecated
@@ -238,19 +282,24 @@ public class InterpreterRuntime {
 
     @Deprecated
     public void duplicateStack(int count, int x) {
-        cp.duplicate(count, x);
+        // does noting
     }
 
     @Deprecated
     public void moveStack(int x) {
-        cp.move(x);
+        // does noting
     }
 
     public Operand getLocal(int id) {
-        return cp.load(id);
+        Operand value = upperFrame.getState().load(id);
+        if (value == null) {
+            throw InterpreterError.variableNotExists(
+                    upperFrame.getOwnerFunc().getProgram().getLocalNames()[id]);
+        }
+        return value;
     }
 
     public void setLocal(int id, Operand value) {
-        cp.store(id, value);
+        upperFrame.getState().store(id, value);
     }
 }

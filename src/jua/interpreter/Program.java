@@ -3,97 +3,102 @@ package jua.interpreter;
 import jua.interpreter.instructions.Instruction;
 import jua.runtime.Operand;
 
+import java.util.Objects;
+
 /**
- * Программа представляет собой фабрику фреймов.
+ *
  */
 public final class Program {
 
     public static final class LineNumberTable {
 
-        final short[] bytecodeIndexes;
+        private final short[] codePoints;
 
-        final short[] lineNumbers; // todo: int[]
+        private final int[] lineNumbers;
 
-        public LineNumberTable(short[] bytecodeIndexes, short[] lineNumbers) {
-            this.bytecodeIndexes = bytecodeIndexes;
-            this.lineNumbers = lineNumbers;
+        public LineNumberTable(short[] codePoints, int[] lineNumbers) {
+            Objects.requireNonNull(lineNumbers, "line numbers");
+            Objects.requireNonNull(codePoints, "code points");
+            assert lineNumbers.length == codePoints.length;
+            this.lineNumbers = lineNumbers.clone();
+            this.codePoints = codePoints.clone();
         }
 
-        int get(final int bcp) {
+        public int get(int cp) {
             int l = 0;
-            int r = bytecodeIndexes.length - 1;
-            if (r < 0) return -1;
-
-            int minIndex = -1;
-            int minValue = -1;
-            do {
-                int i = (l+r)>>>1;
-                int j = bytecodeIndexes[i]&0xffff;
-
-                if (j == bcp) return lineNumbers[i]&0xffff;
-                else if (bcp < j) r = i - 1;
-                else l = i + 1;
-
-                if (j < bcp && j > minValue) {
-                    minValue = j;
-                    minIndex = i;
+            int h = codePoints.length - 1;
+            while (l <= h) {
+                int m = (l + h) >> 1;
+                int cp1 = codePoints[m] & 0xffff;
+                if (cp1 == cp) {
+                    l = m + 1;
+                    break;
                 }
-            } while (l <= r);
-
-            if (minIndex < 0) return -1;
-
-            return lineNumbers[minIndex]&0xffff;
+                if (cp1 < cp) {
+                    l = m + 1;
+                } else {
+                    h = m - 1;
+                }
+            }
+            return lineNumbers[l - 1];
         }
     }
 
-    public static Program createMain() {
-        // stackSize = 1 because child program always delegate value to him
-        // ^^^ Я не понимаю что это значит, но трогать пока лучше не буду
-        return new Program("main", new Instruction[0],
-                createEmptyLineTable(1), 1, 0, new String[0], new Operand[0]);
-    }
+    private final String sourceName;
 
-    public static Program coroutine(InterpreterRuntime parent, int argc) {
-        // min stackSize value = 1 because child program always delegate value to him
-        // ^^^ Я не понимаю что это значит, но трогать пока лучше не буду
-        return new Program(parent.currentFile(), new Instruction[0],
-                createEmptyLineTable(parent.currentLine()), Math.max(argc, 1), 0, new String[0],
-                new Operand[0]);
-    }
+    private final Instruction[] code;
 
-    private static LineNumberTable createEmptyLineTable(int lineNumber) {
-        return new LineNumberTable(new short[]{0}, new short[]{(short) lineNumber});
-    }
+    private final LineNumberTable lineNumberTable;
 
-    public final String filename;
+    private final Operand[] constantPool;
 
-    public final Instruction[] instructions;
+    private final int maxStack, maxLocals;
 
-    public final LineNumberTable lineNumberTable;
+    private final String[] localNames;
 
-    public final int stackSize;
+    private final int[] optionals;
 
-    public final int localsSize;
-
-    public final String[] localsNames;
-
-    public final Operand[] constantPool;
-
-    public Program(String filename, Instruction[] instructions, LineNumberTable lineNumberTable, int stackSize, int localsSize, String[] localsNames, Operand[] constantPool) {
-        this.filename = filename;
-        this.instructions = instructions;
+    public Program(String sourceName, Instruction[] code, LineNumberTable lineNumberTable,
+                   Operand[] constantPool, int maxStack, int maxLocals, String[] localNames, int[] optionals) {
+        this.sourceName = sourceName;
+        this.code = code;
         this.lineNumberTable = lineNumberTable;
-        this.stackSize = stackSize;
-        this.localsSize = localsSize;
-        this.localsNames = localsNames;
         this.constantPool = constantPool;
+        this.maxStack = maxStack;
+        this.maxLocals = maxLocals;
+        this.localNames = localNames;
+        this.optionals = optionals;
     }
 
-    public int getInstructionLine(int bci) {
-        return lineNumberTable != null ? lineNumberTable.get(bci) : -1;
+    public String getSourceName() {
+        return sourceName;
     }
 
-    public ProgramFrame makeFrame() {
-        return new ProgramFrame(this);
+    public Instruction[] getCode() {
+        return code;
+    }
+
+    public LineNumberTable getLineNumberTable() {
+        return lineNumberTable;
+    }
+
+    public Operand[] getConstantPool() {
+        return constantPool;
+    }
+
+    public int getMaxStack() {
+        return maxStack;
+    }
+
+    public int getMaxLocals() {
+        return maxLocals;
+    }
+
+    public String[] getLocalNames() {
+        return localNames;
+    }
+
+    public int[] getOptionals() {
+        return optionals;
     }
 }
