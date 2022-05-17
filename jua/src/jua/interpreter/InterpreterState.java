@@ -9,9 +9,9 @@ public final class InterpreterState {
 
     private final Instruction[] code;
 
-    private final Operand[] stack, locals;
+    public final Operand[] stack, locals;
 
-    private int cp, sp, advancedCP;
+    public int cp, sp, advancedCP;
 
     public InterpreterState(Instruction[] code, int maxStack, int maxLocals) {
         this.code = Objects.requireNonNull(code, "code");

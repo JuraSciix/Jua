@@ -1,6 +1,6 @@
 package jua.runtime;
 
-import jua.interpreter.Program;
+import jua.runtime.code.CodeSegment;
 
 public class JuaFunction {
 
@@ -9,9 +9,9 @@ public class JuaFunction {
     private final int minArgc, maxArgc;
 
     // todo: Классы пакета (модуля) interpreter могут обращаться к runtime, но не наоборот.
-    private final Program program;
+    private final CodeSegment program;
 
-    public JuaFunction(String name, int minArgc, int maxArgc, Program program) {
+    public JuaFunction(String name, int minArgc, int maxArgc, CodeSegment program) {
         this.name = name;
         this.minArgc = minArgc;
         this.maxArgc = maxArgc;
@@ -30,7 +30,7 @@ public class JuaFunction {
         return maxArgc;
     }
 
-    public Program getProgram() {
+    public CodeSegment getProgram() {
         return program;
     }
 }

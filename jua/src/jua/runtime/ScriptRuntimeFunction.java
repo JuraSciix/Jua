@@ -1,6 +1,7 @@
 package jua.runtime;
 
 import jua.interpreter.*;
+import jua.runtime.code.CodeSegment;
 
 @Deprecated
 public class ScriptRuntimeFunction implements RuntimeFunction {
@@ -9,9 +10,9 @@ public class ScriptRuntimeFunction implements RuntimeFunction {
 
     public final int[] optionals;
 
-    public final Program program;
+    public final CodeSegment program;
 
-    public ScriptRuntimeFunction(int[] locals, int[] optionals, Program program) {
+    public ScriptRuntimeFunction(int[] locals, int[] optionals, CodeSegment program) {
         this.locals = locals;
         this.optionals = optionals;
         this.program = program;

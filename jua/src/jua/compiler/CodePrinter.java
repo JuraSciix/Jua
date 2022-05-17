@@ -1,6 +1,6 @@
 package jua.compiler;
 
-import jua.interpreter.Program;
+import jua.runtime.code.CodeSegment;
 import jua.interpreter.instructions.Instruction;
 import jua.runtime.JuaFunction;
 import jua.runtime.Operand;
@@ -19,9 +19,9 @@ public class CodePrinter {
 
         private final int index;
 
-        private final Program program;
+        private final CodeSegment program;
 
-        private Case(int[] operands, int index, Program program) {
+        private Case(int[] operands, int index, CodeSegment program) {
             this.operands = operands;
             this.index = index;
             this.program = program;
@@ -87,7 +87,7 @@ public class CodePrinter {
     public static void printFunctions(Map<String, JuaFunction> functions) {
         functions.forEach((name, function) -> {
             System.out.print("fn " + name + "(");
-            Program p = function.getProgram();
+            CodeSegment p = function.getProgram();
             for (int i = 0; i < function.getMaxArgc(); i++) {
                 if (i > 0) {
                     System.out.print(", ");
@@ -105,7 +105,7 @@ public class CodePrinter {
         });
     }
 
-    public static void print(Program program, int align) {
+    public static void print(CodeSegment program, int align) {
         CodePrinter printer = new CodePrinter(program);
         printer.setAlign(align);
         printer.printHead(program);
@@ -114,7 +114,7 @@ public class CodePrinter {
         int length = code.length;
         for (int i = 0; i < length; i++) {
             code[i].print(printer);
-            int line = program.getLineNumberTable().get(i);
+            int line = program.getLineNumberTable().lineNumberOf(i);
             if (line != lastLineNumber) {
                 printer.printLine(line);
                 lastLineNumber = line;
@@ -133,7 +133,7 @@ public class CodePrinter {
         current.line = line;
     }
 
-    private final Program program;
+    private final CodeSegment program;
 
     private int index;
 
@@ -141,7 +141,7 @@ public class CodePrinter {
 
     private int align;
 
-    private CodePrinter(Program program) {
+    private CodePrinter(CodeSegment program) {
         super();
         this.program = program;
     }
@@ -150,12 +150,12 @@ public class CodePrinter {
         this.align = align;
     }
 
-    private void printHead(Program program) {
+    private void printHead(CodeSegment program) {
         System.out.printf("Code:   stack: %d, locals: %d%n", program.getMaxStack(), program.getMaxLocals());
     }
 
     @Deprecated
-    private void printLines(Program program) {
+    private void printLines(CodeSegment program) {
 //        System.out.println("Lines:");
 //        Map<Integer, List<Integer>> lines = new TreeMap<>(Comparator.comparingInt(a -> a));
 //

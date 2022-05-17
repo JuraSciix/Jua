@@ -28,25 +28,23 @@ public class LineMap {
     }
 
     public int getLineNumber(int pos) {
-        int l = 0;
-        int r = lineMap.length-1;
+        int[] _startPositions = lineMap;
 
-        int minIndex = 1;
+        int f = 0;                      // from
+        int t = _startPositions.length; // to
+        int c = (t >> 1);               // center
 
-        while (l <= r) {
-            int c = (l+r)>>>1;
-
-            if (lineMap[c] == pos) {
-                return c + 1;
-            } else if (lineMap[c] < pos) {
-                minIndex = c;
-                l = c + 1;
+        while ((t - f) > 1) {
+            int sp = _startPositions[c];
+            if (pos >= sp) {
+                f = c;
             } else {
-                r = c - 1;
+                t = c;
             }
+            c = (t + f) >> 1;
         }
 
-        return minIndex+1;
+        return c + 1;
     }
 
     public int getOffsetNumber(int pos) {

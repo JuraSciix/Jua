@@ -3,15 +3,15 @@ package jua.compiler;
 import jua.interpreter.InterpreterRuntime;
 import jua.interpreter.InterpreterFrame;
 
-import jua.interpreter.Program;
+import jua.runtime.code.CodeSegment;
 import jua.runtime.JuaFunction;
 
 public class Result {
 
     private final CodeData codeData;
-    private final Program main;
+    private final CodeSegment main;
 
-    public Result(CodeData codeData, Program main) {
+    public Result(CodeData codeData, CodeSegment main) {
         this.codeData = codeData;
         this.main = main;
     }

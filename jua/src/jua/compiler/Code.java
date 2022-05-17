@@ -8,13 +8,14 @@ import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.shorts.*;
-import jua.interpreter.Program;
+import jua.runtime.code.CodeSegment;
 import jua.interpreter.instructions.ChainInstruction;
 import jua.interpreter.instructions.Instruction;
 import jua.runtime.DoubleOperand;
 import jua.runtime.LongOperand;
 import jua.runtime.Operand;
 import jua.runtime.StringOperand;
+import jua.runtime.code.LineNumberTable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -214,8 +215,8 @@ public final class Code {
     }
 
     private static final String[] EMPTY_STRINGS = new String[0];
-    public Program toProgram(int[] optionals) {
-        return new Program(filename,
+    public CodeSegment toProgram(int[] optionals) {
+        return new CodeSegment(filename,
                 buildInstructions(),
                 buildLineTable(),
                 buildConstantPool(),
@@ -236,8 +237,8 @@ public final class Code {
         return instructions;
     }
 
-    private Program.LineNumberTable buildLineTable() {
-        return new Program.LineNumberTable(
+    private LineNumberTable buildLineTable() {
+        return new LineNumberTable(
                 context.lineTable.keySet().toShortArray(),
                 context.lineTable.values().toIntArray()
         );

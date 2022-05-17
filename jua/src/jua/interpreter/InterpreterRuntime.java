@@ -2,6 +2,7 @@ package jua.interpreter;
 
 import jua.Options;
 import jua.runtime.*;
+import jua.runtime.code.CodeSegment;
 
 import java.util.Map;
 import java.util.Objects;
@@ -55,7 +56,7 @@ public class InterpreterRuntime {
     }
 
     public static InterpreterFrame buildFrame(InterpreterFrame prev,
-                                              JuaFunction function, Program program) {
+                                              JuaFunction function, CodeSegment program) {
         assert function == null || function.getProgram() == program;
         return new InterpreterFrame(prev,
                 new InterpreterState(program.getCode(), program.getMaxStack(), program.getMaxLocals()),
@@ -141,7 +142,7 @@ public class InterpreterRuntime {
     }
 
     public int currentLine() {
-        return upperFrame.getOwnerFunc().getProgram().getLineNumberTable().get(upperFrame.getState().getCP());
+        return upperFrame.getOwnerFunc().getProgram().getLineNumberTable().lineNumberOf(upperFrame.getState().getCP());
     }
 
     @Deprecated
@@ -231,7 +232,7 @@ public class InterpreterRuntime {
     }
 
     public Operand popStack() {
-        return upperFrame.getState().popStack();
+        return getFrame().getState().popStack();
     }
 
     @Deprecated
@@ -276,7 +277,7 @@ public class InterpreterRuntime {
         return getInt(peekStack());
     }
 
-    public String peekString() {
+    public String peekString()  {
         return getString(peekStack());
     }
 

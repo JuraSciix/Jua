@@ -1,6 +1,5 @@
 package jua.runtime;
 
-import jua.interpreter.Program;
 import jua.interpreter.InterpreterFrame;
 
 @Deprecated
