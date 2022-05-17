@@ -356,7 +356,7 @@ public final class Gen implements Visitor {
         }
         tree.rhs.accept(this);
         code.putPos(tree.pos);
-        code.addInstruction(bin2instr(tree.tag));
+        code.addInstruction(bin2instr(tree.getTag()));
     }
 
     public static Instruction bin2instr(Tag tag) {
@@ -880,7 +880,7 @@ public final class Gen implements Visitor {
             shortVal = Integer.MIN_VALUE;
         }
         boolean invert = isState(STATE_COND_INVERT);
-        switch (expression.tag) {
+        switch (expression.getTag()) {
             case EQ:
                 if (lhsNull || rhsNull) {
                     visitExpression(lhsNull ? rhs : lhs);
@@ -1067,7 +1067,7 @@ public final class Gen implements Visitor {
         }
         tree.hs.accept(this);
         code.putPos(tree.pos);
-        code.addInstruction(unary2instr(tree.tag));
+        code.addInstruction(unary2instr(tree.getTag()));
     }
 
     public static Instruction unary2instr(Tag tag) {
@@ -1297,7 +1297,7 @@ public final class Gen implements Visitor {
     @Override
     public void visitDiscarded(DiscardedExpression expression) {
         visitStatement(expression.expression);
-        switch (expression.expression.tag) {
+        switch (expression.expression.getTag()) {
             case ASG: case ASG_ADD: case ASG_SUB: case ASG_MUL:
             case ASG_DIV: case ASG_REM: case ASG_BITAND: case ASG_BITOR:
             case ASG_BITXOR: case ASG_SL: case ASG_SR: case ASG_NULLCOALESCE:
@@ -1346,7 +1346,7 @@ public final class Gen implements Visitor {
         Expression lhs = expression.var;
         Expression rhs = expression.expr;
 
-        switch (lhs.tag) {
+        switch (lhs.getTag()) {
             case ARRAY_ACCESS: {
                 ArrayAccessExpression arrayAccess = (ArrayAccessExpression) lhs;
                 code.putPos(arrayAccess.pos);
@@ -1380,7 +1380,7 @@ public final class Gen implements Visitor {
                         emitALoad();
                         visitExpression(rhs);
                         code.putPos(expression.pos);
-                        code.addInstruction(asg2state(expression.tag), -1);
+                        code.addInstruction(asg2state(expression.getTag()), -1);
                     } else {
                         visitExpression(rhs);
                     }
@@ -1418,7 +1418,7 @@ public final class Gen implements Visitor {
                         visitExpression(lhs);
                         visitExpression(rhs);
                         code.putPos(expression.pos);
-                        code.addInstruction(asg2state(expression.tag), -1);
+                        code.addInstruction(asg2state(expression.getTag()), -1);
                     } else {
                         visitExpression(rhs);
                     }
@@ -1500,7 +1500,7 @@ public final class Gen implements Visitor {
 
         Expression hs = expression.hs;
 
-        switch (hs.tag) {
+        switch (hs.getTag()) {
             case ARRAY_ACCESS: {
                 ArrayAccessExpression arrayAccess = (ArrayAccessExpression) hs;
                 code.putPos(arrayAccess.pos);
@@ -1512,7 +1512,7 @@ public final class Gen implements Visitor {
                     emitDupX2();
                 }
                 code.putPos(expression.pos);
-                code.addInstruction(increase2state(expression.tag, -1));
+                code.addInstruction(increase2state(expression.getTag(), -1));
                 if (isUsed() && (expression.isTag(Tag.PRE_INC) || expression.isTag(Tag.PRE_DEC))) {
                     emitDupX2();
                 }
@@ -1526,7 +1526,7 @@ public final class Gen implements Visitor {
                     variable.accept(this);
                 }
                 code.putPos(expression.pos);
-                code.addInstruction(increase2state(expression.tag, code.resolveLocal(variable.name)));
+                code.addInstruction(increase2state(expression.getTag(), code.resolveLocal(variable.name)));
                 if (isUsed() && (expression.isTag(Tag.PRE_INC) || expression.isTag(Tag.PRE_DEC))) {
                     variable.accept(this);
                 }
