@@ -1,8 +1,9 @@
 package jua.compiler;
 
 import jua.Options;
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 import jua.runtime.RuntimeErrorException;
+import jua.util.LineMap;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -128,7 +129,7 @@ public class JuaCompiler {
 
         try {
             if (Options.optimize()) {
-                root.accept(new Fold(codeData));
+//                root.accept(new Fold(codeData));
             } else {
                 System.err.println("Warning: disabling optimization is strongly discouraged. " +
                         "This feature may be removed in a future version");
@@ -149,12 +150,12 @@ public class JuaCompiler {
         System.exit(1);
     }
 
-    private static void interpret(InterpreterRuntime env) {
+    private static void interpret(InterpreterThread env) {
         Thread.setDefaultUncaughtExceptionHandler(RUNTIME_EXCEPTION_HANDLER);
         env.run();
     }
 
-    private static void runtimeError(InterpreterRuntime runtime, RuntimeErrorException e) {
+    private static void runtimeError(InterpreterThread runtime, RuntimeErrorException e) {
         System.err.println("Runtime error: " + e.getMessage());
         // todo: Че там с многопотоком)
         printPosition(runtime.currentFile(), runtime.currentLine(), -1);

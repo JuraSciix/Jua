@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 import jua.interpreter.Trap;
 import jua.compiler.CodePrinter;
 
@@ -18,7 +18,7 @@ public enum Halt implements Instruction {
     }
 
     @Override
-    public int run(InterpreterRuntime env) {
+    public int run(InterpreterThread env) {
         Trap.halt();
         return NEXT;
     }

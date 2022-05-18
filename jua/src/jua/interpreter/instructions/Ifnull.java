@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 import jua.compiler.CodePrinter;
 
 public final class Ifnull extends ChainInstruction {
@@ -16,7 +16,7 @@ public final class Ifnull extends ChainInstruction {
     }
 
     @Override
-    public int run(InterpreterRuntime env) {
+    public int run(InterpreterThread env) {
         if (env.popStack().isNull()) {
             return destIp;
         } else {

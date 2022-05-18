@@ -2,7 +2,7 @@ package jua.interpreter.instructions;
 
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterError;
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 import jua.runtime.ArrayOperand;
 import jua.runtime.Operand;
 
@@ -16,7 +16,7 @@ public enum Add implements Instruction {
     }
 
     @Override
-    public int run(InterpreterRuntime env) {
+    public int run(InterpreterThread env) {
         // todo: Распределить код по наследникам Operand.
         // todo: Также с остальными операциями над операндами.
         Operand rhs = env.popStack();

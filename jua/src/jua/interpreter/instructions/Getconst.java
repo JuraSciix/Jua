@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
 import jua.compiler.CodePrinter;
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 
 public class Getconst implements Instruction {
 
@@ -18,7 +18,7 @@ public class Getconst implements Instruction {
     }
 
     @Override
-    public int run(InterpreterRuntime env) {
+    public int run(InterpreterThread env) {
         env.pushStack(env.getConstantByName(name));
         return NEXT;
     }

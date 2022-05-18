@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 import jua.interpreter.InterpreterError;
 import jua.runtime.Operand;
 import jua.compiler.CodePrinter;
@@ -18,7 +18,7 @@ public final class Ifcmpge extends ChainInstruction {
     }
 
     @Override
-    public int run(InterpreterRuntime env) {
+    public int run(InterpreterThread env) {
         Operand rhs = env.popStack();
         Operand lhs = env.popStack();
 

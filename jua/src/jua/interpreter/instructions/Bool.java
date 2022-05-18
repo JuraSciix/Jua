@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 import jua.compiler.CodePrinter;
 
 /**
@@ -34,7 +34,7 @@ public enum Bool implements Instruction {
     }
 
     @Override
-    public int run(InterpreterRuntime env) {
+    public int run(InterpreterThread env) {
         // todo:
         env.pushStack(env.popStack().booleanValue());
         return NEXT;

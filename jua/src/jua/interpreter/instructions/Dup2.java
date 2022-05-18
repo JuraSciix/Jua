@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 import jua.runtime.Operand;
 import jua.compiler.CodePrinter;
 
@@ -15,7 +15,7 @@ public enum Dup2 implements Instruction {
     }
 
     @Override
-    public int run(InterpreterRuntime env) {
+    public int run(InterpreterThread env) {
         Operand a = env.popStack();
         Operand b = env.popStack();
         env.pushStack(b);

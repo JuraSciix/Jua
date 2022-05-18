@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 import jua.compiler.CodePrinter;
 
 public enum Dup_x2 implements Instruction {
@@ -14,7 +14,7 @@ public enum Dup_x2 implements Instruction {
     }
 
     @Override
-    public int run(InterpreterRuntime env) {
+    public int run(InterpreterThread env) {
         env.getFrame().getState().dup1_x2();
         return NEXT;
     }

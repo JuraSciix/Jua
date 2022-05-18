@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 import jua.runtime.ArrayOperand;
 import jua.compiler.CodePrinter;
 
@@ -14,7 +14,7 @@ public enum Newarray implements Instruction {
     }
 
     @Override
-    public int run(InterpreterRuntime env) {
+    public int run(InterpreterThread env) {
         env.pushStack(new ArrayOperand());
         return NEXT;
     }
