@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterThread;
+import jua.interpreter.InterpreterRuntime;
 import jua.compiler.CodePrinter;
 
 public class Print implements Instruction {
@@ -18,7 +18,7 @@ public class Print implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread env) {
+    public int run(InterpreterRuntime env) {
         String[] pieces = new String[count];
         for (int i = 1; i <= count; i++) {
             pieces[count - i] = env.popStack().stringValue();

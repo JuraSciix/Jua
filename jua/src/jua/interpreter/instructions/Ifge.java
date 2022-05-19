@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterThread;
+import jua.interpreter.InterpreterRuntime;
 import jua.compiler.CodePrinter;
 
 public final class Ifge extends ChainInstruction {
@@ -20,7 +20,7 @@ public final class Ifge extends ChainInstruction {
     }
 
     @Override
-    public int run(InterpreterThread env) {
+    public int run(InterpreterRuntime env) {
         if (env.popInt() >= value) {
             return destIp;
         } else {

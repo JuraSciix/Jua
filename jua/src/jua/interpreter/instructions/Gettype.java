@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
 import jua.compiler.CodePrinter;
-import jua.interpreter.InterpreterThread;
+import jua.interpreter.InterpreterRuntime;
 import jua.runtime.StringOperand;
 
 /**
@@ -20,7 +20,7 @@ public enum Gettype implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread env) {
+    public int run(InterpreterRuntime env) {
         env.pushStack(new StringOperand(env.popStack().type().name));
         return NEXT;
     }

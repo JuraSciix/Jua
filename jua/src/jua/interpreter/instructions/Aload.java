@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterThread;
+import jua.interpreter.InterpreterRuntime;
 import jua.runtime.NullOperand;
 import jua.runtime.Operand;
 import jua.compiler.CodePrinter;
@@ -15,7 +15,7 @@ public enum Aload implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread env) {
+    public int run(InterpreterRuntime env) {
         Operand key = env.popStack();
         Operand map = env.popStack();
         Operand result = map.get(key);

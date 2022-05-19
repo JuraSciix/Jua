@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterThread;
+import jua.interpreter.InterpreterRuntime;
 import jua.interpreter.InterpreterError;
 import jua.runtime.Operand;
 import jua.compiler.CodePrinter;
@@ -15,7 +15,7 @@ public enum Neg implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread env) {
+    public int run(InterpreterRuntime env) {
         Operand val = env.popStack();
 
         if (val.isLong()) {

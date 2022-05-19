@@ -77,23 +77,28 @@ public abstract class Tree {
         @Deprecated
         PRINTLN
     }
-    public final Tag tag;
 
     public int pos;
 
-    protected Tree(Tag tag, int pos) {
-        this.tag = tag;
+    public abstract Tag getTag();
+
+    protected Tree(int pos) {
         this.pos = pos;
     }
 
-    public final boolean isTag(Tag t) { return tag == t; }
+    public final boolean isTag(Tag t) { return getTag() == t; }
 
     public abstract void accept(Visitor visitor);
 
     public static class AddExpression extends BinaryExpression {
 
         public AddExpression(int pos, Expression lhs, Expression rhs) {
-            super(Tag.ADD, pos, lhs, rhs);
+            super(pos, lhs, rhs);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.ADD;
         }
 
         @Override
@@ -105,12 +110,17 @@ public abstract class Tree {
     public static class AndExpression extends BinaryExpression {
 
         public AndExpression(int pos, Expression lhs, Expression rhs) {
-            super(Tag.LOGAND, pos, lhs, rhs);
+            super(pos, lhs, rhs);
         }
 
         @Override
         public boolean isCondition() {
             return true;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.LOGAND;
         }
 
         @Override
@@ -124,7 +134,7 @@ public abstract class Tree {
         public Expression key;
 
         public ArrayAccessExpression(int pos, Expression hs, Expression key) {
-            super(Tag.ARRAY_ACCESS, pos, hs);
+            super(pos, hs);
             this.key = key;
         }
 
@@ -149,6 +159,11 @@ public abstract class Tree {
         }
 
         @Override
+        public Tag getTag() {
+            return Tag.ARRAY_ACCESS;
+        }
+
+        @Override
         public void accept(Visitor visitor) {
             visitor.visitArrayAccess(this);
         }
@@ -160,7 +175,7 @@ public abstract class Tree {
         public Map<Expression, Expression> map;
 
         public ArrayExpression(int pos, Map<Expression, Expression> map) {
-            super(Tag.ARRAY_LITERAL, pos);
+            super(pos);
             this.map = map;
         }
 
@@ -175,6 +190,11 @@ public abstract class Tree {
         }
 
         @Override
+        public Tag getTag() {
+            return Tag.ARRAY_LITERAL;
+        }
+
+        @Override
         public void accept(Visitor visitor) {
             visitor.visitArray(this);
         }
@@ -183,7 +203,12 @@ public abstract class Tree {
     public static class AssignAddExpression extends AssignmentExpression {
 
         public AssignAddExpression(int pos, Expression var, Expression expr) {
-            super(Tag.ASG_ADD, pos, var, expr);
+            super(pos, var, expr);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.ASG_ADD;
         }
 
         @Override
@@ -195,7 +220,12 @@ public abstract class Tree {
     public static class AssignBitAndExpression extends AssignmentExpression {
 
         public AssignBitAndExpression(int pos, Expression var, Expression expr) {
-            super(Tag.ASG_BITAND, pos, var, expr);
+            super(pos, var, expr);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.ASG_BITAND;
         }
 
         @Override
@@ -207,7 +237,12 @@ public abstract class Tree {
     public static class AssignBitOrExpression extends AssignmentExpression {
 
         public AssignBitOrExpression(int pos, Expression var, Expression expr) {
-            super(Tag.ASG_BITOR, pos, var, expr);
+            super(pos, var, expr);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.ASG_BITOR;
         }
 
         @Override
@@ -219,7 +254,12 @@ public abstract class Tree {
     public static class AssignBitXorExpression extends AssignmentExpression {
 
         public AssignBitXorExpression(int pos, Expression var, Expression expr) {
-            super(Tag.ASG_BITXOR, pos, var, expr);
+            super(pos, var, expr);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.ASG_BITXOR;
         }
 
         @Override
@@ -231,7 +271,12 @@ public abstract class Tree {
     public static class AssignDivideExpression extends AssignmentExpression {
 
         public AssignDivideExpression(int pos, Expression var, Expression expr) {
-            super(Tag.ASG_DIV, pos, var, expr);
+            super(pos, var, expr);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.ASG_DIV;
         }
 
         @Override
@@ -243,7 +288,12 @@ public abstract class Tree {
     public static class AssignExpression extends AssignmentExpression {
 
         public AssignExpression(int pos, Expression var, Expression expr) {
-            super(Tag.ASG, pos, var, expr);
+            super(pos, var, expr);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.ASG;
         }
 
         @Override
@@ -258,8 +308,8 @@ public abstract class Tree {
 
         public Expression expr;
 
-        protected AssignmentExpression(Tag tag, int pos, Expression var, Expression expr) {
-            super(tag, pos);
+        protected AssignmentExpression(int pos, Expression var, Expression expr) {
+            super(pos);
             this.var = var;
             this.expr = expr;
         }
@@ -283,7 +333,12 @@ public abstract class Tree {
     public static class AssignMultiplyExpression extends AssignmentExpression {
 
         public AssignMultiplyExpression(int pos, Expression var, Expression expr) {
-            super(Tag.ASG_MUL, pos, var, expr);
+            super(pos, var, expr);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.ASG_MUL;
         }
 
         @Override
@@ -295,7 +350,12 @@ public abstract class Tree {
     public static class AssignNullCoalesceExpression extends AssignmentExpression {
 
         public AssignNullCoalesceExpression(int pos, Expression var, Expression expr) {
-            super(Tag.ASG_NULLCOALESCE, pos, var, expr);
+            super(pos, var, expr);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.ASG_NULLCOALESCE;
         }
 
         @Override
@@ -307,7 +367,12 @@ public abstract class Tree {
     public static class AssignRemainderExpression extends AssignmentExpression {
 
         public AssignRemainderExpression(int pos, Expression var, Expression expr) {
-            super(Tag.ASG_REM, pos, var, expr);
+            super(pos, var, expr);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.ASG_REM;
         }
 
         @Override
@@ -319,7 +384,12 @@ public abstract class Tree {
     public static class AssignShiftLeftExpression extends AssignmentExpression {
 
         public AssignShiftLeftExpression(int pos, Expression var, Expression expr) {
-            super(Tag.ASG_SL, pos, var, expr);
+            super(pos, var, expr);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.ASG_SL;
         }
 
         @Override
@@ -331,7 +401,12 @@ public abstract class Tree {
     public static class AssignShiftRightExpression extends AssignmentExpression {
 
         public AssignShiftRightExpression(int pos, Expression var, Expression expr) {
-            super(Tag.ASG_SR, pos, var, expr);
+            super(pos, var, expr);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.ASG_SR;
         }
 
         @Override
@@ -343,7 +418,12 @@ public abstract class Tree {
     public static class AssignSubtractExpression extends AssignmentExpression {
 
         public AssignSubtractExpression(int pos, Expression var, Expression expr) {
-            super(Tag.ASG_SUB, pos, var, expr);
+            super(pos, var, expr);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.ASG_SUB;
         }
 
         @Override
@@ -358,8 +438,8 @@ public abstract class Tree {
 
         public Expression rhs;
 
-        protected BinaryExpression(Tag tag, int pos, Expression lhs, Expression rhs) {
-            super(tag, pos);
+        protected BinaryExpression(int pos, Expression lhs, Expression rhs) {
+            super(pos);
             this.lhs = lhs;
             this.rhs = rhs;
         }
@@ -378,7 +458,12 @@ public abstract class Tree {
     public static class BitAndExpression extends BinaryExpression {
 
         public BitAndExpression(int pos, Expression lhs, Expression rhs) {
-            super(Tag.BITAND, pos, lhs, rhs);
+            super(pos, lhs, rhs);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.BITAND;
         }
 
         @Override
@@ -390,7 +475,12 @@ public abstract class Tree {
     public static class BitNotExpression extends UnaryExpression {
 
         public BitNotExpression(int pos, Expression hs) {
-            super(Tag.BITCMPL, pos, hs);
+            super(pos, hs);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.BITCMPL;
         }
 
         @Override
@@ -402,7 +492,12 @@ public abstract class Tree {
     public static class BitOrExpression extends BinaryExpression {
 
         public BitOrExpression(int pos, Expression lhs, Expression rhs) {
-            super(Tag.BITOR, pos, lhs, rhs);
+            super(pos, lhs, rhs);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.BITOR;
         }
 
         @Override
@@ -414,7 +509,12 @@ public abstract class Tree {
     public static class BitXorExpression extends BinaryExpression {
 
         public BitXorExpression(int pos, Expression lhs, Expression rhs) {
-            super(Tag.BITXOR, pos, lhs, rhs);
+            super(pos, lhs, rhs);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.BITXOR;
         }
 
         @Override
@@ -428,8 +528,13 @@ public abstract class Tree {
         public List<Statement> statements;
 
         public BlockStatement(int pos, List<Statement> statements) {
-            super(Tag.COMPOUND, pos);
+            super(pos);
             this.statements = statements;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.COMPOUND;
         }
 
         @Override
@@ -447,8 +552,13 @@ public abstract class Tree {
 
     public static class BreakStatement extends Statement {
 
+        @Override
+        public Tag getTag() {
+            return Tag.BREAK;
+        }
+
         public BreakStatement(int pos) {
-            super(Tag.BREAK, pos);
+            super(pos);
         }
 
         @Override
@@ -464,9 +574,14 @@ public abstract class Tree {
         public Statement body;
 
         public CaseStatement(int pos, List<Expression> expressions, Statement body) {
-            super(Tag.CASE, pos);
+            super(pos);
             this.expressions = expressions;
             this.body = body;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.CASE;
         }
 
         @Override
@@ -478,7 +593,12 @@ public abstract class Tree {
     public static class CloneExpression extends UnaryExpression {
 
         public CloneExpression(int pos, Expression hs) {
-            super(Tag.CLONE, pos, hs);
+            super(pos, hs);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.CLONE;
         }
 
         @Override
@@ -489,8 +609,8 @@ public abstract class Tree {
 
     public abstract static class ConditionalExpression extends BinaryExpression {
 
-        protected ConditionalExpression(Tag tag, int pos, Expression lhs, Expression rhs) {
-            super(tag, pos, lhs, rhs);
+        protected ConditionalExpression(int pos, Expression lhs, Expression rhs) {
+            super(pos, lhs, rhs);
         }
     }
 
@@ -501,9 +621,14 @@ public abstract class Tree {
         public List<Expression> expressions;
 
         public ConstantDeclareStatement(int pos, List<String> names, List<Expression> expressions) {
-            super(Tag.CONSTDECL, pos);
+            super(pos);
             this.names = names;
             this.expressions = expressions;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.CONSTDECL;
         }
 
         @Override
@@ -514,8 +639,13 @@ public abstract class Tree {
 
     public static class ContinueStatement extends Statement {
 
+        @Override
+        public Tag getTag() {
+            return Tag.CONTINUE;
+        }
+
         public ContinueStatement(int pos) {
-            super(Tag.CONTINUE, pos);
+            super(pos);
         }
 
         @Override
@@ -527,7 +657,12 @@ public abstract class Tree {
     public static class DivideExpression extends BinaryExpression {
 
         public DivideExpression(int pos, Expression lhs, Expression rhs) {
-            super(Tag.DIV, pos, lhs, rhs);
+            super(pos, lhs, rhs);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.DIV;
         }
 
         @Override
@@ -543,9 +678,14 @@ public abstract class Tree {
         public Expression cond;
 
         public DoStatement(int pos, Statement body, Expression cond) {
-            super(Tag.DOLOOP, pos);
+            super(pos);
             this.body = body;
             this.cond = cond;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.DOLOOP;
         }
 
         @Override
@@ -557,12 +697,17 @@ public abstract class Tree {
     public static class EqualExpression extends ConditionalExpression {
 
         public EqualExpression(int pos, Expression lhs, Expression rhs) {
-            super(Tag.EQ, pos, lhs, rhs);
+            super(pos, lhs, rhs);
         }
 
         @Override
         public boolean isCondition() {
             return true;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.EQ;
         }
 
         @Override
@@ -574,7 +719,7 @@ public abstract class Tree {
     public abstract static class Expression extends Statement {
 
         public static Expression empty() {
-            return new Expression(Tag.EMPTY, 0) {
+            return new Expression(0) {
 
                 @Override
                 public boolean isEmpty() {
@@ -582,12 +727,17 @@ public abstract class Tree {
                 }
 
                 @Override
+                public Tag getTag() {
+                    return Tag.EMPTY;
+                }
+
+                @Override
                 public void accept(Visitor visitor) { }
             };
         }
 
-        protected Expression(Tag tag, int pos) {
-            super(tag, pos);
+        protected Expression(int pos) {
+            super(pos);
         }
 
         // todo: Почти все эти методы лишние, часть из них нужно переместить в jua.compiler.TreeInfo
@@ -627,8 +777,13 @@ public abstract class Tree {
 
     public static class FallthroughStatement extends Statement {
 
+        @Override
+        public Tag getTag() {
+            return Tag.FALLTHROUGH;
+        }
+
         public FallthroughStatement(int pos) {
-            super(Tag.FALLTHROUGH, pos);
+            super(pos);
         }
 
         @Override
@@ -664,6 +819,11 @@ public abstract class Tree {
         }
 
         @Override
+        public Tag getTag() {
+            return null;
+        }
+
+        @Override
         public void accept(Visitor visitor) {
             visitor.visitFloat(this);
         }
@@ -680,11 +840,16 @@ public abstract class Tree {
         public Statement body;
 
         public ForStatement(int pos, List<Expression> init, Expression cond, List<Expression> step, Statement body) {
-            super(Tag.FORLOOP, pos);
+            super(pos);
             this.init = init;
             this.cond = cond;
             this.step = step;
             this.body = body;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.FORLOOP;
         }
 
         @Override
@@ -700,7 +865,7 @@ public abstract class Tree {
         public List<Expression> args;
 
         public FunctionCallExpression(int pos, String name, List<Expression> args) {
-            super(Tag.FUNC_CALL, pos);
+            super(pos);
             this.name = name;
             this.args = args;
         }
@@ -718,6 +883,11 @@ public abstract class Tree {
         @Override
         public boolean isNullable() {
             return true;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.FUNC_CALL;
         }
 
         @Override
@@ -743,11 +913,16 @@ public abstract class Tree {
                                        List<String> names,
                                        List<Expression> optionals,
                                        Statement body) {
-            super(Tag.FUNCDECL, pos);
+            super(pos);
             this.name = name;
             this.names = names;
             this.optionals = optionals;
             this.body = body;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.FUNCDECL;
         }
 
         @Override
@@ -759,12 +934,17 @@ public abstract class Tree {
     public static class GreaterEqualExpression extends ConditionalExpression {
 
         public GreaterEqualExpression(int pos, Expression lhs, Expression rhs) {
-            super(Tag.GE, pos, lhs, rhs);
+            super(pos, lhs, rhs);
         }
 
         @Override
         public boolean isCondition() {
             return true;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.GE;
         }
 
         @Override
@@ -776,12 +956,17 @@ public abstract class Tree {
     public static class GreaterExpression extends ConditionalExpression {
 
         public GreaterExpression(int pos, Expression lhs, Expression rhs) {
-            super(Tag.GT, pos, lhs, rhs);
+            super(pos, lhs, rhs);
         }
 
         @Override
         public boolean isCondition() {
             return true;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.GT;
         }
 
         @Override
@@ -803,10 +988,15 @@ public abstract class Tree {
         }
 
         public IfStatement(int pos, Expression cond, Statement body, Statement elseBody) {
-            super(Tag.IFELSE, pos);
+            super(pos);
             this.cond = cond;
             this.body = body;
             this.elseBody = elseBody;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.IFELSE;
         }
 
         @Override
@@ -817,15 +1007,20 @@ public abstract class Tree {
 
     public abstract static class IncreaseExpression extends UnaryExpression {
 
-        protected IncreaseExpression(Tag tag, int pos, Expression hs) {
-            super(tag, pos, hs);
+        protected IncreaseExpression(int pos, Expression hs) {
+            super(pos, hs);
         }
     }
 
     public static abstract class LiteralExpression extends Expression {
 
         protected LiteralExpression(int pos) {
-            super(Tag.LITERAL, pos);
+            super(pos);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.LITERAL;
         }
     }
 
@@ -852,12 +1047,17 @@ public abstract class Tree {
     public static class LessEqualExpression extends ConditionalExpression {
 
         public LessEqualExpression(int pos, Expression lhs, Expression rhs) {
-            super(Tag.LE, pos, lhs, rhs);
+            super(pos, lhs, rhs);
         }
 
         @Override
         public boolean isCondition() {
             return true;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.LE;
         }
 
         @Override
@@ -869,12 +1069,17 @@ public abstract class Tree {
     public static class LessExpression extends ConditionalExpression {
 
         public LessExpression(int pos, Expression lhs, Expression rhs) {
-            super(Tag.LT, pos, lhs, rhs);
+            super(pos, lhs, rhs);
         }
 
         @Override
         public boolean isCondition() {
             return true;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.LT;
         }
 
         @Override
@@ -886,7 +1091,12 @@ public abstract class Tree {
     public static class MultiplyExpression extends BinaryExpression {
 
         public MultiplyExpression(int pos, Expression lhs, Expression rhs) {
-            super(Tag.MUL, pos, lhs, rhs);
+            super(pos, lhs, rhs);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.MUL;
         }
 
         @Override
@@ -898,7 +1108,12 @@ public abstract class Tree {
     public static class NegativeExpression extends UnaryExpression {
 
         public NegativeExpression(int pos, Expression hs) {
-            super(Tag.NEG, pos, hs);
+            super(pos, hs);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.NEG;
         }
 
         @Override
@@ -910,12 +1125,17 @@ public abstract class Tree {
     public static class NotEqualExpression extends ConditionalExpression {
 
         public NotEqualExpression(int pos, Expression lhs, Expression rhs) {
-            super(Tag.NEQ, pos, lhs, rhs);
+            super(pos, lhs, rhs);
         }
 
         @Override
         public boolean isCondition() {
             return true;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.NEQ;
         }
 
         @Override
@@ -927,12 +1147,17 @@ public abstract class Tree {
     public static class NotExpression extends UnaryExpression {
 
         public NotExpression(int pos, Expression hs) {
-            super(Tag.LOGCMPL, pos, hs);
+            super(pos, hs);
         }
 
         @Override
         public boolean isCondition() {
             return true;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.LOGCMPL;
         }
 
         @Override
@@ -944,7 +1169,7 @@ public abstract class Tree {
     public static class NullCoalesceExpression extends BinaryExpression {
 
         public NullCoalesceExpression(int pos, Expression lhs, Expression rhs) {
-            super(Tag.NULLCOALESCE, pos, lhs, rhs);
+            super(pos, lhs, rhs);
         }
 
         @Override
@@ -960,6 +1185,11 @@ public abstract class Tree {
         @Override
         public boolean isNullable() {
             return lhs.isNullable();
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.NULLCOALESCE;
         }
 
         @Override
@@ -988,12 +1218,17 @@ public abstract class Tree {
     public static class OrExpression extends BinaryExpression {
 
         public OrExpression(int pos, Expression lhs, Expression rhs) {
-            super(Tag.LOGOR, pos, lhs, rhs);
+            super(pos, lhs, rhs);
         }
 
         @Override
         public boolean isCondition() {
             return true;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.LOGOR;
         }
 
         @Override
@@ -1007,13 +1242,18 @@ public abstract class Tree {
         public Expression expr;
 
         public ParensExpression(int pos, Expression expr) {
-            super(Tag.PARENS, pos);
+            super(pos);
             this.expr = expr;
         }
 
         @Override
         public Expression child() {
             return expr.child();
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.PARENS;
         }
 
         @Override
@@ -1041,7 +1281,12 @@ public abstract class Tree {
     public static class PositiveExpression extends UnaryExpression {
 
         public PositiveExpression(int pos, Expression hs) {
-            super(Tag.POS, pos, hs);
+            super(pos, hs);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.POS;
         }
 
         @Override
@@ -1053,7 +1298,12 @@ public abstract class Tree {
     public static class PostDecrementExpression extends IncreaseExpression {
 
         public PostDecrementExpression(int pos, Expression hs) {
-            super(Tag.POST_DEC, pos, hs);
+            super(pos, hs);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.POST_DEC;
         }
 
         @Override
@@ -1065,7 +1315,12 @@ public abstract class Tree {
     public static class PostIncrementExpression extends IncreaseExpression {
 
         public PostIncrementExpression(int pos, Expression hs) {
-            super(Tag.POST_INC, pos, hs);
+            super(pos, hs);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.POST_INC;
         }
 
         @Override
@@ -1077,7 +1332,12 @@ public abstract class Tree {
     public static class PreDecrementExpression extends IncreaseExpression {
 
         public PreDecrementExpression(int pos, Expression hs) {
-            super(Tag.PRE_DEC, pos, hs);
+            super(pos, hs);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.PRE_DEC;
         }
 
         @Override
@@ -1089,7 +1349,12 @@ public abstract class Tree {
     public static class PreIncrementExpression extends IncreaseExpression {
 
         public PreIncrementExpression(int pos, Expression hs) {
-            super(Tag.PRE_INC, pos, hs);
+            super(pos, hs);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.PRE_INC;
         }
 
         @Override
@@ -1104,8 +1369,13 @@ public abstract class Tree {
         public List<Expression> expressions;
 
         public PrintlnStatement(int pos, List<Expression> expressions) {
-            super(Tag.PRINTLN, pos);
+            super(pos);
             this.expressions = expressions;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.PRINTLN;
         }
 
         @Override
@@ -1122,8 +1392,13 @@ public abstract class Tree {
 
         public PrintStatement(int pos, List<Expression> expressions) {
             // print и println с какой-то там версии больше не являются языковыми конструкциями.
-            super(Tag.PRINT, pos);
+            super(pos);
             this.expressions = expressions;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.PRINT;
         }
 
         @Override
@@ -1135,7 +1410,12 @@ public abstract class Tree {
     public static class RemainderExpression extends BinaryExpression {
 
         public RemainderExpression(int pos, Expression lhs, Expression rhs) {
-            super(Tag.REM, pos, lhs, rhs);
+            super(pos, lhs, rhs);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.REM;
         }
 
         @Override
@@ -1148,12 +1428,17 @@ public abstract class Tree {
 
         public Expression expr;
 
+        @Override
+        public Tag getTag() {
+            return Tag.RETURN;
+        }
+
         public ReturnStatement(int pos) {
             this(pos, null);
         }
 
         public ReturnStatement(int pos, Expression expr) {
-            super(Tag.RETURN, pos);
+            super(pos);
             this.expr = expr;
         }
 
@@ -1166,7 +1451,12 @@ public abstract class Tree {
     public static class ShiftLeftExpression extends BinaryExpression {
 
         public ShiftLeftExpression(int pos, Expression lhs, Expression rhs) {
-            super(Tag.SL, pos, lhs, rhs);
+            super(pos, lhs, rhs);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.SL;
         }
 
         @Override
@@ -1178,7 +1468,12 @@ public abstract class Tree {
     public static class ShiftRightExpression extends BinaryExpression {
 
         public ShiftRightExpression(int pos, Expression lhs, Expression rhs) {
-            super(Tag.SR, pos, lhs, rhs);
+            super(pos, lhs, rhs);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.SR;
         }
 
         @Override
@@ -1189,13 +1484,18 @@ public abstract class Tree {
 
     public abstract static class Statement extends Tree implements Cloneable {
 
-        public static final Statement EMPTY = new Statement(Tag.EMPTY, 0) {
+        public static final Statement EMPTY = new Statement(0) {
+            @Override
+            public Tag getTag() {
+                return Tag.EMPTY;
+            }
+
             @Override
             public void accept(Visitor visitor) {}
         };
 
-        protected Statement(Tag tag, int pos) {
-            super(tag, pos);
+        protected Statement(int pos) {
+            super(pos);
         }
 
         public Statement copy(int pos) {
@@ -1232,7 +1532,12 @@ public abstract class Tree {
     public static class SubtractExpression extends BinaryExpression {
 
         public SubtractExpression(int pos, Expression lhs, Expression rhs) {
-            super(Tag.SUB, pos, lhs, rhs);
+            super(pos, lhs, rhs);
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.SUB;
         }
 
         @Override
@@ -1248,9 +1553,14 @@ public abstract class Tree {
         public List<CaseStatement> cases;
 
         public SwitchStatement(int pos, Expression selector, List<CaseStatement> cases) {
-            super(Tag.SWITCH, pos);
+            super(pos);
             this.selector = selector;
             this.cases = cases;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.SWITCH;
         }
 
         @Override
@@ -1268,7 +1578,7 @@ public abstract class Tree {
         public Expression rhs;
 
         public TernaryExpression(int pos, Expression cond, Expression lhs, Expression rhs) {
-            super(Tag.TERNARY, pos);
+            super(pos);
             this.cond = cond;
             this.lhs = lhs;
             this.rhs = rhs;
@@ -1287,6 +1597,11 @@ public abstract class Tree {
         @Override
         public boolean isNullable() {
             return lhs.isNullable() || rhs.isNullable();
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.TERNARY;
         }
 
         @Override
@@ -1311,8 +1626,8 @@ public abstract class Tree {
 
         public Expression hs;
 
-        protected UnaryExpression(Tag tag, int pos, Expression hs) {
-            super(tag, pos);
+        protected UnaryExpression(int pos, Expression hs) {
+            super(pos);
             this.hs = hs;
         }
 
@@ -1327,8 +1642,13 @@ public abstract class Tree {
         public Expression expression;
 
         public DiscardedExpression(int pos, Expression expression) {
-            super(Tag.DISCARDED, pos);
+            super(pos);
             this.expression = expression;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.DISCARDED;
         }
 
         @Override
@@ -1343,7 +1663,7 @@ public abstract class Tree {
         public final String name;
 
         public VariableExpression(int pos, String name) {
-            super(Tag.VARIABLE, pos);
+            super(pos);
             this.name = name;
         }
 
@@ -1365,6 +1685,11 @@ public abstract class Tree {
         @Override
         public boolean isNullable() {
             return true;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.VARIABLE;
         }
 
         @Override
@@ -1454,9 +1779,14 @@ public abstract class Tree {
         public Statement body;
 
         public WhileStatement(int pos, Expression cond, Statement body) {
-            super(Tag.WHILELOOP, pos);
+            super(pos);
             this.cond = cond;
             this.body = body;
+        }
+
+        @Override
+        public Tag getTag() {
+            return Tag.WHILELOOP;
         }
 
         @Override

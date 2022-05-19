@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterThread;
+import jua.interpreter.InterpreterRuntime;
 import jua.interpreter.InterpreterError;
 import jua.runtime.Operand;
 import jua.compiler.CodePrinter;
@@ -18,7 +18,7 @@ public final class Ifcmplt extends ChainInstruction {
     }
 
     @Override
-    public int run(InterpreterThread env) {
+    public int run(InterpreterRuntime env) {
         Operand rhs = env.popStack();
         Operand lhs = env.popStack();
 

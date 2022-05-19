@@ -1,7 +1,5 @@
 package jua.compiler;
 
-import jua.util.LineMap;
-
 import java.io.*;
 
 // todo: Если не удалю, то переименовать во что-нибудь покрасивее

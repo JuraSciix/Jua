@@ -16,7 +16,6 @@ import jua.runtime.LongOperand;
 import jua.runtime.Operand;
 import jua.runtime.StringOperand;
 import jua.runtime.code.LineNumberTable;
-import jua.util.LineMap;
 
 import java.util.ArrayList;
 import java.util.HashMap;

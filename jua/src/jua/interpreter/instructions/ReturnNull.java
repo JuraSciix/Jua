@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
 import jua.compiler.CodePrinter;
-import jua.interpreter.InterpreterThread;
+import jua.interpreter.InterpreterRuntime;
 import jua.interpreter.Trap;
 import jua.runtime.NullOperand;
 
@@ -19,7 +19,7 @@ public final class ReturnNull implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread env) {
+    public int run(InterpreterRuntime env) {
         env.getFrame().setReturnValue(NullOperand.NULL);
         env.returnFrame();
         Trap.bti();

@@ -1,4 +1,4 @@
-package jua.util;
+package jua.compiler;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 

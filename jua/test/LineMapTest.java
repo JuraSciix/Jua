@@ -1,4 +1,4 @@
-import jua.util.LineMap;
+import jua.compiler.LineMap;
 
 public class LineMapTest {
 

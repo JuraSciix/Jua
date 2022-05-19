@@ -7,7 +7,7 @@ import jua.runtime.code.CodeSegment;
 import java.util.Map;
 import java.util.Objects;
 
-public class InterpreterThread {
+public class InterpreterRuntime {
 
     @Deprecated
     public static final int MAX_CALLSTACK_SIZE;
@@ -24,8 +24,8 @@ public class InterpreterThread {
     }
 
     @Deprecated
-    public static InterpreterThread copy(InterpreterThread env) {
-        return new InterpreterThread(env.functions, env.constants);
+    public static InterpreterRuntime copy(InterpreterRuntime env) {
+        return new InterpreterRuntime(env.functions, env.constants);
     }
 
     // todo: Ну тут и так понятно что надо сделать
@@ -41,7 +41,7 @@ public class InterpreterThread {
         return upperFrame;
     }
 
-    public InterpreterThread(Map<String, JuaFunction> functions, Map<String, Operand> constants) {
+    public InterpreterRuntime(Map<String, JuaFunction> functions, Map<String, Operand> constants) {
         this.functions = functions;
         this.constants = constants;
 

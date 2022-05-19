@@ -80,7 +80,7 @@ public final class InterpreterState {
         advancedCP = 0;
     }
 
-    void execute(InterpreterFrame frame, InterpreterThread runtime) {
+    void execute(InterpreterFrame frame, InterpreterRuntime runtime) {
         int cp = this.cp;
         try {
             while (true) {

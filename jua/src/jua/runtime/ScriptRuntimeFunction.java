@@ -19,7 +19,7 @@ public class ScriptRuntimeFunction implements RuntimeFunction {
     }
 
     @Override
-    public void call(InterpreterThread env, String name, int argc) {
+    public void call(InterpreterRuntime env, String name, int argc) {
         int tot = locals.length;
         int req = (tot - optionals.length);
 

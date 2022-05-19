@@ -1,6 +1,6 @@
 package jua.runtime;
 
-import jua.interpreter.InterpreterThread;
+import jua.interpreter.InterpreterRuntime;
 
 import java.util.Objects;
 
@@ -9,7 +9,7 @@ import java.util.Objects;
  */
 public class RuntimeErrorException extends RuntimeException {
 
-    public InterpreterThread runtime; // todo:  Исправить этот костыль
+    public InterpreterRuntime runtime; // todo:  Исправить этот костыль
 
     public RuntimeErrorException(String message) {
         super(Objects.requireNonNull(message, "message"));

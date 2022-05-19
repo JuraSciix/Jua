@@ -39,7 +39,7 @@ public final class InterpreterFrame {
         this.returnValue = returnValue;
     }
 
-    void execute(InterpreterThread runtime) {
+    void execute(InterpreterRuntime runtime) {
         state.execute(this, runtime);
     }
 
