@@ -1,10 +1,10 @@
 package jua.runtime;
 
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 
 // todo: НИКАКОЙ АБСТРАКЦИИ!
 @Deprecated
 public interface RuntimeFunction {
 
-    void call(InterpreterRuntime env, String name, int argc);
+    void call(InterpreterThread env, String name, int argc);
 }

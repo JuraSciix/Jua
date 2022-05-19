@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 import jua.compiler.CodePrinter;
 
 public enum Pop2 implements Instruction {
@@ -13,9 +13,9 @@ public enum Pop2 implements Instruction {
     }
 
     @Override
-    public int run(InterpreterRuntime env) {
-        env.popStack();
-        env.popStack();
+    public int run(InterpreterThread thread) {
+        thread.popStack();
+        thread.popStack();
         return NEXT;
     }
 }

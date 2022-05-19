@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 import jua.runtime.Operand;
 import jua.compiler.CodePrinter;
 
@@ -19,9 +19,9 @@ public final class Vdec implements Instruction {
     }
 
     @Override
-    public int run(InterpreterRuntime env) {
-        Operand local = env.getLocal(id);
-        env.setLocal(id, local.decrement());
+    public int run(InterpreterThread thread) {
+        Operand local = thread.getLocal(id);
+        thread.setLocal(id, local.decrement());
         return NEXT;
     }
 }

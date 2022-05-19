@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 
 
 /* todo
@@ -21,7 +21,7 @@ public final class Iffalse extends ChainInstruction {
     }
 
     @Override
-    public int run(InterpreterRuntime env) {
-        return env.popStack().booleanValue() ? NEXT : destIp;
+    public int run(InterpreterThread thread) {
+        return thread.popStack().booleanValue() ? NEXT : destIp;
     }
 }

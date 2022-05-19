@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 import jua.interpreter.InterpreterError;
 import jua.runtime.Operand;
 import jua.compiler.CodePrinter;
@@ -15,9 +15,9 @@ public enum Rem implements Instruction {
     }
 
     @Override
-    public int run(InterpreterRuntime env) {
-        Operand rhs = env.popStack();
-        Operand lhs = env.popStack();
+    public int run(InterpreterThread thread) {
+        Operand rhs = thread.popStack();
+        Operand lhs = thread.popStack();
 
         if (lhs.isNumber() && rhs.isNumber()) {
             if (lhs.isDouble() || rhs.isDouble()) {
@@ -26,14 +26,14 @@ public enum Rem implements Instruction {
                 if (r == 0D) {
                     throw InterpreterError.divisionByZero();
                 }
-                env.pushStack(lhs.doubleValue() % r);
+                thread.pushStack(lhs.doubleValue() % r);
             } else {
                 long r = rhs.longValue();
 
                 if (r == 0L) {
                     throw InterpreterError.divisionByZero();
                 }
-                env.pushStack(lhs.longValue() % r);
+                thread.pushStack(lhs.longValue() % r);
             }
         } else {
             throw InterpreterError.binaryApplication("%", lhs.type(), rhs.type());

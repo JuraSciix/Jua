@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 import jua.interpreter.InterpreterError;
 import jua.runtime.Operand;
 import jua.compiler.CodePrinter;
@@ -18,9 +18,9 @@ public final class Ifcmplt extends ChainInstruction {
     }
 
     @Override
-    public int run(InterpreterRuntime env) {
-        Operand rhs = env.popStack();
-        Operand lhs = env.popStack();
+    public int run(InterpreterThread thread) {
+        Operand rhs = thread.popStack();
+        Operand lhs = thread.popStack();
 
         if (!lhs.isNumber() || !rhs.isNumber()) {
             // op inverted due to VM mechanics

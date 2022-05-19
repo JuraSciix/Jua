@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
 import jua.compiler.CodePrinter;
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 
 /**
  * Вставляет в стек текущее время UNIX.
@@ -18,8 +18,8 @@ public enum NsTime implements Instruction {
     }
 
     @Override
-    public int run(InterpreterRuntime env) {
-        env.pushStack(System.nanoTime());
+    public int run(InterpreterThread thread) {
+        thread.pushStack(System.nanoTime());
         return NEXT;
     }
 }

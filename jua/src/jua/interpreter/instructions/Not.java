@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 import jua.interpreter.InterpreterError;
 import jua.runtime.Operand;
 import jua.compiler.CodePrinter;
@@ -15,11 +15,11 @@ public enum Not implements Instruction {
     }
 
     @Override
-    public int run(InterpreterRuntime env) {
-        Operand val = env.popStack();
+    public int run(InterpreterThread thread) {
+        Operand val = thread.popStack();
 
         if (val.isLong()) {
-            env.pushStack(~val.longValue());
+            thread.pushStack(~val.longValue());
         } else {
             throw InterpreterError.unaryApplication("~", val.type());
         }

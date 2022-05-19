@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 import jua.interpreter.InterpreterError;
 import jua.runtime.Operand;
 import jua.compiler.CodePrinter;
@@ -15,13 +15,13 @@ public enum Div implements Instruction {
     }
 
     @Override
-    public int run(InterpreterRuntime env) {
-        Operand rhs = env.popStack();
-        Operand lhs = env.popStack();
+    public int run(InterpreterThread thread) {
+        Operand rhs = thread.popStack();
+        Operand lhs = thread.popStack();
 
         if (lhs.isNumber() && rhs.isNumber()) {
             if (lhs.isDouble() || rhs.isDouble()) {
-                env.pushStack(lhs.doubleValue() / rhs.doubleValue());
+                thread.pushStack(lhs.doubleValue() / rhs.doubleValue());
             } else {
                 long l = lhs.longValue();
                 long r = rhs.longValue();
@@ -30,9 +30,9 @@ public enum Div implements Instruction {
                     throw InterpreterError.divisionByZero();
                 }
                 if ((l % r) == 0) {
-                    env.pushStack(l / r);
+                    thread.pushStack(l / r);
                 } else {
-                    env.pushStack((double) l / r);
+                    thread.pushStack((double) l / r);
                 }
             }
         } else {

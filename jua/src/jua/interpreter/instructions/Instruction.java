@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 import jua.compiler.CodePrinter;
 
 public interface Instruction {
@@ -14,5 +14,5 @@ public interface Instruction {
 
     void print(CodePrinter printer);
 
-    int run(InterpreterRuntime env);
+    int run(InterpreterThread thread);
 }

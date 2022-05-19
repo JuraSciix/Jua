@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
 import jua.compiler.CodePrinter;
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 import jua.runtime.FalseOperand;
 
 public final class ConstFalse implements Instruction {
@@ -18,8 +18,8 @@ public final class ConstFalse implements Instruction {
     }
 
     @Override
-    public int run(InterpreterRuntime env) {
-        env.pushStack(FalseOperand.FALSE);
+    public int run(InterpreterThread thread) {
+        thread.pushStack(FalseOperand.FALSE);
         return NEXT;
     }
 }

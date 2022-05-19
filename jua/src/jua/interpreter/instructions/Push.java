@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
 import jua.compiler.CodePrinter;
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 import jua.runtime.LongOperand;
 
 public final class Push implements Instruction {
@@ -19,8 +19,8 @@ public final class Push implements Instruction {
     }
 
     @Override
-    public int run(InterpreterRuntime env) {
-        env.pushStack(value);
+    public int run(InterpreterThread thread) {
+        thread.pushStack(value);
         return NEXT;
     }
 }

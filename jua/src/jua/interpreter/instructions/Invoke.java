@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
 import jua.compiler.CodePrinter;
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 import jua.interpreter.Trap;
 
 public final class Invoke implements Instruction {
@@ -23,9 +23,9 @@ public final class Invoke implements Instruction {
     }
 
     @Override
-    public int run(InterpreterRuntime env) {
-        env.getFrame().getState().setAdvancedCP(1);
-        env.joinFrame(env.getFunctionByName(id), argc);
+    public int run(InterpreterThread thread) {
+        thread.getFrame().getState().setAdvancedCP(1);
+        thread.joinFrame(thread.getFunctionByName(id), argc);
         Trap.bti();
         return UNREACHABLE;
     }

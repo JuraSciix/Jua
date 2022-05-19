@@ -1,6 +1,6 @@
 package jua.compiler;
 
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 import jua.interpreter.InterpreterFrame;
 
 import jua.runtime.code.CodeSegment;
@@ -22,9 +22,9 @@ public class Result {
         CodePrinter.printFunctions(codeData.functions);
     }
 
-    public InterpreterRuntime env() {
-        InterpreterRuntime env = new InterpreterRuntime(codeData.functions, codeData.constants);
-        InterpreterFrame build = InterpreterRuntime.buildFrame(null,
+    public InterpreterThread env() {
+        InterpreterThread env = new InterpreterThread(codeData.functions, codeData.constants);
+        InterpreterFrame build = InterpreterThread.buildFrame(null,
                 new JuaFunction(null, 0, 0, main), main);
         env.setProgram(build);
         return env;

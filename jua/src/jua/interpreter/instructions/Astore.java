@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 import jua.runtime.Operand;
 import jua.compiler.CodePrinter;
 
@@ -14,10 +14,10 @@ public enum Astore implements Instruction {
     }
 
     @Override
-    public int run(InterpreterRuntime env) {
-        Operand val = env.popStack();
-        Operand key = env.popStack();
-        Operand map = env.popStack();
+    public int run(InterpreterThread thread) {
+        Operand val = thread.popStack();
+        Operand key = thread.popStack();
+        Operand map = thread.popStack();
         map.put(key, val);
         return NEXT;
     }

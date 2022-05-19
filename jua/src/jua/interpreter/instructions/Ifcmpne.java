@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterRuntime;
+import jua.interpreter.InterpreterThread;
 import jua.compiler.CodePrinter;
 
 public final class Ifcmpne extends ChainInstruction {
@@ -16,8 +16,8 @@ public final class Ifcmpne extends ChainInstruction {
     }
 
     @Override
-    public int run(InterpreterRuntime env) {
-        if (!env.popStack().equals(env.popStack())) {
+    public int run(InterpreterThread thread) {
+        if (!thread.popStack().equals(thread.popStack())) {
             return destIp;
         } else {
             return NEXT;
