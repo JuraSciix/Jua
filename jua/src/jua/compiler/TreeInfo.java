@@ -8,6 +8,10 @@ import jua.runtime.heap.StringOperand;
 
 public final class TreeInfo {
 
+    /**
+     * @deprecated the {@link Lower} class removes the parens from AST, so this method is useless.
+     */
+    @Deprecated
     public static Expression removeParens(Expression tree) {
         if (tree == null)
             return null;

@@ -133,7 +133,7 @@ public class JuaCompiler {
 
         try {
             if (Options.optimize()) {
-                root.accept(new Fold(codeData));
+                root.accept(new Lower(codeData));
             } else {
                 System.err.println("Warning: disabling optimization is strongly discouraged. " +
                         "This feature may be removed in a future version");
