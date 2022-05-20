@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
 import jua.compiler.CodePrinter;
-import jua.interpreter.InterpreterThread;
+import jua.interpreter.InterpreterState;
 import jua.runtime.Operand;
 
 public final class Switch extends ChainInstruction {
@@ -37,13 +37,13 @@ public final class Switch extends ChainInstruction {
     }
 
     @Override
-    public int run(InterpreterThread thread) {
+    public int run(InterpreterState state) {
         int[] l = literals;
 
-        Operand selector = thread.popStack();
+        Operand selector = state.popStack();
 
         for (int i = 0; i < l.length; i++) {
-            if (selector.equals(thread.getFrame().getConstant(l[i]))) {
+            if (selector.equals(state.getConstantPool()[l[i]])) {
                 return destIps[i];
             }
         }

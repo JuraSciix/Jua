@@ -1,7 +1,8 @@
 package jua.interpreter.instructions;
 
 import jua.compiler.CodePrinter;
-import jua.interpreter.InterpreterThread;
+import jua.interpreter.InterpreterState;
+import jua.runtime.LongOperand;
 
 public enum Length implements Instruction {
 
@@ -14,8 +15,8 @@ public enum Length implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread thread) {
-        thread.pushStack(thread.popStack().length());
+    public int run(InterpreterState state) {
+        state.pushStack(new LongOperand(state.popStack().length()));
         return NEXT;
     }
 }

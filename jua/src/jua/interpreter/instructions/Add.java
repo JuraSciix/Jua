@@ -2,9 +2,8 @@ package jua.interpreter.instructions;
 
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterError;
-import jua.interpreter.InterpreterThread;
-import jua.runtime.ArrayOperand;
-import jua.runtime.Operand;
+import jua.interpreter.InterpreterState;
+import jua.runtime.*;
 
 public enum Add implements Instruction {
 
@@ -16,25 +15,25 @@ public enum Add implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread thread) {
+    public int run(InterpreterState state) {
         // todo: Распределить код по наследникам Operand.
         // todo: Также с остальными операциями над операндами.
-        Operand rhs = thread.popStack();
-        Operand lhs = thread.popStack();
+        Operand rhs = state.popStack();
+        Operand lhs = state.popStack();
 
         if (lhs.isNumber() && rhs.isNumber()) {
             if (lhs.isDouble() || rhs.isDouble()) {
-                thread.pushStack(lhs.doubleValue() + rhs.doubleValue());
+                state.pushStack(new DoubleOperand(lhs.doubleValue() + rhs.doubleValue()));
             } else {
-                thread.pushStack(lhs.longValue() + rhs.longValue());
+                state.pushStack(new LongOperand(lhs.longValue() + rhs.longValue()));
             }
         } else if (lhs.isString() || rhs.isString()) {
-            thread.pushStack(lhs.stringValue().concat(rhs.stringValue()));
+            state.pushStack(new StringOperand(lhs.stringValue().concat(rhs.stringValue())));
         } else if (lhs.isMap() && rhs.isMap()) {
             ArrayOperand result = new ArrayOperand();
             result.putAll(lhs);
             result.putAll(rhs);
-            thread.pushStack(result);
+            state.pushStack(result);
         } else {
             throw InterpreterError.binaryApplication("+", lhs.type(), rhs.type());
         }

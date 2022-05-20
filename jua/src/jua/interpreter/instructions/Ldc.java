@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterThread;
 import jua.compiler.CodePrinter;
+import jua.interpreter.InterpreterState;
 
 public final class Ldc implements Instruction {
 
@@ -18,8 +18,8 @@ public final class Ldc implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread thread) {
-        thread.pushStack(thread.getFrame().getConstant(operand));
+    public int run(InterpreterState state) {
+        state.pushStack(state.getConstantPool()[operand]);
         return NEXT;
     }
 }

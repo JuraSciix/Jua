@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterThread;
 import jua.compiler.CodePrinter;
+import jua.interpreter.InterpreterState;
 
 public enum Inc implements Instruction {
 
@@ -13,8 +13,8 @@ public enum Inc implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread thread) {
-        thread.pushStack(thread.popStack().increment());
+    public int run(InterpreterState state) {
+        state.pushStack(state.popStack().increment());
         return NEXT;
     }
 }

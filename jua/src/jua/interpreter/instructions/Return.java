@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
 import jua.compiler.CodePrinter;
-import jua.interpreter.InterpreterThread;
+import jua.interpreter.InterpreterState;
 import jua.interpreter.Trap;
 
 public final class Return implements Instruction {
@@ -18,9 +18,9 @@ public final class Return implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread thread) {
-        thread.getFrame().setReturnValue(thread.popStack());
-        thread.returnFrame();
+    public int run(InterpreterState state) {
+        state.setReturnValue(state.popStack());
+        state.setMsg(InterpreterState.MSG_DONE);
         Trap.bti();
         return UNREACHABLE;
     }

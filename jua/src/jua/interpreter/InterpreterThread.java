@@ -47,19 +47,16 @@ public class InterpreterThread {
 
     }
 
-    public JuaFunction getFunctionByName(String name) {
-        return functions.get(name);
-    }
-
-    public Operand getConstantByName(String name) {
-        return constants.get(name);
-    }
-
-    public static InterpreterFrame buildFrame(InterpreterFrame prev,
+    public InterpreterFrame buildFrame(InterpreterFrame prev,
                                               JuaFunction function, CodeSegment program) {
         assert function == null || function.getProgram() == program;
         return new InterpreterFrame(prev,
-                new InterpreterState(program.getCode(), program.getMaxStack(), program.getMaxLocals()),
+                new InterpreterState(
+                        program.getCode(),
+                        program.getMaxStack(),
+                        program.getMaxLocals(),
+                        function.getProgram().getConstantPool(),
+                        constants),
                 function);
     }
 
@@ -83,7 +80,7 @@ public class InterpreterThread {
 
     public void returnFrame() {
         InterpreterFrame uf = upperFrame;
-        Operand returnVal = uf.getReturnValue();
+        Operand returnVal = uf.getState().getReturnValue();
         if (returnVal == null) throw new IllegalStateException("null return value");
         InterpreterFrame uf1 = uf.getCallerFrame();
         if (uf1 == null) {
@@ -115,6 +112,15 @@ public class InterpreterThread {
         loop:
         while (upperFrame != null) {
             try {
+                switch (upperFrame.getState().getMsg()) {
+                    case InterpreterState.MSG_SENT: joinFrame(
+                            functions.get(upperFrame.getState().invokeFunctionId), upperFrame.getState().invokeFunctionArgs);
+                        break;
+                    case
+                            InterpreterState.MSG_DONE: returnFrame();
+                        break;
+                }
+
                 upperFrame.execute(this);
             } catch (InterpreterError e) { // Note: на всякий случай
                 RuntimeErrorException ex = new RuntimeErrorException(e.getMessage());

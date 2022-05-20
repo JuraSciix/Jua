@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterThread;
+import jua.interpreter.InterpreterState;
 import jua.runtime.NullOperand;
 import jua.runtime.Operand;
 import jua.compiler.CodePrinter;
@@ -15,12 +15,12 @@ public enum Aload implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread thread) {
-        Operand key = thread.popStack();
-        Operand map = thread.popStack();
+    public int run(InterpreterState state) {
+        Operand key = state.popStack();
+        Operand map = state.popStack();
         Operand result = map.get(key);
         // todo: В новой версии языка вместо подмены должна происходит ошибка.
-        thread.pushStack(result == null ? NullOperand.NULL : result);
+        state.pushStack(result == null ? NullOperand.NULL : result);
         return NEXT;
     }
 }

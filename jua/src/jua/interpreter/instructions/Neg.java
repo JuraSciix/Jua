@@ -1,7 +1,9 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterThread;
 import jua.interpreter.InterpreterError;
+import jua.interpreter.InterpreterState;
+import jua.runtime.DoubleOperand;
+import jua.runtime.LongOperand;
 import jua.runtime.Operand;
 import jua.compiler.CodePrinter;
 
@@ -15,13 +17,13 @@ public enum Neg implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread thread) {
-        Operand val = thread.popStack();
+    public int run(InterpreterState state) {
+        Operand val = state.popStack();
 
         if (val.isLong()) {
-            thread.pushStack(-val.longValue());
+            state.pushStack(new LongOperand(-val.longValue()));
         } else if (val.isDouble()) {
-            thread.pushStack(-val.doubleValue());
+            state.pushStack(new DoubleOperand(-val.doubleValue()));
         } else {
             throw InterpreterError.unaryApplication("-", val.type());
         }

@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterThread;
 import jua.compiler.CodePrinter;
+import jua.interpreter.InterpreterState;
 
 public final class Ifnull extends ChainInstruction {
 
@@ -16,8 +16,8 @@ public final class Ifnull extends ChainInstruction {
     }
 
     @Override
-    public int run(InterpreterThread thread) {
-        if (thread.popStack().isNull()) {
+    public int run(InterpreterState state) {
+        if (state.popStack().isNull()) {
             return destIp;
         } else {
             return NEXT;

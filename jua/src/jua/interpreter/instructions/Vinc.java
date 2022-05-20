@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterThread;
+import jua.interpreter.InterpreterState;
 import jua.runtime.Operand;
 import jua.compiler.CodePrinter;
 
@@ -19,9 +19,9 @@ public class Vinc implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread thread) {
-        Operand local = thread.getLocal(id);
-        thread.setLocal(id, local.increment());
+    public int run(InterpreterState state) {
+        Operand local = state.load(id);
+        state.store(id, local.increment());
         return NEXT;
     }
 }

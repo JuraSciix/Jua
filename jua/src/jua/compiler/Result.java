@@ -24,7 +24,7 @@ public class Result {
 
     public InterpreterThread env() {
         InterpreterThread env = new InterpreterThread(codeData.functions, codeData.constants);
-        InterpreterFrame build = InterpreterThread.buildFrame(null,
+        InterpreterFrame build = env.buildFrame(null,
                 new JuaFunction(null, 0, 0, main), main);
         env.setProgram(build);
         return env;

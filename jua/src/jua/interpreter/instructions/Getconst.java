@@ -1,7 +1,9 @@
 package jua.interpreter.instructions;
 
 import jua.compiler.CodePrinter;
-import jua.interpreter.InterpreterThread;
+import jua.interpreter.InterpreterState;
+
+import java.util.Arrays;
 
 public class Getconst implements Instruction {
 
@@ -18,8 +20,8 @@ public class Getconst implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread thread) {
-        thread.pushStack(thread.getConstantByName(name));
+    public int run(InterpreterState state) {
+        state.pushStack(state.getConstantByName(name));
         return NEXT;
     }
 }

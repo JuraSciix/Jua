@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterThread;
 import jua.compiler.CodePrinter;
+import jua.interpreter.InterpreterState;
 
 public final class Ifcmpeq extends ChainInstruction {
 
@@ -16,8 +16,8 @@ public final class Ifcmpeq extends ChainInstruction {
     }
 
     @Override
-    public int run(InterpreterThread thread) {
-        if (thread.popStack().equals(thread.popStack())) {
+    public int run(InterpreterState state) {
+        if (state.popStack().equals(state.popStack())) {
             return destIp;
         } else {
             return NEXT;

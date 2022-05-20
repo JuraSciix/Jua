@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterThread;
 import jua.compiler.CodePrinter;
+import jua.interpreter.InterpreterState;
 
 /**
  * Эта инструкция используется в качестве пролога для инструкций
@@ -34,9 +34,9 @@ public enum Bool implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread thread) {
+    public int run(InterpreterState state) {
         // todo:
-        thread.pushStack(thread.popStack().booleanValue());
+        state.pushStack(state.popStack());
         return NEXT;
     }
 }

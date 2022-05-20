@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
 import jua.compiler.CodePrinter;
-import jua.interpreter.InterpreterThread;
+import jua.interpreter.InterpreterState;
 import jua.runtime.NullOperand;
 
 public final class ConstNull implements Instruction {
@@ -16,8 +16,8 @@ public final class ConstNull implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread thread) {
-        thread.pushStack(NullOperand.NULL);
+    public int run(InterpreterState state) {
+        state.pushStack(NullOperand.NULL);
         return NEXT;
     }
 }

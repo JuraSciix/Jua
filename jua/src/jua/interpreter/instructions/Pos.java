@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterThread;
 import jua.interpreter.InterpreterError;
+import jua.interpreter.InterpreterState;
 import jua.runtime.Operand;
 import jua.compiler.CodePrinter;
 
@@ -15,8 +15,8 @@ public enum Pos implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread thread) {
-        Operand val = thread.peekStack();
+    public int run(InterpreterState state) {
+        Operand val = state.peekStack();
 
         if (!val.isNumber())
             throw InterpreterError.unaryApplication("+", val.type());

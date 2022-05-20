@@ -1,6 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterThread;
+import jua.interpreter.InterpreterState;
 import jua.runtime.Operand;
 import jua.compiler.CodePrinter;
 
@@ -19,9 +19,9 @@ public final class Vload implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread thread) {
-        Operand operand = thread.getLocal(id);
-        thread.pushStack(operand);
+    public int run(InterpreterState state) {
+        Operand operand = state.load(id);
+        state.pushStack(operand);
         return NEXT;
     }
 }

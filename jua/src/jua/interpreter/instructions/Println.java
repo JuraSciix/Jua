@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterThread;
 import jua.compiler.CodePrinter;
+import jua.interpreter.InterpreterState;
 
 public final class Println extends Print {
 
@@ -16,8 +16,8 @@ public final class Println extends Print {
     }
 
     @Override
-    public int run(InterpreterThread thread) {
-        super.run(thread);
+    public int run(InterpreterState state) {
+        super.run(state);
         System.out.println();
         return NEXT;
     }

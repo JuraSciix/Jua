@@ -1,7 +1,8 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterThread;
 import jua.interpreter.InterpreterError;
+import jua.interpreter.InterpreterState;
+import jua.runtime.LongOperand;
 import jua.runtime.Operand;
 import jua.compiler.CodePrinter;
 
@@ -15,11 +16,11 @@ public enum Not implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread thread) {
-        Operand val = thread.popStack();
+    public int run(InterpreterState state) {
+        Operand val = state.popStack();
 
         if (val.isLong()) {
-            thread.pushStack(~val.longValue());
+            state.pushStack(new LongOperand(~val.longValue()));
         } else {
             throw InterpreterError.unaryApplication("~", val.type());
         }

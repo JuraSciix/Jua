@@ -11,8 +11,6 @@ public final class InterpreterFrame {
 
     private final JuaFunction ownerFunc;
 
-    private Operand returnValue;
-
     public InterpreterFrame(InterpreterFrame callerFrame, InterpreterState state, JuaFunction ownerFunc) {
         this.callerFrame = callerFrame;
         this.state = state;
@@ -31,21 +29,7 @@ public final class InterpreterFrame {
         return ownerFunc;
     }
 
-    public Operand getReturnValue() {
-        return returnValue;
-    }
-
-    public void setReturnValue(Operand returnValue) {
-        this.returnValue = returnValue;
-    }
-
     void execute(InterpreterThread runtime) {
         state.execute(this, runtime);
     }
-
-    public Operand getConstant(int index) {
-        return ownerFunc.getProgram().getConstantPool()[index];
-    }
-
-
 }

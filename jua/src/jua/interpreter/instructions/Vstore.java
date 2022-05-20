@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterThread;
 import jua.compiler.CodePrinter;
+import jua.interpreter.InterpreterState;
 
 public final class Vstore implements Instruction {
 
@@ -18,8 +18,8 @@ public final class Vstore implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread thread) {
-        thread.setLocal(id, thread.popStack());
+    public int run(InterpreterState state) {
+        state.store(id, state.popStack());
         return NEXT;
     }
 }

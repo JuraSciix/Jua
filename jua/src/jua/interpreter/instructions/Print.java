@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterThread;
 import jua.compiler.CodePrinter;
+import jua.interpreter.InterpreterState;
 
 public class Print implements Instruction {
 
@@ -18,10 +18,10 @@ public class Print implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread thread) {
+    public int run(InterpreterState state) {
         String[] pieces = new String[count];
         for (int i = 1; i <= count; i++) {
-            pieces[count - i] = thread.popStack().stringValue();
+            pieces[count - i] = state.popStack().stringValue();
         }
         for (int i = 0; i < count; i++) {
             System.out.print(pieces[i]);

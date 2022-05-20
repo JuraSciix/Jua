@@ -1,8 +1,10 @@
 package jua.interpreter;
 
 import jua.interpreter.instructions.Instruction;
+import jua.runtime.JuaFunction;
 import jua.runtime.Operand;
 
+import java.util.Map;
 import java.util.Objects;
 
 public final class InterpreterState {
@@ -11,12 +13,38 @@ public final class InterpreterState {
 
     public final Operand[] stack, locals;
 
+    private final Operand[] constantPool;
+
     public int cp, sp, advancedCP;
 
-    public InterpreterState(Instruction[] code, int maxStack, int maxLocals) {
+    public static final byte MSG_RUNNING = 0;
+
+    public static final byte MSG_SENT = 1;
+
+    public static final byte MSG_DONE = 2;
+
+    private byte msg = MSG_RUNNING;
+
+    private Operand returnValue;
+
+    // todo: Ну тут и так понятно что надо сделать
+
+    private final Map<String, Operand> constants;
+
+    public String invokeFunctionId;
+
+    public int invokeFunctionArgs;
+
+    public InterpreterState(Instruction[] code,
+                            int maxStack,
+                            int maxLocals,
+                            Operand[] constantPool,
+                            Map<String, Operand> constants) {
         this.code = Objects.requireNonNull(code, "code");
         this.stack = new Operand[maxStack];
         this.locals = new Operand[maxLocals];
+        this.constantPool = constantPool;
+        this.constants = constants;
     }
 
     public Instruction[] getCode() {
@@ -29,6 +57,10 @@ public final class InterpreterState {
 
     public Operand[] getLocals() {
         return locals;
+    }
+
+    public Operand getConstantByName(String name) {
+        return constants.get(name);
     }
 
     public int getCP() {
@@ -63,8 +95,19 @@ public final class InterpreterState {
         return stack[--sp];
     }
 
+    public long popInt() {
+        return getInt(popStack());
+    }
+
     public Operand peekStack() {
         return stack[sp - 1];
+    }
+
+    public long getInt(Operand operand) {
+        if (operand.canBeInt()) {
+            return operand.longValue();
+        }
+        throw InterpreterError.inconvertibleTypes(operand.type(), Operand.Type.LONG);
     }
 
     public void store(int index, Operand value) {
@@ -73,6 +116,26 @@ public final class InterpreterState {
 
     public Operand load(int index) {
         return locals[index];
+    }
+
+    public byte getMsg() {
+        return msg;
+    }
+
+    public void setMsg(byte msg) {
+        this.msg = msg;
+    }
+
+    public Operand getReturnValue() {
+        return returnValue;
+    }
+
+    public void setReturnValue(Operand returnValue) {
+        this.returnValue = returnValue;
+    }
+
+    public Operand[] getConstantPool() {
+        return constantPool;
     }
 
     public void advance() {
@@ -84,7 +147,7 @@ public final class InterpreterState {
         int cp = this.cp;
         try {
             while (true) {
-                cp += code[cp].run(runtime);
+                cp += code[cp].run(frame.getState());
             }
         } finally {
             this.cp = cp;

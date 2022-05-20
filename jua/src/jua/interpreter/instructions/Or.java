@@ -1,7 +1,9 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterThread;
 import jua.interpreter.InterpreterError;
+import jua.interpreter.InterpreterState;
+import jua.runtime.BooleanOperand;
+import jua.runtime.LongOperand;
 import jua.runtime.Operand;
 import jua.compiler.CodePrinter;
 
@@ -15,14 +17,19 @@ public enum Or implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread thread) {
-        Operand rhs = thread.popStack();
-        Operand lhs = thread.popStack();
+    public int run(InterpreterState state) {
+        Operand rhs = state.popStack();
+        Operand lhs = state.popStack();
 
         if (lhs.isLong() && rhs.isLong()) {
-            thread.pushStack(lhs.longValue() | rhs.longValue());
+            state.pushStack(new LongOperand(lhs.longValue() | rhs.longValue()));
         } else if (lhs.isBoolean() && rhs.isBoolean()) {
-            thread.pushStack(lhs.booleanValue() | rhs.booleanValue());
+            state.pushStack(new BooleanOperand() {
+                @Override
+                public boolean booleanValue() {
+                    return lhs.booleanValue() | rhs.booleanValue();
+                }
+            });
         } else {
             throw InterpreterError.binaryApplication("|", lhs.type(), rhs.type());
         }

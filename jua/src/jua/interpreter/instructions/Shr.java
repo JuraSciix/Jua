@@ -1,7 +1,8 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterThread;
 import jua.interpreter.InterpreterError;
+import jua.interpreter.InterpreterState;
+import jua.runtime.LongOperand;
 import jua.runtime.Operand;
 import jua.compiler.CodePrinter;
 
@@ -15,12 +16,12 @@ public enum Shr implements Instruction {
     }
 
     @Override
-    public int run(InterpreterThread thread) {
-        Operand rhs = thread.popStack();
-        Operand lhs = thread.popStack();
+    public int run(InterpreterState state) {
+        Operand rhs = state.popStack();
+        Operand lhs = state.popStack();
 
         if (lhs.isLong() && rhs.isLong()) {
-            thread.pushStack(lhs.longValue() >> rhs.longValue());
+            state.pushStack(new LongOperand(lhs.longValue() >> rhs.longValue()));
         } else {
             throw InterpreterError.binaryApplication(">>", lhs.type(), rhs.type());
         }
