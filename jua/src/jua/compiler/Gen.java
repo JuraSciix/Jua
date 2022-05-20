@@ -711,8 +711,8 @@ public final class Gen implements Visitor {
             emitRetnull();
         codeData.setFunction(tree.name, JuaFunction.fromCode(
                 tree.name,
-                tree.params.size(),
                 tree.params.size() - tree.defaults.size(),
+                tree.params.size(),
                 code.buildCodeSegment(),
                 codeData.location
         ));

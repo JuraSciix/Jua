@@ -24,5 +24,11 @@ fn qfib(n) {
     return q2;
 }
 
-println(fib(10));
-println(qfib(10));
+fn recursion_test(n = 1, t = 0) {
+    if n % 1000 == 0 {
+        println(n + ' (' + (ns_time() - t) / 1E6 + 'ms)');
+        t = ns_time();
+    }
+    return recursion_test(n + 1, t);
+}
+
