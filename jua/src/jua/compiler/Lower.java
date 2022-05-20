@@ -5,14 +5,11 @@ import jua.compiler.Tree.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Fold implements Visitor {
+public class Lower implements Visitor {
 
-    /**
-     * Ассоциативный список констант по их названиям.
-     */
-    private final Map<String, Expression> constantFolding;
+    private final Map<String, Expression> literalConstants;
 
-    private Tree lower;
+    private Tree result;
 
     /**
      * Остаточный результат от логических выражений. Пример: <pre>{@code
@@ -22,35 +19,35 @@ public class Fold implements Visitor {
      *                     // который будет помещен в список операторов родительского дерева (BlockStatement).}</pre>
      */
     // По идее это должно быть списком, но на практике сюда записывается только одно значение.
-    private Expression residualExpression;
+    private Expression formalExpression;
 
     @SuppressWarnings("unchecked")
     private <T extends Tree> T foldBody(Statement body) {
         if (body == null) return null;
         body.accept(this);
-        if (residualExpression != null && body.getClass() != BlockStatement.class) {
-            lower = new BlockStatement(residualExpression.pos, new ArrayList<Statement>() {
+        if (formalExpression != null && body.getClass() != BlockStatement.class) {
+            result = new BlockStatement(formalExpression.pos, new ArrayList<Statement>() {
                 {
-                    add(new DiscardedExpression(residualExpression.pos, residualExpression));
-                    residualExpression = null;
+                    add(new DiscardedExpression(formalExpression.pos, formalExpression));
+                    formalExpression = null;
                     add(body);
                 }
             });
         }
         try {
-            return (T) lower;
+            return (T) result;
         } finally {
-            lower = null;
+            result = null;
         }
     }
 
-    public Fold(CodeData codeData) {
-        constantFolding = new HashMap<>();
+    public Lower(CodeData codeData) {
+        literalConstants = new HashMap<>();
         putFoldingNames(codeData.constants.keySet());
     }
 
     private void putFoldingNames(Set<String> names) {
-        names.forEach(name -> constantFolding.put(name, null));
+        names.forEach(name -> literalConstants.put(name, null));
     }
 
     @Override
@@ -59,29 +56,29 @@ public class Fold implements Visitor {
         Expression rhs = getLowerExpression(expression.rhs).child();
         if ((lhs instanceof FloatExpression) && (rhs instanceof FloatExpression)) {
             ((FloatExpression) lhs).value += ((FloatExpression) rhs).value;
-            lower = lhs;
+            result = lhs;
             return;
         }
         if ((lhs instanceof FloatExpression) && (rhs instanceof IntExpression)) {
             ((FloatExpression) lhs).value += ((IntExpression) rhs).value;
-            lower = lhs;
+            result = lhs;
             return;
         }
         if ((lhs instanceof IntExpression) && (rhs instanceof FloatExpression)) {
             long l = ((IntExpression) lhs).value;
             double r = ((FloatExpression) rhs).value;
-            lower = new FloatExpression(expression.pos, l + r);
+            result = new FloatExpression(expression.pos, l + r);
             return;
         }
         if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
             ((IntExpression) lhs).value += ((IntExpression) rhs).value;
-            lower = lhs;
+            result = lhs;
             return;
         }
         if ((lhs instanceof StringExpression) && (rhs instanceof StringExpression)) {
             // .concat is not appropriate here
             ((StringExpression) lhs).value += (((StringExpression) rhs).value);
-            lower = lhs;
+            result = lhs;
             return;
         }
         lowerBinary(expression, lhs, rhs);
@@ -95,17 +92,17 @@ public class Fold implements Visitor {
             return;
         }
         if (isTrue(lhs)) {
-            lower = getLowerExpression(expression.rhs);
+            result = getLowerExpression(expression.rhs);
             return;
         }
         Expression rhs = getLowerExpression(expression.rhs);
         if (isFalse(rhs)) {
-            residualExpression = lhs;
+            formalExpression = lhs;
             setFalse(expression);
             return;
         }
         if (isTrue(rhs)) {
-            lower = lhs;
+            result = lhs;
             return;
         }
         lowerBinary(expression, lhs, rhs);
@@ -115,7 +112,7 @@ public class Fold implements Visitor {
     public void visitArrayAccess(ArrayAccessExpression expression) {
         expression.hs.accept(this);
         expression.key = getLowerExpression(expression.key);
-        lower = expression;
+        result = expression;
     }
 
     @Override
@@ -129,7 +126,7 @@ public class Fold implements Visitor {
             }
         });
         expression.map = map;
-        lower = expression;
+        result = expression;
     }
 
     @Override
@@ -198,12 +195,12 @@ public class Fold implements Visitor {
         Expression rhs = getLowerExpression(expression.rhs).child();
         if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
             ((IntExpression) lhs).value &= ((IntExpression) rhs).value;
-            lower = lhs;
+            result = lhs;
             return;
         }
         if ((lhs instanceof BooleanExpression) && (rhs instanceof BooleanExpression)) {
             if ((lhs instanceof TrueExpression) && (rhs instanceof TrueExpression)) {
-                lower = lhs;
+                result = lhs;
             } else {
                 setFalse(expression);
             }
@@ -217,7 +214,7 @@ public class Fold implements Visitor {
         Expression hs = getLowerExpression(expression.hs).child();
         if (hs instanceof IntExpression) {
             ((IntExpression) hs).value = ~((IntExpression) hs).value;
-            lower = hs;
+            result = hs;
             return;
         }
         lowerUnary(expression, hs);
@@ -229,12 +226,12 @@ public class Fold implements Visitor {
         Expression rhs = getLowerExpression(expression.rhs).child();
         if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
             ((IntExpression) lhs).value |= ((IntExpression) rhs).value;
-            lower = lhs;
+            result = lhs;
             return;
         }
         if ((lhs instanceof BooleanExpression) && (rhs instanceof BooleanExpression)) {
             if ((lhs instanceof TrueExpression) || (rhs instanceof TrueExpression)) {
-                lower = (lhs instanceof TrueExpression) ? lhs : rhs;
+                result = (lhs instanceof TrueExpression) ? lhs : rhs;
             } else {
                 setFalse(expression);
             }
@@ -249,7 +246,7 @@ public class Fold implements Visitor {
         Expression rhs = getLowerExpression(expression.rhs).child();
         if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
             ((IntExpression) lhs).value ^= ((IntExpression) rhs).value;
-            lower = lhs;
+            result = lhs;
             return;
         }
         if ((lhs instanceof BooleanExpression) && (rhs instanceof BooleanExpression)) {
@@ -267,16 +264,16 @@ public class Fold implements Visitor {
     public void visitBlock(BlockStatement statement) {
         // special case
         ListIterator<Statement> iterator = statement.statements.listIterator();
-        Expression prevResidual = residualExpression;
-        residualExpression = null;
+        Expression prevResidual = formalExpression;
+        formalExpression = null;
         while (iterator.hasNext()) {
             Statement lower = getLowerStatement(iterator.next());
-            if (residualExpression != null) {
+            if (formalExpression != null) {
                 iterator.remove();
                 iterator.add(
                         // Остаточный результат заведомо является unused
-                        new DiscardedExpression(residualExpression.pos, residualExpression));
-                residualExpression = null;
+                        new DiscardedExpression(formalExpression.pos, formalExpression));
+                formalExpression = null;
                 if (lower != null && !lower.isTag(Tag.EMPTY))
                     iterator.add(lower);
             } else {
@@ -286,8 +283,8 @@ public class Fold implements Visitor {
                     iterator.set(lower);
             }
         }
-        lower = statement;
-        residualExpression = prevResidual;
+        result = statement;
+        formalExpression = prevResidual;
     }
 
     @Override
@@ -300,7 +297,7 @@ public class Fold implements Visitor {
         if (statement.expressions != null) // is not default case?
             statement.expressions = lowerList(statement.expressions);
         statement.body = getLowerStatement(statement.body);
-        lower = statement;
+        result = statement;
     }
 
     @Override
@@ -320,11 +317,11 @@ public class Fold implements Visitor {
             if (expr.isLiteral() ||
                     (expr instanceof NullExpression) ||
                     (expr instanceof BooleanExpression)) {
-                constantFolding.put(name, expr);
+                literalConstants.put(name, expr);
             }
             statement.expressions.set(i, expr);
         }
-        lower = statement;
+        result = statement;
     }
 
     @Override
@@ -338,18 +335,18 @@ public class Fold implements Visitor {
         Expression rhs = getLowerExpression(expression.rhs).child();
         if ((lhs instanceof FloatExpression) && (rhs instanceof FloatExpression)) {
             ((FloatExpression) lhs).value /= ((FloatExpression) rhs).value;
-            lower = lhs;
+            result = lhs;
             return;
         }
         if ((lhs instanceof FloatExpression) && (rhs instanceof IntExpression)) {
             ((FloatExpression) lhs).value /= ((IntExpression) rhs).value;
-            lower = lhs;
+            result = lhs;
             return;
         }
         if ((lhs instanceof IntExpression) && (rhs instanceof FloatExpression)) {
             long l = ((IntExpression) lhs).value;
             double r = ((FloatExpression) rhs).value;
-            lower = new FloatExpression(expression.pos, l / r);
+            result = new FloatExpression(expression.pos, l / r);
             return;
         }
         if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
@@ -358,9 +355,9 @@ public class Fold implements Visitor {
             if (r != 0L) {
                 if (l % r == 0) {
                     ((IntExpression) lhs).value = (l / r);
-                    lower = lhs;
+                    result = lhs;
                 } else {
-                    lower = new FloatExpression(expression.pos, (double) l / r);
+                    result = new FloatExpression(expression.pos, (double) l / r);
                 }
                 return;
             }
@@ -376,10 +373,10 @@ public class Fold implements Visitor {
         if (isTrue(tree.cond)) {
             tree.cond = null; // codegen will handle it.
         } else if (isFalse(tree.cond)) {
-            lower = tree.body;
+            result = tree.body;
             return;
         }
-        lower = tree;
+        result = tree;
     }
 
     @Override
@@ -423,7 +420,7 @@ public class Fold implements Visitor {
 
         if (isFalse(tree.cond)) {
             // todo: Возможно, здесь стоит использовать CommaExpression
-            lower = new BlockStatement(tree.pos, tree.init.stream()
+            result = new BlockStatement(tree.pos, tree.init.stream()
                     .map(expr -> (Statement) expr)
                     .collect(Collectors.toList()));
             return;
@@ -434,20 +431,20 @@ public class Fold implements Visitor {
         if (tree.step != null) tree.step = lowerList(tree.step);
 
         tree.body = foldBody(tree.body);
-        lower = tree;
+        result = tree;
     }
 
     @Override
     public void visitFunctionCall(FunctionCallExpression expression) {
         expression.args = lowerList(expression.args);
-        lower = expression;
+        result = expression;
     }
 
     @Override
     public void visitFunctionDefine(FunctionDefineStatement statement) {
         statement.optionals = lowerList(statement.optionals);
         statement.body = foldBody(statement.body);
-        lower = statement;
+        result = statement;
     }
 
     @Override
@@ -491,16 +488,16 @@ public class Fold implements Visitor {
         tree.cond = getLowerExpression(tree.cond);
 
         if (isTrue(tree.cond)) {
-            lower = foldBody(tree.body);
+            result = foldBody(tree.body);
             return;
         }
         if (isFalse(tree.cond)) {
-            lower = foldBody(tree.elseBody);
+            result = foldBody(tree.elseBody);
             return;
         }
         tree.body = foldBody(tree.body);
         tree.elseBody = foldBody(tree.elseBody);
-        lower = tree;
+        result = tree;
     }
 
     @Override
@@ -514,7 +511,7 @@ public class Fold implements Visitor {
         Expression rhs = getLowerExpression(expression.rhs).child();
         if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
             ((IntExpression) lhs).value <<= ((IntExpression) rhs).value;
-            lower = lhs;
+            result = lhs;
             return;
         }
         lowerBinary(expression, lhs, rhs);
@@ -562,22 +559,22 @@ public class Fold implements Visitor {
         Expression rhs = getLowerExpression(expression.rhs).child();
         if ((lhs instanceof FloatExpression) && (rhs instanceof FloatExpression)) {
             ((FloatExpression) lhs).value *= ((FloatExpression) rhs).value;
-            lower = lhs;
+            result = lhs;
             return;
         }
         if ((lhs instanceof FloatExpression) && (rhs instanceof IntExpression)) {
             ((FloatExpression) lhs).value *= ((IntExpression) rhs).value;
-            lower = lhs;
+            result = lhs;
             return;
         }
         if ((lhs instanceof IntExpression) && (rhs instanceof FloatExpression)) {
             ((FloatExpression) rhs).value *= ((IntExpression) lhs).value;
-            lower = rhs;
+            result = rhs;
             return;
         }
         if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
             ((IntExpression) lhs).value *= ((IntExpression) rhs).value;
-            lower = lhs;
+            result = lhs;
             return;
         }
         lowerBinary(expression, lhs, rhs);
@@ -589,12 +586,12 @@ public class Fold implements Visitor {
 
         if (hs instanceof FloatExpression) {
             ((FloatExpression) hs).value = -((FloatExpression) hs).value;
-            lower = hs;
+            result = hs;
             return;
         }
         if (hs instanceof IntExpression) {
             ((IntExpression) hs).value = -((IntExpression) hs).value;
-            lower = hs;
+            result = hs;
             return;
         }
         lowerUnary(expression, hs);
@@ -638,7 +635,7 @@ public class Fold implements Visitor {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
         if (!lhs.isNullable() || (lhs instanceof NullExpression)) {
-            lower = rhs;
+            result = rhs;
         } else {
             lowerBinary(expression, lhs, rhs);
         }
@@ -657,16 +654,16 @@ public class Fold implements Visitor {
             return;
         }
         if (isFalse(lhs)) {
-            lower = getLowerExpression(expression.rhs);
+            result = getLowerExpression(expression.rhs);
             return;
         }
         Expression rhs = getLowerExpression(expression.rhs).child();
         if (isFalse(rhs)) {
-            lower = lhs;
+            result = lhs;
             return;
         }
         if (isTrue(rhs)) {
-            residualExpression = lhs;
+            formalExpression = lhs;
             setTrue(expression);
             return;
         }
@@ -676,7 +673,7 @@ public class Fold implements Visitor {
     @Override
     public void visitParens(ParensExpression expression) {
         // Удаление скобок
-        lower = getLowerExpression(expression.expr);
+        result = getLowerExpression(expression.expr);
     }
 
     @Override
@@ -684,7 +681,7 @@ public class Fold implements Visitor {
         Expression hs = getLowerExpression(expression.hs).child();
 
         if ((hs instanceof FloatExpression) || (hs instanceof IntExpression)) {
-            lower = hs;
+            result = hs;
             return;
         }
         lowerUnary(expression, hs);
@@ -730,7 +727,7 @@ public class Fold implements Visitor {
             double r = ((FloatExpression) rhs).value;
             if (r != 0D) {
                 ((FloatExpression) lhs).value %= r;
-                lower = lhs;
+                result = lhs;
                 return;
             }
         }
@@ -738,7 +735,7 @@ public class Fold implements Visitor {
             long r = ((IntExpression) rhs).value;
             if (r != 0L) {
                 ((FloatExpression) lhs).value %= r;
-                lower = lhs;
+                result = lhs;
                 return;
             }
         }
@@ -746,7 +743,7 @@ public class Fold implements Visitor {
             long l = ((IntExpression) lhs).value;
             double r = ((FloatExpression) rhs).value;
             if (r != 0D) {
-                lower = new FloatExpression(expression.pos, l % r);
+                result = new FloatExpression(expression.pos, l % r);
                 return;
             }
         }
@@ -754,7 +751,7 @@ public class Fold implements Visitor {
             long r = ((IntExpression) rhs).value;
             if (r != 0L) {
                 ((IntExpression) lhs).value %= r;
-                lower = lhs;
+                result = lhs;
                 return;
             }
         }
@@ -766,7 +763,7 @@ public class Fold implements Visitor {
         if ((statement.expr) != null) {
             statement.expr = getLowerExpression(statement.expr);
         }
-        lower = statement;
+        result = statement;
     }
 
     @Override
@@ -775,7 +772,7 @@ public class Fold implements Visitor {
         Expression rhs = getLowerExpression(expression.rhs).child();
         if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
             ((IntExpression) lhs).value >>= ((IntExpression) rhs).value;
-            lower = lhs;
+            result = lhs;
             return;
         }
         lowerBinary(expression, lhs, rhs);
@@ -792,23 +789,23 @@ public class Fold implements Visitor {
         Expression rhs = getLowerExpression(expression.rhs).child();
         if ((lhs instanceof FloatExpression) && (rhs instanceof FloatExpression)) {
             ((FloatExpression) lhs).value -= ((FloatExpression) rhs).value;
-            lower = lhs;
+            result = lhs;
             return;
         }
         if ((lhs instanceof FloatExpression) && (rhs instanceof IntExpression)) {
             ((FloatExpression) lhs).value -= ((IntExpression) rhs).value;
-            lower = lhs;
+            result = lhs;
             return;
         }
         if ((lhs instanceof IntExpression) && (rhs instanceof FloatExpression)) {
             long l = ((IntExpression) lhs).value;
             double r = ((FloatExpression) rhs).value;
-            lower = new FloatExpression(expression.pos, l - r);
+            result = new FloatExpression(expression.pos, l - r);
             return;
         }
         if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
             ((IntExpression) lhs).value -= ((IntExpression) rhs).value;
-            lower = lhs;
+            result = lhs;
             return;
         }
         lowerBinary(expression, lhs, rhs);
@@ -818,7 +815,7 @@ public class Fold implements Visitor {
     public void visitSwitch(SwitchStatement statement) {
         statement.selector = getLowerExpression(statement.selector);
         statement.cases = lowerList(statement.cases);
-        lower = statement;
+        result = statement;
     }
 
     @Override
@@ -827,17 +824,17 @@ public class Fold implements Visitor {
         Expression lhs = getLowerExpression(expression.lhs);
         Expression rhs = getLowerExpression(expression.rhs);
         if (isTrue(cond)) {
-            lower = lhs;
+            result = lhs;
             return;
         }
         if (isFalse(cond)) {
-            lower = rhs;
+            result = rhs;
             return;
         }
         expression.cond = cond;
         expression.lhs = lhs;
         expression.rhs = rhs;
-        lower = expression;
+        result = expression;
     }
 
     @Override
@@ -847,8 +844,8 @@ public class Fold implements Visitor {
 
     @Override
     public void visitVariable(VariableExpression expression) {
-        if (constantFolding.containsKey(expression.name)) {
-            lower = constantFolding.get(expression.name).copy(expression.pos);
+        if (literalConstants.containsKey(expression.name)) {
+            result = literalConstants.get(expression.name).copy(expression.pos);
         } else {
             nothing(expression);
         }
@@ -861,30 +858,30 @@ public class Fold implements Visitor {
         if (isTrue(tree.cond)) {
             tree.cond = null; // codegen will handle it.
         } else if (isFalse(tree.cond)) {
-            lower = null;
+            result = null;
             return;
         }
         tree.body = foldBody(tree.body);
-        lower = tree;
+        result = tree;
     }
 
     @Override
     public void visitDiscarded(DiscardedExpression expression) {
         expression.expression = getLowerExpression(expression.expression);
-        lower = expression;
+        result = expression;
     }
 
     private void visitAssignment(AssignmentExpression expression) {
         checkFolding(expression.var);
         expression.var = getLowerExpression(expression.var).child();
         expression.expr = getLowerExpression(expression.expr).child();
-        lower = expression;
+        result = expression;
     }
 
     private void visitIncrease(IncreaseExpression expression) {
         checkFolding(expression.hs);
         expression.hs = getLowerExpression(expression.hs).child();
-        lower = expression;
+        result = expression;
     }
 
     private void checkFolding(Expression expression) {
@@ -892,7 +889,7 @@ public class Fold implements Visitor {
         if (!(expression instanceof VariableExpression)) {
             return;
         }
-        if (constantFolding.containsKey(((VariableExpression) expression).name)) {
+        if (literalConstants.containsKey(((VariableExpression) expression).name)) {
             throw new CompileError("assignment to constant is not allowed.", expression.pos);
         }
     }
@@ -900,24 +897,24 @@ public class Fold implements Visitor {
     private void lowerBinary(BinaryExpression expression, Expression lhs, Expression rhs) {
         expression.lhs = lhs;
         expression.rhs = rhs;
-        lower = expression;
+        result = expression;
     }
 
     private void lowerUnary(UnaryExpression expression, Expression hs) {
         expression.hs = hs;
-        lower = expression;
+        result = expression;
     }
 
     @SuppressWarnings("unchecked")
     private <T extends Tree> List<T> lowerList(List<T> list) {
         return list.stream().map(n -> {
             n.accept(this);
-            if (lower == null) // empty statement
+            if (result == null) // empty statement
                 return (T) Statement.EMPTY;
             try {
-                return (T) lower;
+                return (T) result;
             } finally {
-                lower = null;
+                result = null;
             }
         }).collect(Collectors.toList());
     }
@@ -954,15 +951,15 @@ public class Fold implements Visitor {
     }
 
     private void setTrue(Expression expression) {
-        lower = new TrueExpression(expression.pos);
+        result = new TrueExpression(expression.pos);
     }
 
     private void setFalse(Expression expression) {
-        lower = new FalseExpression(expression.pos);
+        result = new FalseExpression(expression.pos);
     }
 
     private void nothing(Tree tree) {
-        lower = tree;
+        result = tree;
     }
 
     private int compareLiterals(Expression a, Expression b) {
@@ -1010,21 +1007,21 @@ public class Fold implements Visitor {
     private Expression getLowerExpression(Expression expression) {
         expression.accept(this);
         try {
-            return (Expression) lower;
+            return (Expression) result;
         } finally {
-            lower = null;
+            result = null;
         }
     }
 
     private Statement getLowerStatement(Statement statement) {
         statement.accept(this);
-        if (lower == null) { // empty
+        if (result == null) { // empty
             return Statement.EMPTY;
         }
         try {
-            return (Statement) lower;
+            return (Statement) result;
         } finally {
-            lower = null;
+            result = null;
         }
     }
 }
