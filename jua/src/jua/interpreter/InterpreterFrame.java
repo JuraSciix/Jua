@@ -4,31 +4,20 @@ import jua.runtime.JuaFunction;
 
 public final class InterpreterFrame {
 
-    private final InterpreterFrame callerFrame;
+    private final InterpreterFrame sender;
+
+    private final JuaFunction function;
 
     private final InterpreterState state;
 
-    private final JuaFunction ownerFunc;
-
-    public InterpreterFrame(InterpreterFrame callerFrame, InterpreterState state, JuaFunction ownerFunc) {
-        this.callerFrame = callerFrame;
+    // Trusting constructor.
+    InterpreterFrame(InterpreterFrame sender, JuaFunction function, InterpreterState state) {
+        this.sender = sender;
+        this.function = function;
         this.state = state;
-        this.ownerFunc = ownerFunc;
     }
 
-    public InterpreterFrame getCallerFrame() {
-        return callerFrame;
-    }
-
-    public InterpreterState getState() {
-        return state;
-    }
-
-    public JuaFunction getOwnerFunc() {
-        return ownerFunc;
-    }
-
-    void execute(InterpreterThread runtime) {
-        state.execute(this, runtime);
-    }
+    public InterpreterFrame sender() { return sender; }
+    public JuaFunction function()    { return function; }
+    public InterpreterState state()  { return state; }
 }

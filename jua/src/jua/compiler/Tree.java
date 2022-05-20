@@ -169,7 +169,7 @@ public abstract class Tree {
         }
     }
 
-    public static class ArrayExpression extends Expression {
+    public static class ArrayExpression extends LiteralExpression {
 
         // todo: Заменить это на List со своей структурой
         public Map<Expression, Expression> map;
@@ -902,21 +902,21 @@ public abstract class Tree {
 
         public final String name;
 
-        public final List<String> names;
+        public final List<String> params;
 
-        public List<Expression> optionals;
+        public List<Expression> defaults;
 
         public Statement body;
 
         public FunctionDefineStatement(int pos,
                                        String name,
-                                       List<String> names,
-                                       List<Expression> optionals,
+                                       List<String> params,
+                                       List<Expression> defaults,
                                        Statement body) {
             super(pos);
             this.name = name;
-            this.names = names;
-            this.optionals = optionals;
+            this.params = params;
+            this.defaults = defaults;
             this.body = body;
         }
 

@@ -1,10 +1,8 @@
 package jua.interpreter;
 
 import jua.interpreter.instructions.Instruction;
+import jua.runtime.code.ConstantPool;
 import jua.runtime.heap.Operand;
-
-import java.util.Map;
-import java.util.Objects;
 
 public final class InterpreterState {
 
@@ -12,78 +10,67 @@ public final class InterpreterState {
 
     public final Operand[] stack, locals;
 
-    private final Operand[] constantPool;
+    private final ConstantPool constantPool;
 
-    public int cp, sp, advancedCP;
+    private short cp, sp, cpAdvance;
 
-    public static final byte MSG_RUNNING = 0;
+    private final InterpreterThread thread;
 
-    public static final byte MSG_SENT = 1;
-
-    public static final byte MSG_DONE = 2;
-
-    private byte msg = MSG_RUNNING;
-
-    private Operand returnValue;
-
-    // todo: Ну тут и так понятно что надо сделать
-
-    private final Map<String, Operand> constants;
-
-    public String invokeFunctionId;
-
-    public int invokeFunctionArgs;
-
-    public InterpreterState(Instruction[] code,
+    // Trusting constructor.
+    InterpreterState(Instruction[] code,
                             int maxStack,
                             int maxLocals,
-                            Operand[] constantPool,
-                            Map<String, Operand> constants) {
-        this.code = Objects.requireNonNull(code, "code");
+                            ConstantPool constantPool,
+                            InterpreterThread thread) {
+        this.code = code;
         this.stack = new Operand[maxStack];
         this.locals = new Operand[maxLocals];
         this.constantPool = constantPool;
-        this.constants = constants;
+        this.thread = thread;
     }
 
-    public Instruction[] getCode() {
+    public InterpreterThread thread() {
+        return thread;
+    }
+
+    public Instruction[] code() {
         return code;
     }
 
-    public Operand[] getStack() {
+    public Operand[] stack() {
         return stack;
     }
 
-    public Operand[] getLocals() {
+    public Operand[] locals() {
         return locals;
     }
 
     public Operand getConstantByName(String name) {
-        return constants.get(name);
+        return thread.environment().getConstant(name);
     }
 
-    public int getCP() {
-        return cp;
+    public int cp() {
+        return cp & 0xffff;
     }
 
-    public void setCP(int cp) {
-        this.cp = cp;
+    public void set_cp(int cp) {
+        this.cp = (short) cp;
     }
 
-    public int getSP() {
-        return sp;
+    public int sp() {
+        return sp & 0xffff;
     }
 
-    public void setSP(int sp) {
-        this.sp = sp;
+    public void set_sp(int sp) {
+        this.sp = (short) sp;
     }
 
-    public int getAdvancedCP() {
-        return advancedCP;
+    public int cp_advance() {
+        return cpAdvance & 0xffff;
     }
 
-    public void setAdvancedCP(int advancedCP) {
-        this.advancedCP = advancedCP;
+    public void set_cp_advance(int cpAdvance) {
+        this.cpAdvance = (short) cpAdvance;
     }
 
     public void pushStack(Operand operand) {
@@ -114,45 +101,31 @@ public final class InterpreterState {
     }
 
     public Operand load(int index) {
+        if (locals[index] == null) {
+            thread.error("accessing an undefined variable '" +
+                    thread.getFrame().function().codeSegment().localNameTable().nameOf(index) + "'.");
+        }
         return locals[index];
     }
 
+    @Deprecated
     public byte getMsg() {
-        return msg;
+        return thread.msg();
     }
 
     public void setMsg(byte msg) {
-        this.msg = msg;
+        thread.set_msg(msg);
     }
 
-    public Operand getReturnValue() {
-        return returnValue;
-    }
-
-    public void setReturnValue(Operand returnValue) {
-        this.returnValue = returnValue;
-    }
-
-    public Operand[] getConstantPool() {
+    public ConstantPool constant_pool() {
         return constantPool;
     }
 
     public void advance() {
-        cp += advancedCP;
-        advancedCP = 0;
+        cp += cpAdvance;
+        cpAdvance = 0;
     }
 
-    void execute(InterpreterFrame frame, InterpreterThread runtime) {
-        int cp = this.cp;
-        try {
-            while (true) {
-                cp += code[cp].run(frame.getState());
-            }
-        } finally {
-            this.cp = cp;
-        }
-    }
-    
     // UTIL METHODS
 
 
@@ -189,4 +162,5 @@ public final class InterpreterState {
         stack[sp - 5] = stack[sp];
         sp += 2;
     }
+
 }

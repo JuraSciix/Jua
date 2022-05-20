@@ -3,6 +3,7 @@ package jua;
 import jua.compiler.JuaCompiler;
 
 import java.io.File;
+import java.net.MalformedURLException;
 
 public class Main {
 
@@ -10,7 +11,8 @@ public class Main {
     // todo: Разделить версию на мажорную и минорную
     public static final String VERSION = "1.95";
 
-    public static void main(String[] args) {
+    // todo: Мне лень сейчас обработкой исключений заниматься..
+    public static void main(String[] args) throws MalformedURLException {
         try {
             Options.bind(args);
         } catch (IllegalArgumentException e) {
@@ -18,18 +20,23 @@ public class Main {
         } catch (Throwable t) {
             error("can't parse console arguments: " + t);
         }
-        JuaCompiler.load(testFilename());
+        JuaCompiler.load(testFilename().toURI().toURL());
     }
 
-    private static String testFilename() {
+    private static File testFilename() {
         String filename = Options.filename();
 
         if (filename == null) {
             error("main file not specified.");
-        } else if (!new File(filename).isFile()) {
-            error("main file not found.");
+            return null;
         }
-        return filename;
+        File file = new File(filename);
+
+        if (!file.isFile()) {
+            error("main file not found.");
+            return null;
+        }
+        return file;
     }
 
     private static void error(String message) {

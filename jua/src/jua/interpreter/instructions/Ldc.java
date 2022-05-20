@@ -19,7 +19,7 @@ public final class Ldc implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        state.pushStack(state.getConstantPool()[operand]);
+        state.pushStack(state.constant_pool().at(operand));
         return NEXT;
     }
 }

@@ -2,7 +2,7 @@ package jua.runtime;
 
 import jua.interpreter.*;
 import jua.runtime.code.CodeSegment;
-import jua.runtime.heap.Operand;
+import jua.runtime.code.ConstantPool;
 
 @Deprecated
 public class ScriptRuntimeFunction implements RuntimeFunction {
@@ -31,10 +31,10 @@ public class ScriptRuntimeFunction implements RuntimeFunction {
             return;
         }
         InterpreterFrame frame = null;
-        Operand[] cp = program.getConstantPool();
+        ConstantPool cp = program.constantPool();
 
-        for (int i = tot; i > argc; i--) frame.getState().store(req+(tot-i), cp[i-req-1]);
-        for (int i = argc-1; i >= 0; i--) frame.getState().store(i, env.popStack());
+        for (int i = tot; i > argc; i--) frame.state().store(req+(tot-i), cp.at(i-req-1));
+        for (int i = argc-1; i >= 0; i--) frame.state().store(i, env.popStack());
 
         env.enterCall(frame);
         Trap.bti();

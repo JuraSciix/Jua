@@ -1,24 +1,25 @@
 package jua.util;
 
 import java.io.*;
+import java.net.URL;
 
 // todo: Если не удалю, то переименовать во что-нибудь покрасивее
 public class TokenizeStream implements Closeable {
 
-    public static TokenizeStream fromFile(String filename) throws IOException {
+    public static TokenizeStream fromURL(URL location) throws IOException {
         final int BUFFER_SIZE = 1024;
-        try (Reader reader = new FileReader(filename)) {
+        try (InputStreamReader reader = new InputStreamReader(location.openStream())) {
             CharArrayWriter beta = new CharArrayWriter();
             char[] buffer = new char[BUFFER_SIZE];
             int len;
             while ((len = reader.read(buffer, 0, BUFFER_SIZE)) >= 0) {
                 beta.write(buffer, 0, len);
             }
-            return new TokenizeStream(filename, beta.toCharArray());
+            return new TokenizeStream(location, beta.toCharArray());
         }
     }
 
-    private final String filename;
+    private final URL location;
 
     private char[] content;
 
@@ -32,8 +33,8 @@ public class TokenizeStream implements Closeable {
 
 //    private Tree.Position savedPosition;
 
-    public TokenizeStream(String filename, char[] content) {
-        this.filename = filename;
+    public TokenizeStream(URL location, char[] content) {
+        this.location = location;
         this.content = content;
         debugContent();
     }
@@ -42,8 +43,8 @@ public class TokenizeStream implements Closeable {
 //        System.out.println("content is null?: " + (content == null)); // DEBUG
     }
 
-    public String filename() {
-        return filename;
+    public URL location() {
+        return location;
     }
 
     private LineMap lmt;

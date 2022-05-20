@@ -6,23 +6,21 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.shorts.*;
 import jua.runtime.code.CodeSegment;
 import jua.interpreter.instructions.ChainInstruction;
 import jua.interpreter.instructions.Instruction;
-import jua.runtime.heap.DoubleOperand;
-import jua.runtime.heap.LongOperand;
+import jua.runtime.code.ConstantPool;
+import jua.runtime.code.LocalNameTable;
 import jua.runtime.heap.Operand;
-import jua.runtime.heap.StringOperand;
 import jua.runtime.code.LineNumberTable;
 import jua.util.LineMap;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 public final class Code {
 
@@ -54,7 +52,7 @@ public final class Code {
 
         final BooleanStack scopes = new BooleanArrayList();
 
-        final Object2IntMap<Object> literals = new Object2IntOpenHashMap<>();
+        final ConstantPool.Builder constant_pool_b = new ConstantPool.Builder();
 
         int nstack = 0;
 
@@ -71,10 +69,10 @@ public final class Code {
 
     private final Map<Object, Operand> literals__ = new HashMap<>();
 
-    private final String filename;
+    private final URL location;
 
-    public Code(String filename, LineMap lineMap) {
-        this.filename = filename;
+    public Code(URL location, LineMap lineMap) {
+        this.location = location;
         this.lineMap = lineMap;
     }
 
@@ -199,35 +197,22 @@ public final class Code {
         }
     }
 
-    public int resolveLong(long value) { return resolve(value, LongOperand::valueOf); }
-    public int resolveDouble(double value) { return resolve(value, DoubleOperand::valueOf); }
-    public int resolveString(String value) { return resolve(value, StringOperand::valueOf); }
+    public int resolveLong(long value) { return context.constant_pool_b.putLongEntry(value); }
+    public int resolveDouble(double value) { return context.constant_pool_b.putDoubleEntry(value); }
+    public int resolveString(String value) { return context.constant_pool_b.putStringEntry(value); }
 
-    private <T> int resolve(T value, Function<T, Operand> operandMaker) {
-        if (!literals__.containsKey(value))
-            literals__.put(value, operandMaker.apply(value));
-        if (!context.literals.containsKey(value)) {
-            context.literals.put(
-                    value,
-                    context.literals.size()
-            );
-        }
-        return context.literals.getInt(value);
-    }
 
-    private static final String[] EMPTY_STRINGS = new String[0];
-    public CodeSegment toProgram(int[] optionals) {
-        return new CodeSegment(filename,
-                buildInstructions(),
-                buildLineTable(),
-                buildConstantPool(),
+    public CodeSegment buildCodeSegment() {
+        return new CodeSegment(buildCode(),
                 context.nstack,
                 context.nlocals,
-                context.localNames.keySet().toArray(EMPTY_STRINGS), optionals);
+                buildConstantPool(),
+                buildLineTable(),
+                new LocalNameTable(context.localNames));
     }
 
     private static final Instruction[] EMPTY_INSTRUCTIONS = new Instruction[0];
-    private Instruction[] buildInstructions() {
+    private Instruction[] buildCode() {
         Instruction[] instructions = context.instructions.toArray(EMPTY_INSTRUCTIONS);
         for (Chain chain : context.chains.values()) {
             for (Int2ObjectMap.Entry<ChainInstructionFactory> entry : chain.factories.int2ObjectEntrySet()) {
@@ -245,11 +230,11 @@ public final class Code {
         );
     }
 
-    private Operand[] buildConstantPool() {
-        Operand[] constantPool = new Operand[context.literals.size()];
-        for (Object2IntMap.Entry<Object> entry : context.literals.object2IntEntrySet()) {
-            constantPool[entry.getIntValue()] = literals__.get(entry.getKey());
-        }
-        return constantPool;
+    private ConstantPool buildConstantPool() {
+        return context.constant_pool_b.build();
+    }
+
+    ConstantPool.Builder get_cpb() {
+        return context.constant_pool_b;
     }
 }

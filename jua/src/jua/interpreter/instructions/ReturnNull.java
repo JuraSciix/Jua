@@ -20,9 +20,7 @@ public final class ReturnNull implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        state.setReturnValue(NullOperand.NULL);
-        state.setMsg(InterpreterState.MSG_DONE);
-        Trap.bti();
+        state.thread().set_return(NullOperand.NULL);
         return UNREACHABLE;
     }
 }

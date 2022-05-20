@@ -19,9 +19,7 @@ public final class Return implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        state.setReturnValue(state.popStack());
-        state.setMsg(InterpreterState.MSG_DONE);
-        Trap.bti();
+        state.thread().set_return(state.popStack());
         return UNREACHABLE;
     }
 }

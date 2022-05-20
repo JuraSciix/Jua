@@ -2,35 +2,92 @@ package jua.runtime;
 
 import jua.runtime.code.CodeSegment;
 
-public class JuaFunction {
+import java.net.URL;
+
+public final class JuaFunction {
+
+    public static JuaFunction fromCode(String name,
+                                       int minNumArgs,
+                                       int maxNumArgs,
+                                       CodeSegment code,
+                                       URL location) {
+        return new JuaFunction(name, minNumArgs, maxNumArgs, code, null, location);
+    }
+
+    public static JuaFunction fromNativeHandler(String name,
+                                                int minNumArgs,
+                                                int maxNumArgs,
+                                                JuaNativeExecutor nativeExecutor,
+                                                URL location) {
+        return new JuaFunction(name, minNumArgs, maxNumArgs, null, nativeExecutor, location);
+    }
+
 
     private final String name;
 
-    private final int minArgc, maxArgc;
+    private final int minNumArgs;
 
-    // todo: Классы пакета (модуля) interpreter могут обращаться к runtime, но не наоборот.
-    private final CodeSegment program;
+    private final int maxNumArgs;
 
-    public JuaFunction(String name, int minArgc, int maxArgc, CodeSegment program) {
+    private final CodeSegment codeSegment;
+
+    private final JuaNativeExecutor nativeExecutor;
+
+    private final URL location;
+
+    private JuaFunction(String name,
+                        int minNumArgs,
+                        int maxNumArgs,
+                        CodeSegment codeSegment,
+                        JuaNativeExecutor nativeExecutor,
+                        URL location) {
         this.name = name;
-        this.minArgc = minArgc;
-        this.maxArgc = maxArgc;
-        this.program = program;
+        this.minNumArgs = minNumArgs;
+        this.maxNumArgs = maxNumArgs;
+        this.codeSegment = codeSegment;
+        this.nativeExecutor = nativeExecutor;
+        this.location = location;
     }
 
-    public String getName() {
+    public String name() {
         return name;
     }
 
-    public int getMinArgc() {
-        return minArgc;
+    public int minNumArgs() {
+        return minNumArgs;
     }
 
-    public int getMaxArgc() {
-        return maxArgc;
+    public int maxNumArgs() {
+        return maxNumArgs;
     }
 
-    public CodeSegment getProgram() {
-        return program;
+    public boolean isNative() {
+        return codeSegment == null;
+    }
+
+    public CodeSegment codeSegment() {
+        ensureCodeSegment();
+        return codeSegment;
+    }
+
+    private void ensureCodeSegment() {
+        if (codeSegment == null) {
+            throw new IllegalStateException("trying access to code segment of a native function");
+        }
+    }
+
+    public JuaNativeExecutor nativeHandler() {
+        ensureNativeHandler();
+        return nativeExecutor;
+    }
+
+    private void ensureNativeHandler() {
+        if (nativeExecutor == null) {
+            throw new IllegalStateException("trying access to native handler in non-native function");
+        }
+    }
+
+    public URL location() {
+        return location;
     }
 }

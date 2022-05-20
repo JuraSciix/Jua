@@ -3,6 +3,7 @@ package jua.compiler;
 import jua.runtime.JuaFunction;
 import jua.runtime.heap.Operand;
 
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,16 +24,16 @@ public class CodeData {
         }
     }
 
-    final String filename;
+    final URL location;
 
     final Map<String, JuaFunction> functions = new HashMap<>();
 
     final Map<String, Operand> constants = new HashMap<>();
 
-    public CodeData(String filename) {
+    public CodeData(URL filename) {
         // This class has been removed
 //        BuiltInDefinitions.init(this);
-        this.filename = filename;
+        this.location = filename;
     }
 
     public boolean testFunction(String name) {

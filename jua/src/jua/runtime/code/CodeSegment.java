@@ -1,68 +1,34 @@
 package jua.runtime.code;
 
 import jua.interpreter.instructions.Instruction;
-import jua.runtime.heap.Operand;
 
-/**
- *
- */
 public final class CodeSegment {
-
-    private final String sourceName;
 
     private final Instruction[] code;
 
+    private final int maxStack;
+
+    private final int maxLocals;
+
+    private final ConstantPool constantPool;
+
     private final LineNumberTable lineNumberTable;
 
-    private final Operand[] constantPool;
+    private final LocalNameTable localNameTable;
 
-    private final int maxStack, maxLocals;
-
-    private final String[] localNames;
-
-    private final int[] optionals;
-
-    public CodeSegment(String sourceName, Instruction[] code, LineNumberTable lineNumberTable,
-                       Operand[] constantPool, int maxStack, int maxLocals, String[] localNames, int[] optionals) {
-        this.sourceName = sourceName;
+    public CodeSegment(Instruction[] code, int maxStack, int maxLocals, ConstantPool constantPool, LineNumberTable lineNumberTable, LocalNameTable localNameTable) {
         this.code = code;
-        this.lineNumberTable = lineNumberTable;
-        this.constantPool = constantPool;
         this.maxStack = maxStack;
         this.maxLocals = maxLocals;
-        this.localNames = localNames;
-        this.optionals = optionals;
+        this.constantPool = constantPool;
+        this.lineNumberTable = lineNumberTable;
+        this.localNameTable = localNameTable;
     }
 
-    public String getSourceName() {
-        return sourceName;
-    }
-
-    public Instruction[] getCode() {
-        return code;
-    }
-
-    public LineNumberTable getLineNumberTable() {
-        return lineNumberTable;
-    }
-
-    public Operand[] getConstantPool() {
-        return constantPool;
-    }
-
-    public int getMaxStack() {
-        return maxStack;
-    }
-
-    public int getMaxLocals() {
-        return maxLocals;
-    }
-
-    public String[] getLocalNames() {
-        return localNames;
-    }
-
-    public int[] getOptionals() {
-        return optionals;
-    }
+    public Instruction[] code()              { return code; }
+    public int maxStack()                    { return maxStack; }
+    public int maxLocals()                   { return maxLocals; }
+    public ConstantPool constantPool()       { return constantPool; }
+    public LineNumberTable lineNumberTable() { return lineNumberTable; }
+    public LocalNameTable localNameTable()   { return localNameTable; }
 }

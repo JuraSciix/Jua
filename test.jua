@@ -1,4 +1,28 @@
-fn printHello(addressee) = println("Hello, " + addressee);
+const _NaN = 0.0 / 0.0;
 
-printHello("world");
-printHello("JuraSciix");
+fn fib(n) {
+    if n <= 2 {
+        if n <= 0 {
+            return _NaN;
+        }
+        return 1;
+    }
+    return fib(n - 1) + fib(n - 2);
+}
+
+fn qfib(n) {
+    if n <= 0 {
+        return _NaN;
+    }
+    q1 = 1;
+    q2 = 1;
+    for i = 2; i < n; i++ {
+        qt = q1 + q2;
+        q1 = q2;
+        q2 = qt;
+    }
+    return q2;
+}
+
+println(fib(10));
+println(qfib(10));

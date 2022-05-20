@@ -9,7 +9,7 @@ import java.util.Objects;
  */
 public class RuntimeErrorException extends RuntimeException {
 
-    public InterpreterThread runtime; // todo:  Исправить этот костыль
+    public InterpreterThread thread; // todo:  Исправить этот костыль
 
     public RuntimeErrorException(String message) {
         super(Objects.requireNonNull(message, "message"));

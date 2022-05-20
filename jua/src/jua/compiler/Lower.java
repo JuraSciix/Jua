@@ -442,7 +442,7 @@ public class Lower implements Visitor {
 
     @Override
     public void visitFunctionDefine(FunctionDefineStatement statement) {
-        statement.optionals = lowerList(statement.optionals);
+        statement.defaults = lowerList(statement.defaults);
         statement.body = foldBody(statement.body);
         result = statement;
     }

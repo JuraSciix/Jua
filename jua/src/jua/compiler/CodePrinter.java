@@ -30,7 +30,7 @@ public class CodePrinter {
         @Override
         public String toString() {
             String operands0 = (operands == null) ? "default" : Arrays.stream(operands)
-                    .mapToObj(a -> program.getConstantPool()[a].toString())
+                    .mapToObj(a -> program.constantPool().at(a).toString())
                     .collect(Collectors.joining(", "));
             return String.format("%s: ->%d", operands0, index);
         }
@@ -87,16 +87,15 @@ public class CodePrinter {
     public static void printFunctions(Map<String, JuaFunction> functions) {
         functions.forEach((name, function) -> {
             System.out.print("fn " + name + "(");
-            CodeSegment p = function.getProgram();
-            for (int i = 0; i < function.getMaxArgc(); i++) {
+            CodeSegment p = function.codeSegment();
+            for (int i = 0; i < function.maxNumArgs(); i++) {
                 if (i > 0) {
                     System.out.print(", ");
                 }
-                System.out.print(p.getLocalNames()[i]);
-                if (i >= function.getMinArgc()) {
+                System.out.print(p.localNameTable().nameOf(i));
+                if (i >= function.minNumArgs()) {
                     System.out.print(" = ");
-                    System.out.print(p.getConstantPool()[
-                            p.getOptionals()[i]].toString());
+                    System.out.print(p.constantPool().defaultLocalAt(i).toString());
                 }
             }
             System.out.println(") {");
@@ -110,11 +109,11 @@ public class CodePrinter {
         printer.setAlign(align);
         printer.printHead(program);
         int lastLineNumber = 0;
-        Instruction[] code = program.getCode();
+        Instruction[] code = program.code();
         int length = code.length;
         for (int i = 0; i < length; i++) {
             code[i].print(printer);
-            int line = program.getLineNumberTable().lineNumberOf(i);
+            int line = program.lineNumberTable().lineNumberOf(i);
             if (line != lastLineNumber) {
                 printer.printLine(line);
                 lastLineNumber = line;
@@ -151,7 +150,7 @@ public class CodePrinter {
     }
 
     private void printHead(CodeSegment program) {
-        System.out.printf("Code:   stack: %d, locals: %d%n", program.getMaxStack(), program.getMaxLocals());
+        System.out.printf("Code:   stack: %d, locals: %d%n", program.maxStack(), program.maxLocals());
     }
 
     @Deprecated
@@ -179,7 +178,7 @@ public class CodePrinter {
     }
 
     public void printLocal(int id) {
-        print(String.format("%d (%s)", id, program.getLocalNames()[id]));
+        print(String.format("%d (%s)", id, program.localNameTable().nameOf(id)));
     }
 
     public void printIp(int ip) {
@@ -195,7 +194,7 @@ public class CodePrinter {
     }
 
     public void printLiteral(int index) {
-        Operand constant = program.getConstantPool()[index];
+        Operand constant = program.constantPool().at(index);
         preparePrint().operands.add(constant.type().name + " " + constant.toString());
     }
 

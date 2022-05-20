@@ -12,6 +12,8 @@ import jua.util.TokenizeStream;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
 
 public class JuaCompiler {
 
@@ -22,7 +24,7 @@ public class JuaCompiler {
         @Override
         public void uncaughtException(Thread t, Throwable e) {
             if (e instanceof RuntimeErrorException) {
-                runtimeError(((RuntimeErrorException) e).runtime,
+                runtimeError(((RuntimeErrorException) e).thread,
                              (RuntimeErrorException) e);
             } else {
                 fatal("Fatal error occurred at runtime: ", e);
@@ -33,21 +35,21 @@ public class JuaCompiler {
 
     public static final Thread.UncaughtExceptionHandler RUNTIME_EXCEPTION_HANDLER = new JuaExceptionHandler();
 
-    public static void load(String filename) {
+    public static void load(URL location) {
         TokenizeStream s;
         try {
-            s = TokenizeStream.fromFile(filename);
+            s = TokenizeStream.fromURL(location);
         } catch (IOException e) {
             fatal("IO error: ", e);
             return;
         }
-        Result result = compile(parse(s), s.filename(), s.getLmt());
+        Result result = compile(parse(s), s.location(), s.getLmt());
 
         if (Options.disassembler()) {
             result.print();
             if (Options.stop()) return;
         }
-        interpret(result.env());
+        interpret(result.toThread());
     }
 
     private static class TokenPrinter implements Tokens.TokenVisitor {
@@ -104,7 +106,7 @@ public class JuaCompiler {
                     tokenizer.nextToken().accept(printer);
                 } catch (ParseException e) {
                     if (Options.stop()) {
-                        parseError(e, s.filename(), s.getLmt());
+                        parseError(e, s.location(), s.getLmt());
                     }
                     break;
                 }
@@ -114,21 +116,21 @@ public class JuaCompiler {
         try (TokenizeStream stream = s) {
             return new Parser(new Tokenizer(stream)).parse();
         } catch (ParseException e) {
-            parseError(e, s.filename(), s.getLmt());
+            parseError(e, s.location(), s.getLmt());
         } catch (Throwable t) {
             fatal("Fatal error occurred at parser: ", t);
         }
         return null;
     }
 
-    private static void parseError(ParseException e, String filename, LineMap lnt) {
+    private static void parseError(ParseException e, URL filename, LineMap lnt) {
         System.err.println("Parse error: " + e.getMessage());
         printPosition(filename, lnt.getLineNumber(e.position), lnt.getOffsetNumber(e.position));
         System.exit(1);
     }
 
-    private static Result compile(Tree.Statement root, String filename, LineMap lineMap) {
-        CodeData codeData = new CodeData(filename);
+    private static Result compile(Tree.Statement root, URL location, LineMap lineMap) {
+        CodeData codeData = new CodeData(location);
         Gen gen = new Gen(codeData, lineMap);
 
         try {
@@ -140,44 +142,43 @@ public class JuaCompiler {
             }
             root.accept(gen);
         } catch (CompileError e) {
-            compileError(e, lineMap, filename);
+            compileError(e, lineMap, location);
         } catch (Throwable t) {
             fatal("Fatal error occurred at compiler: ", t);
         }
         return gen.getResult();
     }
 
-    private static void compileError(CompileError e, LineMap lineMap, String filename) {
+    private static void compileError(CompileError e, LineMap lineMap, URL location) {
         System.err.println("Compile error: " + e.getMessage());
-        printPosition(filename, lineMap.getLineNumber(e.position),
-                lineMap.getOffsetNumber(e.position));
+        printPosition(location, lineMap.getLineNumber(e.position), lineMap.getOffsetNumber(e.position));
         System.exit(1);
     }
 
-    private static void interpret(InterpreterThread env) {
+    private static void interpret(InterpreterThread thread) {
         Thread.setDefaultUncaughtExceptionHandler(RUNTIME_EXCEPTION_HANDLER);
-        env.run();
+        thread.run();
     }
 
     private static void runtimeError(InterpreterThread runtime, RuntimeErrorException e) {
         System.err.println("Runtime error: " + e.getMessage());
         // todo: Че там с многопотоком)
-        printPosition(runtime.currentFile(), runtime.currentLine(), -1);
+        printPosition(runtime.current_location(), runtime.current_line_number(), -1);
         System.exit(1);
     }
 
-    private static void printPosition(String filename, int line, int offset) {
-        System.err.printf("File: %s, line: %d.%n", filename, line);
+    private static void printPosition(URL location, int line, int offset) {
+        System.err.printf("File: %s, line: %d.%n", location, line);
 
         if (offset >= 0) {
-            printLine(filename, line, offset);
+            printLine(location, line, offset);
         }
     }
 
-    private static void printLine(String filename, int line, int offset) {
+    private static void printLine(URL location, int line, int offset) {
         String s;
 
-        try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(location.openStream()))) {
             while (--line > 0) {
                 br.readLine();
             }

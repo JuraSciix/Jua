@@ -19,7 +19,7 @@ public enum Halt implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        Trap.halt();
-        return NEXT;
+        state.thread().interrupt();
+        return 0;
     }
 }

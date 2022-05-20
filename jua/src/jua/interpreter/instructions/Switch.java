@@ -43,7 +43,7 @@ public final class Switch extends ChainInstruction {
         Operand selector = state.popStack();
 
         for (int i = 0; i < l.length; i++) {
-            if (selector.equals(state.getConstantPool()[l[i]])) {
+            if (selector.equals(state.constant_pool().at(l[i]))) {
                 return destIps[i];
             }
         }

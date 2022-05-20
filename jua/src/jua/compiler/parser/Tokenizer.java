@@ -57,8 +57,9 @@ public class Tokenizer {
         this.stream = stream;
     }
 
+    @Deprecated
     public String getFilename() {
-        return stream.filename();
+        throw new UnsupportedOperationException();
     }
 
     public boolean hasMoreTokens() {

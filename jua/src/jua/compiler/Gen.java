@@ -83,7 +83,7 @@ public final class Gen implements Visitor {
     public Gen(CodeData codeData, LineMap lineMap) {
         this.codeData = codeData;
 
-        code = new Code(codeData.filename, lineMap);
+        code = new Code(codeData.location, lineMap);
         breakChains = new IntArrayList();
         continueChains = new IntArrayList();
         fallthroughChains = new IntArrayList();
@@ -92,7 +92,7 @@ public final class Gen implements Visitor {
 
     // todo: исправить этот low-cohesion
     public Result getResult() {
-        return new Result(codeData, code.toProgram(null));
+        return new Result(codeData, code.buildCodeSegment(), codeData.location);
     }
 
     @Override
@@ -677,7 +677,7 @@ public final class Gen implements Visitor {
                     cError(expression.pos, "too many parameters.");
                 }
                 visitExprList(expression.args);
-                instruction = new Invoke(expression.name, (byte) expression.args.size());
+                instruction = new Call(expression.name, (byte) expression.args.size());
                 stack = -expression.args.size() + 1;
                 break;
         }
@@ -688,33 +688,34 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitFunctionDefine(FunctionDefineStatement statement) {
+    public void visitFunctionDefine(FunctionDefineStatement tree) {
         if (isState(STATE_NO_DECLS))
-            cError(statement.pos, "function declaration is not allowed here.");
-        if (codeData.testFunction(statement.name))
-            cError(statement.pos, "function '" + statement.name + "' already declared.");
-        code.pushContext(statement.pos);
+            cError(tree.pos, "function declaration is not allowed here.");
+        if (codeData.testFunction(tree.name))
+            cError(tree.pos, "function '" + tree.name + "' already declared.");
+        code.pushContext(tree.pos);
         code.pushScope();
-        int[] locals = statement.names.stream().mapToInt(n -> {
-            if (statement.names.indexOf(n) != statement.names.lastIndexOf(n)) {
-                cError(statement.pos, "duplicate argument '" + n + "'.");
-            }
-            return code.resolveLocal(n);
-        }).toArray();
-        int[] optionals = statement.optionals.stream().mapToInt(a -> {
-            assert (a instanceof LiteralExpression);
-            return TreeInfo.resolveLiteral(code, (LiteralExpression) a);
-        }).toArray();
-        visitStatement(statement.body);
-        if (!statement.body.isTag(Tag.COMPOUND))
+
+        tree.params.forEach(code::resolveLocal);
+        int a = tree.params.size() - tree.defaults.size();
+
+        for (int i = 0; i < tree.defaults.size() ; i++) {
+            LiteralExpression l = (LiteralExpression) tree.defaults.get(i);
+            code.get_cpb().putDefaultLocalEntry(a + i, TreeInfo.resolveLiteral(code, l));
+        }
+
+        visitStatement(tree.body);
+        if (!tree.body.isTag(Tag.COMPOUND))
             emitReturn();
         else
             emitRetnull();
-        codeData.setFunction(statement.name, new JuaFunction(
-                statement.name,
-                statement.names.size(),
-                statement.names.size() - statement.optionals.size(),
-                code.toProgram(optionals)));
+        codeData.setFunction(tree.name, JuaFunction.fromCode(
+                tree.name,
+                tree.params.size(),
+                tree.params.size() - tree.defaults.size(),
+                code.buildCodeSegment(),
+                codeData.location
+        ));
         code.popScope();
         code.popContext();
     }

@@ -43,6 +43,7 @@ public final class TreeInfo {
         if (expression instanceof StringExpression) {
             return code.resolveString(((StringExpression) expression).value);
         }
+        
         throw new AssertionError();
     }
 

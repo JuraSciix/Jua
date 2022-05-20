@@ -1,14 +1,29 @@
 package jua.interpreter;
 
 import jua.Options;
-import jua.runtime.*;
+import jua.interpreter.instructions.Instruction;
+import jua.runtime.JuaEnvironment;
+import jua.runtime.JuaFunction;
+import jua.runtime.RuntimeErrorException;
 import jua.runtime.code.CodeSegment;
 import jua.runtime.heap.*;
 
-import java.util.Map;
+import java.net.URL;
 import java.util.Objects;
 
 public class InterpreterThread {
+
+    public static final int MSG_CREATED = 0;
+
+    public static final byte MSG_RUNNING = 1;
+
+    public static final byte MSG_CALLING = 2;
+
+    public static final byte MSG_POPPING = 3;
+
+    public static final byte MSG_CRASHED = 4;
+
+    public static final byte MSG_HALTED = 5;
 
     @Deprecated
     public static final int MAX_CALLSTACK_SIZE;
@@ -17,81 +32,113 @@ public class InterpreterThread {
         // wtf?
         int a = Options.callStackSize();
 
-        if (a < (1 << 10))
-            a = (1 << 10);
-        if (a > (Integer.MAX_VALUE >> 1))
-            a = (Integer.MAX_VALUE >> 1);
+        if (a < (1 << 10)) a = (1 << 10);
+        if (a > (Integer.MAX_VALUE >> 1)) a = (Integer.MAX_VALUE >> 1);
         MAX_CALLSTACK_SIZE = a;
     }
 
+
     @Deprecated
-    public static InterpreterThread copy(InterpreterThread env) {
-        return new InterpreterThread(env.functions, env.constants);
+    public static InterpreterThread copy(InterpreterThread thread) {
+        return new InterpreterThread(thread.javaThread, thread.environment);
     }
 
     // todo: Ну тут и так понятно что надо сделать
 
-    private final Map<String, JuaFunction> functions;
+    private final Thread javaThread;
 
-    private final Map<String, Operand> constants;
+    private final JuaEnvironment environment;
 
-    private InterpreterFrame upperFrame;
+    private InterpreterFrame current_frame = null;
+
+    private String calleeName;
+
+    private int numArgs;
+
+    private String error_msg;
+
+    private byte msg = MSG_CREATED;
+
+    private Operand retval;
 
     // todo: ну... исправить
     public InterpreterFrame getFrame() {
-        return upperFrame;
+        return current_frame;
     }
 
-    public InterpreterThread(Map<String, JuaFunction> functions, Map<String, Operand> constants) {
-        this.functions = functions;
-        this.constants = constants;
-
+    public InterpreterThread(Thread javaThread, JuaEnvironment environment) {
+        this.javaThread = javaThread;
+        this.environment = environment;
     }
 
-    public InterpreterFrame buildFrame(InterpreterFrame prev,
-                                              JuaFunction function, CodeSegment program) {
-        assert function == null || function.getProgram() == program;
-        return new InterpreterFrame(prev,
-                new InterpreterState(
-                        program.getCode(),
-                        program.getMaxStack(),
-                        program.getMaxLocals(),
-                        function.getProgram().getConstantPool(),
-                        constants),
-                function);
+    public JuaEnvironment environment() {
+        return environment;
+    }
+
+    public InterpreterFrame makeFrame(JuaFunction function) {
+        InterpreterFrame sender = current_frame;
+        InterpreterState state;
+        if (function.isNative()) {
+            // Нативные функции выполняются непосредственно на JVM.
+            // У них вместо сегмента с Jua-кодом хранится нативный
+            // экзекютор. Таким образом, они не нуждаются в экземпляре
+            // класса InterpreterState.
+            state = null;
+        } else {
+            CodeSegment cs = function.codeSegment();
+            state = new InterpreterState(cs.code(), cs.maxStack(), cs.maxLocals(), cs.constantPool(), this);
+        }
+        return new InterpreterFrame(sender, function, state);
     }
 
     public void joinFrame(JuaFunction callee, int argc) {
         Objects.requireNonNull(callee, "callee");
+
         // todo: Нативных функций пока нет
-        if (((callee.getMaxArgc() - argc) | (argc - callee.getMinArgc())) < 0) {
-            throw new RuntimeErrorException((argc > callee.getMaxArgc()) ?
-                    "arguments too many. (total " + callee.getMaxArgc() + ", got " + argc + ')' :
-                    "arguments too few. (required " + callee.getMinArgc() + ", got " + argc + ')');
+        if (((callee.maxNumArgs() - argc) | (argc - callee.minNumArgs())) < 0) {
+            error((argc > callee.maxNumArgs()) ?
+                    "too many arguments. (total " + callee.maxNumArgs() + ", got " + argc + ")" :
+                    "too few arguments. (required " + callee.minNumArgs() + ", got " + argc + ")");
+            return;
         }
 
-        InterpreterFrame upperFrame1 = upperFrame;
-        upperFrame = buildFrame(upperFrame1, callee, callee.getProgram());
+        InterpreterFrame sender = current_frame;
+        current_frame = makeFrame(callee);
 
-        for (int i = callee.getMaxArgc(); i > argc; i--) upperFrame.getState().store(
-                callee.getMinArgc()+(callee.getMaxArgc()-i),
-                callee.getProgram().getConstantPool()[i-callee.getMinArgc()-1]);
-        for (int i = argc-1; i >= 0; i--) upperFrame.getState().store(i, upperFrame1.getState().popStack());
+        for (int i = callee.maxNumArgs() - 1; i >= argc; i--) {
+            current_frame.state().store(i, current_frame.state().constant_pool().defaultLocalAt(i));
+        }
+        for (int i = argc - 1; i >= 0; i--) {
+            current_frame.state().store(i, sender.state().popStack());
+        }
+
+        msg = MSG_RUNNING; // Переходим в состояние выполнения
+    }
+
+    public byte msg() {
+        return msg;
+    }
+
+    // Не рекомендуется использовать
+    public void set_msg(byte msg) {
+        this.msg = msg;
     }
 
     public void returnFrame() {
-        InterpreterFrame uf = upperFrame;
-        Operand returnVal = uf.getState().getReturnValue();
+        InterpreterFrame uf = current_frame;
+        Operand returnVal = retval;
         if (returnVal == null) throw new IllegalStateException("null return value");
-        InterpreterFrame uf1 = uf.getCallerFrame();
+        InterpreterFrame uf1 = uf.sender();
         if (uf1 == null) {
-            upperFrame = null;
+            msg = MSG_HALTED; // Выполнять больше нечего.
+            current_frame = null;
             return;
         }
         // todo: Нативных функций пока нет
-        uf1.getState().pushStack(returnVal);
-        uf1.getState().advance();
-        upperFrame = uf1;
+        uf1.state().pushStack(returnVal);
+        uf1.state().advance();
+        current_frame = uf1;
+        msg = MSG_RUNNING; // Переходим в состояние выполнения.
     }
 
     @Deprecated
@@ -104,52 +151,106 @@ public class InterpreterThread {
 
     }
 
-    // todo
+    public Thread java_thread() {
+        return javaThread;
+    }
+
+    public void set_callee(String calleeName, int numArgs) {
+        this.calleeName = calleeName;
+        this.numArgs = numArgs;
+        msg = MSG_CALLING;
+    }
+
+    public void set_return(Operand retval) {
+        this.retval = retval;
+        this.msg = MSG_POPPING;
+    }
+
+    @Deprecated
     public void setProgram(InterpreterFrame newCP) {
-        upperFrame = newCP;
+        set_frame_force(newCP);
+    }
+
+    public void set_frame_force(InterpreterFrame frame) {
+        current_frame = frame;
+    }
+
+    public void interrupt() {
+        javaThread.interrupt();
+        msg = MSG_HALTED;
+    }
+
+    public void start() {
+        set_msg(MSG_RUNNING);
+    }
+
+    public boolean isActive() {
+        return javaThread.isAlive() && !javaThread.isInterrupted() && isRunning();
+    }
+
+    public boolean isRunning() {
+        return msg == MSG_RUNNING;
     }
 
     public void run() {
-        loop:
-        while (upperFrame != null) {
+        set_msg(MSG_RUNNING);
+
+        while (true) {
+            InterpreterFrame frame = current_frame;
+            InterpreterState state = frame.state();
+            Instruction[] code = state.code();
+            int code_point = state.cp();
+
             try {
-                switch (upperFrame.getState().getMsg()) {
-                    case InterpreterState.MSG_SENT: joinFrame(
-                            functions.get(upperFrame.getState().invokeFunctionId), upperFrame.getState().invokeFunctionArgs);
-                        break;
-                    case
-                            InterpreterState.MSG_DONE: returnFrame();
-                        break;
+                state.advance();
+
+                while (isRunning()) {
+                    code_point += code[code_point].run(state);
                 }
 
-                upperFrame.execute(this);
-            } catch (InterpreterError e) { // Note: на всякий случай
-                RuntimeErrorException ex = new RuntimeErrorException(e.getMessage());
-                ex.runtime = this;
-                throw ex;
-            } catch (RuntimeErrorException e) {
-                // Обрабатывается в {@link jua.compiler.JuaCompiler.JuaExceptionHandler}.
-                e.runtime = this;
-                throw e;
-            } catch (Trap trap) {
-                switch (trap.state()) {
-                    case Trap.STATE_HALT:
-                        // STATE_HALT означает полную остановку потока и
-                        // выбрасывается только из обработчика операции halt
-                        break loop;
-                    case Trap.STATE_BTI:
-                        //continue
+                switch (msg) {
+                    case MSG_RUNNING: continue;
+
+                    case MSG_CALLING: {
+                        set_msg(MSG_RUNNING);
+                        joinFrame(environment.getFunction(calleeName), numArgs);
+                        calleeName = null;
+                        numArgs = 0;
+                        break;
+                    }
+
+                    case MSG_POPPING: {
+                        set_msg(MSG_RUNNING);
+                        returnFrame();
+                        break;
+                    }
+
+                    case MSG_CRASHED: {
+                        // todo: Избавиться от выброса исключения.
+                        throw new RuntimeErrorException(error_msg);
+                    }
+
+                    case MSG_HALTED:
+                        // Поток поток подлежит завершению.
+                        javaThread.interrupt();
+                        return;
                 }
+            } catch (RuntimeErrorException e) {
+                // todo: Избавиться от выброса исключения.
+                e.thread = this;
+                throw e;
+            } finally {
+                state.set_cp(code_point);
             }
         }
     }
 
-    public String currentFile() {
-        return upperFrame.getOwnerFunc().getProgram().getSourceName();
+    public URL current_location() {
+        return current_frame.function().location();
     }
 
-    public int currentLine() {
-        return upperFrame.getOwnerFunc().getProgram().getLineNumberTable().lineNumberOf(upperFrame.getState().getCP());
+    public int current_line_number() {
+        return current_frame.function().codeSegment().lineNumberTable().lineNumberOf(current_frame.state().cp());
     }
 
     @Deprecated
@@ -235,11 +336,11 @@ public class InterpreterThread {
     }
 
     public void pushStack(Operand operand) {
-        upperFrame.getState().pushStack(operand);
+        current_frame.state().pushStack(operand);
     }
 
     public Operand popStack() {
-        return getFrame().getState().popStack();
+        return getFrame().state().popStack();
     }
 
     @Deprecated
@@ -264,7 +365,7 @@ public class InterpreterThread {
     }
 
     public Operand peekStack() {
-        return upperFrame.getState().peekStack();
+        return current_frame.state().peekStack();
     }
 
     @Deprecated
@@ -284,7 +385,7 @@ public class InterpreterThread {
         return getInt(peekStack());
     }
 
-    public String peekString()  {
+    public String peekString() {
         return getString(peekStack());
     }
 
@@ -298,16 +399,22 @@ public class InterpreterThread {
         // does noting
     }
 
+    @Deprecated
     public Operand getLocal(int id) {
-        Operand value = upperFrame.getState().load(id);
-        if (value == null) {
-            throw InterpreterError.variableNotExists(
-                    upperFrame.getOwnerFunc().getProgram().getLocalNames()[id]);
-        }
-        return value;
+        return current_frame.state().load(id);
     }
 
+    @Deprecated
     public void setLocal(int id, Operand value) {
-        upperFrame.getState().store(id, value);
+        current_frame.state().store(id, value);
+    }
+
+    public void error(String msg) {
+        this.msg = MSG_CRASHED;
+        error_msg = msg;
+    }
+
+    public void error(String fmt, Object... args) {
+        error(String.format(fmt, args));
     }
 }
