@@ -5,11 +5,11 @@ import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntStack;
 import jua.interpreter.instructions.*;
-import jua.runtime.ArrayOperand;
+import jua.runtime.heap.ArrayOperand;
 import jua.runtime.JuaFunction;
-import jua.runtime.Operand;
-import jua.runtime.ScriptRuntimeFunction;
+import jua.runtime.heap.Operand;
 import jua.compiler.Tree.*;
+import jua.util.LineMap;
 
 import java.util.Iterator;
 import java.util.List;

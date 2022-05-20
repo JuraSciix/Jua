@@ -1,6 +1,7 @@
 package jua.runtime;
 
 import jua.interpreter.InterpreterFrame;
+import jua.runtime.heap.Operand;
 
 @Deprecated
 public class CallStackElement {

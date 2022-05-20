@@ -1,4 +1,4 @@
-package jua.runtime;
+package jua.runtime.heap;
 
 import jua.interpreter.InterpreterError;
 

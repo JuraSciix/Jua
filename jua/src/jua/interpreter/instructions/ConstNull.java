@@ -2,7 +2,7 @@ package jua.interpreter.instructions;
 
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
-import jua.runtime.NullOperand;
+import jua.runtime.heap.NullOperand;
 
 public final class ConstNull implements Instruction {
 

@@ -2,8 +2,8 @@ package jua.interpreter.instructions;
 
 import jua.interpreter.InterpreterError;
 import jua.interpreter.InterpreterState;
-import jua.runtime.LongOperand;
-import jua.runtime.Operand;
+import jua.runtime.heap.LongOperand;
+import jua.runtime.heap.Operand;
 import jua.compiler.CodePrinter;
 
 public enum Not implements Instruction {

@@ -2,7 +2,7 @@ package jua.interpreter.instructions;
 
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
-import jua.runtime.LongOperand;
+import jua.runtime.heap.LongOperand;
 
 public enum Length implements Instruction {
 

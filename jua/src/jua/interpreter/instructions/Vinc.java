@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
 import jua.interpreter.InterpreterState;
-import jua.runtime.Operand;
+import jua.runtime.heap.Operand;
 import jua.compiler.CodePrinter;
 
 public class Vinc implements Instruction {

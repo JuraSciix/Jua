@@ -3,7 +3,7 @@ package jua.interpreter.instructions;
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterError;
 import jua.interpreter.InterpreterState;
-import jua.runtime.*;
+import jua.runtime.heap.*;
 
 public enum Add implements Instruction {
 

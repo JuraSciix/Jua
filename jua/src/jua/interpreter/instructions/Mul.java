@@ -2,9 +2,9 @@ package jua.interpreter.instructions;
 
 import jua.interpreter.InterpreterError;
 import jua.interpreter.InterpreterState;
-import jua.runtime.DoubleOperand;
-import jua.runtime.LongOperand;
-import jua.runtime.Operand;
+import jua.runtime.heap.DoubleOperand;
+import jua.runtime.heap.LongOperand;
+import jua.runtime.heap.Operand;
 import jua.compiler.CodePrinter;
 
 public enum Mul implements Instruction {

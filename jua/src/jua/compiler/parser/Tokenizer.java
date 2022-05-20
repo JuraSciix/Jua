@@ -1,10 +1,13 @@
-package jua.compiler;
+package jua.compiler.parser;
+
+import jua.compiler.ParseException;
+import jua.util.TokenizeStream;
 
 import java.io.StringWriter;
 
 import static java.lang.Character.*;
-import static jua.compiler.Tokens.*;
-import static jua.compiler.Tokens.TokenKind.*;
+import static jua.compiler.parser.Tokens.*;
+import static jua.compiler.parser.Tokens.TokenKind.*;
 
 public class Tokenizer {
 

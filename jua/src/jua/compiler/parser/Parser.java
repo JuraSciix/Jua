@@ -1,5 +1,6 @@
-package jua.compiler;
+package jua.compiler.parser;
 
+import jua.compiler.ParseException;
 import jua.compiler.Tree.*;
 
 import java.util.ArrayList;
@@ -7,9 +8,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import jua.compiler.Tokens.*;
+import jua.compiler.parser.Tokenizer;
+import jua.compiler.parser.Tokens;
+import jua.compiler.parser.Tokens.*;
 
-import static jua.compiler.Tokens.TokenKind.*;
+import static jua.compiler.parser.Tokens.TokenKind.*;
 
 public class Parser {
 

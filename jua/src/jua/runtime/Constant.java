@@ -1,5 +1,7 @@
 package jua.runtime;
 
+import jua.runtime.heap.Operand;
+
 @Deprecated
 public class Constant {
 

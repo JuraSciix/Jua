@@ -1,8 +1,7 @@
 package jua.compiler;
 
 import jua.runtime.JuaFunction;
-import jua.runtime.Operand;
-import jua.runtime.RuntimeFunction;
+import jua.runtime.heap.Operand;
 
 import java.util.HashMap;
 import java.util.Map;

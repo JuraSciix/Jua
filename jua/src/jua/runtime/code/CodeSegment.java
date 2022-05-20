@@ -1,7 +1,7 @@
 package jua.runtime.code;
 
 import jua.interpreter.instructions.Instruction;
-import jua.runtime.Operand;
+import jua.runtime.heap.Operand;
 
 /**
  *

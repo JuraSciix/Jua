@@ -1,4 +1,4 @@
-import jua.runtime.LongOperand;
+import jua.runtime.heap.LongOperand;
 
 public class TestLongOperand {
 

@@ -1,7 +1,6 @@
 package jua.interpreter;
 
 import jua.runtime.JuaFunction;
-import jua.runtime.Operand;
 
 public final class InterpreterFrame {
 

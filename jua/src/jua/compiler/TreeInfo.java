@@ -1,10 +1,10 @@
 package jua.compiler;
 
-import jua.runtime.DoubleOperand;
-import jua.runtime.LongOperand;
-import jua.runtime.Operand;
-import jua.runtime.StringOperand;
 import jua.compiler.Tree.*;
+import jua.runtime.heap.DoubleOperand;
+import jua.runtime.heap.LongOperand;
+import jua.runtime.heap.Operand;
+import jua.runtime.heap.StringOperand;
 
 public final class TreeInfo {
 
@@ -20,6 +20,7 @@ public final class TreeInfo {
 
         return current;
     }
+
     public static boolean testShort(Expression expression) {
         if (expression instanceof IntExpression) {
             long value = ((IntExpression) expression).value;
@@ -59,5 +60,7 @@ public final class TreeInfo {
         throw new AssertionError();
     }
 
-    private TreeInfo() { throw new UnsupportedOperationException(); }
+    private TreeInfo() {
+        throw new UnsupportedOperationException();
+    }
 }

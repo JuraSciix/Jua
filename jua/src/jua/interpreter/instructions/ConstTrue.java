@@ -2,7 +2,7 @@ package jua.interpreter.instructions;
 
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
-import jua.runtime.TrueOperand;
+import jua.runtime.heap.TrueOperand;
 
 public final class ConstTrue implements Instruction {
 

@@ -1,4 +1,4 @@
-package jua.runtime;
+package jua.runtime.heap;
 
 public final class NullOperand extends Operand {
 

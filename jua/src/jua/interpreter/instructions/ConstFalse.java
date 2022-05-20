@@ -2,7 +2,7 @@ package jua.interpreter.instructions;
 
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
-import jua.runtime.FalseOperand;
+import jua.runtime.heap.FalseOperand;
 
 public final class ConstFalse implements Instruction {
 

@@ -1,6 +1,6 @@
 package jua.interpreter;
 
-import jua.runtime.Operand;
+import jua.runtime.heap.Operand;
 import jua.runtime.RuntimeErrorException;
 
 @Deprecated

@@ -3,6 +3,7 @@ package jua.interpreter;
 import jua.Options;
 import jua.runtime.*;
 import jua.runtime.code.CodeSegment;
+import jua.runtime.heap.*;
 
 import java.util.Map;
 import java.util.Objects;

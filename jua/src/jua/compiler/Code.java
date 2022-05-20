@@ -11,11 +11,12 @@ import it.unimi.dsi.fastutil.shorts.*;
 import jua.runtime.code.CodeSegment;
 import jua.interpreter.instructions.ChainInstruction;
 import jua.interpreter.instructions.Instruction;
-import jua.runtime.DoubleOperand;
-import jua.runtime.LongOperand;
-import jua.runtime.Operand;
-import jua.runtime.StringOperand;
+import jua.runtime.heap.DoubleOperand;
+import jua.runtime.heap.LongOperand;
+import jua.runtime.heap.Operand;
+import jua.runtime.heap.StringOperand;
 import jua.runtime.code.LineNumberTable;
+import jua.util.LineMap;
 
 import java.util.ArrayList;
 import java.util.HashMap;

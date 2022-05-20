@@ -3,7 +3,7 @@ package jua.compiler;
 import jua.runtime.code.CodeSegment;
 import jua.interpreter.instructions.Instruction;
 import jua.runtime.JuaFunction;
-import jua.runtime.Operand;
+import jua.runtime.heap.Operand;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -1,8 +1,13 @@
 package jua.compiler;
 
 import jua.Options;
+import jua.compiler.parser.Parser;
+import jua.compiler.parser.Tokenizer;
+import jua.compiler.parser.Tokens;
 import jua.interpreter.InterpreterThread;
 import jua.runtime.RuntimeErrorException;
+import jua.util.LineMap;
+import jua.util.TokenizeStream;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

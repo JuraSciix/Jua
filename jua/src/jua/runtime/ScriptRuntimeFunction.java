@@ -2,6 +2,7 @@ package jua.runtime;
 
 import jua.interpreter.*;
 import jua.runtime.code.CodeSegment;
+import jua.runtime.heap.Operand;
 
 @Deprecated
 public class ScriptRuntimeFunction implements RuntimeFunction {

@@ -1,7 +1,7 @@
 package jua.interpreter.instructions;
 
 import jua.interpreter.InterpreterState;
-import jua.runtime.ArrayOperand;
+import jua.runtime.heap.ArrayOperand;
 import jua.compiler.CodePrinter;
 
 public enum Newarray implements Instruction {
