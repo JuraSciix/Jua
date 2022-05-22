@@ -4,57 +4,38 @@ import jua.runtime.JuaFunction;
 import jua.runtime.heap.Operand;
 
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class CodeData {
 
-    public static class BuiltInException extends IllegalStateException {
-
-        static BuiltInException constantRedefinition(String name) {
-            return new BuiltInException("constant '" + name + "' already defined.");
-        }
-
-        static BuiltInException functionRedefinition(String name) {
-            return new BuiltInException("function '" + name + "' already defined.");
-        }
-
-        private BuiltInException(String s) {
-            super(s);
-        }
-    }
-
     final URL location;
 
-    final Map<String, JuaFunction> functions = new HashMap<>();
+    // todo: переместить в отдельную стадию компиляции
+    final Set<String> functionNames = new HashSet<>();
+    final JuaFunction[] functions = new JuaFunction[1024];
 
-    final Map<String, Operand> constants = new HashMap<>();
+    final Set<String> constantNames = new HashSet<>();
+    final Operand[] constants = new Operand[1024];
 
     public CodeData(URL filename) {
-        // This class has been removed
-//        BuiltInDefinitions.init(this);
         this.location = filename;
     }
 
     public boolean testFunction(String name) {
-        return functions.containsKey(name);
+        return functionNames.contains(name);
     }
 
     public boolean testConstant(String name) {
-        return constants.containsKey(name);
+        return constantNames.contains(name);
     }
 
     public void setFunction(String name, JuaFunction function) {
-        if (functions.containsKey(name)) {
-            throw BuiltInException.functionRedefinition(name);
-        }
-        functions.put(name, function);
+        functionNames.add(name);
+        functions[functionNames.size()-1] = function;
     }
 
     public void setConstant(String name, Operand constant) {
-        if (constants.containsKey(name)) {
-            throw BuiltInException.constantRedefinition(name);
-        }
-        constants.put(name, constant);
+        constantNames.add(name);
+        constants[constantNames.size()-1] = constant;
     }
 }

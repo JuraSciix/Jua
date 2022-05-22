@@ -43,7 +43,7 @@ public class Lower implements Visitor {
 
     public Lower(CodeData codeData) {
         literalConstants = new HashMap<>();
-        putFoldingNames(codeData.constants.keySet());
+        putFoldingNames(codeData.constantNames);
     }
 
     private void putFoldingNames(Set<String> names) {

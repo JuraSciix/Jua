@@ -23,13 +23,14 @@ public class Result {
     }
 
     public void print() {
-        CodePrinter.printConstants(codeData.constants);
+        // todo: закоментировал printConstants
+        //CodePrinter.printConstants(codeData.constants);
         CodePrinter.print(main, 0);
-        CodePrinter.printFunctions(codeData.functions);
+        //CodePrinter.printFunctions(codeData.functions);
     }
 
     public JuaEnvironment toEnvironment() {
-        return new JuaEnvironment(codeData.functions, codeData.constants);
+        return new JuaEnvironment(codeData.functionNames, codeData.functions, codeData.constantNames, codeData.constants);
     }
 
     public InterpreterThread toThread() {
