@@ -45,8 +45,8 @@ public final class InterpreterState {
         return locals;
     }
 
-    public Operand getConstantByName(String name) {
-        return thread.environment().getConstant(name);
+    public Operand getConstantById(int id) {
+        return thread.environment().getConstant(id);
     }
 
     public int cp() {

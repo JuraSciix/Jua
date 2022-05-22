@@ -510,7 +510,7 @@ public final class Gen implements Visitor {
             if (expr instanceof ArrayExpression) {
                 value = new ArrayOperand();
                 if (((ArrayExpression) expr).map.size() > 0) {
-                    code.addInstruction(new Getconst(name), 1);
+                    code.addInstruction(new Getconst(codeData.constantIndex(name)), 1);
                     generateArrayCreation(((ArrayExpression) expr).map);
                 }
             } else {
@@ -1194,7 +1194,7 @@ public final class Gen implements Visitor {
         String name = expression.name;
         code.putPos(expression.pos);
         if (codeData.testConstant(name)) {
-            code.addInstruction(new Getconst(name), 1);
+            code.addInstruction(new Getconst(codeData.constantIndex(name)), 1);
         } else {
             emitVLoad(expression.name);
         }

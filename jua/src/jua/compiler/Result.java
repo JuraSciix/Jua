@@ -30,7 +30,7 @@ public class Result {
     }
 
     public JuaEnvironment toEnvironment() {
-        return new JuaEnvironment(codeData.functionNames, codeData.functions, codeData.constantNames, codeData.constants);
+        return new JuaEnvironment(codeData.functions, codeData.constants);
     }
 
     public InterpreterThread toThread() {

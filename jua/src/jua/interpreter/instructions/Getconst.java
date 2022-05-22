@@ -7,21 +7,21 @@ import java.util.Arrays;
 
 public class Getconst implements Instruction {
 
-    private final String name;
+    private final int id;
 
-    public Getconst(String name) {
-        this.name = name;
+    public Getconst(int id) {
+        this.id = id;
     }
 
     @Override
     public void print(CodePrinter printer) {
         printer.printName("getconst");
-        printer.print(name);
+        printer.print(id);
     }
 
     @Override
     public int run(InterpreterState state) {
-        state.pushStack(state.getConstantByName(name));
+        state.pushStack(state.getConstantById(id));
         return NEXT;
     }
 }
