@@ -29,6 +29,24 @@ public class CodeData {
         return constantNames.contains(name);
     }
 
+    public int functionIndex(String name) {
+        int index = 0;
+        for (String entry : functionNames) {
+            if (entry.equals(name)) break;
+            index++;
+        }
+        return index;
+    }
+
+    public int constantIndex(String name) {
+        int index = 0;
+        for (String entry : constantNames) {
+            if (entry.equals(name)) break;
+            index++;
+        }
+        return index;
+    }
+
     public void setFunction(String name, JuaFunction function) {
         functionNames.add(name);
         functions[functionNames.size()-1] = function;

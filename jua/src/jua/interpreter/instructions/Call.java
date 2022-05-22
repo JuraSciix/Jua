@@ -2,15 +2,13 @@ package jua.interpreter.instructions;
 
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
-import jua.interpreter.Trap;
 
 public final class Call implements Instruction {
 
-    // todo: int id
-    private final String id;
+    private final int id;
     private final int argc;
 
-    public Call(String id, int argc) {
+    public Call(int id, int argc) {
         this.id = id;
         this.argc = argc;
     }

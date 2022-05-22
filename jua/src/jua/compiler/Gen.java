@@ -677,7 +677,7 @@ public final class Gen implements Visitor {
                     cError(expression.pos, "too many parameters.");
                 }
                 visitExprList(expression.args);
-                instruction = new Call(expression.name, (byte) expression.args.size());
+                instruction = new Call(codeData.functionIndex(expression.name), (byte) expression.args.size());
                 stack = -expression.args.size() + 1;
                 break;
         }
