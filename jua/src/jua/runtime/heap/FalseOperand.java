@@ -37,4 +37,34 @@ public final class FalseOperand extends BooleanOperand {
     public int hashCode() {
         return 1237; // Boolean.hashCode(false);
     }
+
+    @Override
+    public Operand and(Operand operand) {
+        return new BooleanOperand() {
+            @Override
+            public boolean booleanValue() {
+                return false;
+            }
+        };
+    }
+
+    @Override
+    public Operand or(Operand operand) {
+        return new BooleanOperand() {
+            @Override
+            public boolean booleanValue() {
+                return operand.booleanValue();
+            }
+        };
+    }
+
+    @Override
+    public Operand xor(Operand operand) {
+        return new BooleanOperand() {
+            @Override
+            public boolean booleanValue() {
+                return operand.booleanValue();
+            }
+        };
+    }
 }

@@ -16,19 +16,11 @@ public enum Add implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        // todo: Распределить код по наследникам Operand.
-        // todo: Также с остальными операциями над операндами.
         Operand rhs = state.popStack();
         Operand lhs = state.popStack();
 
-        if (lhs.isNumber() && rhs.isNumber()) {
-            if (lhs.isDouble() || rhs.isDouble()) {
-                state.pushStack(new DoubleOperand(lhs.doubleValue() + rhs.doubleValue()));
-            } else {
-                state.pushStack(new LongOperand(lhs.longValue() + rhs.longValue()));
-            }
-        } else if (lhs.isString() || rhs.isString()) {
-            state.pushStack(new StringOperand(lhs.stringValue().concat(rhs.stringValue())));
+        if (lhs.isNumber() && rhs.isNumber() || (lhs.isString() || rhs.isString())) {
+            state.pushStack(lhs.add(rhs));
         } else if (lhs.isMap() && rhs.isMap()) {
             ArrayOperand result = new ArrayOperand();
             result.putAll(lhs);

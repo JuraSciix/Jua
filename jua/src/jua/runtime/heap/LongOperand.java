@@ -1,5 +1,7 @@
 package jua.runtime.heap;
 
+import jua.interpreter.InterpreterError;
+
 public final class LongOperand extends NumberOperand {
 
     private static final LongOperand[] POOL;
@@ -49,6 +51,71 @@ public final class LongOperand extends NumberOperand {
 
     @Override
     public int hashCode() { return Long.hashCode(value); }
+
+    @Override
+    public Operand add(Operand operand) {
+        return new LongOperand(value + operand.longValue());
+    }
+
+    @Override
+    public Operand and(Operand operand) {
+        return new LongOperand(value & operand.longValue());
+    }
+
+    @Override
+    public Operand or(Operand operand) {
+        return new LongOperand(value | operand.longValue());
+    }
+
+    @Override
+    public Operand xor(Operand operand) {
+        return new LongOperand(value ^ operand.longValue());
+    }
+
+    @Override
+    public Operand shl(Operand operand) {
+        return new LongOperand(value << operand.longValue());
+    }
+
+    @Override
+    public Operand shr(Operand operand) {
+        return new LongOperand(value >> operand.longValue());
+    }
+
+    @Override
+    public Operand sub(Operand operand) {
+        return new LongOperand(value - operand.longValue());
+    }
+
+    @Override
+    public Operand mul(Operand operand) {
+        return new LongOperand(value * operand.longValue());
+    }
+
+    @Override
+    public Operand div(Operand operand) {
+        long l = value;
+        long r = operand.longValue();
+
+        if (r == 0) {
+            throw InterpreterError.divisionByZero();
+        }
+        if ((l % r) == 0) {
+            return new LongOperand(l / r);
+        } else {
+            return new DoubleOperand((double) l / r);
+        }
+    }
+
+    @Override
+    public Operand rem(Operand operand) {
+        long r = operand.longValue();
+        if (r == 0L) {
+            throw InterpreterError.divisionByZero();
+        }
+
+        return new LongOperand(value % r);
+    }
 
     @Override
     public Operand increment() { return valueOf(value + 1L); }

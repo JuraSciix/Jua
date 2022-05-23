@@ -1,8 +1,6 @@
 package jua.interpreter.instructions;
 
-import jua.interpreter.InterpreterError;
 import jua.interpreter.InterpreterState;
-import jua.runtime.heap.LongOperand;
 import jua.runtime.heap.Operand;
 import jua.compiler.CodePrinter;
 
@@ -20,11 +18,7 @@ public enum Shr implements Instruction {
         Operand rhs = state.popStack();
         Operand lhs = state.popStack();
 
-        if (lhs.isLong() && rhs.isLong()) {
-            state.pushStack(new LongOperand(lhs.longValue() >> rhs.longValue()));
-        } else {
-            throw InterpreterError.binaryApplication(">>", lhs.type(), rhs.type());
-        }
+        state.pushStack(lhs.shr(rhs));
         return NEXT;
     }
 }

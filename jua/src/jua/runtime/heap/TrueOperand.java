@@ -39,4 +39,34 @@ public class TrueOperand extends BooleanOperand {
     public int hashCode() {
         return HASH;
     }
+
+    @Override
+    public Operand and(Operand operand) {
+        return new BooleanOperand() {
+            @Override
+            public boolean booleanValue() {
+                return operand.booleanValue();
+            }
+        };
+    }
+
+    @Override
+    public Operand or(Operand operand) {
+        return new BooleanOperand() {
+            @Override
+            public boolean booleanValue() {
+                return true;
+            }
+        };
+    }
+
+    @Override
+    public Operand xor(Operand operand) {
+        return new BooleanOperand() {
+            @Override
+            public boolean booleanValue() {
+                return !operand.booleanValue();
+            }
+        };
+    }
 }

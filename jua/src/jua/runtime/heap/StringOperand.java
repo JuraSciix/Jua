@@ -62,4 +62,9 @@ public class StringOperand extends Operand {
     public int length() {
         return value.length();
     }
+
+    @Override
+    public Operand add(Operand operand) {
+        return new StringOperand(value.concat(operand.stringValue()));
+    }
 }

@@ -21,25 +21,7 @@ public enum Rem implements Instruction {
         Operand rhs = state.popStack();
         Operand lhs = state.popStack();
 
-        if (lhs.isNumber() && rhs.isNumber()) {
-            if (lhs.isDouble() || rhs.isDouble()) {
-                double r = rhs.doubleValue();
-
-                if (r == 0D) {
-                    throw InterpreterError.divisionByZero();
-                }
-                state.pushStack(new DoubleOperand(lhs.doubleValue() % r));
-            } else {
-                long r = rhs.longValue();
-
-                if (r == 0L) {
-                    throw InterpreterError.divisionByZero();
-                }
-                state.pushStack(new LongOperand(lhs.longValue() % r));
-            }
-        } else {
-            throw InterpreterError.binaryApplication("%", lhs.type(), rhs.type());
-        }
+        lhs.rem(rhs);
         return NEXT;
     }
 }

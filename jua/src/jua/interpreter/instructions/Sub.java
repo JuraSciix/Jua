@@ -21,15 +21,7 @@ public enum Sub implements Instruction {
         Operand rhs = state.popStack();
         Operand lhs = state.popStack();
 
-        if (lhs.isNumber() && rhs.isNumber()) {
-            if (lhs.isDouble() || rhs.isDouble()) {
-                state.pushStack(new DoubleOperand(lhs.doubleValue() - rhs.doubleValue()));
-            } else {
-                state.pushStack(new LongOperand(lhs.longValue() - rhs.longValue()));
-            }
-        } else {
-            throw InterpreterError.binaryApplication("-", lhs.type(), rhs.type());
-        }
+        state.pushStack(lhs.sub(rhs));
         return NEXT;
     }
 }

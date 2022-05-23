@@ -1,5 +1,7 @@
 package jua.runtime.heap;
 
+import jua.interpreter.InterpreterError;
+
 public final class DoubleOperand extends NumberOperand {
 
     public static final DoubleOperand NaN = new DoubleOperand(Double.NaN);
@@ -45,6 +47,37 @@ public final class DoubleOperand extends NumberOperand {
 
     @Override
     public int hashCode() { return Double.hashCode(value); }
+
+    @Override
+    public Operand add(Operand operand) {
+        return new DoubleOperand(value + operand.doubleValue());
+    }
+
+    @Override
+    public Operand mul(Operand operand) {
+        return new DoubleOperand(value * operand.doubleValue());
+    }
+
+    @Override
+    public Operand div(Operand operand) {
+        return new DoubleOperand(value / operand.doubleValue());
+    }
+
+
+    @Override
+    public Operand sub(Operand operand) {
+        return new DoubleOperand(value - operand.doubleValue());
+    }
+
+    @Override
+    public Operand rem(Operand operand) {
+        double r = operand.doubleValue();
+        if (r == 0D) {
+            throw InterpreterError.divisionByZero();
+        }
+
+        return new DoubleOperand(value % r);
+    }
 
     @Override
     public Operand increment() { return valueOf(value + 1D); }
