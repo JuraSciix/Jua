@@ -21,7 +21,7 @@ public enum Rem implements Instruction {
         Operand rhs = state.popStack();
         Operand lhs = state.popStack();
 
-        lhs.rem(rhs);
+        state.pushStack(lhs.rem(rhs));
         return NEXT;
     }
 }
