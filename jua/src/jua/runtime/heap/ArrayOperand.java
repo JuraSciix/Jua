@@ -2,8 +2,10 @@ package jua.runtime.heap;
 
 import jua.interpreter.InterpreterError;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 public final class ArrayOperand extends Operand {
 
@@ -85,6 +87,22 @@ public final class ArrayOperand extends Operand {
     @Override
     public Operand doClone() {
         return new ArrayOperand(map);
+    }
+
+    @Override
+    public Set<Map.Entry<Operand, Operand>> entrySet() {
+        return map.entrySet();
+    }
+
+    @Override
+    public Operand add(Operand operand) {
+        if (!operand.isMap()) return super.add(operand);
+
+        //todo: не очень работает сложение [0, 1] + [2, 3] = [2, 3]
+        ArrayOperand result = new ArrayOperand();
+        result.putAll(this);
+        result.putAll(operand);
+        return result;
     }
 
     @Override
