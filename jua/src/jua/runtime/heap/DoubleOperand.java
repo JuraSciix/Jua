@@ -80,6 +80,10 @@ public final class DoubleOperand extends NumberOperand {
     }
 
     @Override
+    public Operand neg() {
+        return new DoubleOperand(-value);
+    }
+    @Override
     public Operand increment() { return valueOf(value + 1D); }
 
     @Override

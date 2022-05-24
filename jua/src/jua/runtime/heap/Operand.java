@@ -169,6 +169,14 @@ public abstract class Operand {
         throw InterpreterError.binaryApplication("%", type(), operand.type());
     }
 
+    public Operand not() {
+        throw InterpreterError.unaryApplication("~", type());
+    }
+
+    public Operand neg() {
+        throw InterpreterError.unaryApplication("-", type());
+    }
+
     public Operand increment() {
         throw InterpreterError.unaryApplication("++", type());
     }

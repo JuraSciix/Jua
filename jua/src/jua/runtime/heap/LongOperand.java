@@ -118,6 +118,16 @@ public final class LongOperand extends NumberOperand {
     }
 
     @Override
+    public Operand not() {
+        return new LongOperand(~value);
+    }
+
+    @Override
+    public Operand neg() {
+        return new LongOperand(-value);
+    }
+
+    @Override
     public Operand increment() { return valueOf(value + 1L); }
 
     @Override
