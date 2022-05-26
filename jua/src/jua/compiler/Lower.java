@@ -51,66 +51,23 @@ public class Lower implements Visitor {
     }
 
     @Override
+    public void visitCompilationUnit(CompilationUnit tree) {
+        // todo: task for JavaKira
+    }
+
+    @Override
     public void visitAdd(AddExpression expression) {
-        Expression lhs = getLowerExpression(expression.lhs).child();
-        Expression rhs = getLowerExpression(expression.rhs).child();
-        if ((lhs instanceof FloatExpression) && (rhs instanceof FloatExpression)) {
-            ((FloatExpression) lhs).value += ((FloatExpression) rhs).value;
-            result = lhs;
-            return;
-        }
-        if ((lhs instanceof FloatExpression) && (rhs instanceof IntExpression)) {
-            ((FloatExpression) lhs).value += ((IntExpression) rhs).value;
-            result = lhs;
-            return;
-        }
-        if ((lhs instanceof IntExpression) && (rhs instanceof FloatExpression)) {
-            long l = ((IntExpression) lhs).value;
-            double r = ((FloatExpression) rhs).value;
-            result = new FloatExpression(expression.pos, l + r);
-            return;
-        }
-        if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
-            ((IntExpression) lhs).value += ((IntExpression) rhs).value;
-            result = lhs;
-            return;
-        }
-        if ((lhs instanceof StringExpression) && (rhs instanceof StringExpression)) {
-            // .concat is not appropriate here
-            ((StringExpression) lhs).value += (((StringExpression) rhs).value);
-            result = lhs;
-            return;
-        }
-        lowerBinary(expression, lhs, rhs);
+        visitBinary(expression);
     }
 
     @Override
     public void visitAnd(AndExpression expression) {
-        Expression lhs = getLowerExpression(expression.lhs);
-        if (isFalse(lhs)) {
-            setFalse(expression);
-            return;
-        }
-        if (isTrue(lhs)) {
-            result = getLowerExpression(expression.rhs);
-            return;
-        }
-        Expression rhs = getLowerExpression(expression.rhs);
-        if (isFalse(rhs)) {
-            formalExpression = lhs;
-            setFalse(expression);
-            return;
-        }
-        if (isTrue(rhs)) {
-            result = lhs;
-            return;
-        }
-        lowerBinary(expression, lhs, rhs);
+        visitBinary(expression);
     }
 
     @Override
     public void visitArrayAccess(ArrayAccessExpression expression) {
-        expression.hs.accept(this);
+        expression.array = getLowerExpression(expression.array);
         expression.key = getLowerExpression(expression.key);
         result = expression;
     }
@@ -191,73 +148,22 @@ public class Lower implements Visitor {
 
     @Override
     public void visitBitAnd(BitAndExpression expression) {
-        Expression lhs = getLowerExpression(expression.lhs).child();
-        Expression rhs = getLowerExpression(expression.rhs).child();
-        if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
-            ((IntExpression) lhs).value &= ((IntExpression) rhs).value;
-            result = lhs;
-            return;
-        }
-        if ((lhs instanceof BooleanExpression) && (rhs instanceof BooleanExpression)) {
-            if ((lhs instanceof TrueExpression) && (rhs instanceof TrueExpression)) {
-                result = lhs;
-            } else {
-                setFalse(expression);
-            }
-            return;
-        }
-        lowerBinary(expression, lhs, rhs);
+        visitBinary(expression);
     }
 
     @Override
     public void visitBitNot(BitNotExpression expression) {
-        Expression hs = getLowerExpression(expression.hs).child();
-        if (hs instanceof IntExpression) {
-            ((IntExpression) hs).value = ~((IntExpression) hs).value;
-            result = hs;
-            return;
-        }
-        lowerUnary(expression, hs);
+        visitUnary(expression);
     }
 
     @Override
     public void visitBitOr(BitOrExpression expression) { expression.lhs.accept(this);
-        Expression lhs = getLowerExpression(expression.lhs).child();
-        Expression rhs = getLowerExpression(expression.rhs).child();
-        if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
-            ((IntExpression) lhs).value |= ((IntExpression) rhs).value;
-            result = lhs;
-            return;
-        }
-        if ((lhs instanceof BooleanExpression) && (rhs instanceof BooleanExpression)) {
-            if ((lhs instanceof TrueExpression) || (rhs instanceof TrueExpression)) {
-                result = (lhs instanceof TrueExpression) ? lhs : rhs;
-            } else {
-                setFalse(expression);
-            }
-            return;
-        }
-        lowerBinary(expression, lhs, rhs);
+        visitBinary(expression);
     }
 
     @Override
     public void visitBitXor(BitXorExpression expression) {
-        Expression lhs = getLowerExpression(expression.lhs).child();
-        Expression rhs = getLowerExpression(expression.rhs).child();
-        if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
-            ((IntExpression) lhs).value ^= ((IntExpression) rhs).value;
-            result = lhs;
-            return;
-        }
-        if ((lhs instanceof BooleanExpression) && (rhs instanceof BooleanExpression)) {
-            if (lhs.getClass() != rhs.getClass()) {
-                setTrue(expression);
-            } else {
-                setFalse(expression);
-            }
-            return;
-        }
-        lowerBinary(expression, lhs, rhs);
+        visitBinary(expression);
     }
 
     @Override
@@ -274,10 +180,10 @@ public class Lower implements Visitor {
                         // Остаточный результат заведомо является unused
                         new DiscardedExpression(formalExpression.pos, formalExpression));
                 formalExpression = null;
-                if (lower != null && !lower.isTag(Tag.EMPTY))
+                if (lower != null && !lower.hasTag(Tag.EMPTY))
                     iterator.add(lower);
             } else {
-                if (lower == null || lower.isTag(Tag.EMPTY))
+                if (lower == null || lower.hasTag(Tag.EMPTY))
                     iterator.remove();
                 else
                     iterator.set(lower);
@@ -331,38 +237,7 @@ public class Lower implements Visitor {
 
     @Override
     public void visitDivide(DivideExpression expression) {
-        Expression lhs = getLowerExpression(expression.lhs).child();
-        Expression rhs = getLowerExpression(expression.rhs).child();
-        if ((lhs instanceof FloatExpression) && (rhs instanceof FloatExpression)) {
-            ((FloatExpression) lhs).value /= ((FloatExpression) rhs).value;
-            result = lhs;
-            return;
-        }
-        if ((lhs instanceof FloatExpression) && (rhs instanceof IntExpression)) {
-            ((FloatExpression) lhs).value /= ((IntExpression) rhs).value;
-            result = lhs;
-            return;
-        }
-        if ((lhs instanceof IntExpression) && (rhs instanceof FloatExpression)) {
-            long l = ((IntExpression) lhs).value;
-            double r = ((FloatExpression) rhs).value;
-            result = new FloatExpression(expression.pos, l / r);
-            return;
-        }
-        if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
-            long l = ((IntExpression) lhs).value;
-            long r = ((IntExpression) rhs).value;
-            if (r != 0L) {
-                if (l % r == 0) {
-                    ((IntExpression) lhs).value = (l / r);
-                    result = lhs;
-                } else {
-                    result = new FloatExpression(expression.pos, (double) l / r);
-                }
-                return;
-            }
-        }
-        lowerBinary(expression, lhs, rhs);
+        visitBinary(expression);
     }
 
     @Override
@@ -404,12 +279,12 @@ public class Lower implements Visitor {
 
     @Override
     public void visitFalse(FalseExpression expression) {
-        nothing(expression);
+        visitLiteral(expression);
     }
 
     @Override
     public void visitFloat(FloatExpression expression) {
-        nothing(expression);
+        visitLiteral(expression);
     }
 
     @Override
@@ -502,19 +377,12 @@ public class Lower implements Visitor {
 
     @Override
     public void visitInt(IntExpression expression) {
-        nothing(expression);
+        visitLiteral(expression);
     }
 
     @Override
     public void visitLeftShift(ShiftLeftExpression expression) {
-        Expression lhs = getLowerExpression(expression.lhs).child();
-        Expression rhs = getLowerExpression(expression.rhs).child();
-        if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
-            ((IntExpression) lhs).value <<= ((IntExpression) rhs).value;
-            result = lhs;
-            return;
-        }
-        lowerBinary(expression, lhs, rhs);
+        visitBinary(expression);
     }
 
     @Override
@@ -537,64 +405,17 @@ public class Lower implements Visitor {
 
     @Override
     public void visitLess(LessExpression expression) {
-        Expression lhs = getLowerExpression(expression.lhs).child();
-        Expression rhs = getLowerExpression(expression.rhs).child();
-        switch (compareLiterals(lhs, rhs)) {
-            case -1:
-                setTrue(expression);
-                break;
-            case 1:
-            case 0:
-            case 2:
-                setFalse(expression);
-                break;
-            default:
-                lowerBinary(expression, lhs, rhs);
-        }
+        visitBinary(expression);
     }
 
     @Override
     public void visitMultiply(MultiplyExpression expression) {
-        Expression lhs = getLowerExpression(expression.lhs).child();
-        Expression rhs = getLowerExpression(expression.rhs).child();
-        if ((lhs instanceof FloatExpression) && (rhs instanceof FloatExpression)) {
-            ((FloatExpression) lhs).value *= ((FloatExpression) rhs).value;
-            result = lhs;
-            return;
-        }
-        if ((lhs instanceof FloatExpression) && (rhs instanceof IntExpression)) {
-            ((FloatExpression) lhs).value *= ((IntExpression) rhs).value;
-            result = lhs;
-            return;
-        }
-        if ((lhs instanceof IntExpression) && (rhs instanceof FloatExpression)) {
-            ((FloatExpression) rhs).value *= ((IntExpression) lhs).value;
-            result = rhs;
-            return;
-        }
-        if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
-            ((IntExpression) lhs).value *= ((IntExpression) rhs).value;
-            result = lhs;
-            return;
-        }
-        lowerBinary(expression, lhs, rhs);
+        visitBinary(expression);
     }
 
     @Override
     public void visitNegative(NegativeExpression expression) {
-        Expression hs = getLowerExpression(expression.hs).child();
-
-        if (hs instanceof FloatExpression) {
-            ((FloatExpression) hs).value = -((FloatExpression) hs).value;
-            result = hs;
-            return;
-        }
-        if (hs instanceof IntExpression) {
-            ((IntExpression) hs).value = -((IntExpression) hs).value;
-            result = hs;
-            return;
-        }
-        lowerUnary(expression, hs);
+        visitUnary(expression);
     }
 
     @Override
@@ -643,7 +464,7 @@ public class Lower implements Visitor {
 
     @Override
     public void visitNull(NullExpression expression) {
-        nothing(expression);
+        visitLiteral(expression);
     }
 
     @Override
@@ -721,41 +542,7 @@ public class Lower implements Visitor {
 
     @Override
     public void visitRemainder(RemainderExpression expression) {
-        Expression lhs = getLowerExpression(expression.lhs).child();
-        Expression rhs = getLowerExpression(expression.rhs).child();
-        if ((lhs instanceof FloatExpression) && (rhs instanceof FloatExpression)) {
-            double r = ((FloatExpression) rhs).value;
-            if (r != 0D) {
-                ((FloatExpression) lhs).value %= r;
-                result = lhs;
-                return;
-            }
-        }
-        if ((lhs instanceof FloatExpression) && (rhs instanceof IntExpression)) {
-            long r = ((IntExpression) rhs).value;
-            if (r != 0L) {
-                ((FloatExpression) lhs).value %= r;
-                result = lhs;
-                return;
-            }
-        }
-        if ((lhs instanceof IntExpression) && (rhs instanceof FloatExpression)) {
-            long l = ((IntExpression) lhs).value;
-            double r = ((FloatExpression) rhs).value;
-            if (r != 0D) {
-                result = new FloatExpression(expression.pos, l % r);
-                return;
-            }
-        }
-        if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
-            long r = ((IntExpression) rhs).value;
-            if (r != 0L) {
-                ((IntExpression) lhs).value %= r;
-                result = lhs;
-                return;
-            }
-        }
-        lowerBinary(expression, lhs, rhs);
+        visitBinary(expression);
     }
 
     @Override
@@ -768,47 +555,17 @@ public class Lower implements Visitor {
 
     @Override
     public void visitRightShift(ShiftRightExpression expression) {
-        Expression lhs = getLowerExpression(expression.lhs).child();
-        Expression rhs = getLowerExpression(expression.rhs).child();
-        if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
-            ((IntExpression) lhs).value >>= ((IntExpression) rhs).value;
-            result = lhs;
-            return;
-        }
-        lowerBinary(expression, lhs, rhs);
+        visitBinary(expression);
     }
 
     @Override
     public void visitString(StringExpression expression) {
-        nothing(expression);
+        visitLiteral(expression);
     }
 
     @Override
     public void visitSubtract(SubtractExpression expression) {
-        Expression lhs = getLowerExpression(expression.lhs).child();
-        Expression rhs = getLowerExpression(expression.rhs).child();
-        if ((lhs instanceof FloatExpression) && (rhs instanceof FloatExpression)) {
-            ((FloatExpression) lhs).value -= ((FloatExpression) rhs).value;
-            result = lhs;
-            return;
-        }
-        if ((lhs instanceof FloatExpression) && (rhs instanceof IntExpression)) {
-            ((FloatExpression) lhs).value -= ((IntExpression) rhs).value;
-            result = lhs;
-            return;
-        }
-        if ((lhs instanceof IntExpression) && (rhs instanceof FloatExpression)) {
-            long l = ((IntExpression) lhs).value;
-            double r = ((FloatExpression) rhs).value;
-            result = new FloatExpression(expression.pos, l - r);
-            return;
-        }
-        if ((lhs instanceof IntExpression) && (rhs instanceof IntExpression)) {
-            ((IntExpression) lhs).value -= ((IntExpression) rhs).value;
-            result = lhs;
-            return;
-        }
-        lowerBinary(expression, lhs, rhs);
+        visitBinary(expression);
     }
 
     @Override
@@ -839,7 +596,7 @@ public class Lower implements Visitor {
 
     @Override
     public void visitTrue(TrueExpression expression) {
-        nothing(expression);
+        visitLiteral(expression);
     }
 
     @Override
@@ -869,6 +626,26 @@ public class Lower implements Visitor {
     public void visitDiscarded(DiscardedExpression expression) {
         expression.expression = getLowerExpression(expression.expression);
         result = expression;
+    }
+
+    @Override
+    public void visitBinary(BinaryExpression tree) {
+        // todo: task for JavaKira
+    }
+
+    @Override
+    public void visitUnary(UnaryExpression tree) {
+// todo: task for JavaKira
+    }
+
+    @Override
+    public void visitAssign(AssignmentExpression tree) {
+// todo: task for JavaKira
+    }
+
+    @Override
+    public void visitLiteral(LiteralExpression tree) {
+// todo: task for JavaKira
     }
 
     private void visitAssignment(AssignmentExpression expression) {
@@ -922,32 +699,11 @@ public class Lower implements Visitor {
     // todo: Переместить нижние методы в TreeInfo
 
     private boolean isTrue(Expression expr) {
-        if (expr == null) return true;
-        expr = expr.child();
-        if (expr instanceof StringExpression) {
-            return !((StringExpression) expr).value.isEmpty();
-        }
-        if (expr instanceof IntExpression) {
-            return ((IntExpression) expr).value != 0L;
-        }
-        if (expr instanceof FloatExpression) {
-            return ((FloatExpression) expr).value != 0D;
-        }
-        return (expr instanceof TrueExpression);
+        return false; // todo
     }
 
     private boolean isFalse(Expression expr) {
-        expr = expr.child();
-        if (expr instanceof StringExpression) {
-            return ((StringExpression) expr).value.isEmpty();
-        }
-        if (expr instanceof IntExpression) {
-            return ((IntExpression) expr).value == 0L;
-        }
-        if (expr instanceof FloatExpression) {
-            return ((FloatExpression) expr).value == 0D;
-        }
-        return (expr instanceof FalseExpression) || (expr instanceof NullExpression);
+        return false; // todo
     }
 
     private void setTrue(Expression expression) {
@@ -963,38 +719,7 @@ public class Lower implements Visitor {
     }
 
     private int compareLiterals(Expression a, Expression b) {
-        if ((a instanceof FloatExpression) && (b instanceof FloatExpression)) {
-            double l = ((FloatExpression) a).value;
-            double r = ((FloatExpression) b).value;
-            return compareNumbers(l, r);
-        }
-        if ((a instanceof FloatExpression) && (b instanceof IntExpression)) {
-            double l = ((FloatExpression) a).value;
-            long r = ((IntExpression) b).value;
-            return compareNumbers(l, r);
-        }
-        if ((a instanceof IntExpression) && (b instanceof FloatExpression)) {
-            long l = ((IntExpression) a).value;
-            double r = ((FloatExpression) b).value;
-            return compareNumbers(l, r);
-        }
-        if ((a instanceof IntExpression) && (b instanceof IntExpression)) {
-            long l = ((IntExpression) a).value;
-            long r = ((IntExpression) b).value;
-            return Long.compare(l, r);
-        }
-        if ((a instanceof StringExpression) && (b instanceof StringExpression)) {
-            String l = ((StringExpression) a).value;
-            String r = ((StringExpression) b).value;
-            return l.compareTo(r);
-        }
-        if ((a instanceof BooleanExpression) && (b instanceof BooleanExpression)) {
-            return a.getClass() == b.getClass() ? 0 : 2;
-        }
-        if ((a instanceof NullExpression) && (b instanceof NullExpression)) {
-            return 0;
-        }
-        return -2; // not applicable
+        return -2; // todo
     }
 
     private int compareNumbers(double a, double b) {

@@ -1,11 +1,15 @@
 package jua.compiler;
 
+import jua.util.LineMap;
+
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
 public abstract class Tree {
 
     public enum Tag {
+        COMPILATION_UNIT,
         COMPOUND,
         FUNCDECL,
         CONSTDECL,
@@ -86,76 +90,64 @@ public abstract class Tree {
         this.pos = pos;
     }
 
-    public final boolean isTag(Tag t) { return getTag() == t; }
+    public final boolean hasTag(Tag t) { return getTag() == t; }
 
     public abstract void accept(Visitor visitor);
 
-    public static class AddExpression extends BinaryExpression {
+    public static class CompilationUnit extends Tree {
 
-        public AddExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, lhs, rhs);
+        public URL location;
+
+        public LineMap lineMap;
+
+        public List<? extends Tree> trees;
+
+        public CompilationUnit(int pos, URL location, LineMap lineMap, List<? extends Tree> trees) {
+            super(pos);
+            this.location = location;
+            this.lineMap = lineMap;
+            this.trees = trees;
         }
 
         @Override
         public Tag getTag() {
-            return Tag.ADD;
+            return Tag.COMPILATION_UNIT;
         }
 
         @Override
         public void accept(Visitor visitor) {
-            visitor.visitAdd(this);
+            visitor.visitCompilationUnit(this);
         }
     }
 
-    public static class AndExpression extends BinaryExpression {
+    public static class AddExpression extends BinaryExpression {
+
+        public AddExpression(int pos, Expression lhs, Expression rhs) {
+            super(pos, Tag.ADD, lhs, rhs);
+        }
+    }
+
+    public static class AndExpression extends ConditionalExpression {
 
         public AndExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, lhs, rhs);
+            super(pos, Tag.LOGAND, lhs, rhs);
         }
 
         @Override
         public boolean isCondition() {
             return true;
         }
-
-        @Override
-        public Tag getTag() {
-            return Tag.LOGAND;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitAnd(this);
-        }
     }
 
-    public static class ArrayAccessExpression extends UnaryExpression {
+    public static class ArrayAccessExpression extends Expression {
 
+        public Expression array;
         public Expression key;
 
         public ArrayAccessExpression(int pos, Expression hs, Expression key) {
-            super(pos, hs);
+            super(pos);
+            this.array = hs;
             this.key = key;
-        }
-
-        @Override
-        public boolean isAccessible() {
-            return true;
-        }
-
-        @Override
-        public boolean isCloneable() {
-            return true;
-        }
-
-        @Override
-        public boolean isAssignable() {
-            return true;
-        }
-
-        @Override
-        public boolean isNullable() {
-            return true;
         }
 
         @Override
@@ -169,7 +161,7 @@ public abstract class Tree {
         }
     }
 
-    public static class ArrayExpression extends LiteralExpression {
+    public static class ArrayExpression extends Expression {
 
         // todo: Заменить это на List со своей структурой
         public Map<Expression, Expression> map;
@@ -432,94 +424,57 @@ public abstract class Tree {
         }
     }
 
-    public abstract static class BinaryExpression extends Expression {
+    public static class BinaryExpression extends Expression {
+
+        public Tag tag;
 
         public Expression lhs;
 
         public Expression rhs;
 
-        protected BinaryExpression(int pos, Expression lhs, Expression rhs) {
+        public BinaryExpression(int pos, Tag tag, Expression lhs, Expression rhs) {
             super(pos);
+            this.tag = tag;
             this.lhs = lhs;
             this.rhs = rhs;
         }
 
         @Override
-        public boolean isAccessible() {
-            return lhs.isAccessible() && rhs.isAccessible();
+        public Tag getTag() {
+            return tag;
         }
 
         @Override
-        public boolean isCloneable() {
-            return lhs.isCloneable() && rhs.isCloneable();
+        public void accept(Visitor visitor) {
+            visitor.visitBinary(this);
         }
     }
 
     public static class BitAndExpression extends BinaryExpression {
 
         public BitAndExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, lhs, rhs);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.BITAND;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitBitAnd(this);
+            super(pos, Tag.BITAND, lhs, rhs);
         }
     }
 
     public static class BitNotExpression extends UnaryExpression {
 
         public BitNotExpression(int pos, Expression hs) {
-            super(pos, hs);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.BITCMPL;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitBitNot(this);
+            super(pos, Tag.BITCMPL, hs);
         }
     }
 
     public static class BitOrExpression extends BinaryExpression {
 
         public BitOrExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, lhs, rhs);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.BITOR;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitBitOr(this);
+            super(pos, Tag.BITOR, lhs, rhs);
         }
     }
 
     public static class BitXorExpression extends BinaryExpression {
 
         public BitXorExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, lhs, rhs);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.BITXOR;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitBitXor(this);
+            super(pos, Tag.BITXOR, lhs, rhs);
         }
     }
 
@@ -543,10 +498,10 @@ public abstract class Tree {
         }
     }
 
-    public abstract static class BooleanExpression extends LiteralExpression {
+    public static class BooleanExpression extends LiteralExpression {
 
-        protected BooleanExpression(int pos) {
-            super(pos);
+        public BooleanExpression(int pos, boolean value) {
+            super(pos, value);
         }
     }
 
@@ -590,27 +545,23 @@ public abstract class Tree {
         }
     }
 
+    // todo: remove
     public static class CloneExpression extends UnaryExpression {
 
         public CloneExpression(int pos, Expression hs) {
-            super(pos, hs);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.CLONE;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitClone(this);
+            super(pos, Tag.CLONE, hs);
         }
     }
 
     public abstract static class ConditionalExpression extends BinaryExpression {
 
-        protected ConditionalExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, lhs, rhs);
+        protected ConditionalExpression(int pos, Tag tag, Expression lhs, Expression rhs) {
+            super(pos, tag, lhs, rhs);
+        }
+
+        @Override
+        public boolean isCondition() {
+            return true;
         }
     }
 
@@ -657,18 +608,9 @@ public abstract class Tree {
     public static class DivideExpression extends BinaryExpression {
 
         public DivideExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, lhs, rhs);
+            super(pos, Tag.DIV, lhs, rhs);
         }
 
-        @Override
-        public Tag getTag() {
-            return Tag.DIV;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitDivide(this);
-        }
     }
 
     public static class DoStatement extends Statement {
@@ -697,29 +639,19 @@ public abstract class Tree {
     public static class EqualExpression extends ConditionalExpression {
 
         public EqualExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, lhs, rhs);
-        }
-
-        @Override
-        public boolean isCondition() {
-            return true;
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.EQ;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitEqual(this);
+            super(pos, Tag.EQ, lhs, rhs);
         }
     }
 
     public abstract static class Expression extends Statement {
 
+        // todo: remove
         public static Expression empty() {
             return new Expression(0) {
+                @Override
+                public Tag getTag() {
+                    return null;
+                }
 
                 @Override
                 public boolean isEmpty() {
@@ -727,12 +659,7 @@ public abstract class Tree {
                 }
 
                 @Override
-                public Tag getTag() {
-                    return Tag.EMPTY;
-                }
-
-                @Override
-                public void accept(Visitor visitor) { }
+                public void accept(Visitor visitor) {}
             };
         }
 
@@ -743,15 +670,32 @@ public abstract class Tree {
         // todo: Почти все эти методы лишние, часть из них нужно переместить в jua.compiler.TreeInfo
 
         public boolean isAccessible() {
-            return false;
+            switch (getTag()) {
+                case PARENS:
+                case VARIABLE:
+                case ARRAY_LITERAL:
+                case ARRAY_ACCESS:
+                case FUNC_CALL:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         public boolean isAssignable() {
-            return false;
+            switch (getTag()) {
+                case PARENS:
+                    return ((ParensExpression) this).expr.isAssignable();
+                case VARIABLE:
+                case ARRAY_ACCESS:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         public boolean isCloneable() {
-            return false;
+            return true;
         }
 
         public boolean isCondition() {
@@ -795,37 +739,14 @@ public abstract class Tree {
     public static class FalseExpression extends BooleanExpression {
 
         public FalseExpression(int pos) {
-            super(pos);
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitFalse(this);
+            super(pos, false);
         }
     }
 
     public static class FloatExpression extends LiteralExpression {
 
-        public double value;
-
         public FloatExpression(int pos, double value) {
-            super(pos);
-            this.value = value;
-        }
-
-        @Override
-        public boolean isLiteral() {
-            return true;
-        }
-
-        @Override
-        public Tag getTag() {
-            return null;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitFloat(this);
+            super(pos, value);
         }
     }
 
@@ -934,44 +855,14 @@ public abstract class Tree {
     public static class GreaterEqualExpression extends ConditionalExpression {
 
         public GreaterEqualExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, lhs, rhs);
-        }
-
-        @Override
-        public boolean isCondition() {
-            return true;
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.GE;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitGreaterEqual(this);
+            super(pos, Tag.GE, lhs, rhs);
         }
     }
 
     public static class GreaterExpression extends ConditionalExpression {
 
         public GreaterExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, lhs, rhs);
-        }
-
-        @Override
-        public boolean isCondition() {
-            return true;
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.GT;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitGreater(this);
+            super(pos, Tag.GT, lhs, rhs);
         }
     }
 
@@ -1007,30 +898,51 @@ public abstract class Tree {
 
     public abstract static class IncreaseExpression extends UnaryExpression {
 
-        protected IncreaseExpression(int pos, Expression hs) {
-            super(pos, hs);
+        protected IncreaseExpression(int pos, Tag tag, Expression hs) {
+            super(pos, tag, hs);
         }
     }
 
-    public static abstract class LiteralExpression extends Expression {
+    public static class LiteralExpression extends Expression {
 
-        protected LiteralExpression(int pos) {
+        public Object value;
+
+        public LiteralExpression(int pos, Object value) {
             super(pos);
+            this.value = value;
+        }
+
+        public boolean isInteger() { return value instanceof Long || value instanceof Integer; }
+        public boolean isFloatingPoint() { return value instanceof Double || value instanceof Float; }
+        public boolean isNumber() { return value instanceof Number; }
+        public boolean isBoolean() { return value instanceof Boolean; }
+        public boolean isString() { return value instanceof String; }
+        public boolean isNull() { return value == null; }
+        public long longValue() { return ((Number) value).longValue(); }
+        public double doubleValue() { return ((Number) value).doubleValue(); }
+        public boolean booleanValue() { return (Boolean) value; }
+        public String stringValue() { return String.valueOf(value); }
+
+        @Override
+        public boolean isLiteral() {
+            return true;
         }
 
         @Override
         public Tag getTag() {
             return Tag.LITERAL;
         }
+
+        @Override
+        public void accept(Visitor visitor) {
+            visitor.visitLiteral(this);
+        }
     }
 
     public static class IntExpression extends LiteralExpression {
 
-        public long value;
-
         public IntExpression(int pos, long value) {
-            super(pos);
-            this.value = value;
+            super(pos, value);
         }
 
         @Override
@@ -1047,166 +959,56 @@ public abstract class Tree {
     public static class LessEqualExpression extends ConditionalExpression {
 
         public LessEqualExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, lhs, rhs);
-        }
-
-        @Override
-        public boolean isCondition() {
-            return true;
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.LE;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitLessEqual(this);
+            super(pos, Tag.LE, lhs, rhs);
         }
     }
 
     public static class LessExpression extends ConditionalExpression {
 
         public LessExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, lhs, rhs);
-        }
-
-        @Override
-        public boolean isCondition() {
-            return true;
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.LT;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitLess(this);
+            super(pos, Tag.LT, lhs, rhs);
         }
     }
 
     public static class MultiplyExpression extends BinaryExpression {
 
         public MultiplyExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, lhs, rhs);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.MUL;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitMultiply(this);
+            super(pos, Tag.MUL, lhs, rhs);
         }
     }
 
     public static class NegativeExpression extends UnaryExpression {
 
         public NegativeExpression(int pos, Expression hs) {
-            super(pos, hs);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.NEG;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitNegative(this);
+            super(pos, Tag.NEG, hs);
         }
     }
 
     public static class NotEqualExpression extends ConditionalExpression {
 
         public NotEqualExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, lhs, rhs);
-        }
-
-        @Override
-        public boolean isCondition() {
-            return true;
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.NEQ;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitNotEqual(this);
+            super(pos, Tag.NEQ, lhs, rhs);
         }
     }
 
     public static class NotExpression extends UnaryExpression {
 
         public NotExpression(int pos, Expression hs) {
-            super(pos, hs);
-        }
-
-        @Override
-        public boolean isCondition() {
-            return true;
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.LOGCMPL;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitNot(this);
+            super(pos, Tag.LOGCMPL ,hs);
         }
     }
 
     public static class NullCoalesceExpression extends BinaryExpression {
 
         public NullCoalesceExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, lhs, rhs);
-        }
-
-        @Override
-        public boolean isAccessible() {
-            return rhs.isAccessible();
-        }
-
-        @Override
-        public boolean isCloneable() {
-            return rhs.isCloneable();
-        }
-
-        @Override
-        public boolean isNullable() {
-            return lhs.isNullable();
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.NULLCOALESCE;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitNullCoalesce(this);
+            super(pos, Tag.NULLCOALESCE, lhs, rhs);
         }
     }
 
     public static class NullExpression extends LiteralExpression {
 
         public NullExpression(int pos) {
-            super(pos);
-        }
-
-        @Override
-        public boolean isNullable() {
-            return true;
+            super(pos, null);
         }
 
         @Override
@@ -1215,25 +1017,10 @@ public abstract class Tree {
         }
     }
 
-    public static class OrExpression extends BinaryExpression {
+    public static class OrExpression extends ConditionalExpression {
 
         public OrExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, lhs, rhs);
-        }
-
-        @Override
-        public boolean isCondition() {
-            return true;
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.LOGOR;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitOr(this);
+            super(pos, Tag.LOGOR, lhs, rhs);
         }
     }
 
@@ -1281,85 +1068,35 @@ public abstract class Tree {
     public static class PositiveExpression extends UnaryExpression {
 
         public PositiveExpression(int pos, Expression hs) {
-            super(pos, hs);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.POS;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitPositive(this);
+            super(pos, Tag.POS, hs);
         }
     }
 
     public static class PostDecrementExpression extends IncreaseExpression {
 
         public PostDecrementExpression(int pos, Expression hs) {
-            super(pos, hs);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.POST_DEC;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitPostDecrement(this);
+            super(pos, Tag.POST_DEC, hs);
         }
     }
 
     public static class PostIncrementExpression extends IncreaseExpression {
 
         public PostIncrementExpression(int pos, Expression hs) {
-            super(pos, hs);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.POST_INC;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitPostIncrement(this);
+            super(pos, Tag.POST_INC, hs);
         }
     }
 
     public static class PreDecrementExpression extends IncreaseExpression {
 
         public PreDecrementExpression(int pos, Expression hs) {
-            super(pos, hs);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.PRE_DEC;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitPreDecrement(this);
+            super(pos,Tag.PRE_DEC, hs);
         }
     }
 
     public static class PreIncrementExpression extends IncreaseExpression {
 
         public PreIncrementExpression(int pos, Expression hs) {
-            super(pos, hs);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.PRE_INC;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitPreIncrement(this);
+            super(pos, Tag.PRE_INC,hs);
         }
     }
 
@@ -1410,17 +1147,7 @@ public abstract class Tree {
     public static class RemainderExpression extends BinaryExpression {
 
         public RemainderExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, lhs, rhs);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.REM;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitRemainder(this);
+            super(pos, Tag.REM, lhs, rhs);
         }
     }
 
@@ -1451,54 +1178,26 @@ public abstract class Tree {
     public static class ShiftLeftExpression extends BinaryExpression {
 
         public ShiftLeftExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, lhs, rhs);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.SL;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitLeftShift(this);
+            super(pos, Tag.SL, lhs, rhs);
         }
     }
 
     public static class ShiftRightExpression extends BinaryExpression {
 
         public ShiftRightExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, lhs, rhs);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.SR;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitRightShift(this);
+            super(pos, Tag.SR, lhs, rhs);
         }
     }
 
     public abstract static class Statement extends Tree implements Cloneable {
 
-        public static final Statement EMPTY = new Statement(0) {
-            @Override
-            public Tag getTag() {
-                return Tag.EMPTY;
-            }
-
-            @Override
-            public void accept(Visitor visitor) {}
-        };
+        public static final Statement EMPTY = null; // todo
 
         protected Statement(int pos) {
             super(pos);
         }
 
-        public Statement copy(int pos) {
+        public Statement copy(int pos) {//todo: remove
             try {
                 Statement clone = (Statement) super.clone();
                 clone.pos = pos;
@@ -1511,38 +1210,15 @@ public abstract class Tree {
 
     public static class StringExpression extends LiteralExpression {
 
-        public String value;
-
         public StringExpression(int pos, String value) {
-            super(pos);
-            this.value = value;
-        }
-
-        @Override
-        public boolean isLiteral() {
-            return true;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitString(this);
+            super(pos, value);
         }
     }
 
     public static class SubtractExpression extends BinaryExpression {
 
         public SubtractExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, lhs, rhs);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.SUB;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitSubtract(this);
+            super(pos, Tag.SUB, lhs, rhs);
         }
     }
 
@@ -1613,27 +1289,29 @@ public abstract class Tree {
     public static class TrueExpression extends BooleanExpression {
 
         public TrueExpression(int pos) {
-            super(pos);
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitTrue(this);
+            super(pos, true);
         }
     }
 
-    public abstract static class UnaryExpression extends Expression {
+    public static class UnaryExpression extends Expression {
 
+        public Tag tag;
         public Expression hs;
 
-        protected UnaryExpression(int pos, Expression hs) {
+        protected UnaryExpression(int pos, Tag tag, Expression hs) {
             super(pos);
+            this.tag = tag;
             this.hs = hs;
         }
 
         @Override
-        public boolean isAccessible() {
-            return hs.isAccessible();
+        public Tag getTag() {
+            return tag;
+        }
+
+        @Override
+        public void accept(Visitor visitor) {
+            visitor.visitUnary(this);
         }
     }
 
@@ -1699,7 +1377,7 @@ public abstract class Tree {
     }
 
     public static interface Visitor {
-
+        void visitCompilationUnit(CompilationUnit tree);
         void visitAdd(AddExpression expression);
         void visitAnd(AndExpression expression);
         void visitArrayAccess(ArrayAccessExpression expression);
@@ -1770,6 +1448,10 @@ public abstract class Tree {
         void visitVariable(VariableExpression expression);
         void visitWhile(WhileStatement statement);
         void visitDiscarded(DiscardedExpression expression);
+        void visitBinary(BinaryExpression tree);
+        void visitUnary(UnaryExpression tree);
+        void visitAssign(AssignmentExpression tree);
+        void visitLiteral(LiteralExpression tree);
     }
 
     public static class WhileStatement extends Statement {

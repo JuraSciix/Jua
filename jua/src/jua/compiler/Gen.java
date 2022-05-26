@@ -96,6 +96,11 @@ public final class Gen implements Visitor {
     }
 
     @Override
+    public void visitCompilationUnit(CompilationUnit tree) {
+
+    }
+
+    @Override
     public void visitAdd(AddExpression expression) {
         generateBinary(expression);
     }
@@ -190,7 +195,7 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitArrayAccess(ArrayAccessExpression expression) {
-        visitExpression(expression.hs);
+        visitExpression(expression.array);
         visitExpression(expression.key);
         code.putPos(expression.pos);
         emitALoad();
@@ -344,7 +349,7 @@ public final class Gen implements Visitor {
 
     private void generateBinary(BinaryExpression tree) {
         tree.lhs.accept(this);
-        if (tree.isTag(Tag.NULLCOALESCE)) {
+        if (tree.hasTag(Tag.NULLCOALESCE)) {
             emitDup();
             int el = code.makeChain();
             code.putPos(tree.pos);
@@ -422,17 +427,11 @@ public final class Gen implements Visitor {
     public void visitCase(CaseStatement tree) {
         if (tree.expressions != null) { // is not default case?
             for (Expression expr : tree.expressions) {
-                int cp;
-                if (expr.getClass() == StringExpression.class)
-                    cp = code.resolveString(((StringExpression) expr).value);
-                else if (expr.getClass() == IntExpression.class)
-                    cp = code.resolveLong(((IntExpression) expr).value);
-                else if (expr.getClass() == FloatExpression.class)
-                    cp = code.resolveDouble(((FloatExpression) expr).value);
-                else {
-                    cError(expr.pos, "constant expected.");
+                if (!(expr instanceof LiteralExpression)) {
+                    cError(expr.pos, "constant expected");
                     continue;
                 }
+                int cp = TreeInfo.resolveLiteral(code, (LiteralExpression) expr);
                 cases.put(cp, code.currentIP() - switch_start_ip);
             }
 
@@ -610,14 +609,12 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitFalse(FalseExpression expression) {
-        code.putPos(expression.pos);
-        emitPushFalse();
+        visitLiteral(expression);
     }
 
     @Override
     public void visitFloat(FloatExpression expression) {
-        code.putPos(expression.pos);
-        emitPushDouble(expression.value);
+        visitLiteral(expression);
     }
 
     @Override
@@ -705,7 +702,7 @@ public final class Gen implements Visitor {
         }
 
         visitStatement(tree.body);
-        if (!tree.body.isTag(Tag.COMPOUND))
+        if (!tree.body.hasTag(Tag.COMPOUND))
             emitReturn();
         else
             emitRetnull();
@@ -798,8 +795,7 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitInt(IntExpression expression) {
-        code.putPos(expression.pos);
-        emitPushLong(expression.value);
+        visitLiteral(expression);
     }
 
     @Override
@@ -1042,7 +1038,7 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitNull(NullExpression expression) {
-        code.addInstruction(ConstNull.INSTANCE, 1);
+        visitLiteral(expression);
     }
 
     @Override
@@ -1057,7 +1053,7 @@ public final class Gen implements Visitor {
     }
 
     private void generateUnary(UnaryExpression tree) {
-        if (tree.isTag(Tag.LOGCMPL)) {
+        if (tree.hasTag(Tag.LOGCMPL)) {
             beginCondition();
             int prev_state = state;
             state ^= STATE_COND_INVERT;
@@ -1151,8 +1147,7 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitString(StringExpression expression) {
-        code.putPos(expression.pos);
-        emitPushString(expression.value);
+        visitLiteral(expression);
     }
 
     @Override
@@ -1185,8 +1180,7 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitTrue(TrueExpression expression) {
-        code.putPos(expression.pos);
-        emitPushTrue();
+        visitLiteral(expression);
     }
 
     @Override
@@ -1255,18 +1249,39 @@ public final class Gen implements Visitor {
     }
 
     @Deprecated
-    private void visitBinary(BinaryExpression expression) {
-        enableUsed();
-        visitStatement(expression.lhs);
-        visitStatement(expression.rhs);
-        disableUsed();
+    public void visitBinary(BinaryExpression expression) {
+        generateBinary(expression);
     }
 
     @Deprecated
-    private void visitUnary(UnaryExpression expression) {
-        enableUsed();
-        visitStatement(expression.hs);
-        disableUsed();
+    public void visitUnary(UnaryExpression expression) {
+        generateUnary(expression);
+    }
+
+    @Override
+    public void visitAssign(AssignmentExpression tree) {
+        generateAssignment(tree);
+    }
+
+    @Override
+    public void visitLiteral(LiteralExpression tree) {
+        if (tree.isInteger()) {
+            emitPushLong(tree.longValue());
+        } else if (tree.isFloatingPoint()) {
+            emitPushDouble(tree.doubleValue());
+        } else if (tree.isBoolean()) {
+            if (tree.booleanValue()) {
+                emitPushTrue();
+            } else {
+                emitPushFalse();
+            }
+        } else if (tree.isString()) {
+            emitPushString(tree.stringValue());
+        } else if (tree.isNull()) {
+            code.addInstruction(ConstNull.INSTANCE, 1);
+        } else {
+            throw new AssertionError();
+        }
     }
 
     private void visitExprList(List<? extends Expression> expressions) {
@@ -1289,9 +1304,7 @@ public final class Gen implements Visitor {
         // todo: Здешний код отвратителен. Следует переписать всё с нуля...
 //        code.addInstruction(Bool.INSTANCE);
         code.putPos(expression.pos);
-        code.addChainedInstruction(!isState(STATE_COND_INVERT) ?
-                        dest_ip -> new Iffalse(dest_ip) :
-                        dest_ip -> new Iftrue(dest_ip),
+        code.addChainedInstruction(isState(STATE_COND_INVERT) ? Iftrue::new : Iffalse::new,
                 peekConditionChain(), -1);
     }
 
@@ -1351,9 +1364,9 @@ public final class Gen implements Visitor {
             case ARRAY_ACCESS: {
                 ArrayAccessExpression arrayAccess = (ArrayAccessExpression) lhs;
                 code.putPos(arrayAccess.pos);
-                visitExpression(arrayAccess.hs);
+                visitExpression(arrayAccess.array);
                 visitExpression(arrayAccess.key);
-                if (expression.isTag(Tag.ASG_NULLCOALESCE)) {
+                if (expression.hasTag(Tag.ASG_NULLCOALESCE)) {
                     int el = code.makeChain();
                     int ex = code.makeChain();
                     emitDup2();
@@ -1375,7 +1388,7 @@ public final class Gen implements Visitor {
                     }
                     code.resolveChain(ex);
                 } else {
-                    if (!expression.isTag(Tag.ASG)) {
+                    if (!expression.hasTag(Tag.ASG)) {
                         emitDup2();
                         code.putPos(arrayAccess.pos);
                         emitALoad();
@@ -1395,7 +1408,7 @@ public final class Gen implements Visitor {
             }
             case VARIABLE: {
                 VariableExpression variable = (VariableExpression) lhs;
-                if (expression.isTag(Tag.ASG_NULLCOALESCE)) {
+                if (expression.hasTag(Tag.ASG_NULLCOALESCE)) {
                     int ex = code.makeChain();
                     visitExpression(lhs);
                     code.addChainedInstruction(Ifnonnull::new, ex, -1);
@@ -1415,7 +1428,7 @@ public final class Gen implements Visitor {
                         code.resolveChain(ex);
                     }
                 } else {
-                    if (!expression.isTag(Tag.ASG)) {
+                    if (!expression.hasTag(Tag.ASG)) {
                         visitExpression(lhs);
                         visitExpression(rhs);
                         code.putPos(expression.pos);
@@ -1505,16 +1518,16 @@ public final class Gen implements Visitor {
             case ARRAY_ACCESS: {
                 ArrayAccessExpression arrayAccess = (ArrayAccessExpression) hs;
                 code.putPos(arrayAccess.pos);
-                visitExpression(arrayAccess.hs);
+                visitExpression(arrayAccess.array);
                 visitExpression(arrayAccess.key);
                 emitDup2();
                 emitALoad();
-                if (isUsed() && (expression.isTag(Tag.POST_INC) || expression.isTag(Tag.POST_DEC))) {
+                if (isUsed() && (expression.hasTag(Tag.POST_INC) || expression.hasTag(Tag.POST_DEC))) {
                     emitDupX2();
                 }
                 code.putPos(expression.pos);
                 code.addInstruction(increase2state(expression.getTag(), -1));
-                if (isUsed() && (expression.isTag(Tag.PRE_INC) || expression.isTag(Tag.PRE_DEC))) {
+                if (isUsed() && (expression.hasTag(Tag.PRE_INC) || expression.hasTag(Tag.PRE_DEC))) {
                     emitDupX2();
                 }
                 code.putPos(arrayAccess.pos);
@@ -1523,12 +1536,12 @@ public final class Gen implements Visitor {
             }
             case VARIABLE: {
                 VariableExpression variable = (VariableExpression) hs;
-                if (isUsed() && (expression.isTag(Tag.POST_INC) || expression.isTag(Tag.POST_DEC))) {
+                if (isUsed() && (expression.hasTag(Tag.POST_INC) || expression.hasTag(Tag.POST_DEC))) {
                     variable.accept(this);
                 }
                 code.putPos(expression.pos);
                 code.addInstruction(increase2state(expression.getTag(), code.resolveLocal(variable.name)));
-                if (isUsed() && (expression.isTag(Tag.PRE_INC) || expression.isTag(Tag.PRE_DEC))) {
+                if (isUsed() && (expression.hasTag(Tag.PRE_INC) || expression.hasTag(Tag.PRE_DEC))) {
                     variable.accept(this);
                 }
                 break;

@@ -1,7 +1,7 @@
 package jua.compiler;
 
 import jua.Options;
-import jua.compiler.parser.Parser;
+import jua.compiler.parser.JuaParser;
 import jua.compiler.parser.Tokenizer;
 import jua.compiler.parser.Tokens;
 import jua.interpreter.InterpreterThread;
@@ -10,7 +10,6 @@ import jua.util.LineMap;
 import jua.util.TokenizeStream;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
@@ -114,7 +113,7 @@ public class JuaCompiler {
             if (Options.stop()) throw new ThreadDeath();
         }
         try (TokenizeStream stream = s) {
-            return new Parser(new Tokenizer(stream)).parse();
+            return new JuaParser(new Tokenizer(stream)).parse();
         } catch (ParseException e) {
             parseError(e, s.location(), s.getLmt());
         } catch (Throwable t) {

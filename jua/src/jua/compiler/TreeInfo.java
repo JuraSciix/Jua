@@ -1,10 +1,7 @@
 package jua.compiler;
 
 import jua.compiler.Tree.*;
-import jua.runtime.heap.DoubleOperand;
-import jua.runtime.heap.LongOperand;
-import jua.runtime.heap.Operand;
-import jua.runtime.heap.StringOperand;
+import jua.runtime.heap.*;
 
 public final class TreeInfo {
 
@@ -18,33 +15,33 @@ public final class TreeInfo {
 
         Expression current = tree;
 
-        while (current.isTag(Tag.PARENS)) {
+        while (current.hasTag(Tag.PARENS)) {
             current = ((ParensExpression) current).expr;
         }
 
         return current;
     }
 
-    public static boolean testShort(Expression expression) {
-        if (expression instanceof IntExpression) {
-            long value = ((IntExpression) expression).value;
-            return value >= Short.MIN_VALUE && value <= Short.MAX_VALUE;
-        }
-        return false;
+    public static boolean testShort(Expression tree) {
+        return isShortIntegerLiteral(tree);
+    }
+
+    public static boolean isShortIntegerLiteral(Expression tree) {
+        if (tree == null) return false;
+        if (!tree.hasTag(Tag.LITERAL)) return false;
+        LiteralExpression literal = (LiteralExpression) tree;
+        if (!(literal.value instanceof Number)) return false;
+        long value = ((Number) literal.value).longValue();
+        return (value >= Short.MIN_VALUE && value <= Short.MAX_VALUE);
     }
 
     public static int resolveLiteral(Code code, LiteralExpression expression) {
-        if (expression instanceof IntExpression) {
-            return code.resolveLong(((IntExpression) expression).value);
-        }
-        if (expression instanceof FloatExpression) {
-            return code.resolveDouble(((FloatExpression) expression).value);
-        }
-        if (expression instanceof StringExpression) {
-            return code.resolveString(((StringExpression) expression).value);
-        }
-        
-        throw new AssertionError();
+        Object value = expression.value;
+        if (value instanceof Long || value instanceof Integer) return code.resolveLong(((Number) value).longValue());
+        if (value instanceof Double || value instanceof Float)
+            return code.resolveDouble(((Number) value).doubleValue());
+        if (value instanceof String) return code.resolveString((String) value);
+        throw new IllegalArgumentException();
     }
 
     public static boolean isNull(Expression expression) {
@@ -53,16 +50,14 @@ public final class TreeInfo {
     }
 
     public static Operand resolveLiteral(LiteralExpression expression) {
-        if (expression instanceof IntExpression) {
-            return LongOperand.valueOf(((IntExpression) expression).value);
-        }
-        if (expression instanceof FloatExpression) {
-            return DoubleOperand.valueOf(((FloatExpression) expression).value);
-        }
-        if (expression instanceof StringExpression) {
-            return StringOperand.valueOf(((StringExpression) expression).value);
-        }
-        throw new AssertionError();
+        Object value = expression.value;
+        if (value instanceof Long || value instanceof Integer) return LongOperand.valueOf(((Number) value).longValue());
+        if (value instanceof Double || value instanceof Float)
+            return DoubleOperand.valueOf(((Number) value).doubleValue());
+        if (value instanceof String) return StringOperand.valueOf((String) value);
+        if (value instanceof Boolean) return BooleanOperand.valueOf(((Boolean) value));
+        assert value == null;
+        return NullOperand.NULL;
     }
 
     private TreeInfo() {

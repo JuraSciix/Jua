@@ -7,6 +7,7 @@ import java.util.Objects;
 /**
  * Выбрасывается при возникновении ошибки выполнения.
  */
+@Deprecated
 public class RuntimeErrorException extends RuntimeException {
 
     public InterpreterThread thread; // todo:  Исправить этот костыль
