@@ -32,5 +32,3 @@ fn recursion_test(n = 1, t = 0) {
     return recursion_test(n + 1, t);
 }
 
-println(fib(11));
-println(qfib(11));

@@ -348,6 +348,10 @@ public final class Gen implements Visitor {
     }
 
     private void generateBinary(BinaryExpression tree) {
+        if (tree instanceof ConditionalExpression) {
+            generateComparison((ConditionalExpression) tree);
+            return;
+        }
         tree.lhs.accept(this);
         if (tree.hasTag(Tag.NULLCOALESCE)) {
             emitDup();
