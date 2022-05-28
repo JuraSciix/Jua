@@ -1,6 +1,7 @@
 package jua.compiler;
 
 import jua.compiler.Tree.*;
+import jua.runtime.heap.Operand;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -630,22 +631,39 @@ public class Lower implements Visitor {
 
     @Override
     public void visitBinary(BinaryExpression tree) {
-        // todo: task for JavaKira
+        if (!tree.lhs.hasTag(Tag.LITERAL) || !tree.rhs.hasTag(Tag.LITERAL)) {
+            result = tree;
+            return;
+        }
+
+        switch (tree.tag) {
+            case SL:     result = foldShiftLeft(tree);          break;
+            case SR:     result = foldShiftRight(tree);         break;
+            case BITAND: result = foldBitwiseDisjunction(tree); break;
+            case BITOR:  result = foldBitwiseConjunction(tree); break;
+            case BITXOR: result = foldBitwiseXor(tree);         break;
+            case ADD:    result = foldAddition(tree);           break;
+            case SUB:    result = foldSubtraction(tree);        break;
+            case MUL:    result = foldMultiplication(tree);     break;
+            case DIV:    result = foldDivision(tree);           break;
+            case REM:    result = foldRemainder(tree);          break;
+            default:     result = tree;
+        }
     }
 
     @Override
     public void visitUnary(UnaryExpression tree) {
-// todo: task for JavaKira
+        result = tree;
     }
 
     @Override
     public void visitAssign(AssignmentExpression tree) {
-// todo: task for JavaKira
+        // todo: task for JavaKira
     }
 
     @Override
     public void visitLiteral(LiteralExpression tree) {
-// todo: task for JavaKira
+        result = tree;
     }
 
     private void visitAssignment(AssignmentExpression expression) {
@@ -748,5 +766,133 @@ public class Lower implements Visitor {
         } finally {
             result = null;
         }
+    }
+
+    private static Expression foldShiftLeft(BinaryExpression tree) {
+        Operand lhs = TreeInfo.resolveLiteral((LiteralExpression) tree.lhs);
+        Operand rhs = TreeInfo.resolveLiteral((LiteralExpression) tree.rhs);
+
+        if (lhs.isLong() && rhs.isLong()) {
+            return new LiteralExpression(tree.lhs.pos, lhs.longValue() << rhs.longValue());
+        }
+        return tree;
+    }
+
+    private static Expression foldShiftRight(BinaryExpression tree) {
+        Operand lhs = TreeInfo.resolveLiteral((LiteralExpression) tree.lhs);
+        Operand rhs = TreeInfo.resolveLiteral((LiteralExpression) tree.rhs);
+
+        if (lhs.isLong() && rhs.isLong()) {
+            return new LiteralExpression(tree.lhs.pos, lhs.longValue() >> rhs.longValue());
+        }
+        return tree;
+    }
+
+    private static Expression foldBitwiseDisjunction(BinaryExpression tree) {
+        Operand lhs = TreeInfo.resolveLiteral((LiteralExpression) tree.lhs);
+        Operand rhs = TreeInfo.resolveLiteral((LiteralExpression) tree.rhs);
+
+        if (lhs.isLong() && rhs.isLong()) {
+            return new LiteralExpression(tree.lhs.pos, lhs.longValue() & rhs.longValue());
+        }
+        if (lhs.isBoolean() && rhs.isBoolean()) {
+            return new LiteralExpression(tree.lhs.pos, lhs.booleanValue() & rhs.booleanValue());
+        }
+        return tree;
+    }
+
+    private static Expression foldBitwiseConjunction(BinaryExpression tree) {
+        Operand lhs = TreeInfo.resolveLiteral((LiteralExpression) tree.lhs);
+        Operand rhs = TreeInfo.resolveLiteral((LiteralExpression) tree.rhs);
+
+        if (lhs.isLong() && rhs.isLong()) {
+            return new LiteralExpression(tree.lhs.pos, lhs.longValue() | rhs.longValue());
+        }
+        if (lhs.isBoolean() && rhs.isBoolean()) {
+            return new LiteralExpression(tree.lhs.pos, lhs.booleanValue() | rhs.booleanValue());
+        }
+        return tree;
+    }
+
+    private static Expression foldBitwiseXor(BinaryExpression tree) {
+        Operand lhs = TreeInfo.resolveLiteral((LiteralExpression) tree.lhs);
+        Operand rhs = TreeInfo.resolveLiteral((LiteralExpression) tree.rhs);
+
+        if (lhs.isLong() && rhs.isLong()) {
+            return new LiteralExpression(tree.lhs.pos, lhs.longValue() ^ rhs.longValue());
+        }
+        if (lhs.isBoolean() && rhs.isBoolean()) {
+            return new LiteralExpression(tree.lhs.pos, lhs.booleanValue() ^ rhs.booleanValue());
+        }
+        return tree;
+    }
+
+
+    private static Expression foldAddition(BinaryExpression tree) {
+        Operand lhs = TreeInfo.resolveLiteral((LiteralExpression) tree.lhs);
+        Operand rhs = TreeInfo.resolveLiteral((LiteralExpression) tree.rhs);
+
+        if (lhs.isLong() && rhs.isLong()) {
+            return new LiteralExpression(tree.lhs.pos, lhs.longValue() + rhs.longValue());
+        }
+        if (lhs.isNumber() && rhs.isNumber()) {
+            return new LiteralExpression(tree.lhs.pos, lhs.doubleValue() + rhs.doubleValue());
+        }
+        return tree;
+    }
+
+    private static Expression foldDivision(BinaryExpression tree) {
+        Operand lhs = TreeInfo.resolveLiteral((LiteralExpression) tree.lhs);
+        Operand rhs = TreeInfo.resolveLiteral((LiteralExpression) tree.rhs);
+
+        if (lhs.isLong() && rhs.isLong()) {
+            if (rhs.longValue() == 0L) return tree; // do not fold division by zero!
+            return new LiteralExpression(tree.lhs.pos, lhs.longValue() / rhs.longValue());
+        }
+        if (lhs.isNumber() && rhs.isNumber()) {
+            return new LiteralExpression(tree.lhs.pos, lhs.doubleValue() / rhs.doubleValue());
+        }
+        return tree;
+    }
+
+    private static Expression foldSubtraction(BinaryExpression tree) {
+        Operand lhs = TreeInfo.resolveLiteral((LiteralExpression) tree.lhs);
+        Operand rhs = TreeInfo.resolveLiteral((LiteralExpression) tree.rhs);
+
+        if (lhs.isLong() && rhs.isLong()) {
+            return new LiteralExpression(tree.lhs.pos, lhs.longValue() - rhs.longValue());
+        }
+        if (lhs.isNumber() && rhs.isNumber()) {
+            return new LiteralExpression(tree.lhs.pos, lhs.doubleValue() - rhs.doubleValue());
+        }
+        return tree;
+    }
+
+    private static Expression foldMultiplication(BinaryExpression tree) {
+        Operand lhs = TreeInfo.resolveLiteral((LiteralExpression) tree.lhs);
+        Operand rhs = TreeInfo.resolveLiteral((LiteralExpression) tree.rhs);
+
+        if (lhs.isLong() && rhs.isLong()) {
+            return new LiteralExpression(tree.lhs.pos, lhs.longValue() * rhs.longValue());
+        }
+        if (lhs.isNumber() && rhs.isNumber()) {
+            return new LiteralExpression(tree.lhs.pos, lhs.doubleValue() * rhs.doubleValue());
+        }
+        return tree;
+    }
+
+    private static Expression foldRemainder(BinaryExpression tree) {
+        Operand lhs = TreeInfo.resolveLiteral((LiteralExpression) tree.lhs);
+        Operand rhs = TreeInfo.resolveLiteral((LiteralExpression) tree.rhs);
+
+        if (lhs.isLong() && rhs.isLong()) {
+            if (rhs.longValue() == 0L) return tree; // do not fold division by zero!
+            return new LiteralExpression(tree.lhs.pos, lhs.longValue() % rhs.longValue());
+        }
+        if (lhs.isNumber() && rhs.isNumber()) {
+            if (rhs.doubleValue() == 0.0D) return tree; // do not fold division by zero!
+            return new LiteralExpression(tree.lhs.pos, lhs.doubleValue() % rhs.doubleValue());
+        }
+        return tree;
     }
 }

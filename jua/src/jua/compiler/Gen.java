@@ -1047,8 +1047,9 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitParens(ParensExpression expression) {
-        throw new AssertionError(
-                "all brackets should have been removed in ConstantFolder");
+        // todo: выбрасывается AssertionError
+        //throw new AssertionError(
+        //        "all brackets should have been removed in ConstantFolder");
     }
 
     @Override
@@ -1057,6 +1058,24 @@ public final class Gen implements Visitor {
     }
 
     private void generateUnary(UnaryExpression tree) {
+        if (tree instanceof IncreaseExpression) {
+            switch (tree.getTag()) {
+                case POST_DEC:
+                    generateIncrease((IncreaseExpression) tree, false, true);
+                    return;
+                case POST_INC:
+                    generateIncrease((IncreaseExpression) tree, true, true);
+                    return;
+                case PRE_DEC:
+                    generateIncrease((IncreaseExpression) tree, false, false);
+                    return;
+                case PRE_INC:
+                    generateIncrease((IncreaseExpression) tree, true, false);
+                    return;
+            }
+        }
+
+        System.out.println(tree);
         if (tree.hasTag(Tag.LOGCMPL)) {
             beginCondition();
             int prev_state = state;
