@@ -32,7 +32,7 @@ public class JuaParser {
             }
             statements.add(parseStatement());
         }
-        return new BlockStatement(startPos, statements);
+        return new Block(startPos, statements);
     }
 
     private Statement parseStatement() throws ParseException {
@@ -93,14 +93,14 @@ public class JuaParser {
             return parseSwitch(position);
         }
         if (match(WHILE)) {
-            return new WhileStatement(position, parseExpression(), parseStatement());
+            return new WhileLoop(position, parseExpression(), parseStatement());
         }
         return parseUnusedExpression();
     }
 
     private Statement parseBreak(int position) throws ParseException {
         expect(SEMICOLON);
-        return new BreakStatement(position);
+        return new Break(position);
     }
 
     private Statement parseConst(int position) throws ParseException {
@@ -115,12 +115,12 @@ public class JuaParser {
         } while (match(COMMA));
 
         expect(SEMICOLON);
-        return new ConstantDeclareStatement(position, names, expressions);
+        return new ConstantDecl(position, names, expressions);
     }
 
     private Statement parseContinue(int position) throws ParseException {
         expect(SEMICOLON);
-        return new ContinueStatement(position);
+        return new Continue(position);
     }
 
     private Statement parseDo(int position) throws ParseException {
@@ -128,12 +128,12 @@ public class JuaParser {
         expect(WHILE);
         Expression cond = parseExpression();
         expect(SEMICOLON);
-        return new DoStatement(position, body, cond);
+        return new DoLoop(position, body, cond);
     }
 
     private Statement parseFallthrough(int position) throws ParseException {
         expect(SEMICOLON);
-        return new FallthroughStatement(position);
+        return new Fallthrough(position);
     }
 
     private Statement parseFunction(int position) throws ParseException {
@@ -158,7 +158,7 @@ public class JuaParser {
             }
             comma = !match(COMMA);
         }
-        return new FunctionDefineStatement(position, name.getString(), names, optionals, parseBody());
+        return new FunctionDecl(position, name.getString(), names, optionals, parseBody());
     }
 
     private Statement parseBody() throws ParseException {
@@ -197,7 +197,7 @@ public class JuaParser {
         } else {
             step = parseExpressions();
         }
-        return new ForStatement(position, init, cond, step, parseStatement());
+        return new ForLoop(position, init, cond, step, parseStatement());
     }
 
     private Statement parseIf(int position) throws ParseException {
@@ -206,9 +206,9 @@ public class JuaParser {
         Statement body = parseStatement();
 
         if (!match(ELSE)) {
-            return new IfStatement(position, cond, body);
+            return new If(position, cond, body);
         }
-        return new IfStatement(position, cond, body, parseStatement());
+        return new If(position, cond, body, parseStatement());
     }
 
     private Statement parseBlock(int position) throws ParseException {
@@ -220,7 +220,7 @@ public class JuaParser {
             }
             statements.add(parseStatement());
         }
-        return new BlockStatement(position, statements);
+        return new Block(position, statements);
     }
 
 //    private Statement parsePrint(int position) throws ParseException {
@@ -237,16 +237,16 @@ public class JuaParser {
 
     private Statement parseReturn(int position) throws ParseException {
         if (match(SEMICOLON)) {
-            return new ReturnStatement(position);
+            return new Return(position);
         }
         Expression expr = parseExpression();
         expect(SEMICOLON);
-        return new ReturnStatement(position, expr);
+        return new Return(position, expr);
     }
 
     private Statement parseSwitch(int position) throws ParseException {
         Expression selector = parseExpression();
-        List<CaseStatement> cases = new ArrayList<>();
+        List<Case> cases = new ArrayList<>();
         expect(LBRACE);
 
         while (!match(RBRACE)) {
@@ -262,24 +262,24 @@ public class JuaParser {
                 pError(currentToken.pos, currentToken + " is not allowed inside switch.");
             }
         }
-        return new SwitchStatement(position, selector, cases);
+        return new Switch(position, selector, cases);
     }
 
-    private CaseStatement parseCase(int position, boolean isDefault) throws ParseException {
+    private Case parseCase(int position, boolean isDefault) throws ParseException {
         List<Expression> expressions = null;
 
         if (!isDefault) {
             expressions = parseExpressions();
         }
         expect(COLON);
-        return new CaseStatement(position, expressions, parseStatement());
+        return new Case(position, expressions, parseStatement());
     }
 
     private Statement parseUnusedExpression() throws ParseException {
         int position = currentToken.pos;
         Expression expr = parseExpression();
         expect(SEMICOLON);
-        return new DiscardedExpression(position, expr);
+        return new Discarded(position, expr);
     }
 
     private List<Expression> parseExpressions() throws ParseException {
@@ -370,7 +370,7 @@ public class JuaParser {
     private Expression parseTernary0(int position, Expression cond) throws ParseException {
         Expression right = parseExpression();
         expect(COLON);
-        return new TernaryExpression(position, cond, right, parseExpression());
+        return new TernaryOp(position, cond, right, parseExpression());
     }
 
     private Expression parseOr() throws ParseException {
@@ -590,10 +590,10 @@ public class JuaParser {
             if (match(DOT)) {
                 Tokens.Token token = currentToken;
                 expect(IDENTIFIER);
-                expression = new ArrayAccessExpression(position,
+                expression = new ArrayAccess(position,
                         expression, new StringExpression(token.pos, token.getString()));
             } else if (match(LBRACKET)) {
-                expression = new ArrayAccessExpression(position,
+                expression = new ArrayAccess(position,
                         expression, parseExpression());
                 expect(RBRACKET);
             } else {
@@ -618,7 +618,7 @@ public class JuaParser {
 //                expect(RBRACKET);
 //                dot = 2;
 //            } else {
-//                return new ArrayAccessExpression(position, expr, keys);
+//                return new ArrayAccess(position, expr, keys);
 //            }
 //        }
 //    }
@@ -679,7 +679,7 @@ public class JuaParser {
         if (match(LPAREN)) {
             return parseInvocation(token);
         }
-        return new VariableExpression(token.pos, token.getString());
+        return new Var(token.pos, token.getString());
     }
 
     private Expression parseInvocation(Tokens.Token token) throws ParseException {
@@ -693,7 +693,7 @@ public class JuaParser {
             args.add(parseExpression());
             comma = !match(COMMA);
         }
-        return new FunctionCallExpression(token.pos, token.getString(), args);
+        return new Invocation(token.pos, token.getString(), args);
     }
 
     private Expression parseInt(Tokens.Token token) throws ParseException {
@@ -725,13 +725,13 @@ public class JuaParser {
             map.put(key, value);
             comma = !match(COMMA);
         }
-        return new ArrayExpression(position, map);
+        return new ArrayLiteral(position, map);
     }
 
     private Expression parseParens(int position) throws ParseException {
         Expression expr = parseExpression();
         expect(RPAREN);
-        return new ParensExpression(position, expr);
+        return new Parens(position, expr);
     }
 
     private void next() throws ParseException {

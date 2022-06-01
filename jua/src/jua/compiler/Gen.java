@@ -5,6 +5,7 @@ import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntStack;
 import jua.interpreter.instructions.*;
+import jua.interpreter.instructions.Switch;
 import jua.runtime.heap.ArrayOperand;
 import jua.runtime.JuaFunction;
 import jua.runtime.heap.Operand;
@@ -194,7 +195,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitArrayAccess(ArrayAccessExpression expression) {
+    public void visitArrayAccess(ArrayAccess expression) {
         visitExpression(expression.array);
         visitExpression(expression.key);
         code.putPos(expression.pos);
@@ -202,7 +203,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitArray(ArrayExpression expression) {
+    public void visitArray(ArrayLiteral expression) {
 //        code.incStack();
 //        code.addInstruction(Newarray.INSTANCE);
 //        AtomicInteger index = new AtomicInteger();
@@ -281,7 +282,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitAssign(AssignExpression expression) {
+    public void visitAssignOp(AssignExpression expression) {
         generateAssignment(expression);
     }
 
@@ -294,7 +295,7 @@ public final class Gen implements Visitor {
     public void visitAssignNullCoalesce(AssignNullCoalesceExpression expression) {
 //        int el = code.createFlow();
 //        int ex = code.createFlow();
-//        boolean isArray = (expression.var.child() instanceof ArrayAccessExpression);
+//        boolean isArray = (expression.var.child() instanceof ArrayAccess);
 //        visitAssignment(expression, line -> {
 //            code.addFlow(el, new Ifnonnull());
 //            code.decStack();
@@ -347,7 +348,7 @@ public final class Gen implements Visitor {
         generateBinary(expression);
     }
 
-    private void generateBinary(BinaryExpression tree) {
+    private void generateBinary(BinaryOp tree) {
         if (tree instanceof ConditionalExpression) {
             generateComparison((ConditionalExpression) tree);
             return;
@@ -385,7 +386,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitBlock(BlockStatement statement) {
+    public void visitBlock(Block statement) {
         if (!isState(STATE_ROOTED)) { // is root?
             code.pushContext(statement.pos);
             code.pushScope();
@@ -411,7 +412,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitBreak(BreakStatement statement) {
+    public void visitBreak(Break statement) {
         if (breakChains.isEmpty()) {
             cError(statement.pos, "'break' is not allowed outside of loop/switch.");
             return;
@@ -428,14 +429,14 @@ public final class Gen implements Visitor {
     private int default_case;
 
     @Override
-    public void visitCase(CaseStatement tree) {
+    public void visitCase(Case tree) {
         if (tree.expressions != null) { // is not default case?
             for (Expression expr : tree.expressions) {
-                if (!(expr instanceof LiteralExpression)) {
+                if (!(expr instanceof Literal)) {
                     cError(expr.pos, "constant expected");
                     continue;
                 }
-                int cp = TreeInfo.resolveLiteral(code, (LiteralExpression) expr);
+                int cp = TreeInfo.resolveLiteral(code, (Literal) expr);
                 cases.put(cp, code.currentIP() - switch_start_ip);
             }
 
@@ -457,7 +458,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitSwitch(SwitchStatement tree) {
+    public void visitSwitch(Tree.Switch tree) {
         visitExpression(tree.selector);
         // emit switch
         int b = code.makeChain();
@@ -476,7 +477,7 @@ public final class Gen implements Visitor {
         int max_sp = cached_sp;
         int prev_state = state;
         unsetState(STATE_ALIVE_SWITCH);
-        for (CaseStatement _case : tree.cases) {
+        for (Case _case : tree.cases) {
             code.setSp(cached_sp);
             _case.accept(this);
             if (code.getSp() > max_sp) max_sp = code.getSp();
@@ -499,7 +500,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitConstantDeclare(ConstantDeclareStatement statement) {
+    public void visitConstantDeclare(ConstantDecl statement) {
         if (isState(STATE_NO_DECLS)) {
             cError(statement.pos, "constants declaration is not allowed here.");
         }
@@ -510,22 +511,22 @@ public final class Gen implements Visitor {
             }
             Expression expr = statement.expressions.get(i);
             Operand value;
-            if (expr instanceof ArrayExpression) {
+            if (expr instanceof ArrayLiteral) {
                 value = new ArrayOperand();
-                if (((ArrayExpression) expr).map.size() > 0) {
+                if (((ArrayLiteral) expr).map.size() > 0) {
                     code.addInstruction(new Getconst(codeData.constantIndex(name)), 1);
-                    generateArrayCreation(((ArrayExpression) expr).map);
+                    generateArrayCreation(((ArrayLiteral) expr).map);
                 }
             } else {
-                assert expr instanceof LiteralExpression;
-                value = TreeInfo.resolveLiteral((LiteralExpression) expr);
+                assert expr instanceof Literal;
+                value = TreeInfo.resolveLiteral((Literal) expr);
             }
             codeData.setConstant(name, value);
         }
     }
 
     @Override
-    public void visitContinue(ContinueStatement statement) {
+    public void visitContinue(Continue statement) {
         if (continueChains.isEmpty()) {
             cError(statement.pos, "'continue' is not allowed outside of loop.");
             return;
@@ -541,7 +542,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitDo(DoStatement statement) {
+    public void visitDoLoop(DoLoop statement) {
         generateLoop(statement, null, statement.cond, null, statement.body, false);
     }
 
@@ -600,7 +601,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitFallthrough(FallthroughStatement statement) {
+    public void visitFallthrough(Fallthrough statement) {
         if (fallthroughChains.isEmpty()) {
             cError(statement.pos, "'fallthrough' is not allowed outside of switch.");
             return;
@@ -622,12 +623,12 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitFor(ForStatement statement) {
+    public void visitFor(ForLoop statement) {
         generateLoop(statement, statement.init, statement.cond, statement.step, statement.body, true);
     }
 
     @Override
-    public void visitFunctionCall(FunctionCallExpression expression) {
+    public void visitInvocation(Invocation expression) {
         Instruction instruction;
         int stack = 0;
         boolean noReturnValue = false;
@@ -689,7 +690,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitFunctionDefine(FunctionDefineStatement tree) {
+    public void visitFunctionDecl(FunctionDecl tree) {
         if (isState(STATE_NO_DECLS))
             cError(tree.pos, "function declaration is not allowed here.");
         if (codeData.testFunction(tree.name))
@@ -701,7 +702,7 @@ public final class Gen implements Visitor {
         int a = tree.params.size() - tree.defaults.size();
 
         for (int i = 0; i < tree.defaults.size() ; i++) {
-            LiteralExpression l = (LiteralExpression) tree.defaults.get(i);
+            Literal l = (Literal) tree.defaults.get(i);
             code.get_cpb().putDefaultLocalEntry(a + i, TreeInfo.resolveLiteral(code, l));
         }
 
@@ -737,7 +738,7 @@ public final class Gen implements Visitor {
 //                    : new Iflt(((IntExpression) expression.rhs).value));
 //            code.decStack();
 //        } else {
-//            visitBinary(expression);
+//            visitBinaryOp(expression);
 //            code.addFlow(TreeInfo.line(expression), ListDequeUtils.peekLastInt(conditionalChains),
 //                    invertCond ? new Ifcmpge() : new Ifcmplt());
 //            code.decStack(2);
@@ -763,7 +764,7 @@ public final class Gen implements Visitor {
 //                    : new Ifgt(((IntExpression) expression.rhs).value));
 //            code.decStack();
 //        } else {
-//            visitBinary(expression);
+//            visitBinaryOp(expression);
 //            code.addFlow(TreeInfo.line(expression), ListDequeUtils.peekLastInt(conditionalChains),
 //                    invertCond ? new Ifcmpgt() : new Ifcmple());
 //            code.decStack(2);
@@ -774,7 +775,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitIf(IfStatement statement) {
+    public void visitIf(If statement) {
         if (statement.elseBody == null) {
             pushMakeConditionChain();
             generateCondition(statement.cond);
@@ -853,7 +854,7 @@ public final class Gen implements Visitor {
 //                    : new Ifge(((IntExpression) expression.rhs).value));
 //            code.decStack();
 //        } else {
-//            visitBinary(expression);
+//            visitBinaryOp(expression);
 //            code.addFlow(TreeInfo.line(expression), ListDequeUtils.peekLastInt(conditionalChains),
 //                    invertCond ? new Ifcmplt() : new Ifcmpge());
 //            code.decStack(2);
@@ -1046,7 +1047,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitParens(ParensExpression expression) {
+    public void visitParens(Parens expression) {
         // todo: выбрасывается AssertionError
         //throw new AssertionError(
         //        "all brackets should have been removed in ConstantFolder");
@@ -1057,7 +1058,7 @@ public final class Gen implements Visitor {
         generateUnary(expression);
     }
 
-    private void generateUnary(UnaryExpression tree) {
+    private void generateUnary(UnaryOp tree) {
         if (tree instanceof IncreaseExpression) {
             switch (tree.getTag()) {
                 case POST_DEC:
@@ -1145,7 +1146,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitReturn(ReturnStatement statement) {
+    public void visitReturn(Tree.Return statement) {
         if (isNull(statement.expr)) {
             emitRetnull();
         } else {
@@ -1179,7 +1180,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitTernary(TernaryExpression expression) {
+    public void visitTernaryOp(TernaryOp expression) {
         int el = pushMakeConditionChain();
         int ex = code.makeChain();
 
@@ -1207,7 +1208,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitVariable(VariableExpression expression) {
+    public void visitVariable(Var expression) {
         String name = expression.name;
         code.putPos(expression.pos);
         if (codeData.testConstant(name)) {
@@ -1218,7 +1219,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitWhile(WhileStatement statement) {
+    public void visitWhileLoop(WhileLoop statement) {
         generateLoop(statement, null, statement.cond, null, statement.body, true);
     }
 
@@ -1272,22 +1273,22 @@ public final class Gen implements Visitor {
     }
 
     @Deprecated
-    public void visitBinary(BinaryExpression expression) {
+    public void visitBinaryOp(BinaryOp expression) {
         generateBinary(expression);
     }
 
     @Deprecated
-    public void visitUnary(UnaryExpression expression) {
+    public void visitUnaryOp(UnaryOp expression) {
         generateUnary(expression);
     }
 
     @Override
-    public void visitAssign(AssignmentExpression tree) {
+    public void visitAssignOp(AssignOp tree) {
         generateAssignment(tree);
     }
 
     @Override
-    public void visitLiteral(LiteralExpression tree) {
+    public void visitLiteral(Literal tree) {
         if (tree.isInteger()) {
             emitPushLong(tree.longValue());
         } else if (tree.isFloatingPoint()) {
@@ -1332,7 +1333,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitDiscarded(DiscardedExpression expression) {
+    public void visitDiscarded(Discarded expression) {
         visitStatement(expression.expression);
         switch (expression.expression.getTag()) {
             case ASG: case ASG_ADD: case ASG_SUB: case ASG_MUL:
@@ -1346,12 +1347,12 @@ public final class Gen implements Visitor {
         }
     }
 
-    private void generateAssignment(AssignmentExpression expression) {
+    private void generateAssignment(AssignOp expression) {
 //        Expression var = expression.var.child();
 //        checkAssignable(var);
 //        int line = line(expression);
-//        if (var instanceof ArrayAccessExpression) {
-//            ArrayAccessExpression var0 = (ArrayAccessExpression) var;
+//        if (var instanceof ArrayAccess) {
+//            ArrayAccess var0 = (ArrayAccess) var;
 //            visitExpression(var0.hs);
 //            visitExpression(var0.key);
 //            if (state != null) {
@@ -1367,7 +1368,7 @@ public final class Gen implements Visitor {
 //                // к началу файла, то это было бы некорректно для таблицы линий
 //                emitDup_x2(line(var0.key));
 //            emitAStore(line);
-//        } else if (var instanceof VariableExpression) {
+//        } else if (var instanceof Var) {
 //            if (state != null) {
 //                visitExpression(var);
 //                state.emit(line);
@@ -1377,7 +1378,7 @@ public final class Gen implements Visitor {
 //                    emitDup(line(var));
 //                }
 //            }
-//            emitVStore(line, ((VariableExpression) var).name);
+//            emitVStore(line, ((Var) var).name);
 //        }
 
         Expression lhs = expression.var;
@@ -1385,7 +1386,7 @@ public final class Gen implements Visitor {
 
         switch (lhs.getTag()) {
             case ARRAY_ACCESS: {
-                ArrayAccessExpression arrayAccess = (ArrayAccessExpression) lhs;
+                ArrayAccess arrayAccess = (ArrayAccess) lhs;
                 code.putPos(arrayAccess.pos);
                 visitExpression(arrayAccess.array);
                 visitExpression(arrayAccess.key);
@@ -1430,7 +1431,7 @@ public final class Gen implements Visitor {
                 break;
             }
             case VARIABLE: {
-                VariableExpression variable = (VariableExpression) lhs;
+                Var variable = (Var) lhs;
                 if (expression.hasTag(Tag.ASG_NULLCOALESCE)) {
                     int ex = code.makeChain();
                     visitExpression(lhs);
@@ -1506,8 +1507,8 @@ public final class Gen implements Visitor {
 //        Expression hs = expression.hs.child();
 //        checkAssignable(hs);
 //        int line = line(expression);
-//        if (hs instanceof ArrayAccessExpression) {
-//            ArrayAccessExpression hs0 = (ArrayAccessExpression) hs;
+//        if (hs instanceof ArrayAccess) {
+//            ArrayAccess hs0 = (ArrayAccess) hs;
 //            visitExpression(hs0.hs);
 //            visitExpression(hs0.key);
 //            emitDup2(line(expression));
@@ -1522,8 +1523,8 @@ public final class Gen implements Visitor {
 //                emitDupX2(line(hs0.key));
 //            }
 //            emitAStore(line);
-//        } else if (hs instanceof VariableExpression) {
-//            String name = ((VariableExpression) hs).name;
+//        } else if (hs instanceof Var) {
+//            String name = ((Var) hs).name;
 //            if (isPost && (isUsed())) {
 //                emitVLoad(line, name);
 //            }
@@ -1539,7 +1540,7 @@ public final class Gen implements Visitor {
 
         switch (hs.getTag()) {
             case ARRAY_ACCESS: {
-                ArrayAccessExpression arrayAccess = (ArrayAccessExpression) hs;
+                ArrayAccess arrayAccess = (ArrayAccess) hs;
                 code.putPos(arrayAccess.pos);
                 visitExpression(arrayAccess.array);
                 visitExpression(arrayAccess.key);
@@ -1558,7 +1559,7 @@ public final class Gen implements Visitor {
                 break;
             }
             case VARIABLE: {
-                VariableExpression variable = (VariableExpression) hs;
+                Var variable = (Var) hs;
                 if (isUsed() && (expression.hasTag(Tag.POST_INC) || expression.hasTag(Tag.POST_DEC))) {
                     variable.accept(this);
                 }
@@ -1678,7 +1679,7 @@ public final class Gen implements Visitor {
         state = prev_state;
     }
     private void emitReturn() {
-        code.addInstruction(Return.RETURN, -1);
+        code.addInstruction(jua.interpreter.instructions.Return.RETURN, -1);
         code.dead();
     }
 

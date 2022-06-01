@@ -26,10 +26,10 @@ public class Lower implements Visitor {
     private <T extends Tree> T foldBody(Statement body) {
         if (body == null) return null;
         body.accept(this);
-        if (formalExpression != null && body.getClass() != BlockStatement.class) {
-            result = new BlockStatement(formalExpression.pos, new ArrayList<Statement>() {
+        if (formalExpression != null && body.getClass() != Block.class) {
+            result = new Block(formalExpression.pos, new ArrayList<Statement>() {
                 {
-                    add(new DiscardedExpression(formalExpression.pos, formalExpression));
+                    add(new Discarded(formalExpression.pos, formalExpression));
                     formalExpression = null;
                     add(body);
                 }
@@ -58,23 +58,23 @@ public class Lower implements Visitor {
 
     @Override
     public void visitAdd(AddExpression expression) {
-        visitBinary(expression);
+        visitBinaryOp(expression);
     }
 
     @Override
     public void visitAnd(AndExpression expression) {
-        visitBinary(expression);
+        visitBinaryOp(expression);
     }
 
     @Override
-    public void visitArrayAccess(ArrayAccessExpression expression) {
+    public void visitArrayAccess(ArrayAccess expression) {
         expression.array = getLowerExpression(expression.array);
         expression.key = getLowerExpression(expression.key);
         result = expression;
     }
 
     @Override
-    public void visitArray(ArrayExpression expression) {
+    public void visitArray(ArrayLiteral expression) {
         Map<Expression, Expression> map = new LinkedHashMap<>();
         expression.map.forEach((key, value) -> {
             if (key.isEmpty()) {
@@ -118,7 +118,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitAssign(AssignExpression expression) {
+    public void visitAssignOp(AssignExpression expression) {
         visitAssignment(expression);
     }
 
@@ -149,26 +149,26 @@ public class Lower implements Visitor {
 
     @Override
     public void visitBitAnd(BitAndExpression expression) {
-        visitBinary(expression);
+        visitBinaryOp(expression);
     }
 
     @Override
     public void visitBitNot(BitNotExpression expression) {
-        visitUnary(expression);
+        visitUnaryOp(expression);
     }
 
     @Override
     public void visitBitOr(BitOrExpression expression) { expression.lhs.accept(this);
-        visitBinary(expression);
+        visitBinaryOp(expression);
     }
 
     @Override
     public void visitBitXor(BitXorExpression expression) {
-        visitBinary(expression);
+        visitBinaryOp(expression);
     }
 
     @Override
-    public void visitBlock(BlockStatement statement) {
+    public void visitBlock(Block statement) {
         // special case
         ListIterator<Statement> iterator = statement.statements.listIterator();
         Expression prevResidual = formalExpression;
@@ -179,7 +179,7 @@ public class Lower implements Visitor {
                 iterator.remove();
                 iterator.add(
                         // Остаточный результат заведомо является unused
-                        new DiscardedExpression(formalExpression.pos, formalExpression));
+                        new Discarded(formalExpression.pos, formalExpression));
                 formalExpression = null;
                 if (lower != null && !lower.hasTag(Tag.EMPTY))
                     iterator.add(lower);
@@ -195,12 +195,12 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitBreak(BreakStatement statement) {
+    public void visitBreak(Break statement) {
         nothing(statement);
     }
 
     @Override
-    public void visitCase(CaseStatement statement) {
+    public void visitCase(Case statement) {
         if (statement.expressions != null) // is not default case?
             statement.expressions = lowerList(statement.expressions);
         statement.body = getLowerStatement(statement.body);
@@ -213,7 +213,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitConstantDeclare(ConstantDeclareStatement statement) {
+    public void visitConstantDeclare(ConstantDecl statement) {
         int size = statement.names.size() & statement.expressions.size();
         for (int i = 0; i < size; i++) {
             String name = statement.names.get(i);
@@ -232,17 +232,17 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitContinue(ContinueStatement statement) {
+    public void visitContinue(Continue statement) {
         nothing(statement);
     }
 
     @Override
     public void visitDivide(DivideExpression expression) {
-        visitBinary(expression);
+        visitBinaryOp(expression);
     }
 
     @Override
-    public void visitDo(DoStatement tree) {
+    public void visitDoLoop(DoLoop tree) {
         tree.body = foldBody(tree.body);
         tree.cond = getLowerExpression(tree.cond);
 
@@ -274,7 +274,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitFallthrough(FallthroughStatement statement) {
+    public void visitFallthrough(Fallthrough statement) {
         nothing(statement);
     }
 
@@ -289,14 +289,14 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitFor(ForStatement tree) {
+    public void visitFor(ForLoop tree) {
         if (tree.init != null) tree.init = lowerList(tree.init);
 
         tree.cond = getLowerExpression(tree.cond);
 
         if (isFalse(tree.cond)) {
             // todo: Возможно, здесь стоит использовать CommaExpression
-            result = new BlockStatement(tree.pos, tree.init.stream()
+            result = new Block(tree.pos, tree.init.stream()
                     .map(expr -> (Statement) expr)
                     .collect(Collectors.toList()));
             return;
@@ -311,13 +311,13 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitFunctionCall(FunctionCallExpression expression) {
+    public void visitInvocation(Invocation expression) {
         expression.args = lowerList(expression.args);
         result = expression;
     }
 
     @Override
-    public void visitFunctionDefine(FunctionDefineStatement statement) {
+    public void visitFunctionDecl(FunctionDecl statement) {
         statement.defaults = lowerList(statement.defaults);
         statement.body = foldBody(statement.body);
         result = statement;
@@ -360,7 +360,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitIf(IfStatement tree) {
+    public void visitIf(If tree) {
         tree.cond = getLowerExpression(tree.cond);
 
         if (isTrue(tree.cond)) {
@@ -383,7 +383,7 @@ public class Lower implements Visitor {
 
     @Override
     public void visitLeftShift(ShiftLeftExpression expression) {
-        visitBinary(expression);
+        visitBinaryOp(expression);
     }
 
     @Override
@@ -406,17 +406,17 @@ public class Lower implements Visitor {
 
     @Override
     public void visitLess(LessExpression expression) {
-        visitBinary(expression);
+        visitBinaryOp(expression);
     }
 
     @Override
     public void visitMultiply(MultiplyExpression expression) {
-        visitBinary(expression);
+        visitBinaryOp(expression);
     }
 
     @Override
     public void visitNegative(NegativeExpression expression) {
-        visitUnary(expression);
+        visitUnaryOp(expression);
     }
 
     @Override
@@ -493,7 +493,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitParens(ParensExpression expression) {
+    public void visitParens(Parens expression) {
         // Удаление скобок
         result = getLowerExpression(expression.expr);
     }
@@ -543,11 +543,11 @@ public class Lower implements Visitor {
 
     @Override
     public void visitRemainder(RemainderExpression expression) {
-        visitBinary(expression);
+        visitBinaryOp(expression);
     }
 
     @Override
-    public void visitReturn(ReturnStatement statement) {
+    public void visitReturn(Return statement) {
         if ((statement.expr) != null) {
             statement.expr = getLowerExpression(statement.expr);
         }
@@ -556,7 +556,7 @@ public class Lower implements Visitor {
 
     @Override
     public void visitRightShift(ShiftRightExpression expression) {
-        visitBinary(expression);
+        visitBinaryOp(expression);
     }
 
     @Override
@@ -566,18 +566,18 @@ public class Lower implements Visitor {
 
     @Override
     public void visitSubtract(SubtractExpression expression) {
-        visitBinary(expression);
+        visitBinaryOp(expression);
     }
 
     @Override
-    public void visitSwitch(SwitchStatement statement) {
+    public void visitSwitch(Switch statement) {
         statement.selector = getLowerExpression(statement.selector);
         statement.cases = lowerList(statement.cases);
         result = statement;
     }
 
     @Override
-    public void visitTernary(TernaryExpression expression) {
+    public void visitTernaryOp(TernaryOp expression) {
         Expression cond = getLowerExpression(expression.cond).child();
         Expression lhs = getLowerExpression(expression.lhs);
         Expression rhs = getLowerExpression(expression.rhs);
@@ -601,7 +601,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitVariable(VariableExpression expression) {
+    public void visitVariable(Var expression) {
         if (literalConstants.containsKey(expression.name)) {
             result = literalConstants.get(expression.name).copy(expression.pos);
         } else {
@@ -610,7 +610,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitWhile(WhileStatement tree) {
+    public void visitWhileLoop(WhileLoop tree) {
         tree.cond = getLowerExpression(tree.cond);
 
         if (isTrue(tree.cond)) {
@@ -624,13 +624,13 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitDiscarded(DiscardedExpression expression) {
+    public void visitDiscarded(Discarded expression) {
         expression.expression = getLowerExpression(expression.expression);
         result = expression;
     }
 
     @Override
-    public void visitBinary(BinaryExpression tree) {
+    public void visitBinaryOp(BinaryOp tree) {
         if (!tree.lhs.hasTag(Tag.LITERAL) || !tree.rhs.hasTag(Tag.LITERAL)) {
             result = tree;
             return;
@@ -652,21 +652,21 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitUnary(UnaryExpression tree) {
+    public void visitUnaryOp(UnaryOp tree) {
         result = tree;
     }
 
     @Override
-    public void visitAssign(AssignmentExpression tree) {
+    public void visitAssignOp(AssignOp tree) {
         // todo: task for JavaKira
     }
 
     @Override
-    public void visitLiteral(LiteralExpression tree) {
+    public void visitLiteral(Literal tree) {
         result = tree;
     }
 
-    private void visitAssignment(AssignmentExpression expression) {
+    private void visitAssignment(AssignOp expression) {
         checkFolding(expression.var);
         expression.var = getLowerExpression(expression.var).child();
         expression.expr = getLowerExpression(expression.expr).child();
@@ -681,21 +681,21 @@ public class Lower implements Visitor {
 
     private void checkFolding(Expression expression) {
         expression = expression.child();
-        if (!(expression instanceof VariableExpression)) {
+        if (!(expression instanceof Var)) {
             return;
         }
-        if (literalConstants.containsKey(((VariableExpression) expression).name)) {
+        if (literalConstants.containsKey(((Var) expression).name)) {
             throw new CompileError("assignment to constant is not allowed.", expression.pos);
         }
     }
 
-    private void lowerBinary(BinaryExpression expression, Expression lhs, Expression rhs) {
+    private void lowerBinary(BinaryOp expression, Expression lhs, Expression rhs) {
         expression.lhs = lhs;
         expression.rhs = rhs;
         result = expression;
     }
 
-    private void lowerUnary(UnaryExpression expression, Expression hs) {
+    private void lowerUnary(UnaryOp expression, Expression hs) {
         expression.hs = hs;
         result = expression;
     }
@@ -768,130 +768,130 @@ public class Lower implements Visitor {
         }
     }
 
-    private static Expression foldShiftLeft(BinaryExpression tree) {
-        Operand lhs = TreeInfo.resolveLiteral((LiteralExpression) tree.lhs);
-        Operand rhs = TreeInfo.resolveLiteral((LiteralExpression) tree.rhs);
+    private static Expression foldShiftLeft(BinaryOp tree) {
+        Operand lhs = TreeInfo.resolveLiteral((Literal) tree.lhs);
+        Operand rhs = TreeInfo.resolveLiteral((Literal) tree.rhs);
 
         if (lhs.isLong() && rhs.isLong()) {
-            return new LiteralExpression(tree.lhs.pos, lhs.longValue() << rhs.longValue());
+            return new Literal(tree.lhs.pos, lhs.longValue() << rhs.longValue());
         }
         return tree;
     }
 
-    private static Expression foldShiftRight(BinaryExpression tree) {
-        Operand lhs = TreeInfo.resolveLiteral((LiteralExpression) tree.lhs);
-        Operand rhs = TreeInfo.resolveLiteral((LiteralExpression) tree.rhs);
+    private static Expression foldShiftRight(BinaryOp tree) {
+        Operand lhs = TreeInfo.resolveLiteral((Literal) tree.lhs);
+        Operand rhs = TreeInfo.resolveLiteral((Literal) tree.rhs);
 
         if (lhs.isLong() && rhs.isLong()) {
-            return new LiteralExpression(tree.lhs.pos, lhs.longValue() >> rhs.longValue());
+            return new Literal(tree.lhs.pos, lhs.longValue() >> rhs.longValue());
         }
         return tree;
     }
 
-    private static Expression foldBitwiseDisjunction(BinaryExpression tree) {
-        Operand lhs = TreeInfo.resolveLiteral((LiteralExpression) tree.lhs);
-        Operand rhs = TreeInfo.resolveLiteral((LiteralExpression) tree.rhs);
+    private static Expression foldBitwiseDisjunction(BinaryOp tree) {
+        Operand lhs = TreeInfo.resolveLiteral((Literal) tree.lhs);
+        Operand rhs = TreeInfo.resolveLiteral((Literal) tree.rhs);
 
         if (lhs.isLong() && rhs.isLong()) {
-            return new LiteralExpression(tree.lhs.pos, lhs.longValue() & rhs.longValue());
+            return new Literal(tree.lhs.pos, lhs.longValue() & rhs.longValue());
         }
         if (lhs.isBoolean() && rhs.isBoolean()) {
-            return new LiteralExpression(tree.lhs.pos, lhs.booleanValue() & rhs.booleanValue());
+            return new Literal(tree.lhs.pos, lhs.booleanValue() & rhs.booleanValue());
         }
         return tree;
     }
 
-    private static Expression foldBitwiseConjunction(BinaryExpression tree) {
-        Operand lhs = TreeInfo.resolveLiteral((LiteralExpression) tree.lhs);
-        Operand rhs = TreeInfo.resolveLiteral((LiteralExpression) tree.rhs);
+    private static Expression foldBitwiseConjunction(BinaryOp tree) {
+        Operand lhs = TreeInfo.resolveLiteral((Literal) tree.lhs);
+        Operand rhs = TreeInfo.resolveLiteral((Literal) tree.rhs);
 
         if (lhs.isLong() && rhs.isLong()) {
-            return new LiteralExpression(tree.lhs.pos, lhs.longValue() | rhs.longValue());
+            return new Literal(tree.lhs.pos, lhs.longValue() | rhs.longValue());
         }
         if (lhs.isBoolean() && rhs.isBoolean()) {
-            return new LiteralExpression(tree.lhs.pos, lhs.booleanValue() | rhs.booleanValue());
+            return new Literal(tree.lhs.pos, lhs.booleanValue() | rhs.booleanValue());
         }
         return tree;
     }
 
-    private static Expression foldBitwiseXor(BinaryExpression tree) {
-        Operand lhs = TreeInfo.resolveLiteral((LiteralExpression) tree.lhs);
-        Operand rhs = TreeInfo.resolveLiteral((LiteralExpression) tree.rhs);
+    private static Expression foldBitwiseXor(BinaryOp tree) {
+        Operand lhs = TreeInfo.resolveLiteral((Literal) tree.lhs);
+        Operand rhs = TreeInfo.resolveLiteral((Literal) tree.rhs);
 
         if (lhs.isLong() && rhs.isLong()) {
-            return new LiteralExpression(tree.lhs.pos, lhs.longValue() ^ rhs.longValue());
+            return new Literal(tree.lhs.pos, lhs.longValue() ^ rhs.longValue());
         }
         if (lhs.isBoolean() && rhs.isBoolean()) {
-            return new LiteralExpression(tree.lhs.pos, lhs.booleanValue() ^ rhs.booleanValue());
+            return new Literal(tree.lhs.pos, lhs.booleanValue() ^ rhs.booleanValue());
         }
         return tree;
     }
 
 
-    private static Expression foldAddition(BinaryExpression tree) {
-        Operand lhs = TreeInfo.resolveLiteral((LiteralExpression) tree.lhs);
-        Operand rhs = TreeInfo.resolveLiteral((LiteralExpression) tree.rhs);
+    private static Expression foldAddition(BinaryOp tree) {
+        Operand lhs = TreeInfo.resolveLiteral((Literal) tree.lhs);
+        Operand rhs = TreeInfo.resolveLiteral((Literal) tree.rhs);
 
         if (lhs.isLong() && rhs.isLong()) {
-            return new LiteralExpression(tree.lhs.pos, lhs.longValue() + rhs.longValue());
+            return new Literal(tree.lhs.pos, lhs.longValue() + rhs.longValue());
         }
         if (lhs.isNumber() && rhs.isNumber()) {
-            return new LiteralExpression(tree.lhs.pos, lhs.doubleValue() + rhs.doubleValue());
+            return new Literal(tree.lhs.pos, lhs.doubleValue() + rhs.doubleValue());
         }
         return tree;
     }
 
-    private static Expression foldDivision(BinaryExpression tree) {
-        Operand lhs = TreeInfo.resolveLiteral((LiteralExpression) tree.lhs);
-        Operand rhs = TreeInfo.resolveLiteral((LiteralExpression) tree.rhs);
+    private static Expression foldDivision(BinaryOp tree) {
+        Operand lhs = TreeInfo.resolveLiteral((Literal) tree.lhs);
+        Operand rhs = TreeInfo.resolveLiteral((Literal) tree.rhs);
 
         if (lhs.isLong() && rhs.isLong()) {
             if (rhs.longValue() == 0L) return tree; // do not fold division by zero!
-            return new LiteralExpression(tree.lhs.pos, lhs.longValue() / rhs.longValue());
+            return new Literal(tree.lhs.pos, lhs.longValue() / rhs.longValue());
         }
         if (lhs.isNumber() && rhs.isNumber()) {
-            return new LiteralExpression(tree.lhs.pos, lhs.doubleValue() / rhs.doubleValue());
+            return new Literal(tree.lhs.pos, lhs.doubleValue() / rhs.doubleValue());
         }
         return tree;
     }
 
-    private static Expression foldSubtraction(BinaryExpression tree) {
-        Operand lhs = TreeInfo.resolveLiteral((LiteralExpression) tree.lhs);
-        Operand rhs = TreeInfo.resolveLiteral((LiteralExpression) tree.rhs);
+    private static Expression foldSubtraction(BinaryOp tree) {
+        Operand lhs = TreeInfo.resolveLiteral((Literal) tree.lhs);
+        Operand rhs = TreeInfo.resolveLiteral((Literal) tree.rhs);
 
         if (lhs.isLong() && rhs.isLong()) {
-            return new LiteralExpression(tree.lhs.pos, lhs.longValue() - rhs.longValue());
+            return new Literal(tree.lhs.pos, lhs.longValue() - rhs.longValue());
         }
         if (lhs.isNumber() && rhs.isNumber()) {
-            return new LiteralExpression(tree.lhs.pos, lhs.doubleValue() - rhs.doubleValue());
+            return new Literal(tree.lhs.pos, lhs.doubleValue() - rhs.doubleValue());
         }
         return tree;
     }
 
-    private static Expression foldMultiplication(BinaryExpression tree) {
-        Operand lhs = TreeInfo.resolveLiteral((LiteralExpression) tree.lhs);
-        Operand rhs = TreeInfo.resolveLiteral((LiteralExpression) tree.rhs);
+    private static Expression foldMultiplication(BinaryOp tree) {
+        Operand lhs = TreeInfo.resolveLiteral((Literal) tree.lhs);
+        Operand rhs = TreeInfo.resolveLiteral((Literal) tree.rhs);
 
         if (lhs.isLong() && rhs.isLong()) {
-            return new LiteralExpression(tree.lhs.pos, lhs.longValue() * rhs.longValue());
+            return new Literal(tree.lhs.pos, lhs.longValue() * rhs.longValue());
         }
         if (lhs.isNumber() && rhs.isNumber()) {
-            return new LiteralExpression(tree.lhs.pos, lhs.doubleValue() * rhs.doubleValue());
+            return new Literal(tree.lhs.pos, lhs.doubleValue() * rhs.doubleValue());
         }
         return tree;
     }
 
-    private static Expression foldRemainder(BinaryExpression tree) {
-        Operand lhs = TreeInfo.resolveLiteral((LiteralExpression) tree.lhs);
-        Operand rhs = TreeInfo.resolveLiteral((LiteralExpression) tree.rhs);
+    private static Expression foldRemainder(BinaryOp tree) {
+        Operand lhs = TreeInfo.resolveLiteral((Literal) tree.lhs);
+        Operand rhs = TreeInfo.resolveLiteral((Literal) tree.rhs);
 
         if (lhs.isLong() && rhs.isLong()) {
             if (rhs.longValue() == 0L) return tree; // do not fold division by zero!
-            return new LiteralExpression(tree.lhs.pos, lhs.longValue() % rhs.longValue());
+            return new Literal(tree.lhs.pos, lhs.longValue() % rhs.longValue());
         }
         if (lhs.isNumber() && rhs.isNumber()) {
             if (rhs.doubleValue() == 0.0D) return tree; // do not fold division by zero!
-            return new LiteralExpression(tree.lhs.pos, lhs.doubleValue() % rhs.doubleValue());
+            return new Literal(tree.lhs.pos, lhs.doubleValue() % rhs.doubleValue());
         }
         return tree;
     }

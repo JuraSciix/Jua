@@ -16,7 +16,7 @@ public final class TreeInfo {
         Expression current = tree;
 
         while (current.hasTag(Tag.PARENS)) {
-            current = ((ParensExpression) current).expr;
+            current = ((Parens) current).expr;
         }
 
         return current;
@@ -29,13 +29,13 @@ public final class TreeInfo {
     public static boolean isShortIntegerLiteral(Expression tree) {
         if (tree == null) return false;
         if (!tree.hasTag(Tag.LITERAL)) return false;
-        LiteralExpression literal = (LiteralExpression) tree;
+        Literal literal = (Literal) tree;
         if (!(literal.value instanceof Number)) return false;
         long value = ((Number) literal.value).longValue();
         return (value >= Short.MIN_VALUE && value <= Short.MAX_VALUE);
     }
 
-    public static int resolveLiteral(Code code, LiteralExpression expression) {
+    public static int resolveLiteral(Code code, Literal expression) {
         Object value = expression.value;
         if (value instanceof Long || value instanceof Integer) return code.resolveLong(((Number) value).longValue());
         if (value instanceof Double || value instanceof Float)
@@ -49,7 +49,7 @@ public final class TreeInfo {
         return expr == null || expr instanceof NullExpression;
     }
 
-    public static Operand resolveLiteral(LiteralExpression expression) {
+    public static Operand resolveLiteral(Literal expression) {
         Object value = expression.value;
         if (value instanceof Long || value instanceof Integer) return LongOperand.valueOf(((Number) value).longValue());
         if (value instanceof Double || value instanceof Float)

@@ -120,7 +120,7 @@ public abstract class Tree {
         }
     }
 
-    public static class AddExpression extends BinaryExpression {
+    public static class AddExpression extends BinaryOp {
 
         public AddExpression(int pos, Expression lhs, Expression rhs) {
             super(pos, Tag.ADD, lhs, rhs);
@@ -139,12 +139,12 @@ public abstract class Tree {
         }
     }
 
-    public static class ArrayAccessExpression extends Expression {
+    public static class ArrayAccess extends Expression {
 
         public Expression array;
         public Expression key;
 
-        public ArrayAccessExpression(int pos, Expression hs, Expression key) {
+        public ArrayAccess(int pos, Expression hs, Expression key) {
             super(pos);
             this.array = hs;
             this.key = key;
@@ -161,12 +161,12 @@ public abstract class Tree {
         }
     }
 
-    public static class ArrayExpression extends Expression {
+    public static class ArrayLiteral extends Expression {
 
         // todo: Заменить это на List со своей структурой
         public Map<Expression, Expression> map;
 
-        public ArrayExpression(int pos, Map<Expression, Expression> map) {
+        public ArrayLiteral(int pos, Map<Expression, Expression> map) {
             super(pos);
             this.map = map;
         }
@@ -192,7 +192,7 @@ public abstract class Tree {
         }
     }
 
-    public static class AssignAddExpression extends AssignmentExpression {
+    public static class AssignAddExpression extends AssignOp {
 
         public AssignAddExpression(int pos, Expression var, Expression expr) {
             super(pos, var, expr);
@@ -209,7 +209,7 @@ public abstract class Tree {
         }
     }
 
-    public static class AssignBitAndExpression extends AssignmentExpression {
+    public static class AssignBitAndExpression extends AssignOp {
 
         public AssignBitAndExpression(int pos, Expression var, Expression expr) {
             super(pos, var, expr);
@@ -226,7 +226,7 @@ public abstract class Tree {
         }
     }
 
-    public static class AssignBitOrExpression extends AssignmentExpression {
+    public static class AssignBitOrExpression extends AssignOp {
 
         public AssignBitOrExpression(int pos, Expression var, Expression expr) {
             super(pos, var, expr);
@@ -243,7 +243,7 @@ public abstract class Tree {
         }
     }
 
-    public static class AssignBitXorExpression extends AssignmentExpression {
+    public static class AssignBitXorExpression extends AssignOp {
 
         public AssignBitXorExpression(int pos, Expression var, Expression expr) {
             super(pos, var, expr);
@@ -260,7 +260,7 @@ public abstract class Tree {
         }
     }
 
-    public static class AssignDivideExpression extends AssignmentExpression {
+    public static class AssignDivideExpression extends AssignOp {
 
         public AssignDivideExpression(int pos, Expression var, Expression expr) {
             super(pos, var, expr);
@@ -277,7 +277,7 @@ public abstract class Tree {
         }
     }
 
-    public static class AssignExpression extends AssignmentExpression {
+    public static class AssignExpression extends AssignOp {
 
         public AssignExpression(int pos, Expression var, Expression expr) {
             super(pos, var, expr);
@@ -290,17 +290,17 @@ public abstract class Tree {
 
         @Override
         public void accept(Visitor visitor) {
-            visitor.visitAssign(this);
+            visitor.visitAssignOp(this);
         }
     }
 
-    public abstract static class AssignmentExpression extends Expression {
+    public abstract static class AssignOp extends Expression {
 
         public Expression var;
 
         public Expression expr;
 
-        protected AssignmentExpression(int pos, Expression var, Expression expr) {
+        protected AssignOp(int pos, Expression var, Expression expr) {
             super(pos);
             this.var = var;
             this.expr = expr;
@@ -322,7 +322,7 @@ public abstract class Tree {
         }
     }
 
-    public static class AssignMultiplyExpression extends AssignmentExpression {
+    public static class AssignMultiplyExpression extends AssignOp {
 
         public AssignMultiplyExpression(int pos, Expression var, Expression expr) {
             super(pos, var, expr);
@@ -339,7 +339,7 @@ public abstract class Tree {
         }
     }
 
-    public static class AssignNullCoalesceExpression extends AssignmentExpression {
+    public static class AssignNullCoalesceExpression extends AssignOp {
 
         public AssignNullCoalesceExpression(int pos, Expression var, Expression expr) {
             super(pos, var, expr);
@@ -356,7 +356,7 @@ public abstract class Tree {
         }
     }
 
-    public static class AssignRemainderExpression extends AssignmentExpression {
+    public static class AssignRemainderExpression extends AssignOp {
 
         public AssignRemainderExpression(int pos, Expression var, Expression expr) {
             super(pos, var, expr);
@@ -373,7 +373,7 @@ public abstract class Tree {
         }
     }
 
-    public static class AssignShiftLeftExpression extends AssignmentExpression {
+    public static class AssignShiftLeftExpression extends AssignOp {
 
         public AssignShiftLeftExpression(int pos, Expression var, Expression expr) {
             super(pos, var, expr);
@@ -390,7 +390,7 @@ public abstract class Tree {
         }
     }
 
-    public static class AssignShiftRightExpression extends AssignmentExpression {
+    public static class AssignShiftRightExpression extends AssignOp {
 
         public AssignShiftRightExpression(int pos, Expression var, Expression expr) {
             super(pos, var, expr);
@@ -407,7 +407,7 @@ public abstract class Tree {
         }
     }
 
-    public static class AssignSubtractExpression extends AssignmentExpression {
+    public static class AssignSubtractExpression extends AssignOp {
 
         public AssignSubtractExpression(int pos, Expression var, Expression expr) {
             super(pos, var, expr);
@@ -424,7 +424,7 @@ public abstract class Tree {
         }
     }
 
-    public static class BinaryExpression extends Expression {
+    public static class BinaryOp extends Expression {
 
         public Tag tag;
 
@@ -432,7 +432,7 @@ public abstract class Tree {
 
         public Expression rhs;
 
-        public BinaryExpression(int pos, Tag tag, Expression lhs, Expression rhs) {
+        public BinaryOp(int pos, Tag tag, Expression lhs, Expression rhs) {
             super(pos);
             this.tag = tag;
             this.lhs = lhs;
@@ -446,43 +446,43 @@ public abstract class Tree {
 
         @Override
         public void accept(Visitor visitor) {
-            visitor.visitBinary(this);
+            visitor.visitBinaryOp(this);
         }
     }
 
-    public static class BitAndExpression extends BinaryExpression {
+    public static class BitAndExpression extends BinaryOp {
 
         public BitAndExpression(int pos, Expression lhs, Expression rhs) {
             super(pos, Tag.BITAND, lhs, rhs);
         }
     }
 
-    public static class BitNotExpression extends UnaryExpression {
+    public static class BitNotExpression extends UnaryOp {
 
         public BitNotExpression(int pos, Expression hs) {
             super(pos, Tag.BITCMPL, hs);
         }
     }
 
-    public static class BitOrExpression extends BinaryExpression {
+    public static class BitOrExpression extends BinaryOp {
 
         public BitOrExpression(int pos, Expression lhs, Expression rhs) {
             super(pos, Tag.BITOR, lhs, rhs);
         }
     }
 
-    public static class BitXorExpression extends BinaryExpression {
+    public static class BitXorExpression extends BinaryOp {
 
         public BitXorExpression(int pos, Expression lhs, Expression rhs) {
             super(pos, Tag.BITXOR, lhs, rhs);
         }
     }
 
-    public static class BlockStatement extends Statement {
+    public static class Block extends Statement {
 
         public List<Statement> statements;
 
-        public BlockStatement(int pos, List<Statement> statements) {
+        public Block(int pos, List<Statement> statements) {
             super(pos);
             this.statements = statements;
         }
@@ -498,21 +498,21 @@ public abstract class Tree {
         }
     }
 
-    public static class BooleanExpression extends LiteralExpression {
+    public static class BooleanExpression extends Literal {
 
         public BooleanExpression(int pos, boolean value) {
             super(pos, value);
         }
     }
 
-    public static class BreakStatement extends Statement {
+    public static class Break extends Statement {
 
         @Override
         public Tag getTag() {
             return Tag.BREAK;
         }
 
-        public BreakStatement(int pos) {
+        public Break(int pos) {
             super(pos);
         }
 
@@ -522,13 +522,13 @@ public abstract class Tree {
         }
     }
 
-    public static class CaseStatement extends Statement {
+    public static class Case extends Statement {
 
         public List<Expression> expressions;
 
         public Statement body;
 
-        public CaseStatement(int pos, List<Expression> expressions, Statement body) {
+        public Case(int pos, List<Expression> expressions, Statement body) {
             super(pos);
             this.expressions = expressions;
             this.body = body;
@@ -546,14 +546,14 @@ public abstract class Tree {
     }
 
     // todo: remove
-    public static class CloneExpression extends UnaryExpression {
+    public static class CloneExpression extends UnaryOp {
 
         public CloneExpression(int pos, Expression hs) {
             super(pos, Tag.CLONE, hs);
         }
     }
 
-    public abstract static class ConditionalExpression extends BinaryExpression {
+    public abstract static class ConditionalExpression extends BinaryOp {
 
         protected ConditionalExpression(int pos, Tag tag, Expression lhs, Expression rhs) {
             super(pos, tag, lhs, rhs);
@@ -565,13 +565,13 @@ public abstract class Tree {
         }
     }
 
-    public static class ConstantDeclareStatement extends Statement {
+    public static class ConstantDecl extends Statement {
 
         public List<String> names;
 
         public List<Expression> expressions;
 
-        public ConstantDeclareStatement(int pos, List<String> names, List<Expression> expressions) {
+        public ConstantDecl(int pos, List<String> names, List<Expression> expressions) {
             super(pos);
             this.names = names;
             this.expressions = expressions;
@@ -588,14 +588,14 @@ public abstract class Tree {
         }
     }
 
-    public static class ContinueStatement extends Statement {
+    public static class Continue extends Statement {
 
         @Override
         public Tag getTag() {
             return Tag.CONTINUE;
         }
 
-        public ContinueStatement(int pos) {
+        public Continue(int pos) {
             super(pos);
         }
 
@@ -605,7 +605,7 @@ public abstract class Tree {
         }
     }
 
-    public static class DivideExpression extends BinaryExpression {
+    public static class DivideExpression extends BinaryOp {
 
         public DivideExpression(int pos, Expression lhs, Expression rhs) {
             super(pos, Tag.DIV, lhs, rhs);
@@ -613,13 +613,13 @@ public abstract class Tree {
 
     }
 
-    public static class DoStatement extends Statement {
+    public static class DoLoop extends Statement {
 
         public Statement body;
 
         public Expression cond;
 
-        public DoStatement(int pos, Statement body, Expression cond) {
+        public DoLoop(int pos, Statement body, Expression cond) {
             super(pos);
             this.body = body;
             this.cond = cond;
@@ -632,7 +632,7 @@ public abstract class Tree {
 
         @Override
         public void accept(Visitor visitor) {
-            visitor.visitDo(this);
+            visitor.visitDoLoop(this);
         }
     }
 
@@ -685,7 +685,7 @@ public abstract class Tree {
         public boolean isAssignable() {
             switch (getTag()) {
                 case PARENS:
-                    return ((ParensExpression) this).expr.isAssignable();
+                    return ((Parens) this).expr.isAssignable();
                 case VARIABLE:
                 case ARRAY_ACCESS:
                     return true;
@@ -719,14 +719,14 @@ public abstract class Tree {
         }
     }
 
-    public static class FallthroughStatement extends Statement {
+    public static class Fallthrough extends Statement {
 
         @Override
         public Tag getTag() {
             return Tag.FALLTHROUGH;
         }
 
-        public FallthroughStatement(int pos) {
+        public Fallthrough(int pos) {
             super(pos);
         }
 
@@ -743,14 +743,14 @@ public abstract class Tree {
         }
     }
 
-    public static class FloatExpression extends LiteralExpression {
+    public static class FloatExpression extends Literal {
 
         public FloatExpression(int pos, double value) {
             super(pos, value);
         }
     }
 
-    public static class ForStatement extends Statement {
+    public static class ForLoop extends Statement {
 
         public List<Expression> init;
 
@@ -760,7 +760,7 @@ public abstract class Tree {
 
         public Statement body;
 
-        public ForStatement(int pos, List<Expression> init, Expression cond, List<Expression> step, Statement body) {
+        public ForLoop(int pos, List<Expression> init, Expression cond, List<Expression> step, Statement body) {
             super(pos);
             this.init = init;
             this.cond = cond;
@@ -779,13 +779,13 @@ public abstract class Tree {
         }
     }
 
-    public static class FunctionCallExpression extends Expression {
+    public static class Invocation extends Expression {
 
         public final String name;
 
         public List<Expression> args;
 
-        public FunctionCallExpression(int pos, String name, List<Expression> args) {
+        public Invocation(int pos, String name, List<Expression> args) {
             super(pos);
             this.name = name;
             this.args = args;
@@ -813,11 +813,11 @@ public abstract class Tree {
 
         @Override
         public void accept(Visitor visitor) {
-            visitor.visitFunctionCall(this);
+            visitor.visitInvocation(this);
         }
     }
 
-    public static class FunctionDefineStatement extends Statement {
+    public static class FunctionDecl extends Statement {
 
         // todo: Заменить строки на свои структуры (механизм уже готов, его нужно только внедрить)
 
@@ -829,11 +829,11 @@ public abstract class Tree {
 
         public Statement body;
 
-        public FunctionDefineStatement(int pos,
-                                       String name,
-                                       List<String> params,
-                                       List<Expression> defaults,
-                                       Statement body) {
+        public FunctionDecl(int pos,
+                            String name,
+                            List<String> params,
+                            List<Expression> defaults,
+                            Statement body) {
             super(pos);
             this.name = name;
             this.params = params;
@@ -848,7 +848,7 @@ public abstract class Tree {
 
         @Override
         public void accept(Visitor visitor) {
-            visitor.visitFunctionDefine(this);
+            visitor.visitFunctionDecl(this);
         }
     }
 
@@ -866,7 +866,7 @@ public abstract class Tree {
         }
     }
 
-    public static class IfStatement extends Statement {
+    public static class If extends Statement {
 
         public Expression cond;
 
@@ -874,11 +874,11 @@ public abstract class Tree {
 
         public Statement elseBody;
 
-        public IfStatement(int pos, Expression cond, Statement body) {
+        public If(int pos, Expression cond, Statement body) {
             this(pos, cond, body, null);
         }
 
-        public IfStatement(int pos, Expression cond, Statement body, Statement elseBody) {
+        public If(int pos, Expression cond, Statement body, Statement elseBody) {
             super(pos);
             this.cond = cond;
             this.body = body;
@@ -896,18 +896,18 @@ public abstract class Tree {
         }
     }
 
-    public abstract static class IncreaseExpression extends UnaryExpression {
+    public abstract static class IncreaseExpression extends UnaryOp {
 
         protected IncreaseExpression(int pos, Tag tag, Expression hs) {
             super(pos, tag, hs);
         }
     }
 
-    public static class LiteralExpression extends Expression {
+    public static class Literal extends Expression {
 
         public Object value;
 
-        public LiteralExpression(int pos, Object value) {
+        public Literal(int pos, Object value) {
             super(pos);
             this.value = value;
         }
@@ -939,7 +939,7 @@ public abstract class Tree {
         }
     }
 
-    public static class IntExpression extends LiteralExpression {
+    public static class IntExpression extends Literal {
 
         public IntExpression(int pos, long value) {
             super(pos, value);
@@ -970,14 +970,14 @@ public abstract class Tree {
         }
     }
 
-    public static class MultiplyExpression extends BinaryExpression {
+    public static class MultiplyExpression extends BinaryOp {
 
         public MultiplyExpression(int pos, Expression lhs, Expression rhs) {
             super(pos, Tag.MUL, lhs, rhs);
         }
     }
 
-    public static class NegativeExpression extends UnaryExpression {
+    public static class NegativeExpression extends UnaryOp {
 
         public NegativeExpression(int pos, Expression hs) {
             super(pos, Tag.NEG, hs);
@@ -991,21 +991,21 @@ public abstract class Tree {
         }
     }
 
-    public static class NotExpression extends UnaryExpression {
+    public static class NotExpression extends UnaryOp {
 
         public NotExpression(int pos, Expression hs) {
             super(pos, Tag.LOGCMPL ,hs);
         }
     }
 
-    public static class NullCoalesceExpression extends BinaryExpression {
+    public static class NullCoalesceExpression extends BinaryOp {
 
         public NullCoalesceExpression(int pos, Expression lhs, Expression rhs) {
             super(pos, Tag.NULLCOALESCE, lhs, rhs);
         }
     }
 
-    public static class NullExpression extends LiteralExpression {
+    public static class NullExpression extends Literal {
 
         public NullExpression(int pos) {
             super(pos, null);
@@ -1024,11 +1024,11 @@ public abstract class Tree {
         }
     }
 
-    public static class ParensExpression extends Expression {
+    public static class Parens extends Expression {
 
         public Expression expr;
 
-        public ParensExpression(int pos, Expression expr) {
+        public Parens(int pos, Expression expr) {
             super(pos);
             this.expr = expr;
         }
@@ -1065,7 +1065,7 @@ public abstract class Tree {
         }
     }
 
-    public static class PositiveExpression extends UnaryExpression {
+    public static class PositiveExpression extends UnaryOp {
 
         public PositiveExpression(int pos, Expression hs) {
             super(pos, Tag.POS, hs);
@@ -1144,14 +1144,14 @@ public abstract class Tree {
         }
     }
 
-    public static class RemainderExpression extends BinaryExpression {
+    public static class RemainderExpression extends BinaryOp {
 
         public RemainderExpression(int pos, Expression lhs, Expression rhs) {
             super(pos, Tag.REM, lhs, rhs);
         }
     }
 
-    public static class ReturnStatement extends Statement {
+    public static class Return extends Statement {
 
         public Expression expr;
 
@@ -1160,11 +1160,11 @@ public abstract class Tree {
             return Tag.RETURN;
         }
 
-        public ReturnStatement(int pos) {
+        public Return(int pos) {
             this(pos, null);
         }
 
-        public ReturnStatement(int pos, Expression expr) {
+        public Return(int pos, Expression expr) {
             super(pos);
             this.expr = expr;
         }
@@ -1175,14 +1175,14 @@ public abstract class Tree {
         }
     }
 
-    public static class ShiftLeftExpression extends BinaryExpression {
+    public static class ShiftLeftExpression extends BinaryOp {
 
         public ShiftLeftExpression(int pos, Expression lhs, Expression rhs) {
             super(pos, Tag.SL, lhs, rhs);
         }
     }
 
-    public static class ShiftRightExpression extends BinaryExpression {
+    public static class ShiftRightExpression extends BinaryOp {
 
         public ShiftRightExpression(int pos, Expression lhs, Expression rhs) {
             super(pos, Tag.SR, lhs, rhs);
@@ -1208,27 +1208,27 @@ public abstract class Tree {
         }
     }
 
-    public static class StringExpression extends LiteralExpression {
+    public static class StringExpression extends Literal {
 
         public StringExpression(int pos, String value) {
             super(pos, value);
         }
     }
 
-    public static class SubtractExpression extends BinaryExpression {
+    public static class SubtractExpression extends BinaryOp {
 
         public SubtractExpression(int pos, Expression lhs, Expression rhs) {
             super(pos, Tag.SUB, lhs, rhs);
         }
     }
 
-    public static class SwitchStatement extends Statement {
+    public static class Switch extends Statement {
 
         public Expression selector;
 
-        public List<CaseStatement> cases;
+        public List<Case> cases;
 
-        public SwitchStatement(int pos, Expression selector, List<CaseStatement> cases) {
+        public Switch(int pos, Expression selector, List<Case> cases) {
             super(pos);
             this.selector = selector;
             this.cases = cases;
@@ -1245,7 +1245,7 @@ public abstract class Tree {
         }
     }
 
-    public static class TernaryExpression extends Expression {
+    public static class TernaryOp extends Expression {
 
         public Expression cond;
 
@@ -1253,7 +1253,7 @@ public abstract class Tree {
 
         public Expression rhs;
 
-        public TernaryExpression(int pos, Expression cond, Expression lhs, Expression rhs) {
+        public TernaryOp(int pos, Expression cond, Expression lhs, Expression rhs) {
             super(pos);
             this.cond = cond;
             this.lhs = lhs;
@@ -1282,7 +1282,7 @@ public abstract class Tree {
 
         @Override
         public void accept(Visitor visitor) {
-            visitor.visitTernary(this);
+            visitor.visitTernaryOp(this);
         }
     }
 
@@ -1293,12 +1293,12 @@ public abstract class Tree {
         }
     }
 
-    public static class UnaryExpression extends Expression {
+    public static class UnaryOp extends Expression {
 
         public Tag tag;
         public Expression hs;
 
-        protected UnaryExpression(int pos, Tag tag, Expression hs) {
+        protected UnaryOp(int pos, Tag tag, Expression hs) {
             super(pos);
             this.tag = tag;
             this.hs = hs;
@@ -1311,15 +1311,15 @@ public abstract class Tree {
 
         @Override
         public void accept(Visitor visitor) {
-            visitor.visitUnary(this);
+            visitor.visitUnaryOp(this);
         }
     }
 
-    public static class DiscardedExpression extends Expression {
+    public static class Discarded extends Expression {
 
         public Expression expression;
 
-        public DiscardedExpression(int pos, Expression expression) {
+        public Discarded(int pos, Expression expression) {
             super(pos);
             this.expression = expression;
         }
@@ -1335,12 +1335,12 @@ public abstract class Tree {
         }
     }
 
-    public static class VariableExpression extends Expression {
+    public static class Var extends Expression {
 
         // todo: Заменить это на свою структуру (механизм уже готов, его нужно только внедрить)
         public final String name;
 
-        public VariableExpression(int pos, String name) {
+        public Var(int pos, String name) {
             super(pos);
             this.name = name;
         }
@@ -1376,91 +1376,13 @@ public abstract class Tree {
         }
     }
 
-    public static interface Visitor {
-        void visitCompilationUnit(CompilationUnit tree);
-        void visitAdd(AddExpression expression);
-        void visitAnd(AndExpression expression);
-        void visitArrayAccess(ArrayAccessExpression expression);
-        void visitArray(ArrayExpression expression);
-        void visitAssignAdd(AssignAddExpression expression);
-        void visitAssignBitAnd(AssignBitAndExpression expression);
-        void visitAssignBitOr(AssignBitOrExpression expression);
-        void visitAssignBitXor(AssignBitXorExpression expression);
-        void visitAssignDivide(AssignDivideExpression expression);
-        void visitAssignLeftShift(AssignShiftLeftExpression expression);
-        void visitAssign(AssignExpression expression);
-        void visitAssignMultiply(AssignMultiplyExpression expression);
-        void visitAssignNullCoalesce(AssignNullCoalesceExpression expression);
-        void visitAssignRemainder(AssignRemainderExpression expression);
-        void visitAssignRightShift(AssignShiftRightExpression expression);
-        void visitAssignSubtract(AssignSubtractExpression expression);
-        void visitBitAnd(BitAndExpression expression);
-        void visitBitNot(BitNotExpression expression);
-        void visitBitOr(BitOrExpression expression);
-        void visitBitXor(BitXorExpression expression);
-        void visitBlock(BlockStatement statement);
-        void visitBreak(BreakStatement statement);
-        void visitCase(CaseStatement statement);
-        void visitClone(CloneExpression expression);
-        void visitConstantDeclare(ConstantDeclareStatement statement);
-        void visitContinue(ContinueStatement statement);
-        void visitDivide(DivideExpression expression);
-        void visitDo(DoStatement statement);
-        void visitEqual(EqualExpression expression);
-        void visitFallthrough(FallthroughStatement statement);
-        void visitFalse(FalseExpression expression);
-        void visitFloat(FloatExpression expression);
-        void visitFor(ForStatement statement);
-        void visitFunctionCall(FunctionCallExpression expression);
-        void visitFunctionDefine(FunctionDefineStatement statement);
-        void visitGreaterEqual(GreaterEqualExpression expression);
-        void visitGreater(GreaterExpression expression);
-        void visitIf(IfStatement statement);
-        void visitInt(IntExpression expression);
-        void visitLeftShift(ShiftLeftExpression expression);
-        void visitLessEqual(LessEqualExpression expression);
-        void visitLess(LessExpression expression);
-        void visitMultiply(MultiplyExpression expression);
-        void visitNegative(NegativeExpression expression);
-        void visitNotEqual(NotEqualExpression expression);
-        void visitNot(NotExpression expression);
-        void visitNullCoalesce(NullCoalesceExpression expression);
-        void visitNull(NullExpression expression);
-        void visitOr(OrExpression expression);
-        void visitParens(ParensExpression expression);
-        void visitPositive(PositiveExpression expression);
-        void visitPostDecrement(PostDecrementExpression expression);
-        void visitPostIncrement(PostIncrementExpression expression);
-        void visitPreDecrement(PreDecrementExpression expression);
-        void visitPreIncrement(PreIncrementExpression expression);
-        @Deprecated
-        void visitPrintln(PrintlnStatement statement);
-        @Deprecated
-        void visitPrint(PrintStatement statement);
-        void visitRemainder(RemainderExpression expression);
-        void visitReturn(ReturnStatement statement);
-        void visitRightShift(ShiftRightExpression expression);
-        void visitString(StringExpression expression);
-        void visitSubtract(SubtractExpression expression);
-        void visitSwitch(SwitchStatement statement);
-        void visitTernary(TernaryExpression expression);
-        void visitTrue(TrueExpression expression);
-        void visitVariable(VariableExpression expression);
-        void visitWhile(WhileStatement statement);
-        void visitDiscarded(DiscardedExpression expression);
-        void visitBinary(BinaryExpression tree);
-        void visitUnary(UnaryExpression tree);
-        void visitAssign(AssignmentExpression tree);
-        void visitLiteral(LiteralExpression tree);
-    }
-
-    public static class WhileStatement extends Statement {
+    public static class WhileLoop extends Statement {
 
         public Expression cond;
 
         public Statement body;
 
-        public WhileStatement(int pos, Expression cond, Statement body) {
+        public WhileLoop(int pos, Expression cond, Statement body) {
             super(pos);
             this.cond = cond;
             this.body = body;
@@ -1473,7 +1395,157 @@ public abstract class Tree {
 
         @Override
         public void accept(Visitor visitor) {
-            visitor.visitWhile(this);
+            visitor.visitWhileLoop(this);
         }
+    }
+
+    public static interface Visitor {
+        void visitCompilationUnit(CompilationUnit tree);
+
+        void visitAdd(AddExpression expression);
+
+        void visitAnd(AndExpression expression);
+
+        void visitArrayAccess(ArrayAccess expression);
+
+        void visitArray(ArrayLiteral expression);
+
+        void visitAssignAdd(AssignAddExpression expression);
+
+        void visitAssignBitAnd(AssignBitAndExpression expression);
+
+        void visitAssignBitOr(AssignBitOrExpression expression);
+
+        void visitAssignBitXor(AssignBitXorExpression expression);
+
+        void visitAssignDivide(AssignDivideExpression expression);
+
+        void visitAssignLeftShift(AssignShiftLeftExpression expression);
+
+        void visitAssignOp(AssignExpression expression);
+
+        void visitAssignMultiply(AssignMultiplyExpression expression);
+
+        void visitAssignNullCoalesce(AssignNullCoalesceExpression expression);
+
+        void visitAssignRemainder(AssignRemainderExpression expression);
+
+        void visitAssignRightShift(AssignShiftRightExpression expression);
+
+        void visitAssignSubtract(AssignSubtractExpression expression);
+
+        void visitBitAnd(BitAndExpression expression);
+
+        void visitBitNot(BitNotExpression expression);
+
+        void visitBitOr(BitOrExpression expression);
+
+        void visitBitXor(BitXorExpression expression);
+
+        void visitBlock(Block statement);
+
+        void visitBreak(Break statement);
+
+        void visitCase(Case statement);
+
+        void visitClone(CloneExpression expression);
+
+        void visitConstantDeclare(ConstantDecl statement);
+
+        void visitContinue(Continue statement);
+
+        void visitDivide(DivideExpression expression);
+
+        void visitDoLoop(DoLoop statement);
+
+        void visitEqual(EqualExpression expression);
+
+        void visitFallthrough(Fallthrough statement);
+
+        void visitFalse(FalseExpression expression);
+
+        void visitFloat(FloatExpression expression);
+
+        void visitFor(ForLoop statement);
+
+        void visitInvocation(Invocation expression);
+
+        void visitFunctionDecl(FunctionDecl statement);
+
+        void visitGreaterEqual(GreaterEqualExpression expression);
+
+        void visitGreater(GreaterExpression expression);
+
+        void visitIf(If statement);
+
+        void visitInt(IntExpression expression);
+
+        void visitLeftShift(ShiftLeftExpression expression);
+
+        void visitLessEqual(LessEqualExpression expression);
+
+        void visitLess(LessExpression expression);
+
+        void visitMultiply(MultiplyExpression expression);
+
+        void visitNegative(NegativeExpression expression);
+
+        void visitNotEqual(NotEqualExpression expression);
+
+        void visitNot(NotExpression expression);
+
+        void visitNullCoalesce(NullCoalesceExpression expression);
+
+        void visitNull(NullExpression expression);
+
+        void visitOr(OrExpression expression);
+
+        void visitParens(Parens expression);
+
+        void visitPositive(PositiveExpression expression);
+
+        void visitPostDecrement(PostDecrementExpression expression);
+
+        void visitPostIncrement(PostIncrementExpression expression);
+
+        void visitPreDecrement(PreDecrementExpression expression);
+
+        void visitPreIncrement(PreIncrementExpression expression);
+
+        @Deprecated
+        void visitPrintln(PrintlnStatement statement);
+
+        @Deprecated
+        void visitPrint(PrintStatement statement);
+
+        void visitRemainder(RemainderExpression expression);
+
+        void visitReturn(Return statement);
+
+        void visitRightShift(ShiftRightExpression expression);
+
+        void visitString(StringExpression expression);
+
+        void visitSubtract(SubtractExpression expression);
+
+        void visitSwitch(Switch statement);
+
+        void visitTernaryOp(TernaryOp expression);
+
+        void visitTrue(TrueExpression expression);
+
+        void visitVariable(Var expression);
+
+        void visitWhileLoop(WhileLoop statement);
+
+        void visitDiscarded(Discarded expression);
+
+        void visitBinaryOp(BinaryOp tree);
+
+        void visitUnaryOp(UnaryOp tree);
+
+        void visitAssignOp(AssignOp tree);
+
+        void visitLiteral(Literal tree);
     }
 }
