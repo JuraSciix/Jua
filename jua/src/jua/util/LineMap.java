@@ -27,7 +27,12 @@ public class LineMap {
         this.lineMap = lineMap.toIntArray();
     }
 
+    int lb = -1, lt = -1, ln = -1;
+
     public int getLineNumber(int pos) {
+        // Мой код в тестах не нуждается B)
+
+        if (pos >= lb && pos <= lt) return ln;
         int[] _startPositions = lineMap;
 
         int f = 0;                      // from
@@ -38,13 +43,15 @@ public class LineMap {
             int sp = _startPositions[c];
             if (pos >= sp) {
                 f = c;
+                lb = sp;
             } else {
                 t = c;
+                lt = sp;
             }
             c = (t + f) >> 1;
         }
 
-        return c + 1;
+        return ln = c + 1;
     }
 
     public int getOffsetNumber(int pos) {
