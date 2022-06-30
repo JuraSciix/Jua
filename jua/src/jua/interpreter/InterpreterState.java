@@ -1,6 +1,6 @@
 package jua.interpreter;
 
-import jua.interpreter.instructions.Instruction;
+import jua.interpreter.instruction.Instruction;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.heap.Operand;
 

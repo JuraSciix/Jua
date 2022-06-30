@@ -659,6 +659,7 @@ public class Lower implements Visitor {
     @Override
     public void visitAssignOp(AssignOp tree) {
         // todo: task for JavaKira
+        result = tree;
     }
 
     @Override

@@ -4,8 +4,8 @@ import it.unimi.dsi.fastutil.ints.Int2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntStack;
-import jua.interpreter.instructions.*;
-import jua.interpreter.instructions.Switch;
+import jua.interpreter.instruction.*;
+import jua.interpreter.instruction.Switch;
 import jua.runtime.heap.ArrayOperand;
 import jua.runtime.JuaFunction;
 import jua.runtime.heap.Operand;
@@ -707,7 +707,7 @@ public final class Gen implements Visitor {
         }
 
         visitStatement(tree.body);
-        if (!tree.body.hasTag(Tag.COMPOUND))
+        if (!tree.body.hasTag(Tag.BLOCK))
             emitReturn();
         else
             emitRetnull();
@@ -1679,7 +1679,7 @@ public final class Gen implements Visitor {
         state = prev_state;
     }
     private void emitReturn() {
-        code.addInstruction(jua.interpreter.instructions.Return.RETURN, -1);
+        code.addInstruction(jua.interpreter.instruction.Return.RETURN, -1);
         code.dead();
     }
 

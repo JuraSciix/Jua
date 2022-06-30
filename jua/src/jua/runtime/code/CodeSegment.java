@@ -1,6 +1,6 @@
 package jua.runtime.code;
 
-import jua.interpreter.instructions.Instruction;
+import jua.interpreter.instruction.Instruction;
 
 public final class CodeSegment {
 

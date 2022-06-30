@@ -9,10 +9,10 @@ import java.util.Map;
 public abstract class Tree {
 
     public enum Tag {
-        COMPILATION_UNIT,
-        COMPOUND,
+        ROOT,
         FUNCDECL,
         CONSTDECL,
+        BLOCK,
         IFELSE,
         WHILELOOP,
         DOLOOP,
@@ -111,7 +111,7 @@ public abstract class Tree {
 
         @Override
         public Tag getTag() {
-            return Tag.COMPILATION_UNIT;
+            return Tag.ROOT;
         }
 
         @Override
@@ -489,7 +489,7 @@ public abstract class Tree {
 
         @Override
         public Tag getTag() {
-            return Tag.COMPOUND;
+            return Tag.BLOCK;
         }
 
         @Override
