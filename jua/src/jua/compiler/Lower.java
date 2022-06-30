@@ -62,7 +62,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitAnd(AndExpression expression) {
+    public void visitAnd(BinaryOp expression) {
         visitBinaryOp(expression);
     }
 
@@ -256,7 +256,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitEqual(EqualExpression expression) {
+    public void visitEqual(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
         switch (compareLiterals(lhs, rhs)) {
@@ -324,7 +324,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitGreaterEqual(GreaterEqualExpression expression) {
+    public void visitGreaterEqual(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
         switch (compareLiterals(lhs, rhs)) {
@@ -342,7 +342,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitGreater(GreaterExpression expression) {
+    public void visitGreater(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
         switch (compareLiterals(lhs, rhs)) {
@@ -387,7 +387,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitLessEqual(LessEqualExpression expression) {
+    public void visitLessEqual(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
         switch (compareLiterals(lhs, rhs)) {
@@ -405,7 +405,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitLess(LessExpression expression) {
+    public void visitLess(BinaryOp expression) {
         visitBinaryOp(expression);
     }
 
@@ -420,7 +420,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitNotEqual(NotEqualExpression expression) {
+    public void visitNotEqual(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
         switch (compareLiterals(lhs, rhs)) {
@@ -469,7 +469,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitOr(OrExpression expression) {
+    public void visitOr(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         if (isTrue(lhs)) {
             setTrue(expression);

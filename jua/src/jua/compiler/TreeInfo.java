@@ -49,6 +49,21 @@ public final class TreeInfo {
         return expr == null || expr instanceof NullExpression;
     }
 
+    public static boolean isCondition(Expression expression) {
+        switch (expression.getTag()) {
+            case LOGAND:
+            case LOGOR:
+            case LT:
+            case LE:
+            case GT:
+            case NEQ:
+            case GE:
+            case EQ:
+                return true;
+            default: return false;
+        }
+    }
+
     public static Operand resolveLiteral(Literal expression) {
         Object value = expression.value;
         if (value instanceof Long || value instanceof Integer) return LongOperand.valueOf(((Number) value).longValue());

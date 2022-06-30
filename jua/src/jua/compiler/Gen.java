@@ -119,7 +119,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitAnd(AndExpression expression) {
+    public void visitAnd(BinaryOp expression) {
 //        beginCondition();
 //        if (invertCond) {
 //            if (expression.rhs == null) {
@@ -157,7 +157,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitOr(OrExpression expression) {
+    public void visitOr(BinaryOp expression) {
 //        beginCondition();
 //        if (invertCond) {
 //            generateCondition(expression.lhs);
@@ -349,8 +349,8 @@ public final class Gen implements Visitor {
     }
 
     private void generateBinary(BinaryOp tree) {
-        if (tree instanceof ConditionalExpression) {
-            generateComparison((ConditionalExpression) tree);
+        if (TreeInfo.isCondition(tree)) {
+            generateComparison(tree);
             return;
         }
         System.out.println(tree);
@@ -551,7 +551,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitEqual(EqualExpression expression) {
+    public void visitEqual(BinaryOp expression) {
 //        beginCondition();
 //        Expression lhs = expression.lhs;
 //        Expression rhs = expression.rhs;
@@ -727,7 +727,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitGreaterEqual(GreaterEqualExpression expression) {
+    public void visitGreaterEqual(BinaryOp expression) {
 //        beginCondition();
 //        if (expression.lhs instanceof IntExpression) {
 //            visitExpression(expression.rhs);
@@ -753,7 +753,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitGreater(GreaterExpression expression) {
+    public void visitGreater(BinaryOp expression) {
 //        beginCondition();
 //        if (expression.lhs instanceof IntExpression) {
 //            visitExpression(expression.rhs);
@@ -813,7 +813,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitLessEqual(LessEqualExpression expression) {
+    public void visitLessEqual(BinaryOp expression) {
 //        beginCondition();
 //        Expression lhs = expression.lhs;
 //        Expression rhs = expression.rhs;
@@ -843,7 +843,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitLess(LessExpression expression) {
+    public void visitLess(BinaryOp expression) {
 //        beginCondition();
 //        if (expression.lhs instanceof IntExpression) {
 //            visitExpression(expression.rhs);
@@ -868,7 +868,7 @@ public final class Gen implements Visitor {
         generateComparison(expression);
     }
 
-    private void generateComparison(ConditionalExpression expression) {
+    private void generateComparison(BinaryOp expression) {
         beginCondition();
         Expression lhs = expression.lhs;
         Expression rhs = expression.rhs;
@@ -987,7 +987,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitNotEqual(NotEqualExpression expression) {
+    public void visitNotEqual(BinaryOp expression) {
 //        beginCondition();
 //        Expression lhs = expression.lhs;
 //        Expression rhs = expression.rhs;
@@ -1327,7 +1327,7 @@ public final class Gen implements Visitor {
         setState(STATE_COND);
         visitExpression(expression);
         state = prev_state;
-        if (expression.isCondition()) {
+        if (TreeInfo.isCondition(expression)) {
             return;
         }
         // todo: Здешний код отвратителен. Следует переписать всё с нуля...

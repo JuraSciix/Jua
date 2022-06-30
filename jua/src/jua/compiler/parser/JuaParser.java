@@ -378,7 +378,7 @@ public class JuaParser {
         int position = currentToken.pos;
 
         while (match(BARBAR)) {
-            expr = new OrExpression(position, expr, parseAnd());
+            expr = new BinaryOp(position, Tag.LOGOR, expr, parseAnd());
             position = currentToken.pos;
         }
         return expr;
@@ -391,7 +391,7 @@ public class JuaParser {
             int position = currentToken.pos;
 
             if (match(AMPAMP)) {
-                expr = new AndExpression(position, expr, parseEquality());
+                expr = new BinaryOp(position, Tag.LOGAND, expr, parseEquality());
             } else {
                 return expr;
             }
@@ -448,9 +448,9 @@ public class JuaParser {
             int position = currentToken.pos;
 
             if (match(EQEQ)) {
-                expr = new EqualExpression(position, expr, parseConditional());
+                expr = new BinaryOp(position, Tag.EQ, expr, parseConditional());
             } else if (match(EXLCEQ)) {
-                expr = new NotEqualExpression(position, expr, parseConditional());
+                expr = new BinaryOp(position, Tag.NEQ, expr, parseConditional());
             } else {
                 return expr;
             }
@@ -464,13 +464,13 @@ public class JuaParser {
             int position = currentToken.pos;
 
             if (match(GT)) {
-                expr = new GreaterExpression(position, expr, parseShift());
+                expr = new BinaryOp(position, Tag.GT, expr, parseShift());
             } else if (match(GTEQ)) {
-                expr = new GreaterEqualExpression(position, expr, parseShift());
+                expr = new BinaryOp(position, Tag.GE, expr, parseShift());
             } else if (match(LT)) {
-                expr = new LessExpression(position, expr, parseShift());
+                expr = new BinaryOp(position, Tag.LT, expr, parseShift());
             } else if (match(LTEQ)) {
-                expr = new LessEqualExpression(position, expr, parseShift());
+                expr = new BinaryOp(position, Tag.LE, expr, parseShift());
             } else {
                 return expr;
             }
