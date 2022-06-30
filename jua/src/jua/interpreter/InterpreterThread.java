@@ -62,7 +62,7 @@ public class InterpreterThread {
     private Operand retval;
 
     // todo: ну... исправить
-    public InterpreterFrame getFrame() {
+    public InterpreterFrame currentFrame() {
         return current_frame;
     }
 
@@ -340,7 +340,7 @@ public class InterpreterThread {
     }
 
     public Operand popStack() {
-        return getFrame().state().popStack();
+        return currentFrame().state().popStack();
     }
 
     @Deprecated

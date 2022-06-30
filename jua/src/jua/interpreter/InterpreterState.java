@@ -103,7 +103,7 @@ public final class InterpreterState {
     public Operand load(int index) {
         if (locals[index] == null) {
             thread.error("accessing an undefined variable '" +
-                    thread.getFrame().function().codeSegment().localNameTable().nameOf(index) + "'.");
+                    thread.currentFrame().function().codeSegment().localNameTable().nameOf(index) + "'.");
         }
         return locals[index];
     }

@@ -353,6 +353,10 @@ public final class Gen implements Visitor {
             generateComparison((ConditionalExpression) tree);
             return;
         }
+        System.out.println(tree);
+        System.out.println(tree.lhs);
+        System.out.println(tree.rhs);
+        System.out.println();
         tree.lhs.accept(this);
         if (tree.hasTag(Tag.NULLCOALESCE)) {
             emitDup();
@@ -1048,6 +1052,7 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitParens(Parens expression) {
+        expression.expr.accept(this);
         // todo: выбрасывается AssertionError
         //throw new AssertionError(
         //        "all brackets should have been removed in ConstantFolder");
