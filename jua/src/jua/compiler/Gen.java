@@ -101,11 +101,6 @@ public final class Gen implements Visitor {
 
     }
 
-    @Override
-    public void visitAdd(BinaryOp expression) {
-        generateBinary(expression);
-    }
-
     private boolean isState(int state_flag) {
         return (state & state_flag) != 0;
     }
@@ -118,7 +113,6 @@ public final class Gen implements Visitor {
         state |= state_flag;
     }
 
-    @Override
     public void visitAnd(BinaryOp expression) {
 //        beginCondition();
 //        if (invertCond) {
@@ -156,7 +150,6 @@ public final class Gen implements Visitor {
         endCondition();
     }
 
-    @Override
     public void visitOr(BinaryOp expression) {
 //        beginCondition();
 //        if (invertCond) {
@@ -329,23 +322,8 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitBitAnd(BinaryOp expression) {
-        generateBinary(expression);
-    }
-
-    @Override
     public void visitBitNot(BitNotExpression expression) {
         generateUnary(expression);
-    }
-
-    @Override
-    public void visitBitOr(BinaryOp expression) {
-        generateBinary(expression);
-    }
-
-    @Override
-    public void visitBitXor(BinaryOp expression) {
-        generateBinary(expression);
     }
 
     private void generateBinary(BinaryOp tree) {
@@ -541,16 +519,10 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitDivide(BinaryOp expression) {
-        generateBinary(expression);
-    }
-
-    @Override
     public void visitDoLoop(DoLoop statement) {
         generateLoop(statement, null, statement.cond, null, statement.body, false);
     }
 
-    @Override
     public void visitEqual(BinaryOp expression) {
 //        beginCondition();
 //        Expression lhs = expression.lhs;
@@ -726,7 +698,6 @@ public final class Gen implements Visitor {
         code.popContext();
     }
 
-    @Override
     public void visitGreaterEqual(BinaryOp expression) {
 //        beginCondition();
 //        if (expression.lhs instanceof IntExpression) {
@@ -752,7 +723,6 @@ public final class Gen implements Visitor {
         generateComparison(expression);
     }
 
-    @Override
     public void visitGreater(BinaryOp expression) {
 //        beginCondition();
 //        if (expression.lhs instanceof IntExpression) {
@@ -807,12 +777,6 @@ public final class Gen implements Visitor {
         visitLiteral(expression);
     }
 
-    @Override
-    public void visitLeftShift(BinaryOp expression) {
-        generateBinary(expression);
-    }
-
-    @Override
     public void visitLessEqual(BinaryOp expression) {
 //        beginCondition();
 //        Expression lhs = expression.lhs;
@@ -842,7 +806,6 @@ public final class Gen implements Visitor {
         generateComparison(expression);
     }
 
-    @Override
     public void visitLess(BinaryOp expression) {
 //        beginCondition();
 //        if (expression.lhs instanceof IntExpression) {
@@ -977,16 +940,10 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitMultiply(BinaryOp expression) {
-        generateBinary(expression);
-    }
-
-    @Override
     public void visitNegative(NegativeExpression expression) {
         generateUnary(expression);
     }
 
-    @Override
     public void visitNotEqual(BinaryOp expression) {
 //        beginCondition();
 //        Expression lhs = expression.lhs;
@@ -1031,7 +988,6 @@ public final class Gen implements Visitor {
         generateUnary(expression);
     }
 
-    @Override
     public void visitNullCoalesce(BinaryOp expression) {
         // todo: Это очевидно неполноценная реализация.
 //        visitExpression(expression.lhs);
@@ -1146,11 +1102,6 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitRemainder(BinaryOp expression) {
-        generateBinary(expression);
-    }
-
-    @Override
     public void visitReturn(Tree.Return statement) {
         if (isNull(statement.expr)) {
             emitRetnull();
@@ -1168,20 +1119,10 @@ public final class Gen implements Visitor {
     private static boolean isNull(Expression expression) {
         return TreeInfo.isNull(expression);
     }
-
-    @Override
-    public void visitRightShift(BinaryOp expression) {
-        generateBinary(expression);
-    }
-
+    
     @Override
     public void visitString(StringExpression expression) {
         visitLiteral(expression);
-    }
-
-    @Override
-    public void visitSubtract(BinaryOp expression) {
-        generateBinary(expression);
     }
 
     @Override
@@ -1279,6 +1220,18 @@ public final class Gen implements Visitor {
 
     @Deprecated
     public void visitBinaryOp(BinaryOp expression) {
+        switch (expression.tag) {
+            case LOGAND: visitAnd(expression);                  break;
+            case LT:     visitLess(expression);                 break;
+            case EQ:     visitEqual(expression);                break;
+            case GE:     visitGreaterEqual(expression);         break;
+            case GT:     visitGreater(expression);              break;
+            case LE:     visitLessEqual(expression);            break;
+            case NEQ:    visitNotEqual(expression);             break;
+            case LOGOR:  visitOr(expression);                   break;
+            case NULLCOALESCE: visitNullCoalesce(expression);   break;
+        }
+
         generateBinary(expression);
     }
 

@@ -57,16 +57,6 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitAdd(BinaryOp expression) {
-        visitBinaryOp(expression);
-    }
-
-    @Override
-    public void visitAnd(BinaryOp expression) {
-        visitBinaryOp(expression);
-    }
-
-    @Override
     public void visitArrayAccess(ArrayAccess expression) {
         expression.array = getLowerExpression(expression.array);
         expression.key = getLowerExpression(expression.key);
@@ -148,23 +138,12 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitBitAnd(BinaryOp expression) {
-        visitBinaryOp(expression);
-    }
-
-    @Override
     public void visitBitNot(BitNotExpression expression) {
         visitUnaryOp(expression);
     }
 
-    @Override
-    public void visitBitOr(BinaryOp expression) { expression.lhs.accept(this);
-        visitBinaryOp(expression);
-    }
-
-    @Override
-    public void visitBitXor(BinaryOp expression) {
-        visitBinaryOp(expression);
+    public void visitBitOr(BinaryOp expression) {
+        expression.lhs.accept(this);
     }
 
     @Override
@@ -237,11 +216,6 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitDivide(BinaryOp expression) {
-        visitBinaryOp(expression);
-    }
-
-    @Override
     public void visitDoLoop(DoLoop tree) {
         tree.body = foldBody(tree.body);
         tree.cond = getLowerExpression(tree.cond);
@@ -255,7 +229,6 @@ public class Lower implements Visitor {
         result = tree;
     }
 
-    @Override
     public void visitEqual(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
@@ -323,7 +296,6 @@ public class Lower implements Visitor {
         result = statement;
     }
 
-    @Override
     public void visitGreaterEqual(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
@@ -341,7 +313,6 @@ public class Lower implements Visitor {
         }
     }
 
-    @Override
     public void visitGreater(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
@@ -381,12 +352,6 @@ public class Lower implements Visitor {
         visitLiteral(expression);
     }
 
-    @Override
-    public void visitLeftShift(BinaryOp expression) {
-        visitBinaryOp(expression);
-    }
-
-    @Override
     public void visitLessEqual(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
@@ -403,23 +368,11 @@ public class Lower implements Visitor {
                 lowerBinary(expression, lhs, rhs);
         }
     }
-
-    @Override
-    public void visitLess(BinaryOp expression) {
-        visitBinaryOp(expression);
-    }
-
-    @Override
-    public void visitMultiply(BinaryOp expression) {
-        visitBinaryOp(expression);
-    }
-
     @Override
     public void visitNegative(NegativeExpression expression) {
         visitUnaryOp(expression);
     }
 
-    @Override
     public void visitNotEqual(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
@@ -452,7 +405,6 @@ public class Lower implements Visitor {
         lowerUnary(expression, hs);
     }
 
-    @Override
     public void visitNullCoalesce(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
@@ -468,7 +420,6 @@ public class Lower implements Visitor {
         visitLiteral(expression);
     }
 
-    @Override
     public void visitOr(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         if (isTrue(lhs)) {
@@ -542,11 +493,6 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitRemainder(BinaryOp expression) {
-        visitBinaryOp(expression);
-    }
-
-    @Override
     public void visitReturn(Return statement) {
         if ((statement.expr) != null) {
             statement.expr = getLowerExpression(statement.expr);
@@ -555,18 +501,8 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitRightShift(BinaryOp expression) {
-        visitBinaryOp(expression);
-    }
-
-    @Override
     public void visitString(StringExpression expression) {
         visitLiteral(expression);
-    }
-
-    @Override
-    public void visitSubtract(BinaryOp expression) {
-        visitBinaryOp(expression);
     }
 
     @Override
@@ -631,6 +567,17 @@ public class Lower implements Visitor {
 
     @Override
     public void visitBinaryOp(BinaryOp tree) {
+        switch (tree.tag) {
+            case BITOR:  visitBitOr(tree);                      break;
+            case EQ:     visitEqual(tree);                      break;
+            case GE:     visitGreaterEqual(tree);               break;
+            case GT:     visitGreater(tree);                    break;
+            case LE:     visitLessEqual(tree);                  break;
+            case NEQ:    visitNotEqual(tree);                   break;
+            case LOGOR:  visitOr(tree);                         break;
+            case NULLCOALESCE: visitNullCoalesce(tree);         break;
+        }
+
         if (!tree.lhs.hasTag(Tag.LITERAL) || !tree.rhs.hasTag(Tag.LITERAL)) {
             result = tree;
             return;

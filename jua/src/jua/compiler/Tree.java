@@ -1247,10 +1247,6 @@ public abstract class Tree {
     public static interface Visitor {
         void visitCompilationUnit(CompilationUnit tree);
 
-        void visitAdd(BinaryOp expression);
-
-        void visitAnd(BinaryOp expression);
-
         void visitArrayAccess(ArrayAccess expression);
 
         void visitArray(ArrayLiteral expression);
@@ -1279,13 +1275,7 @@ public abstract class Tree {
 
         void visitAssignSubtract(AssignSubtractExpression expression);
 
-        void visitBitAnd(BinaryOp expression);
-
         void visitBitNot(BitNotExpression expression);
-
-        void visitBitOr(BinaryOp expression);
-
-        void visitBitXor(BinaryOp expression);
 
         void visitBlock(Block statement);
 
@@ -1299,11 +1289,7 @@ public abstract class Tree {
 
         void visitContinue(Continue statement);
 
-        void visitDivide(BinaryOp expression);
-
         void visitDoLoop(DoLoop statement);
-
-        void visitEqual(BinaryOp expression);
 
         void visitFallthrough(Fallthrough statement);
 
@@ -1317,33 +1303,15 @@ public abstract class Tree {
 
         void visitFunctionDecl(FunctionDecl statement);
 
-        void visitGreaterEqual(BinaryOp expression);
-
-        void visitGreater(BinaryOp expression);
-
         void visitIf(If statement);
 
         void visitInt(IntExpression expression);
 
-        void visitLeftShift(BinaryOp expression);
-
-        void visitLessEqual(BinaryOp expression);
-
-        void visitLess(BinaryOp expression);
-
-        void visitMultiply(BinaryOp expression);
-
         void visitNegative(NegativeExpression expression);
-
-        void visitNotEqual(BinaryOp expression);
 
         void visitNot(NotExpression expression);
 
-        void visitNullCoalesce(BinaryOp expression);
-
         void visitNull(NullExpression expression);
-
-        void visitOr(BinaryOp expression);
 
         void visitParens(Parens expression);
 
@@ -1363,15 +1331,9 @@ public abstract class Tree {
         @Deprecated
         void visitPrint(PrintStatement statement);
 
-        void visitRemainder(BinaryOp expression);
-
         void visitReturn(Return statement);
 
-        void visitRightShift(BinaryOp expression);
-
         void visitString(StringExpression expression);
-
-        void visitSubtract(BinaryOp expression);
 
         void visitSwitch(Switch statement);
 
