@@ -120,25 +120,6 @@ public abstract class Tree {
         }
     }
 
-    public static class AddExpression extends BinaryOp {
-
-        public AddExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.ADD, lhs, rhs);
-        }
-    }
-
-    public static class AndExpression extends ConditionalExpression {
-
-        public AndExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.LOGAND, lhs, rhs);
-        }
-
-        @Override
-        public boolean isCondition() {
-            return true;
-        }
-    }
-
     public static class ArrayAccess extends Expression {
 
         public Expression array;
@@ -450,31 +431,10 @@ public abstract class Tree {
         }
     }
 
-    public static class BitAndExpression extends BinaryOp {
-
-        public BitAndExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.BITAND, lhs, rhs);
-        }
-    }
-
     public static class BitNotExpression extends UnaryOp {
 
         public BitNotExpression(int pos, Expression hs) {
             super(pos, Tag.BITCMPL, hs);
-        }
-    }
-
-    public static class BitOrExpression extends BinaryOp {
-
-        public BitOrExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.BITOR, lhs, rhs);
-        }
-    }
-
-    public static class BitXorExpression extends BinaryOp {
-
-        public BitXorExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.BITXOR, lhs, rhs);
         }
     }
 
@@ -553,18 +513,6 @@ public abstract class Tree {
         }
     }
 
-    public abstract static class ConditionalExpression extends BinaryOp {
-
-        protected ConditionalExpression(int pos, Tag tag, Expression lhs, Expression rhs) {
-            super(pos, tag, lhs, rhs);
-        }
-
-        @Override
-        public boolean isCondition() {
-            return true;
-        }
-    }
-
     public static class ConstantDecl extends Statement {
 
         public List<String> names;
@@ -605,14 +553,6 @@ public abstract class Tree {
         }
     }
 
-    public static class DivideExpression extends BinaryOp {
-
-        public DivideExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.DIV, lhs, rhs);
-        }
-
-    }
-
     public static class DoLoop extends Statement {
 
         public Statement body;
@@ -633,13 +573,6 @@ public abstract class Tree {
         @Override
         public void accept(Visitor visitor) {
             visitor.visitDoLoop(this);
-        }
-    }
-
-    public static class EqualExpression extends ConditionalExpression {
-
-        public EqualExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.EQ, lhs, rhs);
         }
     }
 
@@ -696,10 +629,6 @@ public abstract class Tree {
 
         public boolean isCloneable() {
             return true;
-        }
-
-        public boolean isCondition() {
-            return false;
         }
 
         public boolean isLiteral() {
@@ -852,20 +781,6 @@ public abstract class Tree {
         }
     }
 
-    public static class GreaterEqualExpression extends ConditionalExpression {
-
-        public GreaterEqualExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.GE, lhs, rhs);
-        }
-    }
-
-    public static class GreaterExpression extends ConditionalExpression {
-
-        public GreaterExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.GT, lhs, rhs);
-        }
-    }
-
     public static class If extends Statement {
 
         public Expression cond;
@@ -956,27 +871,6 @@ public abstract class Tree {
         }
     }
 
-    public static class LessEqualExpression extends ConditionalExpression {
-
-        public LessEqualExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.LE, lhs, rhs);
-        }
-    }
-
-    public static class LessExpression extends ConditionalExpression {
-
-        public LessExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.LT, lhs, rhs);
-        }
-    }
-
-    public static class MultiplyExpression extends BinaryOp {
-
-        public MultiplyExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.MUL, lhs, rhs);
-        }
-    }
-
     public static class NegativeExpression extends UnaryOp {
 
         public NegativeExpression(int pos, Expression hs) {
@@ -984,24 +878,10 @@ public abstract class Tree {
         }
     }
 
-    public static class NotEqualExpression extends ConditionalExpression {
-
-        public NotEqualExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.NEQ, lhs, rhs);
-        }
-    }
-
     public static class NotExpression extends UnaryOp {
 
         public NotExpression(int pos, Expression hs) {
             super(pos, Tag.LOGCMPL ,hs);
-        }
-    }
-
-    public static class NullCoalesceExpression extends BinaryOp {
-
-        public NullCoalesceExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.NULLCOALESCE, lhs, rhs);
         }
     }
 
@@ -1014,13 +894,6 @@ public abstract class Tree {
         @Override
         public void accept(Visitor visitor) {
             visitor.visitNull(this);
-        }
-    }
-
-    public static class OrExpression extends ConditionalExpression {
-
-        public OrExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.LOGOR, lhs, rhs);
         }
     }
 
@@ -1144,13 +1017,6 @@ public abstract class Tree {
         }
     }
 
-    public static class RemainderExpression extends BinaryOp {
-
-        public RemainderExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.REM, lhs, rhs);
-        }
-    }
-
     public static class Return extends Statement {
 
         public Expression expr;
@@ -1172,20 +1038,6 @@ public abstract class Tree {
         @Override
         public void accept(Visitor visitor) {
             visitor.visitReturn(this);
-        }
-    }
-
-    public static class ShiftLeftExpression extends BinaryOp {
-
-        public ShiftLeftExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.SL, lhs, rhs);
-        }
-    }
-
-    public static class ShiftRightExpression extends BinaryOp {
-
-        public ShiftRightExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.SR, lhs, rhs);
         }
     }
 
@@ -1212,13 +1064,6 @@ public abstract class Tree {
 
         public StringExpression(int pos, String value) {
             super(pos, value);
-        }
-    }
-
-    public static class SubtractExpression extends BinaryOp {
-
-        public SubtractExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.SUB, lhs, rhs);
         }
     }
 
@@ -1402,10 +1247,6 @@ public abstract class Tree {
     public static interface Visitor {
         void visitCompilationUnit(CompilationUnit tree);
 
-        void visitAdd(AddExpression expression);
-
-        void visitAnd(AndExpression expression);
-
         void visitArrayAccess(ArrayAccess expression);
 
         void visitArray(ArrayLiteral expression);
@@ -1434,13 +1275,7 @@ public abstract class Tree {
 
         void visitAssignSubtract(AssignSubtractExpression expression);
 
-        void visitBitAnd(BitAndExpression expression);
-
         void visitBitNot(BitNotExpression expression);
-
-        void visitBitOr(BitOrExpression expression);
-
-        void visitBitXor(BitXorExpression expression);
 
         void visitBlock(Block statement);
 
@@ -1454,11 +1289,7 @@ public abstract class Tree {
 
         void visitContinue(Continue statement);
 
-        void visitDivide(DivideExpression expression);
-
         void visitDoLoop(DoLoop statement);
-
-        void visitEqual(EqualExpression expression);
 
         void visitFallthrough(Fallthrough statement);
 
@@ -1472,33 +1303,15 @@ public abstract class Tree {
 
         void visitFunctionDecl(FunctionDecl statement);
 
-        void visitGreaterEqual(GreaterEqualExpression expression);
-
-        void visitGreater(GreaterExpression expression);
-
         void visitIf(If statement);
 
         void visitInt(IntExpression expression);
 
-        void visitLeftShift(ShiftLeftExpression expression);
-
-        void visitLessEqual(LessEqualExpression expression);
-
-        void visitLess(LessExpression expression);
-
-        void visitMultiply(MultiplyExpression expression);
-
         void visitNegative(NegativeExpression expression);
-
-        void visitNotEqual(NotEqualExpression expression);
 
         void visitNot(NotExpression expression);
 
-        void visitNullCoalesce(NullCoalesceExpression expression);
-
         void visitNull(NullExpression expression);
-
-        void visitOr(OrExpression expression);
 
         void visitParens(Parens expression);
 
@@ -1518,15 +1331,9 @@ public abstract class Tree {
         @Deprecated
         void visitPrint(PrintStatement statement);
 
-        void visitRemainder(RemainderExpression expression);
-
         void visitReturn(Return statement);
 
-        void visitRightShift(ShiftRightExpression expression);
-
         void visitString(StringExpression expression);
-
-        void visitSubtract(SubtractExpression expression);
 
         void visitSwitch(Switch statement);
 

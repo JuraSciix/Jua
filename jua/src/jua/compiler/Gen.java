@@ -101,11 +101,6 @@ public final class Gen implements Visitor {
 
     }
 
-    @Override
-    public void visitAdd(AddExpression expression) {
-        generateBinary(expression);
-    }
-
     private boolean isState(int state_flag) {
         return (state & state_flag) != 0;
     }
@@ -118,8 +113,7 @@ public final class Gen implements Visitor {
         state |= state_flag;
     }
 
-    @Override
-    public void visitAnd(AndExpression expression) {
+    public void visitAnd(BinaryOp expression) {
 //        beginCondition();
 //        if (invertCond) {
 //            if (expression.rhs == null) {
@@ -156,8 +150,7 @@ public final class Gen implements Visitor {
         endCondition();
     }
 
-    @Override
-    public void visitOr(OrExpression expression) {
+    public void visitOr(BinaryOp expression) {
 //        beginCondition();
 //        if (invertCond) {
 //            generateCondition(expression.lhs);
@@ -329,28 +322,13 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitBitAnd(BitAndExpression expression) {
-        generateBinary(expression);
-    }
-
-    @Override
     public void visitBitNot(BitNotExpression expression) {
         generateUnary(expression);
     }
 
-    @Override
-    public void visitBitOr(BitOrExpression expression) {
-        generateBinary(expression);
-    }
-
-    @Override
-    public void visitBitXor(BitXorExpression expression) {
-        generateBinary(expression);
-    }
-
     private void generateBinary(BinaryOp tree) {
-        if (tree instanceof ConditionalExpression) {
-            generateComparison((ConditionalExpression) tree);
+        if (TreeInfo.isCondition(tree)) {
+            generateComparison(tree);
             return;
         }
         System.out.println(tree);
@@ -541,17 +519,11 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitDivide(DivideExpression expression) {
-        generateBinary(expression);
-    }
-
-    @Override
     public void visitDoLoop(DoLoop statement) {
         generateLoop(statement, null, statement.cond, null, statement.body, false);
     }
 
-    @Override
-    public void visitEqual(EqualExpression expression) {
+    public void visitEqual(BinaryOp expression) {
 //        beginCondition();
 //        Expression lhs = expression.lhs;
 //        Expression rhs = expression.rhs;
@@ -726,8 +698,7 @@ public final class Gen implements Visitor {
         code.popContext();
     }
 
-    @Override
-    public void visitGreaterEqual(GreaterEqualExpression expression) {
+    public void visitGreaterEqual(BinaryOp expression) {
 //        beginCondition();
 //        if (expression.lhs instanceof IntExpression) {
 //            visitExpression(expression.rhs);
@@ -752,8 +723,7 @@ public final class Gen implements Visitor {
         generateComparison(expression);
     }
 
-    @Override
-    public void visitGreater(GreaterExpression expression) {
+    public void visitGreater(BinaryOp expression) {
 //        beginCondition();
 //        if (expression.lhs instanceof IntExpression) {
 //            visitExpression(expression.rhs);
@@ -807,13 +777,7 @@ public final class Gen implements Visitor {
         visitLiteral(expression);
     }
 
-    @Override
-    public void visitLeftShift(ShiftLeftExpression expression) {
-        generateBinary(expression);
-    }
-
-    @Override
-    public void visitLessEqual(LessEqualExpression expression) {
+    public void visitLessEqual(BinaryOp expression) {
 //        beginCondition();
 //        Expression lhs = expression.lhs;
 //        Expression rhs = expression.rhs;
@@ -842,8 +806,7 @@ public final class Gen implements Visitor {
         generateComparison(expression);
     }
 
-    @Override
-    public void visitLess(LessExpression expression) {
+    public void visitLess(BinaryOp expression) {
 //        beginCondition();
 //        if (expression.lhs instanceof IntExpression) {
 //            visitExpression(expression.rhs);
@@ -868,7 +831,7 @@ public final class Gen implements Visitor {
         generateComparison(expression);
     }
 
-    private void generateComparison(ConditionalExpression expression) {
+    private void generateComparison(BinaryOp expression) {
         beginCondition();
         Expression lhs = expression.lhs;
         Expression rhs = expression.rhs;
@@ -977,17 +940,11 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitMultiply(MultiplyExpression expression) {
-        generateBinary(expression);
-    }
-
-    @Override
     public void visitNegative(NegativeExpression expression) {
         generateUnary(expression);
     }
 
-    @Override
-    public void visitNotEqual(NotEqualExpression expression) {
+    public void visitNotEqual(BinaryOp expression) {
 //        beginCondition();
 //        Expression lhs = expression.lhs;
 //        Expression rhs = expression.rhs;
@@ -1031,8 +988,7 @@ public final class Gen implements Visitor {
         generateUnary(expression);
     }
 
-    @Override
-    public void visitNullCoalesce(NullCoalesceExpression expression) {
+    public void visitNullCoalesce(BinaryOp expression) {
         // todo: Это очевидно неполноценная реализация.
 //        visitExpression(expression.lhs);
 //        emitDup();
@@ -1146,11 +1102,6 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitRemainder(RemainderExpression expression) {
-        generateBinary(expression);
-    }
-
-    @Override
     public void visitReturn(Tree.Return statement) {
         if (isNull(statement.expr)) {
             emitRetnull();
@@ -1168,20 +1119,10 @@ public final class Gen implements Visitor {
     private static boolean isNull(Expression expression) {
         return TreeInfo.isNull(expression);
     }
-
-    @Override
-    public void visitRightShift(ShiftRightExpression expression) {
-        generateBinary(expression);
-    }
-
+    
     @Override
     public void visitString(StringExpression expression) {
         visitLiteral(expression);
-    }
-
-    @Override
-    public void visitSubtract(SubtractExpression expression) {
-        generateBinary(expression);
     }
 
     @Override
@@ -1279,6 +1220,18 @@ public final class Gen implements Visitor {
 
     @Deprecated
     public void visitBinaryOp(BinaryOp expression) {
+        switch (expression.tag) {
+            case LOGAND: visitAnd(expression);                  break;
+            case LT:     visitLess(expression);                 break;
+            case EQ:     visitEqual(expression);                break;
+            case GE:     visitGreaterEqual(expression);         break;
+            case GT:     visitGreater(expression);              break;
+            case LE:     visitLessEqual(expression);            break;
+            case NEQ:    visitNotEqual(expression);             break;
+            case LOGOR:  visitOr(expression);                   break;
+            case NULLCOALESCE: visitNullCoalesce(expression);   break;
+        }
+
         generateBinary(expression);
     }
 
@@ -1327,7 +1280,7 @@ public final class Gen implements Visitor {
         setState(STATE_COND);
         visitExpression(expression);
         state = prev_state;
-        if (expression.isCondition()) {
+        if (TreeInfo.isCondition(expression)) {
             return;
         }
         // todo: Здешний код отвратителен. Следует переписать всё с нуля...

@@ -57,16 +57,6 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitAdd(AddExpression expression) {
-        visitBinaryOp(expression);
-    }
-
-    @Override
-    public void visitAnd(AndExpression expression) {
-        visitBinaryOp(expression);
-    }
-
-    @Override
     public void visitArrayAccess(ArrayAccess expression) {
         expression.array = getLowerExpression(expression.array);
         expression.key = getLowerExpression(expression.key);
@@ -148,23 +138,12 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitBitAnd(BitAndExpression expression) {
-        visitBinaryOp(expression);
-    }
-
-    @Override
     public void visitBitNot(BitNotExpression expression) {
         visitUnaryOp(expression);
     }
 
-    @Override
-    public void visitBitOr(BitOrExpression expression) { expression.lhs.accept(this);
-        visitBinaryOp(expression);
-    }
-
-    @Override
-    public void visitBitXor(BitXorExpression expression) {
-        visitBinaryOp(expression);
+    public void visitBitOr(BinaryOp expression) {
+        expression.lhs.accept(this);
     }
 
     @Override
@@ -237,11 +216,6 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitDivide(DivideExpression expression) {
-        visitBinaryOp(expression);
-    }
-
-    @Override
     public void visitDoLoop(DoLoop tree) {
         tree.body = foldBody(tree.body);
         tree.cond = getLowerExpression(tree.cond);
@@ -255,8 +229,7 @@ public class Lower implements Visitor {
         result = tree;
     }
 
-    @Override
-    public void visitEqual(EqualExpression expression) {
+    public void visitEqual(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
         switch (compareLiterals(lhs, rhs)) {
@@ -323,8 +296,7 @@ public class Lower implements Visitor {
         result = statement;
     }
 
-    @Override
-    public void visitGreaterEqual(GreaterEqualExpression expression) {
+    public void visitGreaterEqual(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
         switch (compareLiterals(lhs, rhs)) {
@@ -341,8 +313,7 @@ public class Lower implements Visitor {
         }
     }
 
-    @Override
-    public void visitGreater(GreaterExpression expression) {
+    public void visitGreater(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
         switch (compareLiterals(lhs, rhs)) {
@@ -381,13 +352,7 @@ public class Lower implements Visitor {
         visitLiteral(expression);
     }
 
-    @Override
-    public void visitLeftShift(ShiftLeftExpression expression) {
-        visitBinaryOp(expression);
-    }
-
-    @Override
-    public void visitLessEqual(LessEqualExpression expression) {
+    public void visitLessEqual(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
         switch (compareLiterals(lhs, rhs)) {
@@ -403,24 +368,12 @@ public class Lower implements Visitor {
                 lowerBinary(expression, lhs, rhs);
         }
     }
-
-    @Override
-    public void visitLess(LessExpression expression) {
-        visitBinaryOp(expression);
-    }
-
-    @Override
-    public void visitMultiply(MultiplyExpression expression) {
-        visitBinaryOp(expression);
-    }
-
     @Override
     public void visitNegative(NegativeExpression expression) {
         visitUnaryOp(expression);
     }
 
-    @Override
-    public void visitNotEqual(NotEqualExpression expression) {
+    public void visitNotEqual(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
         switch (compareLiterals(lhs, rhs)) {
@@ -452,8 +405,7 @@ public class Lower implements Visitor {
         lowerUnary(expression, hs);
     }
 
-    @Override
-    public void visitNullCoalesce(NullCoalesceExpression expression) {
+    public void visitNullCoalesce(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
         if (!lhs.isNullable() || (lhs instanceof NullExpression)) {
@@ -468,8 +420,7 @@ public class Lower implements Visitor {
         visitLiteral(expression);
     }
 
-    @Override
-    public void visitOr(OrExpression expression) {
+    public void visitOr(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         if (isTrue(lhs)) {
             setTrue(expression);
@@ -542,11 +493,6 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitRemainder(RemainderExpression expression) {
-        visitBinaryOp(expression);
-    }
-
-    @Override
     public void visitReturn(Return statement) {
         if ((statement.expr) != null) {
             statement.expr = getLowerExpression(statement.expr);
@@ -555,18 +501,8 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitRightShift(ShiftRightExpression expression) {
-        visitBinaryOp(expression);
-    }
-
-    @Override
     public void visitString(StringExpression expression) {
         visitLiteral(expression);
-    }
-
-    @Override
-    public void visitSubtract(SubtractExpression expression) {
-        visitBinaryOp(expression);
     }
 
     @Override
@@ -631,6 +567,17 @@ public class Lower implements Visitor {
 
     @Override
     public void visitBinaryOp(BinaryOp tree) {
+        switch (tree.tag) {
+            case BITOR:  visitBitOr(tree);                      break;
+            case EQ:     visitEqual(tree);                      break;
+            case GE:     visitGreaterEqual(tree);               break;
+            case GT:     visitGreater(tree);                    break;
+            case LE:     visitLessEqual(tree);                  break;
+            case NEQ:    visitNotEqual(tree);                   break;
+            case LOGOR:  visitOr(tree);                         break;
+            case NULLCOALESCE: visitNullCoalesce(tree);         break;
+        }
+
         if (!tree.lhs.hasTag(Tag.LITERAL) || !tree.rhs.hasTag(Tag.LITERAL)) {
             result = tree;
             return;
