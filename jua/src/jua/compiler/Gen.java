@@ -331,10 +331,6 @@ public final class Gen implements Visitor {
             generateComparison(tree);
             return;
         }
-        System.out.println(tree);
-        System.out.println(tree.lhs);
-        System.out.println(tree.rhs);
-        System.out.println();
         tree.lhs.accept(this);
         if (tree.hasTag(Tag.NULLCOALESCE)) {
             emitDup();
