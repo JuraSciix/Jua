@@ -40,31 +40,16 @@ public final class FalseOperand extends BooleanOperand {
 
     @Override
     public Operand and(Operand operand) {
-        return new BooleanOperand() {
-            @Override
-            public boolean booleanValue() {
-                return false;
-            }
-        };
+        return this;
     }
 
     @Override
     public Operand or(Operand operand) {
-        return new BooleanOperand() {
-            @Override
-            public boolean booleanValue() {
-                return operand.booleanValue();
-            }
-        };
+        return operand;
     }
 
     @Override
     public Operand xor(Operand operand) {
-        return new BooleanOperand() {
-            @Override
-            public boolean booleanValue() {
-                return operand.booleanValue();
-            }
-        };
+        return this;
     }
 }
