@@ -346,7 +346,7 @@ public class JuaParser {
             int position = currentToken.pos;
 
             if (match(QUESQUES)) {
-                expr = new NullCoalesceExpression(position, expr, parseTernary());
+                expr = new BinaryOp(position, Tag.NULLCOALESCE, expr, parseTernary());
             } else {
                 return expr;
             }
@@ -406,7 +406,7 @@ public class JuaParser {
             int position = currentToken.pos;
 
             if (match(BAR)) {
-                expr = new BitOrExpression(position, expr, parseBitXor());
+                expr = new BinaryOp(position, Tag.BITOR, expr, parseBitXor());
             } else {
                 return expr;
             }
@@ -420,7 +420,7 @@ public class JuaParser {
             int position = currentToken.pos;
 
             if (match(CARET)) {
-                expr = new BitXorExpression(position, expr, parseBitAnd());
+                expr = new BinaryOp(position, Tag.BITXOR, expr, parseBitAnd());
             } else {
                 return expr;
             }
@@ -434,7 +434,7 @@ public class JuaParser {
             int position = currentToken.pos;
 
             if (match(AMP)) {
-                expr = new BitAndExpression(position, expr, parseEquality());
+                expr = new BinaryOp(position, Tag.BITAND, expr, parseEquality());
             } else {
                 return expr;
             }
@@ -484,9 +484,9 @@ public class JuaParser {
             int position = currentToken.pos;
 
             if (match(GTGT)) {
-                expr = new ShiftRightExpression(position, expr, parseAdditive());
+                expr = new BinaryOp(position, Tag.SR, expr, parseAdditive());
             } else if (match(LTLT)) {
-                expr = new ShiftLeftExpression(position, expr, parseAdditive());
+                expr = new BinaryOp(position, Tag.SL, expr, parseAdditive());
             } else {
                 return expr;
             }
@@ -500,9 +500,9 @@ public class JuaParser {
             int position = currentToken.pos;
 
             if (match(MINUS)) {
-                expr = new SubtractExpression(position, expr, parseMultiplicative());
+                expr = new BinaryOp(position, Tag.SUB, expr, parseMultiplicative());
             } else if (match(PLUS)) {
-                expr = new AddExpression(position, expr, parseMultiplicative());
+                expr = new BinaryOp(position, Tag.ADD, expr, parseMultiplicative());
             } else {
                 return expr;
             }
@@ -516,11 +516,11 @@ public class JuaParser {
             int position = currentToken.pos;
 
             if (match(PERCENT)) {
-                expr = new RemainderExpression(position, expr, parseUnary());
+                expr = new BinaryOp(position, Tag.REM, expr, parseUnary());
             } else if (match(SLASH)) {
-                expr = new DivideExpression(position, expr, parseUnary());
+                expr = new BinaryOp(position, Tag.DIV, expr, parseUnary());
             } else if (match(STAR)) {
-                expr = new MultiplyExpression(position, expr, parseUnary());
+                expr = new BinaryOp(position, Tag.MUL, expr, parseUnary());
             } else {
                 return expr;
             }

@@ -57,7 +57,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitAdd(AddExpression expression) {
+    public void visitAdd(BinaryOp expression) {
         visitBinaryOp(expression);
     }
 
@@ -148,7 +148,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitBitAnd(BitAndExpression expression) {
+    public void visitBitAnd(BinaryOp expression) {
         visitBinaryOp(expression);
     }
 
@@ -158,12 +158,12 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitBitOr(BitOrExpression expression) { expression.lhs.accept(this);
+    public void visitBitOr(BinaryOp expression) { expression.lhs.accept(this);
         visitBinaryOp(expression);
     }
 
     @Override
-    public void visitBitXor(BitXorExpression expression) {
+    public void visitBitXor(BinaryOp expression) {
         visitBinaryOp(expression);
     }
 
@@ -237,7 +237,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitDivide(DivideExpression expression) {
+    public void visitDivide(BinaryOp expression) {
         visitBinaryOp(expression);
     }
 
@@ -382,7 +382,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitLeftShift(ShiftLeftExpression expression) {
+    public void visitLeftShift(BinaryOp expression) {
         visitBinaryOp(expression);
     }
 
@@ -410,7 +410,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitMultiply(MultiplyExpression expression) {
+    public void visitMultiply(BinaryOp expression) {
         visitBinaryOp(expression);
     }
 
@@ -453,7 +453,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitNullCoalesce(NullCoalesceExpression expression) {
+    public void visitNullCoalesce(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
         if (!lhs.isNullable() || (lhs instanceof NullExpression)) {
@@ -542,7 +542,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitRemainder(RemainderExpression expression) {
+    public void visitRemainder(BinaryOp expression) {
         visitBinaryOp(expression);
     }
 
@@ -555,7 +555,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitRightShift(ShiftRightExpression expression) {
+    public void visitRightShift(BinaryOp expression) {
         visitBinaryOp(expression);
     }
 
@@ -565,7 +565,7 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitSubtract(SubtractExpression expression) {
+    public void visitSubtract(BinaryOp expression) {
         visitBinaryOp(expression);
     }
 

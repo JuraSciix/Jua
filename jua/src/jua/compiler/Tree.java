@@ -120,13 +120,6 @@ public abstract class Tree {
         }
     }
 
-    public static class AddExpression extends BinaryOp {
-
-        public AddExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.ADD, lhs, rhs);
-        }
-    }
-
     public static class ArrayAccess extends Expression {
 
         public Expression array;
@@ -438,31 +431,10 @@ public abstract class Tree {
         }
     }
 
-    public static class BitAndExpression extends BinaryOp {
-
-        public BitAndExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.BITAND, lhs, rhs);
-        }
-    }
-
     public static class BitNotExpression extends UnaryOp {
 
         public BitNotExpression(int pos, Expression hs) {
             super(pos, Tag.BITCMPL, hs);
-        }
-    }
-
-    public static class BitOrExpression extends BinaryOp {
-
-        public BitOrExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.BITOR, lhs, rhs);
-        }
-    }
-
-    public static class BitXorExpression extends BinaryOp {
-
-        public BitXorExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.BITXOR, lhs, rhs);
         }
     }
 
@@ -579,14 +551,6 @@ public abstract class Tree {
         public void accept(Visitor visitor) {
             visitor.visitContinue(this);
         }
-    }
-
-    public static class DivideExpression extends BinaryOp {
-
-        public DivideExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.DIV, lhs, rhs);
-        }
-
     }
 
     public static class DoLoop extends Statement {
@@ -907,13 +871,6 @@ public abstract class Tree {
         }
     }
 
-    public static class MultiplyExpression extends BinaryOp {
-
-        public MultiplyExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.MUL, lhs, rhs);
-        }
-    }
-
     public static class NegativeExpression extends UnaryOp {
 
         public NegativeExpression(int pos, Expression hs) {
@@ -925,13 +882,6 @@ public abstract class Tree {
 
         public NotExpression(int pos, Expression hs) {
             super(pos, Tag.LOGCMPL ,hs);
-        }
-    }
-
-    public static class NullCoalesceExpression extends BinaryOp {
-
-        public NullCoalesceExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.NULLCOALESCE, lhs, rhs);
         }
     }
 
@@ -1067,13 +1017,6 @@ public abstract class Tree {
         }
     }
 
-    public static class RemainderExpression extends BinaryOp {
-
-        public RemainderExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.REM, lhs, rhs);
-        }
-    }
-
     public static class Return extends Statement {
 
         public Expression expr;
@@ -1095,20 +1038,6 @@ public abstract class Tree {
         @Override
         public void accept(Visitor visitor) {
             visitor.visitReturn(this);
-        }
-    }
-
-    public static class ShiftLeftExpression extends BinaryOp {
-
-        public ShiftLeftExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.SL, lhs, rhs);
-        }
-    }
-
-    public static class ShiftRightExpression extends BinaryOp {
-
-        public ShiftRightExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.SR, lhs, rhs);
         }
     }
 
@@ -1135,13 +1064,6 @@ public abstract class Tree {
 
         public StringExpression(int pos, String value) {
             super(pos, value);
-        }
-    }
-
-    public static class SubtractExpression extends BinaryOp {
-
-        public SubtractExpression(int pos, Expression lhs, Expression rhs) {
-            super(pos, Tag.SUB, lhs, rhs);
         }
     }
 
@@ -1325,7 +1247,7 @@ public abstract class Tree {
     public static interface Visitor {
         void visitCompilationUnit(CompilationUnit tree);
 
-        void visitAdd(AddExpression expression);
+        void visitAdd(BinaryOp expression);
 
         void visitAnd(BinaryOp expression);
 
@@ -1357,13 +1279,13 @@ public abstract class Tree {
 
         void visitAssignSubtract(AssignSubtractExpression expression);
 
-        void visitBitAnd(BitAndExpression expression);
+        void visitBitAnd(BinaryOp expression);
 
         void visitBitNot(BitNotExpression expression);
 
-        void visitBitOr(BitOrExpression expression);
+        void visitBitOr(BinaryOp expression);
 
-        void visitBitXor(BitXorExpression expression);
+        void visitBitXor(BinaryOp expression);
 
         void visitBlock(Block statement);
 
@@ -1377,7 +1299,7 @@ public abstract class Tree {
 
         void visitContinue(Continue statement);
 
-        void visitDivide(DivideExpression expression);
+        void visitDivide(BinaryOp expression);
 
         void visitDoLoop(DoLoop statement);
 
@@ -1403,13 +1325,13 @@ public abstract class Tree {
 
         void visitInt(IntExpression expression);
 
-        void visitLeftShift(ShiftLeftExpression expression);
+        void visitLeftShift(BinaryOp expression);
 
         void visitLessEqual(BinaryOp expression);
 
         void visitLess(BinaryOp expression);
 
-        void visitMultiply(MultiplyExpression expression);
+        void visitMultiply(BinaryOp expression);
 
         void visitNegative(NegativeExpression expression);
 
@@ -1417,7 +1339,7 @@ public abstract class Tree {
 
         void visitNot(NotExpression expression);
 
-        void visitNullCoalesce(NullCoalesceExpression expression);
+        void visitNullCoalesce(BinaryOp expression);
 
         void visitNull(NullExpression expression);
 
@@ -1441,15 +1363,15 @@ public abstract class Tree {
         @Deprecated
         void visitPrint(PrintStatement statement);
 
-        void visitRemainder(RemainderExpression expression);
+        void visitRemainder(BinaryOp expression);
 
         void visitReturn(Return statement);
 
-        void visitRightShift(ShiftRightExpression expression);
+        void visitRightShift(BinaryOp expression);
 
         void visitString(StringExpression expression);
 
-        void visitSubtract(SubtractExpression expression);
+        void visitSubtract(BinaryOp expression);
 
         void visitSwitch(Switch statement);
 

@@ -102,7 +102,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitAdd(AddExpression expression) {
+    public void visitAdd(BinaryOp expression) {
         generateBinary(expression);
     }
 
@@ -329,7 +329,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitBitAnd(BitAndExpression expression) {
+    public void visitBitAnd(BinaryOp expression) {
         generateBinary(expression);
     }
 
@@ -339,12 +339,12 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitBitOr(BitOrExpression expression) {
+    public void visitBitOr(BinaryOp expression) {
         generateBinary(expression);
     }
 
     @Override
-    public void visitBitXor(BitXorExpression expression) {
+    public void visitBitXor(BinaryOp expression) {
         generateBinary(expression);
     }
 
@@ -541,7 +541,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitDivide(DivideExpression expression) {
+    public void visitDivide(BinaryOp expression) {
         generateBinary(expression);
     }
 
@@ -808,7 +808,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitLeftShift(ShiftLeftExpression expression) {
+    public void visitLeftShift(BinaryOp expression) {
         generateBinary(expression);
     }
 
@@ -977,7 +977,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitMultiply(MultiplyExpression expression) {
+    public void visitMultiply(BinaryOp expression) {
         generateBinary(expression);
     }
 
@@ -1032,7 +1032,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitNullCoalesce(NullCoalesceExpression expression) {
+    public void visitNullCoalesce(BinaryOp expression) {
         // todo: Это очевидно неполноценная реализация.
 //        visitExpression(expression.lhs);
 //        emitDup();
@@ -1146,7 +1146,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitRemainder(RemainderExpression expression) {
+    public void visitRemainder(BinaryOp expression) {
         generateBinary(expression);
     }
 
@@ -1170,7 +1170,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitRightShift(ShiftRightExpression expression) {
+    public void visitRightShift(BinaryOp expression) {
         generateBinary(expression);
     }
 
@@ -1180,7 +1180,7 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitSubtract(SubtractExpression expression) {
+    public void visitSubtract(BinaryOp expression) {
         generateBinary(expression);
     }
 
