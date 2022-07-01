@@ -37,6 +37,14 @@ public class InterpreterThread {
         MAX_CALLSTACK_SIZE = a;
     }
 
+    private static final ThreadLocal<InterpreterThread> thread = new ThreadLocal<>();
+
+    public static InterpreterThread getInstance() {
+        if (thread.get() == null) {
+            throw new IllegalStateException("No thread present");
+        }
+        return thread.get();
+    }
 
     @Deprecated
     public static InterpreterThread copy(InterpreterThread thread) {
@@ -59,14 +67,18 @@ public class InterpreterThread {
 
     private byte msg = MSG_CREATED;
 
-    private Operand retval;
+    private Operand returnee;
 
-    // todo: ну... исправить
     public InterpreterFrame currentFrame() {
         return current_frame;
     }
 
     public InterpreterThread(Thread javaThread, JuaEnvironment environment) {
+        Objects.requireNonNull(javaThread, "Java thread");
+        Objects.requireNonNull(environment, "Environment");
+        if (thread.get() != null) {
+            throw new IllegalStateException("Thread already present");
+        }
         this.javaThread = javaThread;
         this.environment = environment;
     }
@@ -126,7 +138,7 @@ public class InterpreterThread {
 
     public void returnFrame() {
         InterpreterFrame uf = current_frame;
-        Operand returnVal = retval;
+        Operand returnVal = returnee;
         if (returnVal == null) throw new IllegalStateException("null return value");
         InterpreterFrame uf1 = uf.sender();
         if (uf1 == null) {
@@ -161,8 +173,8 @@ public class InterpreterThread {
         msg = MSG_CALLING;
     }
 
-    public void set_return(Operand retval) {
-        this.retval = retval;
+    public void set_returnee(Operand returnee) {
+        this.returnee = returnee;
         this.msg = MSG_POPPING;
     }
 
@@ -209,7 +221,8 @@ public class InterpreterThread {
                 }
 
                 switch (msg) {
-                    case MSG_RUNNING: continue;
+                    case MSG_RUNNING:
+                        continue;
 
                     case MSG_CALLING: {
                         set_msg(MSG_RUNNING);

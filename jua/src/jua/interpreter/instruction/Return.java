@@ -18,7 +18,7 @@ public final class Return implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        state.thread().set_return(state.popStack());
+        state.thread().set_returnee(state.popStack());
         return UNREACHABLE;
     }
 }

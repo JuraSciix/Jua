@@ -86,24 +86,24 @@ public abstract class Operand {
     }
 
     public long longValue() {
-        throw new IllegalStateException();
+        throw InterpreterError.inconvertibleTypes(type(), Type.LONG);
     }
 
     public double doubleValue() {
-        throw new IllegalStateException();
+        throw InterpreterError.inconvertibleTypes(type(), Type.DOUBLE);
     }
 
     public boolean booleanValue() {
-        throw new IllegalStateException();
+        throw InterpreterError.inconvertibleTypes(type(), Type.BOOLEAN);
     }
 
     public String stringValue() {
-        throw new IllegalStateException();
+        throw InterpreterError.inconvertibleTypes(type(), Type.STRING);
     }
 
     @Deprecated
     public Array arrayValue() {
-        throw new IllegalStateException();
+        throw InterpreterError.inconvertibleTypes(type(), Type.MAP);
     }
 
     @Override
