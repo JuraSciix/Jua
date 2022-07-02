@@ -173,79 +173,7 @@ public abstract class Tree {
         }
     }
 
-    public static class AssignAddExpression extends AssignOp {
-
-        public AssignAddExpression(int pos, Expression var, Expression expr) {
-            super(pos, Tag.ASG_ADD, var, expr);
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitAssignAdd(this);
-        }
-    }
-
-    public static class AssignBitAndExpression extends AssignOp {
-
-        public AssignBitAndExpression(int pos, Expression var, Expression expr) {
-            super(pos, Tag.ASG_BITAND, var, expr);
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitAssignBitAnd(this);
-        }
-    }
-
-    public static class AssignBitOrExpression extends AssignOp {
-
-        public AssignBitOrExpression(int pos, Expression var, Expression expr) {
-            super(pos, Tag.ASG_BITOR, var, expr);
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitAssignBitOr(this);
-        }
-    }
-
-    public static class AssignBitXorExpression extends AssignOp {
-
-        public AssignBitXorExpression(int pos, Expression var, Expression expr) {
-            super(pos, Tag.ASG_BITXOR, var, expr);
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitAssignBitXor(this);
-        }
-    }
-
-    public static class AssignDivideExpression extends AssignOp {
-
-        public AssignDivideExpression(int pos, Expression var, Expression expr) {
-            super(pos, Tag.ASG_DIV, var, expr);
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitAssignDivide(this);
-        }
-    }
-
-    public static class AssignExpression extends AssignOp {
-
-        public AssignExpression(int pos, Expression var, Expression expr) {
-            super(pos, Tag.ASG, var, expr);
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitAssignOp(this);
-        }
-    }
-
-    public abstract static class AssignOp extends Expression {
+    public static class AssignOp extends Expression {
 
         public Tag tag;
 
@@ -253,7 +181,7 @@ public abstract class Tree {
 
         public Expression expr;
 
-        protected AssignOp(int pos, Tag tag, Expression var, Expression expr) {
+        public AssignOp(int pos, Tag tag, Expression var, Expression expr) {
             super(pos);
             this.tag = tag;
             this.var = var;
@@ -263,6 +191,11 @@ public abstract class Tree {
         @Override
         public Tag getTag() {
             return tag;
+        }
+
+        @Override
+        public void accept(Visitor visitor) {
+            visitor.visitAssignOp(this);
         }
 
         @Override
@@ -278,78 +211,6 @@ public abstract class Tree {
         @Override
         public boolean isNullable() {
             return expr.isNullable();
-        }
-    }
-
-    public static class AssignMultiplyExpression extends AssignOp {
-
-        public AssignMultiplyExpression(int pos, Expression var, Expression expr) {
-            super(pos, Tag.ASG_MUL, var, expr);
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitAssignMultiply(this);
-        }
-    }
-
-    public static class AssignNullCoalesceExpression extends AssignOp {
-
-        public AssignNullCoalesceExpression(int pos, Expression var, Expression expr) {
-            super(pos, Tag.ASG_NULLCOALESCE, var, expr);
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitAssignNullCoalesce(this);
-        }
-    }
-
-    public static class AssignRemainderExpression extends AssignOp {
-
-        public AssignRemainderExpression(int pos, Expression var, Expression expr) {
-            super(pos, Tag.ASG_REM, var, expr);
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitAssignRemainder(this);
-        }
-    }
-
-    public static class AssignShiftLeftExpression extends AssignOp {
-
-        public AssignShiftLeftExpression(int pos, Expression var, Expression expr) {
-            super(pos, Tag.ASG_SL, var, expr);
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitAssignLeftShift(this);
-        }
-    }
-
-    public static class AssignShiftRightExpression extends AssignOp {
-
-        public AssignShiftRightExpression(int pos, Expression var, Expression expr) {
-            super(pos, Tag.ASG_SR, var, expr);
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitAssignRightShift(this);
-        }
-    }
-
-    public static class AssignSubtractExpression extends AssignOp {
-
-        public AssignSubtractExpression(int pos, Expression var, Expression expr) {
-            super(pos, Tag.ASG_SUB, var, expr);
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitAssignSubtract(this);
         }
     }
 
@@ -1199,30 +1060,6 @@ public abstract class Tree {
 
         void visitArray(ArrayLiteral expression);
 
-        void visitAssignAdd(AssignAddExpression expression);
-
-        void visitAssignBitAnd(AssignBitAndExpression expression);
-
-        void visitAssignBitOr(AssignBitOrExpression expression);
-
-        void visitAssignBitXor(AssignBitXorExpression expression);
-
-        void visitAssignDivide(AssignDivideExpression expression);
-
-        void visitAssignLeftShift(AssignShiftLeftExpression expression);
-
-        void visitAssignOp(AssignExpression expression);
-
-        void visitAssignMultiply(AssignMultiplyExpression expression);
-
-        void visitAssignNullCoalesce(AssignNullCoalesceExpression expression);
-
-        void visitAssignRemainder(AssignRemainderExpression expression);
-
-        void visitAssignRightShift(AssignShiftRightExpression expression);
-
-        void visitAssignSubtract(AssignSubtractExpression expression);
-
         void visitBitNot(BitNotExpression expression);
 
         void visitBlock(Block statement);
@@ -1269,6 +1106,7 @@ public abstract class Tree {
 
         void visitPostIncrement(PostIncrementExpression expression);
 
+
         void visitPreDecrement(PreDecrementExpression expression);
 
         void visitPreIncrement(PreIncrementExpression expression);
@@ -1296,6 +1134,7 @@ public abstract class Tree {
         void visitDiscarded(Discarded expression);
 
         void visitBinaryOp(BinaryOp tree);
+
 
         void visitUnaryOp(UnaryOp tree);
 

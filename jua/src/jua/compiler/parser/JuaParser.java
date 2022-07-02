@@ -301,40 +301,40 @@ public class JuaParser {
         int position = currentToken.pos;
 
         if (match(AMPEQ)) {
-            return new AssignBitAndExpression(position, expr, parseAssignment());
+            return new AssignOp(position, Tag.ASG_BITAND, expr, parseAssignment());
         }
         if (match(BAREQ)) {
-            return new AssignBitOrExpression(position, expr, parseAssignment());
+            return new AssignOp(position, Tag.ASG_BITOR, expr, parseAssignment());
         }
         if (match(CARETEQ)) {
-            return new AssignBitXorExpression(position, expr, parseAssignment());
+            return new AssignOp(position, Tag.BITXOR, expr, parseAssignment());
         }
         if (match(EQ)) {
-            return new AssignExpression(position, expr, parseAssignment());
+            return new AssignOp(position, Tag.ASG, expr, parseAssignment());
         }
         if (match(GTGTEQ)) {
-            return new AssignShiftLeftExpression(position, expr, parseAssignment());
+            return new AssignOp(position, Tag.ASG_SL, expr, parseAssignment());
         }
         if (match(LTLTEQ)) {
-            return new AssignShiftRightExpression(position, expr, parseAssignment());
+            return new AssignOp(position, Tag.ASG_SR, expr, parseAssignment());
         }
         if (match(MINUSEQ)) {
-            return new AssignSubtractExpression(position, expr, parseAssignment());
+            return new AssignOp(position, Tag.ASG_SUB, expr, parseAssignment());
         }
         if (match(PERCENTEQ)) {
-            return new AssignRemainderExpression(position, expr, parseAssignment());
+            return new AssignOp(position, Tag.ASG_REM, expr, parseAssignment());
         }
         if (match(PLUSEQ)) {
-            return new AssignAddExpression(position, expr, parseAssignment());
+            return new AssignOp(position, Tag.ASG_ADD, expr, parseAssignment());
         }
         if (match(QUESQUESEQ)) {
-            return new AssignNullCoalesceExpression(position, expr, parseAssignment());
+            return new AssignOp(position, Tag.ASG_NULLCOALESCE, expr, parseAssignment());
         }
         if (match(SLASHEQ)) {
-            return new AssignDivideExpression(position, expr, parseAssignment());
+            return new AssignOp(position, Tag.ASG_DIV, expr, parseAssignment());
         }
         if (match(STAREQ)) {
-            return new AssignMultiplyExpression(position, expr, parseAssignment());
+            return new AssignOp(position, Tag.ASG_MUL, expr, parseAssignment());
         }
         return expr;
     }

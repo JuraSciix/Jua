@@ -244,48 +244,7 @@ public final class Gen implements Visitor {
         code.addInstruction(Newarray.INSTANCE, 1);
     }
 
-    @Override
-    public void visitAssignAdd(AssignAddExpression expression) {
-        generateAssignment(expression);
-    }
-
-    @Override
-    public void visitAssignBitAnd(AssignBitAndExpression expression) {
-        generateAssignment(expression);
-    }
-
-    @Override
-    public void visitAssignBitOr(AssignBitOrExpression expression) {
-        generateAssignment(expression);
-    }
-
-    @Override
-    public void visitAssignBitXor(AssignBitXorExpression expression) {
-        generateAssignment(expression);
-    }
-
-    @Override
-    public void visitAssignDivide(AssignDivideExpression expression) {
-        generateAssignment(expression);
-    }
-
-    @Override
-    public void visitAssignLeftShift(AssignShiftLeftExpression expression) {
-        generateAssignment(expression);
-    }
-
-    @Override
-    public void visitAssignOp(AssignExpression expression) {
-        generateAssignment(expression);
-    }
-
-    @Override
-    public void visitAssignMultiply(AssignMultiplyExpression expression) {
-        generateAssignment(expression);
-    }
-
-    @Override
-    public void visitAssignNullCoalesce(AssignNullCoalesceExpression expression) {
+    public void visitAssignNullCoalesce(AssignOp expression) {
 //        int el = code.createFlow();
 //        int ex = code.createFlow();
 //        boolean isArray = (expression.var.child() instanceof ArrayAccess);
@@ -303,21 +262,6 @@ public final class Gen implements Visitor {
 //        }
 //        code.resolveFlow(ex);
 
-        generateAssignment(expression);
-    }
-
-    @Override
-    public void visitAssignRemainder(AssignRemainderExpression expression) {
-        generateAssignment(expression);
-    }
-
-    @Override
-    public void visitAssignRightShift(AssignShiftRightExpression expression) {
-        generateAssignment(expression);
-    }
-
-    @Override
-    public void visitAssignSubtract(AssignSubtractExpression expression) {
         generateAssignment(expression);
     }
 
@@ -1238,6 +1182,8 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitAssignOp(AssignOp tree) {
+        if (tree.tag == Tag.ASG_NULLCOALESCE) visitAssignNullCoalesce(tree);
+
         generateAssignment(tree);
     }
 

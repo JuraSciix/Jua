@@ -78,66 +78,6 @@ public class Lower implements Visitor {
     }
 
     @Override
-    public void visitAssignAdd(AssignAddExpression expression) {
-        visitAssignment(expression);
-    }
-
-    @Override
-    public void visitAssignBitAnd(AssignBitAndExpression expression) {
-        visitAssignment(expression);
-    }
-
-    @Override
-    public void visitAssignBitOr(AssignBitOrExpression expression) {
-        visitAssignment(expression);
-    }
-
-    @Override
-    public void visitAssignBitXor(AssignBitXorExpression expression) {
-        visitAssignment(expression);
-    }
-
-    @Override
-    public void visitAssignDivide(AssignDivideExpression expression) {
-        visitAssignment(expression);
-    }
-
-    @Override
-    public void visitAssignLeftShift(AssignShiftLeftExpression expression) {
-        visitAssignment(expression);
-    }
-
-    @Override
-    public void visitAssignOp(AssignExpression expression) {
-        visitAssignment(expression);
-    }
-
-    @Override
-    public void visitAssignMultiply(AssignMultiplyExpression expression) {
-        visitAssignment(expression);
-    }
-
-    @Override
-    public void visitAssignNullCoalesce(AssignNullCoalesceExpression expression) {
-        visitAssignment(expression);
-    }
-
-    @Override
-    public void visitAssignRemainder(AssignRemainderExpression expression) {
-        visitAssignment(expression);
-    }
-
-    @Override
-    public void visitAssignRightShift(AssignShiftRightExpression expression) {
-        visitAssignment(expression);
-    }
-
-    @Override
-    public void visitAssignSubtract(AssignSubtractExpression expression) {
-        visitAssignment(expression);
-    }
-
-    @Override
     public void visitBitNot(BitNotExpression expression) {
         visitUnaryOp(expression);
     }
@@ -606,7 +546,7 @@ public class Lower implements Visitor {
     @Override
     public void visitAssignOp(AssignOp tree) {
         // todo: task for JavaKira
-        result = tree;
+        visitAssignment(tree);
     }
 
     @Override
