@@ -176,12 +176,7 @@ public abstract class Tree {
     public static class AssignAddExpression extends AssignOp {
 
         public AssignAddExpression(int pos, Expression var, Expression expr) {
-            super(pos, var, expr);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.ASG_ADD;
+            super(pos, Tag.ASG_ADD, var, expr);
         }
 
         @Override
@@ -193,12 +188,7 @@ public abstract class Tree {
     public static class AssignBitAndExpression extends AssignOp {
 
         public AssignBitAndExpression(int pos, Expression var, Expression expr) {
-            super(pos, var, expr);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.ASG_BITAND;
+            super(pos, Tag.ASG_BITAND, var, expr);
         }
 
         @Override
@@ -210,12 +200,7 @@ public abstract class Tree {
     public static class AssignBitOrExpression extends AssignOp {
 
         public AssignBitOrExpression(int pos, Expression var, Expression expr) {
-            super(pos, var, expr);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.ASG_BITOR;
+            super(pos, Tag.ASG_BITOR, var, expr);
         }
 
         @Override
@@ -227,12 +212,7 @@ public abstract class Tree {
     public static class AssignBitXorExpression extends AssignOp {
 
         public AssignBitXorExpression(int pos, Expression var, Expression expr) {
-            super(pos, var, expr);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.ASG_BITXOR;
+            super(pos, Tag.ASG_BITXOR, var, expr);
         }
 
         @Override
@@ -244,12 +224,7 @@ public abstract class Tree {
     public static class AssignDivideExpression extends AssignOp {
 
         public AssignDivideExpression(int pos, Expression var, Expression expr) {
-            super(pos, var, expr);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.ASG_DIV;
+            super(pos, Tag.ASG_DIV, var, expr);
         }
 
         @Override
@@ -261,12 +236,7 @@ public abstract class Tree {
     public static class AssignExpression extends AssignOp {
 
         public AssignExpression(int pos, Expression var, Expression expr) {
-            super(pos, var, expr);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.ASG;
+            super(pos, Tag.ASG, var, expr);
         }
 
         @Override
@@ -277,14 +247,22 @@ public abstract class Tree {
 
     public abstract static class AssignOp extends Expression {
 
+        public Tag tag;
+
         public Expression var;
 
         public Expression expr;
 
-        protected AssignOp(int pos, Expression var, Expression expr) {
+        protected AssignOp(int pos, Tag tag, Expression var, Expression expr) {
             super(pos);
+            this.tag = tag;
             this.var = var;
             this.expr = expr;
+        }
+
+        @Override
+        public Tag getTag() {
+            return tag;
         }
 
         @Override
@@ -306,12 +284,7 @@ public abstract class Tree {
     public static class AssignMultiplyExpression extends AssignOp {
 
         public AssignMultiplyExpression(int pos, Expression var, Expression expr) {
-            super(pos, var, expr);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.ASG_MUL;
+            super(pos, Tag.ASG_MUL, var, expr);
         }
 
         @Override
@@ -323,12 +296,7 @@ public abstract class Tree {
     public static class AssignNullCoalesceExpression extends AssignOp {
 
         public AssignNullCoalesceExpression(int pos, Expression var, Expression expr) {
-            super(pos, var, expr);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.ASG_NULLCOALESCE;
+            super(pos, Tag.ASG_NULLCOALESCE, var, expr);
         }
 
         @Override
@@ -340,12 +308,7 @@ public abstract class Tree {
     public static class AssignRemainderExpression extends AssignOp {
 
         public AssignRemainderExpression(int pos, Expression var, Expression expr) {
-            super(pos, var, expr);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.ASG_REM;
+            super(pos, Tag.ASG_REM, var, expr);
         }
 
         @Override
@@ -357,12 +320,7 @@ public abstract class Tree {
     public static class AssignShiftLeftExpression extends AssignOp {
 
         public AssignShiftLeftExpression(int pos, Expression var, Expression expr) {
-            super(pos, var, expr);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.ASG_SL;
+            super(pos, Tag.ASG_SL, var, expr);
         }
 
         @Override
@@ -374,12 +332,7 @@ public abstract class Tree {
     public static class AssignShiftRightExpression extends AssignOp {
 
         public AssignShiftRightExpression(int pos, Expression var, Expression expr) {
-            super(pos, var, expr);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.ASG_SR;
+            super(pos, Tag.ASG_SR, var, expr);
         }
 
         @Override
@@ -391,12 +344,7 @@ public abstract class Tree {
     public static class AssignSubtractExpression extends AssignOp {
 
         public AssignSubtractExpression(int pos, Expression var, Expression expr) {
-            super(pos, var, expr);
-        }
-
-        @Override
-        public Tag getTag() {
-            return Tag.ASG_SUB;
+            super(pos, Tag.ASG_SUB, var, expr);
         }
 
         @Override
