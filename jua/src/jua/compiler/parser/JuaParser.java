@@ -531,22 +531,22 @@ public class JuaParser {
         int position = currentToken.pos;
 
         if (match(EXCL)) {
-            return new NotExpression(position, parseUnary());
+            return new UnaryOp(position, Tag.LOGCMPL, parseUnary());
         }
         if (match(MINUS)) {
-            return new NegativeExpression(position, parseUnary());
+            return new UnaryOp(position, Tag.NEG, parseUnary());
         }
         if (match(MINUSMINUS)) {
-            return new PreDecrementExpression(position, parseUnary());
+            return new UnaryOp(position, Tag.PRE_DEC, parseUnary());
         }
         if (match(PLUS)) {
-            return new PositiveExpression(position, parseUnary());
+            return new UnaryOp(position, Tag.POS, parseUnary());
         }
         if (match(PLUSPLUS)) {
-            return new PreIncrementExpression(position, parseUnary());
+            return new UnaryOp(position, Tag.PRE_INC, parseUnary());
         }
         if (match(TILDE)) {
-            return new BitNotExpression(position, parseUnary());
+            return new UnaryOp(position, Tag.BITCMPL, parseUnary());
         }
         return parseClone();
     }
@@ -555,7 +555,7 @@ public class JuaParser {
         int position = currentToken.pos;
 
         if (match(CLONE)) {
-            return new CloneExpression(position, parsePost());
+            return new UnaryOp(position, Tag.CLONE, parsePost());
         }
         return parsePost();
     }
@@ -567,9 +567,9 @@ public class JuaParser {
             int position = currentToken.pos;
 
             if (match(MINUSMINUS)) {
-                expr = new PostDecrementExpression(position, expr);
+                expr = new UnaryOp(position, Tag.POST_DEC, expr);
             } else if (match(PLUSPLUS)) {
-                expr = new PostIncrementExpression(position, expr);
+                expr = new UnaryOp(position, Tag.POST_INC, expr);
             } else {
                 return expr;
             }

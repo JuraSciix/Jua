@@ -265,11 +265,6 @@ public final class Gen implements Visitor {
         generateAssignment(expression);
     }
 
-    @Override
-    public void visitBitNot(BitNotExpression expression) {
-        generateUnary(expression);
-    }
-
     private void generateBinary(BinaryOp tree) {
         if (TreeInfo.isCondition(tree)) {
             generateComparison(tree);
@@ -414,11 +409,6 @@ public final class Gen implements Visitor {
             code.dead();
         }
         state = prev_state;
-    }
-
-    @Override
-    public void visitClone(CloneExpression expression) {
-        generateUnary(expression);
     }
 
     @Override
@@ -879,11 +869,6 @@ public final class Gen implements Visitor {
         endCondition();
     }
 
-    @Override
-    public void visitNegative(NegativeExpression expression) {
-        generateUnary(expression);
-    }
-
     public void visitNotEqual(BinaryOp expression) {
 //        beginCondition();
 //        Expression lhs = expression.lhs;
@@ -923,11 +908,6 @@ public final class Gen implements Visitor {
         generateComparison(expression);
     }
 
-    @Override
-    public void visitNot(NotExpression expression) {
-        generateUnary(expression);
-    }
-
     public void visitNullCoalesce(BinaryOp expression) {
         // todo: Это очевидно неполноценная реализация.
 //        visitExpression(expression.lhs);
@@ -954,27 +934,14 @@ public final class Gen implements Visitor {
         //        "all brackets should have been removed in ConstantFolder");
     }
 
-    @Override
-    public void visitPositive(PositiveExpression expression) {
-        generateUnary(expression);
-    }
-
     private void generateUnary(UnaryOp tree) {
-        if (tree instanceof IncreaseExpression) {
-            switch (tree.getTag()) {
-                case POST_DEC:
-                    generateIncrease((IncreaseExpression) tree, false, true);
-                    return;
-                case POST_INC:
-                    generateIncrease((IncreaseExpression) tree, true, true);
-                    return;
-                case PRE_DEC:
-                    generateIncrease((IncreaseExpression) tree, false, false);
-                    return;
-                case PRE_INC:
-                    generateIncrease((IncreaseExpression) tree, true, false);
-                    return;
-            }
+        switch (tree.getTag()) {
+            case POST_DEC:
+            case PRE_DEC:
+            case POST_INC:
+            case PRE_INC:
+                generateIncrease(tree);
+                return;
         }
 
         System.out.println(tree);
@@ -999,26 +966,6 @@ public final class Gen implements Visitor {
             case BITCMPL: return Not.INSTANCE;
             default: throw new AssertionError();
         }
-    }
-
-    @Override
-    public void visitPostDecrement(PostDecrementExpression expression) {
-        generateIncrease(expression, false, true);
-    }
-
-    @Override
-    public void visitPostIncrement(PostIncrementExpression expression) {
-        generateIncrease(expression, true, true);
-    }
-
-    @Override
-    public void visitPreDecrement(PreDecrementExpression expression) {
-        generateIncrease(expression, false, false);
-    }
-
-    @Override
-    public void visitPreIncrement(PreIncrementExpression expression) {
-        generateIncrease(expression, true, false);
     }
 
     @Deprecated
@@ -1401,9 +1348,7 @@ public final class Gen implements Visitor {
 
     }
 
-    private void generateIncrease(IncreaseExpression expression,
-                                  @Deprecated boolean isIncrement,
-                                  @Deprecated boolean isPost) {
+    private void generateIncrease(UnaryOp expression) {
 //        Expression hs = expression.hs.child();
 //        checkAssignable(hs);
 //        int line = line(expression);

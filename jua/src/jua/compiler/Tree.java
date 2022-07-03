@@ -240,13 +240,6 @@ public abstract class Tree {
         }
     }
 
-    public static class BitNotExpression extends UnaryOp {
-
-        public BitNotExpression(int pos, Expression hs) {
-            super(pos, Tag.BITCMPL, hs);
-        }
-    }
-
     public static class Block extends Statement {
 
         public List<Statement> statements;
@@ -311,14 +304,6 @@ public abstract class Tree {
         @Override
         public void accept(Visitor visitor) {
             visitor.visitCase(this);
-        }
-    }
-
-    // todo: remove
-    public static class CloneExpression extends UnaryOp {
-
-        public CloneExpression(int pos, Expression hs) {
-            super(pos, Tag.CLONE, hs);
         }
     }
 
@@ -620,13 +605,6 @@ public abstract class Tree {
         }
     }
 
-    public abstract static class IncreaseExpression extends UnaryOp {
-
-        protected IncreaseExpression(int pos, Tag tag, Expression hs) {
-            super(pos, tag, hs);
-        }
-    }
-
     public static class Literal extends Expression {
 
         public Object value;
@@ -680,20 +658,6 @@ public abstract class Tree {
         }
     }
 
-    public static class NegativeExpression extends UnaryOp {
-
-        public NegativeExpression(int pos, Expression hs) {
-            super(pos, Tag.NEG, hs);
-        }
-    }
-
-    public static class NotExpression extends UnaryOp {
-
-        public NotExpression(int pos, Expression hs) {
-            super(pos, Tag.LOGCMPL ,hs);
-        }
-    }
-
     public static class NullExpression extends Literal {
 
         public NullExpression(int pos) {
@@ -744,41 +708,6 @@ public abstract class Tree {
             this.filename = filename;
             this.line = line;
             this.offset = offset;
-        }
-    }
-
-    public static class PositiveExpression extends UnaryOp {
-
-        public PositiveExpression(int pos, Expression hs) {
-            super(pos, Tag.POS, hs);
-        }
-    }
-
-    public static class PostDecrementExpression extends IncreaseExpression {
-
-        public PostDecrementExpression(int pos, Expression hs) {
-            super(pos, Tag.POST_DEC, hs);
-        }
-    }
-
-    public static class PostIncrementExpression extends IncreaseExpression {
-
-        public PostIncrementExpression(int pos, Expression hs) {
-            super(pos, Tag.POST_INC, hs);
-        }
-    }
-
-    public static class PreDecrementExpression extends IncreaseExpression {
-
-        public PreDecrementExpression(int pos, Expression hs) {
-            super(pos,Tag.PRE_DEC, hs);
-        }
-    }
-
-    public static class PreIncrementExpression extends IncreaseExpression {
-
-        public PreIncrementExpression(int pos, Expression hs) {
-            super(pos, Tag.PRE_INC,hs);
         }
     }
 
@@ -952,7 +881,7 @@ public abstract class Tree {
         public Tag tag;
         public Expression hs;
 
-        protected UnaryOp(int pos, Tag tag, Expression hs) {
+        public UnaryOp(int pos, Tag tag, Expression hs) {
             super(pos);
             this.tag = tag;
             this.hs = hs;
@@ -1060,15 +989,11 @@ public abstract class Tree {
 
         void visitArray(ArrayLiteral expression);
 
-        void visitBitNot(BitNotExpression expression);
-
         void visitBlock(Block statement);
 
         void visitBreak(Break statement);
 
         void visitCase(Case statement);
-
-        void visitClone(CloneExpression expression);
 
         void visitConstantDeclare(ConstantDecl statement);
 
@@ -1092,24 +1017,9 @@ public abstract class Tree {
 
         void visitInt(IntExpression expression);
 
-        void visitNegative(NegativeExpression expression);
-
-        void visitNot(NotExpression expression);
-
         void visitNull(NullExpression expression);
 
         void visitParens(Parens expression);
-
-        void visitPositive(PositiveExpression expression);
-
-        void visitPostDecrement(PostDecrementExpression expression);
-
-        void visitPostIncrement(PostIncrementExpression expression);
-
-
-        void visitPreDecrement(PreDecrementExpression expression);
-
-        void visitPreIncrement(PreIncrementExpression expression);
 
         @Deprecated
         void visitPrintln(PrintlnStatement statement);
@@ -1134,7 +1044,6 @@ public abstract class Tree {
         void visitDiscarded(Discarded expression);
 
         void visitBinaryOp(BinaryOp tree);
-
 
         void visitUnaryOp(UnaryOp tree);
 

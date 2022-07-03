@@ -77,11 +77,6 @@ public class Lower implements Visitor {
         result = expression;
     }
 
-    @Override
-    public void visitBitNot(BitNotExpression expression) {
-        visitUnaryOp(expression);
-    }
-
     public void visitBitOr(BinaryOp expression) {
         expression.lhs.accept(this);
     }
@@ -126,8 +121,7 @@ public class Lower implements Visitor {
         result = statement;
     }
 
-    @Override
-    public void visitClone(CloneExpression expression) {
+    public void visitClone(UnaryOp expression) {
         lowerUnary(expression, getLowerExpression(expression.hs).child());
     }
 
@@ -308,10 +302,6 @@ public class Lower implements Visitor {
                 lowerBinary(expression, lhs, rhs);
         }
     }
-    @Override
-    public void visitNegative(NegativeExpression expression) {
-        visitUnaryOp(expression);
-    }
 
     public void visitNotEqual(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
@@ -330,8 +320,7 @@ public class Lower implements Visitor {
         }
     }
 
-    @Override
-    public void visitNot(NotExpression expression) {
+    public void visitNot(UnaryOp expression) {
         Expression hs = getLowerExpression(expression.hs).child();
 
         if (isTrue(hs)) {
@@ -389,8 +378,7 @@ public class Lower implements Visitor {
         result = getLowerExpression(expression.expr);
     }
 
-    @Override
-    public void visitPositive(PositiveExpression expression) {
+    public void visitPositive(UnaryOp expression) {
         Expression hs = getLowerExpression(expression.hs).child();
 
         if ((hs instanceof FloatExpression) || (hs instanceof IntExpression)) {
@@ -398,26 +386,6 @@ public class Lower implements Visitor {
             return;
         }
         lowerUnary(expression, hs);
-    }
-
-    @Override
-    public void visitPostDecrement(PostDecrementExpression expression) {
-        visitIncrease(expression);
-    }
-
-    @Override
-    public void visitPostIncrement(PostIncrementExpression expression) {
-        visitIncrease(expression);
-    }
-
-    @Override
-    public void visitPreDecrement(PreDecrementExpression expression) {
-        visitIncrease(expression);
-    }
-
-    @Override
-    public void visitPreIncrement(PreIncrementExpression expression) {
-        visitIncrease(expression);
     }
 
     @Deprecated
@@ -540,6 +508,12 @@ public class Lower implements Visitor {
 
     @Override
     public void visitUnaryOp(UnaryOp tree) {
+        switch (tree.tag) {
+            case CLONE:   visitClone(tree);    break;
+            case LOGCMPL: visitNot(tree);      break;
+            case POS:     visitPositive(tree); break;
+        }
+
         result = tree;
     }
 
@@ -561,7 +535,7 @@ public class Lower implements Visitor {
         result = expression;
     }
 
-    private void visitIncrease(IncreaseExpression expression) {
+    private void visitIncrease(UnaryOp expression) {
         checkFolding(expression.hs);
         expression.hs = getLowerExpression(expression.hs).child();
         result = expression;
