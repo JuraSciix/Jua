@@ -591,7 +591,7 @@ public class JuaParser {
                 Tokens.Token token = currentToken;
                 expect(IDENTIFIER);
                 expression = new ArrayAccess(position,
-                        expression, new StringExpression(token.pos, token.getString()));
+                        expression, new Literal(token.pos, token.getString()));
             } else if (match(LBRACKET)) {
                 expression = new ArrayAccess(position,
                         expression, parseExpression());
@@ -630,7 +630,7 @@ public class JuaParser {
             pError(token.pos, "missing expected expression.");
         }
         if (match(FALSE)) {
-            return new FalseExpression(token.pos);
+            return new Literal(token.pos, false);
         }
         if (match(FLOATLITERAL)) {
             return parseFloat(token);
@@ -651,13 +651,13 @@ public class JuaParser {
             return parseParens(token.pos);
         }
         if (match(NULL)) {
-            return new NullExpression(token.pos);
+            return new Literal(token.pos, null);
         }
         if (match(STRINGLITERAL)) {
-            return new StringExpression(token.pos, token.getString());
+            return new Literal(token.pos, token.getString());
         }
         if (match(TRUE)) {
-            return new TrueExpression(token.pos);
+            return new Literal(token.pos, true);
         }
         unexpected(currentToken);
         return null;
@@ -672,7 +672,7 @@ public class JuaParser {
         if ((d == 0.0) && !token.getString().matches("\\.?0\\.?\\d*(?:[Ee][+-]\\d+)?$")) {
             pError(token.pos, "number too small.");
         }
-        return new FloatExpression(token.pos, d);
+        return new Literal(token.pos, d);
     }
 
     private Expression parseIdentifier(Tokens.Token token) throws ParseException {
@@ -698,7 +698,7 @@ public class JuaParser {
 
     private Expression parseInt(Tokens.Token token) throws ParseException {
         try {
-            return new IntExpression(token.pos, token.getLong());
+            return new Literal(token.pos, token.getLong());
         } catch (NumberFormatException e) {
             pError(token.pos, "number too large.");
             return null;

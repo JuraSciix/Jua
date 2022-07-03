@@ -519,16 +519,6 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitFalse(FalseExpression expression) {
-        visitLiteral(expression);
-    }
-
-    @Override
-    public void visitFloat(FloatExpression expression) {
-        visitLiteral(expression);
-    }
-
-    @Override
     public void visitFor(ForLoop statement) {
         generateLoop(statement, statement.init, statement.cond, statement.step, statement.body, true);
     }
@@ -702,11 +692,6 @@ public final class Gen implements Visitor {
         }
     }
 
-    @Override
-    public void visitInt(IntExpression expression) {
-        visitLiteral(expression);
-    }
-
     public void visitLessEqual(BinaryOp expression) {
 //        beginCondition();
 //        Expression lhs = expression.lhs;
@@ -768,12 +753,12 @@ public final class Gen implements Visitor {
         Code.ChainInstructionFactory resultState;
         int resultStackAdjustment;
         int shortVal;
-        boolean lhsNull = (lhs instanceof NullExpression);
-        boolean rhsNull = (rhs instanceof NullExpression);
+        boolean lhsNull = lhs instanceof Literal && ((Literal) lhs).isNull();
+        boolean rhsNull = rhs instanceof Literal && ((Literal) rhs).isNull();
         boolean lhsShort = TreeInfo.testShort(lhs);
         boolean rhsShort = TreeInfo.testShort(rhs);
         if (lhsShort || rhsShort) {
-            shortVal = ((Number) ((IntExpression) (lhsShort ? lhs : rhs)).value).shortValue();
+            shortVal = ((Number) ((Literal) (lhsShort ? lhs : rhs)).value).shortValue();
             visitExpression(lhsShort ? rhs : lhs);
         } else {
             shortVal = Integer.MIN_VALUE;
@@ -922,11 +907,6 @@ public final class Gen implements Visitor {
     }
 
     @Override
-    public void visitNull(NullExpression expression) {
-        visitLiteral(expression);
-    }
-
-    @Override
     public void visitParens(Parens expression) {
         expression.expr.accept(this);
         // todo: выбрасывается AssertionError
@@ -1006,11 +986,6 @@ public final class Gen implements Visitor {
     private static boolean isNull(Expression expression) {
         return TreeInfo.isNull(expression);
     }
-    
-    @Override
-    public void visitString(StringExpression expression) {
-        visitLiteral(expression);
-    }
 
     @Override
     public void visitTernaryOp(TernaryOp expression) {
@@ -1033,11 +1008,6 @@ public final class Gen implements Visitor {
         visitExpression(expression.rhs);
         code.resolveChain(ex);
         code.setSp(Math.max(lhs_sp, rhs_sp));
-    }
-
-    @Override
-    public void visitTrue(TrueExpression expression) {
-        visitLiteral(expression);
     }
 
     @Override

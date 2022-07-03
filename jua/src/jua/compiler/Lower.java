@@ -135,8 +135,8 @@ public class Lower implements Visitor {
             }
             Expression expr = getLowerExpression(statement.expressions.get(i)).child();
             if (expr.isLiteral() ||
-                    (expr instanceof NullExpression) ||
-                    (expr instanceof BooleanExpression)) {
+                    ((Literal) expr).isNull() ||
+                    ((Literal) expr).isBoolean()) {
                 literalConstants.put(name, expr);
             }
             statement.expressions.set(i, expr);
@@ -183,16 +183,6 @@ public class Lower implements Visitor {
     @Override
     public void visitFallthrough(Fallthrough statement) {
         nothing(statement);
-    }
-
-    @Override
-    public void visitFalse(FalseExpression expression) {
-        visitLiteral(expression);
-    }
-
-    @Override
-    public void visitFloat(FloatExpression expression) {
-        visitLiteral(expression);
     }
 
     @Override
@@ -281,11 +271,6 @@ public class Lower implements Visitor {
         result = tree;
     }
 
-    @Override
-    public void visitInt(IntExpression expression) {
-        visitLiteral(expression);
-    }
-
     public void visitLessEqual(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
@@ -337,16 +322,11 @@ public class Lower implements Visitor {
     public void visitNullCoalesce(BinaryOp expression) {
         Expression lhs = getLowerExpression(expression.lhs).child();
         Expression rhs = getLowerExpression(expression.rhs).child();
-        if (!lhs.isNullable() || (lhs instanceof NullExpression)) {
+        if (!lhs.isNullable() || ((Literal) lhs).isNull()) {
             result = rhs;
         } else {
             lowerBinary(expression, lhs, rhs);
         }
-    }
-
-    @Override
-    public void visitNull(NullExpression expression) {
-        visitLiteral(expression);
     }
 
     public void visitOr(BinaryOp expression) {
@@ -380,11 +360,11 @@ public class Lower implements Visitor {
 
     public void visitPositive(UnaryOp expression) {
         Expression hs = getLowerExpression(expression.hs).child();
-
-        if ((hs instanceof FloatExpression) || (hs instanceof IntExpression)) {
+        if (((Literal) hs).isFloatingPoint() || ((Literal) hs).isInteger()) {
             result = hs;
             return;
         }
+
         lowerUnary(expression, hs);
     }
 
@@ -406,11 +386,6 @@ public class Lower implements Visitor {
             statement.expr = getLowerExpression(statement.expr);
         }
         result = statement;
-    }
-
-    @Override
-    public void visitString(StringExpression expression) {
-        visitLiteral(expression);
     }
 
     @Override
@@ -437,11 +412,6 @@ public class Lower implements Visitor {
         expression.lhs = lhs;
         expression.rhs = rhs;
         result = expression;
-    }
-
-    @Override
-    public void visitTrue(TrueExpression expression) {
-        visitLiteral(expression);
     }
 
     @Override
@@ -587,11 +557,11 @@ public class Lower implements Visitor {
     }
 
     private void setTrue(Expression expression) {
-        result = new TrueExpression(expression.pos);
+        result = new Literal(expression.pos, true);
     }
 
     private void setFalse(Expression expression) {
-        result = new FalseExpression(expression.pos);
+        result = new Literal(expression.pos, false);
     }
 
     private void nothing(Tree tree) {

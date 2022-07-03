@@ -260,13 +260,6 @@ public abstract class Tree {
         }
     }
 
-    public static class BooleanExpression extends Literal {
-
-        public BooleanExpression(int pos, boolean value) {
-            super(pos, value);
-        }
-    }
-
     public static class Break extends Statement {
 
         @Override
@@ -459,20 +452,6 @@ public abstract class Tree {
         }
     }
 
-    public static class FalseExpression extends BooleanExpression {
-
-        public FalseExpression(int pos) {
-            super(pos, false);
-        }
-    }
-
-    public static class FloatExpression extends Literal {
-
-        public FloatExpression(int pos, double value) {
-            super(pos, value);
-        }
-    }
-
     public static class ForLoop extends Statement {
 
         public List<Expression> init;
@@ -641,35 +620,6 @@ public abstract class Tree {
         }
     }
 
-    public static class IntExpression extends Literal {
-
-        public IntExpression(int pos, long value) {
-            super(pos, value);
-        }
-
-        @Override
-        public boolean isLiteral() {
-            return true;
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitInt(this);
-        }
-    }
-
-    public static class NullExpression extends Literal {
-
-        public NullExpression(int pos) {
-            super(pos, null);
-        }
-
-        @Override
-        public void accept(Visitor visitor) {
-            visitor.visitNull(this);
-        }
-    }
-
     public static class Parens extends Expression {
 
         public Expression expr;
@@ -798,13 +748,6 @@ public abstract class Tree {
         }
     }
 
-    public static class StringExpression extends Literal {
-
-        public StringExpression(int pos, String value) {
-            super(pos, value);
-        }
-    }
-
     public static class Switch extends Statement {
 
         public Expression selector;
@@ -866,13 +809,6 @@ public abstract class Tree {
         @Override
         public void accept(Visitor visitor) {
             visitor.visitTernaryOp(this);
-        }
-    }
-
-    public static class TrueExpression extends BooleanExpression {
-
-        public TrueExpression(int pos) {
-            super(pos, true);
         }
     }
 
@@ -1003,10 +939,6 @@ public abstract class Tree {
 
         void visitFallthrough(Fallthrough statement);
 
-        void visitFalse(FalseExpression expression);
-
-        void visitFloat(FloatExpression expression);
-
         void visitFor(ForLoop statement);
 
         void visitInvocation(Invocation expression);
@@ -1014,10 +946,6 @@ public abstract class Tree {
         void visitFunctionDecl(FunctionDecl statement);
 
         void visitIf(If statement);
-
-        void visitInt(IntExpression expression);
-
-        void visitNull(NullExpression expression);
 
         void visitParens(Parens expression);
 
@@ -1029,13 +957,9 @@ public abstract class Tree {
 
         void visitReturn(Return statement);
 
-        void visitString(StringExpression expression);
-
         void visitSwitch(Switch statement);
 
         void visitTernaryOp(TernaryOp expression);
-
-        void visitTrue(TrueExpression expression);
 
         void visitVariable(Var expression);
 

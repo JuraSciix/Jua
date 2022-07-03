@@ -46,7 +46,7 @@ public final class TreeInfo {
 
     public static boolean isNull(Expression expression) {
         Expression expr = removeParens(expression);
-        return expr == null || expr instanceof NullExpression;
+        return expr == null || (expr instanceof Literal && ((Literal) expr).isNull());
     }
 
     public static boolean isCondition(Expression expression) {
