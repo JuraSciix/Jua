@@ -6,7 +6,7 @@ import jua.runtime.heap.*;
 public final class TreeInfo {
 
     /**
-     * @deprecated the {@link Lower} class removes the parens from AST, so this method is useless.
+     * @deprecated the {@link CFold} class removes the parens from AST, so this method is useless.
      */
     @Deprecated
     public static Expression removeParens(Expression tree) {

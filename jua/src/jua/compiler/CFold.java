@@ -6,7 +6,7 @@ import jua.runtime.heap.Operand;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Lower implements Visitor {
+public class CFold implements Visitor {
 
     private final Map<String, Expression> literalConstants;
 
@@ -42,7 +42,7 @@ public class Lower implements Visitor {
         }
     }
 
-    public Lower(CodeData codeData) {
+    public CFold(CodeData codeData) {
         literalConstants = new HashMap<>();
         putFoldingNames(codeData.constantNames);
     }
