@@ -16,8 +16,9 @@ public class LongOperandTest {
     @Test
     public void doTest() {
         for (long l = 0; l < testRatio; l++) {
-            LongOperand operand = LongOperand.valueOf(l - (testRatio >> 1));
-            Assert.assertEquals(l, operand.longValue());
+            long x = l - (testRatio >> 1);
+            LongOperand operand = LongOperand.valueOf(x);
+            Assert.assertEquals(x, operand.longValue());
         }
     }
 }
