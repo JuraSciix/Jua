@@ -103,7 +103,7 @@ public abstract class Tree {
         public List<Tree> trees;
 
         public CompilationUnit(int pos, URL location, LineMap lineMap, List<Tree> trees) {
-            super(pos);
+            super(pos); // todo: У CompilationUnit не должно быть позиции.
             this.location = location;
             this.lineMap = lineMap;
             this.trees = trees;

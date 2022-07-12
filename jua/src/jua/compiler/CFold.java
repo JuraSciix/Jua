@@ -53,7 +53,8 @@ public class CFold implements Visitor {
 
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
-        // todo: task for JavaKira
+        tree.trees = lowerList(tree.trees);
+        result = tree;
     }
 
     @Override

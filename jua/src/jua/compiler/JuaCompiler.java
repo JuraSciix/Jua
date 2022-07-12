@@ -42,7 +42,7 @@ public class JuaCompiler {
             fatal("IO error: ", e);
             return;
         }
-        Result result = compile(parse(s), s.location(), s.getLmt());
+        Result result = compile(parse(s), s.getLocation(), s.getLineMap());
 
         if (Options.disassembler()) {
             result.print();
@@ -96,16 +96,16 @@ public class JuaCompiler {
         }
     }
 
-    private static Tree.Statement parse(TokenizeStream s) {
+    private static Tree parse(TokenizeStream s) {
         if (Options.lint()) {
             Tokenizer tokenizer = new Tokenizer(s);
-            TokenPrinter printer = new TokenPrinter(s.getLmt());
+            TokenPrinter printer = new TokenPrinter(s.getLineMap());
             while (tokenizer.hasMoreTokens()) {
                 try {
                     tokenizer.nextToken().accept(printer);
                 } catch (ParseException e) {
                     if (Options.stop()) {
-                        parseError(e, s.location(), s.getLmt());
+                        parseError(e, s.getLocation(), s.getLineMap());
                     }
                     break;
                 }
@@ -115,7 +115,7 @@ public class JuaCompiler {
         try (TokenizeStream stream = s) {
             return new JuaParser(new Tokenizer(stream)).parse();
         } catch (ParseException e) {
-            parseError(e, s.location(), s.getLmt());
+            parseError(e, s.getLocation(), s.getLineMap());
         } catch (Throwable t) {
             fatal("Fatal error occurred at parser: ", t);
         }
@@ -128,12 +128,13 @@ public class JuaCompiler {
         System.exit(1);
     }
 
-    private static Result compile(Tree.Statement root, URL location, LineMap lineMap) {
+    private static Result compile(Tree root, URL location, LineMap lineMap) {
         CodeData codeData = new CodeData(location);
         Gen gen = new Gen(codeData, lineMap);
 
         try {
-            if (Options.optimize()) {
+            // Свёртка констант - это обязательный этап.
+            if (true || Options.optimize()) {
                 root.accept(new CFold(codeData));
             } else {
                 System.err.println("Warning: disabling optimization is strongly discouraged. " +

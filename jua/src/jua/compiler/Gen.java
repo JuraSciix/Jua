@@ -98,7 +98,14 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
-
+        code.pushContext(0);
+        code.pushScope();
+        int prev_state = state;
+        setState(STATE_ROOTED);
+        acceptTreeList(tree.trees);
+        state = prev_state;
+        code.addInstruction(Halt.INSTANCE);
+        code.popScope();
     }
 
     private boolean isState(int state_flag) {
@@ -304,27 +311,16 @@ public final class Gen implements Visitor {
 
     @Override
     public void visitBlock(Block statement) {
-        if (!isState(STATE_ROOTED)) { // is root?
-            code.pushContext(statement.pos);
-            code.pushScope();
-            int prev_state = state;
-            setState(STATE_ROOTED);
-            generateStatementsWhileAlive(statement.statements);
-            state = prev_state;
-            code.addInstruction(Halt.INSTANCE);
-            code.popScope();
-        } else {
-            generateStatementsWhileAlive(statement.statements);
-        }
+        acceptTreeList(statement.statements);
     }
 
-    private void generateStatementsWhileAlive(List<Statement> statements) {
-        for (Statement statement : statements) {
+    private void acceptTreeList(List<? extends Tree> statements) {
+        for (Tree tree : statements) {
             // Таким образом, мы упускаем ошибки в мертвом коде
 //            if (!code.isAlive()) {
 //                break;
 //            }
-            statement.accept(this);
+            tree.accept(this);
         }
     }
 

@@ -1,6 +1,9 @@
 package jua.util;
 
-import java.io.*;
+import java.io.CharArrayWriter;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URL;
 
 // todo: Если не удалю, то переименовать во что-нибудь покрасивее
@@ -43,13 +46,13 @@ public class TokenizeStream implements Closeable {
 //        System.out.println("content is null?: " + (content == null)); // DEBUG
     }
 
-    public URL location() {
+    public URL getLocation() {
         return location;
     }
 
     private LineMap lmt;
 
-    public LineMap getLmt() {
+    public LineMap getLineMap() {
         debugContent();
         if (lmt == null) lmt = new LineMap(content);
         return lmt;

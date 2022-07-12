@@ -1,18 +1,20 @@
 package jua.compiler.parser;
 
 import jua.compiler.ParseException;
+import jua.compiler.Tree;
 import jua.compiler.Tree.*;
+import jua.compiler.parser.Tokens.DummyToken;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import jua.compiler.parser.Tokens.*;
-
 import static jua.compiler.parser.Tokens.TokenKind.*;
 
 public class JuaParser {
+
+    // todo: Рефакторинг и оптимизация.
 
     private final Tokenizer tokenizer;
 
@@ -22,17 +24,18 @@ public class JuaParser {
         this.tokenizer = tokenizer;
     }
 
-    public Statement parse() throws ParseException {
-        List<Statement> statements = new ArrayList<>();
-        int startPos = 0;
-        while (tokenizer.hasMoreTokens()) {
-            if (currentToken == null) {
-                next();
-                startPos = currentToken.pos;
-            }
-            statements.add(parseStatement());
+    public Tree parse() throws ParseException {
+        List<Tree> trees = new ArrayList<>();
+        next();
+        while (!match(EOF)) {
+            trees.add(parseStatement());
         }
-        return new Block(startPos, statements);
+        return new CompilationUnit(
+                // todo: У CompilationUnit не должно быть позиции.
+                trees.isEmpty() ? 0 : trees.get(0).pos,
+                tokenizer.getStream().getLocation(),
+                tokenizer.getStream().getLineMap(),
+                trees);
     }
 
     private Statement parseStatement() throws ParseException {

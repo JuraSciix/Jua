@@ -322,4 +322,8 @@ public class Tokenizer {
     private void tError(int position, String message) throws ParseException {
         throw new ParseException(message, position);
     }
+
+    public TokenizeStream getStream() {
+        return stream;
+    }
 }
