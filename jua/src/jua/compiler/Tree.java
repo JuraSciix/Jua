@@ -100,9 +100,9 @@ public abstract class Tree {
 
         public LineMap lineMap;
 
-        public List<? extends Tree> trees;
+        public List<Tree> trees;
 
-        public CompilationUnit(int pos, URL location, LineMap lineMap, List<? extends Tree> trees) {
+        public CompilationUnit(int pos, URL location, LineMap lineMap, List<Tree> trees) {
             super(pos);
             this.location = location;
             this.lineMap = lineMap;
