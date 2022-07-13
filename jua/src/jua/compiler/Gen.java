@@ -16,7 +16,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-public final class Gen implements Visitor {
+public final class Gen extends Analyzer {
 
     private final CodeData codeData;
 

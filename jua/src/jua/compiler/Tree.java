@@ -975,4 +975,448 @@ public abstract class Tree {
 
         void visitLiteral(Literal tree);
     }
+
+    abstract static class AbstractVisitor implements Visitor {
+        public void visitTree(Tree tree) { throw new AssertionError(); }
+
+        @Override
+        public void visitCompilationUnit(CompilationUnit tree) { visitTree(tree); }
+
+        @Override
+        public void visitFunctionDecl(FunctionDecl tree) { visitTree(tree); }
+
+        @Override
+        public void visitConstantDeclare(ConstantDecl tree) { visitTree(tree); }
+
+        @Override
+        public void visitBlock(Block tree) { visitTree(tree); }
+
+        @Override
+        public void visitIf(If tree) { visitTree(tree); }
+
+        @Override
+        public void visitWhileLoop(WhileLoop tree) { visitTree(tree); }
+
+        @Override
+        public void visitFor(ForLoop tree) { visitTree(tree); }
+
+        @Override
+        public void visitDoLoop(DoLoop tree) { visitTree(tree); }
+
+        @Override
+        public void visitSwitch(Switch tree) { visitTree(tree); }
+
+        @Override
+        public void visitCase(Case tree) { visitTree(tree); }
+
+        @Override
+        public void visitBreak(Break tree) { visitTree(tree); }
+
+        @Override
+        public void visitContinue(Continue tree) { visitTree(tree); }
+
+        @Override
+        public void visitFallthrough(Fallthrough tree) { visitTree(tree); }
+
+        @Override
+        public void visitReturn(Return tree) { visitTree(tree); }
+
+        @Override
+        public void visitDiscarded(Discarded tree) { visitTree(tree); }
+
+        @Override
+        public void visitAssignOp(AssignOp tree) { visitTree(tree); }
+
+        @Override
+        public void visitTernaryOp(TernaryOp tree) { visitTree(tree); }
+
+        @Override
+        public void visitBinaryOp(BinaryOp tree) { visitTree(tree); }
+
+        @Override
+        public void visitUnaryOp(UnaryOp tree) { visitTree(tree); }
+
+        @Override
+        public void visitArrayAccess(ArrayAccess tree) { visitTree(tree); }
+
+        @Override
+        public void visitVariable(Var tree) { visitTree(tree); }
+
+        @Override
+        public void visitLiteral(Literal tree) { visitTree(tree); }
+
+        @Override
+        public void visitArray(ArrayLiteral tree) { visitTree(tree); }
+
+        @Override
+        public void visitInvocation(Invocation tree) { visitTree(tree); }
+
+        @Override
+        public void visitParens(Parens tree) { visitTree(tree); }
+    }
+
+    abstract static class Analyzer extends AbstractVisitor {
+
+        public void analyze(Tree tree) {
+            if (tree != null) tree.accept(this);
+        }
+
+        public void analyze(List<? extends Tree> trees) {
+            for (Tree tree : trees) {
+                if (tree != null) tree.accept(this);
+            }
+        }
+
+        public void analyze(Map<? extends Tree, ? extends Tree> relationalTrees) {
+            for (Map.Entry<? extends Tree, ? extends Tree> relationalTree : relationalTrees.entrySet()) {
+                if (relationalTree.getKey() != null) relationalTree.getKey().accept(this);
+                if (relationalTree.getValue() != null) relationalTree.getValue().accept(this);
+            }
+        }
+
+        public void analyzeValues(Map<?, ? extends Tree> relationalTrees) {
+            for (Map.Entry<?, ? extends Tree> relationalTree : relationalTrees.entrySet()) {
+                if (relationalTree.getValue() != null) relationalTree.getValue().accept(this);
+            }
+        }
+
+        @Override
+        public void visitCompilationUnit(CompilationUnit tree) {
+            analyze(tree.trees);
+        }
+
+        @Override
+        public void visitFunctionDecl(FunctionDecl tree) {
+            analyze(tree.body);
+        }
+
+        @Override
+        public void visitConstantDeclare(ConstantDecl tree) {
+            analyze(tree.expressions);
+        }
+
+        @Override
+        public void visitBlock(Block tree) {
+            analyze(tree.statements);
+        }
+
+        @Override
+        public void visitIf(If tree) {
+            analyze(tree.cond);
+            analyze(tree.body);
+            analyze(tree.elseBody);
+        }
+
+        @Override
+        public void visitWhileLoop(WhileLoop tree) {
+            analyze(tree.cond);
+            analyze(tree.body);
+        }
+
+        @Override
+        public void visitFor(ForLoop tree) {
+            analyze(tree.init);
+            analyze(tree.cond);
+            analyze(tree.step);
+            analyze(tree.body);
+        }
+
+        @Override
+        public void visitDoLoop(DoLoop tree) {
+            analyze(tree.body);
+            analyze(tree.cond);
+        }
+
+        @Override
+        public void visitSwitch(Switch tree) {
+            analyze(tree.selector);
+            analyze(tree.cases);
+        }
+
+        @Override
+        public void visitCase(Case tree) {
+            analyze(tree.expressions);
+            analyze(tree.body);
+        }
+
+        @Override
+        public void visitBreak(Break tree) {}
+
+        @Override
+        public void visitContinue(Continue tree) {}
+
+        @Override
+        public void visitFallthrough(Fallthrough tree) {}
+
+        @Override
+        public void visitReturn(Return tree) {
+            analyze(tree.expr);
+        }
+
+        @Override
+        public void visitDiscarded(Discarded tree) {
+            analyze(tree.expression);
+        }
+
+        @Override
+        public void visitAssignOp(AssignOp tree) {
+            analyze(tree.expr);
+            analyze(tree.var);
+        }
+
+        @Override
+        public void visitTernaryOp(TernaryOp tree) {
+            analyze(tree.cond);
+            analyze(tree.lhs);
+            analyze(tree.rhs);
+        }
+
+        @Override
+        public void visitBinaryOp(BinaryOp tree) {
+            analyze(tree.lhs);
+            analyze(tree.rhs);
+        }
+
+        @Override
+        public void visitUnaryOp(UnaryOp tree) {
+            analyze(tree.hs);
+        }
+
+        @Override
+        public void visitArrayAccess(ArrayAccess tree) {
+            analyze(tree.array);
+            analyze(tree.key);
+        }
+
+        @Override
+        public void visitVariable(Var tree) {}
+
+        @Override
+        public void visitLiteral(Literal tree) {}
+
+        @Override
+        public void visitArray(ArrayLiteral tree) {
+            analyze(tree.map);
+        }
+
+        @Override
+        public void visitInvocation(Invocation tree) {
+            analyze(tree.args);
+        }
+
+        @Override
+        public void visitParens(Parens tree) {
+            analyze(tree.expr);
+        }
+    }
+
+    abstract static class Reducer extends AbstractVisitor {
+
+        public Tree result;
+
+        @SuppressWarnings("unchecked")
+        public <T extends Tree> T reduce(Tree tree) {
+            if (tree != null) {
+                tree.accept(this);
+                Tree r = result;
+                result = null;
+                return (T) r;
+            }
+            return null;
+        }
+
+        @SuppressWarnings("unchecked")
+        public <T extends Tree> List<T> reduce(List<T> trees) {
+            for (T tree : trees) {
+                if (tree != null) {
+                    tree.accept(this);
+                    trees.set(trees.indexOf(tree), (T) result); // оптимизация пошла нахуй
+                    result = null;
+                }
+            }
+            return trees;
+        }
+
+        @SuppressWarnings("unchecked")
+        public <K extends Tree, V extends Tree>
+        Map<K, V> reduce(Map<K, V> relationalTrees) {
+            for (Map.Entry<K, V> relationalTree : relationalTrees.entrySet()) {
+                if (relationalTree.getKey() != null) {
+                    relationalTree.getKey().accept(this);
+                    V tempValue = relationalTrees.get(relationalTree.getKey());
+                    relationalTrees.remove(relationalTree.getKey());
+                    relationalTrees.put((K) result, tempValue);
+                    result = null;
+                }
+
+                if (relationalTree.getValue() != null) {
+                    relationalTree.getValue().accept(this);
+                    relationalTrees.put(relationalTree.getKey(), (V) result);
+                    result = null;
+                }
+            }
+            return relationalTrees;
+        }
+
+        @SuppressWarnings("unchecked")
+        public <K, V extends Tree> Map<K, V> reduceValues(Map<K, V> relationalTrees) {
+            for (Map.Entry<?, V> relationalTree : relationalTrees.entrySet()) {
+                if (relationalTree.getValue() != null) {
+                    relationalTree.getValue().accept(this);
+                    relationalTrees.put((K) relationalTree.getKey(), (V) result);
+                    result = null;
+                }
+            }
+            return relationalTrees;
+        }
+
+        @Override
+        public void visitCompilationUnit(CompilationUnit tree) {
+            tree.trees = reduce(tree.trees);
+            result = tree;
+        }
+
+        @Override
+        public void visitFunctionDecl(FunctionDecl tree) {
+            tree.body = reduce(tree.body);
+            result = tree;
+        }
+
+        @Override
+        public void visitConstantDeclare(ConstantDecl tree) {
+            tree.expressions = reduce(tree.expressions);
+            result = tree;
+        }
+
+        @Override
+        public void visitBlock(Block tree) {
+            tree.statements = reduce(tree.statements);
+            result = tree;
+        }
+
+        @Override
+        public void visitIf(If tree) {
+            tree.cond = reduce(tree.cond);
+            tree.body = reduce(tree.body);
+            tree.elseBody = reduce(tree.elseBody);
+            result = tree;
+        }
+
+        @Override
+        public void visitWhileLoop(WhileLoop tree) {
+            tree.cond = reduce(tree.cond);
+            tree.body = reduce(tree.body);
+            result = tree;
+        }
+
+        @Override
+        public void visitFor(ForLoop tree) {
+            tree.init = reduce(tree.init);
+            tree.cond = reduce(tree.cond);
+            tree.body = reduce(tree.body);
+            tree.step = reduce(tree.step);
+            result = tree;
+        }
+
+        @Override
+        public void visitDoLoop(DoLoop tree) {
+            tree.body = reduce(tree.body);
+            tree.cond = reduce(tree.cond);
+            result = tree;
+        }
+
+        @Override
+        public void visitSwitch(Switch tree) {
+            tree.selector = reduce(tree.selector);
+            tree.cases = reduce(tree.cases);
+            result = tree;
+        }
+
+        @Override
+        public void visitCase(Case tree) {
+            tree.expressions = reduce(tree.expressions);
+            tree.body = reduce(tree.body);
+            result = tree;
+        }
+
+        @Override
+        public void visitBreak(Break tree) { result = tree; }
+
+        @Override
+        public void visitContinue(Continue tree) { result = tree; }
+
+        @Override
+        public void visitFallthrough(Fallthrough tree) { result = tree; }
+
+        @Override
+        public void visitReturn(Return tree) {
+            tree.expr = reduce(tree.expr);
+            result = tree;
+        }
+
+        @Override
+        public void visitDiscarded(Discarded tree) {
+            tree.expression = reduce(tree.expression);
+            result = tree;
+        }
+
+        @Override
+        public void visitAssignOp(AssignOp tree) {
+            tree.expr = reduce(tree.expr);
+            tree.var = reduce(tree.var);
+            result = tree;
+        }
+
+        @Override
+        public void visitTernaryOp(TernaryOp tree) {
+            tree.cond = reduce(tree.cond);
+            tree.lhs = reduce(tree.lhs);
+            tree.rhs = reduce(tree.rhs);
+            result = tree;
+        }
+
+        @Override
+        public void visitBinaryOp(BinaryOp tree) {
+            tree.lhs = reduce(tree.lhs);
+            tree.rhs = reduce(tree.rhs);
+            result = tree;
+        }
+
+        @Override
+        public void visitUnaryOp(UnaryOp tree) {
+            tree.hs = reduce(tree.hs);
+            result = tree;
+        }
+
+        @Override
+        public void visitArrayAccess(ArrayAccess tree) {
+            tree.array = reduce(tree.array);
+            tree.key = reduce(tree.key);
+            result = tree;
+        }
+
+        @Override
+        public void visitVariable(Var tree) { result = tree; }
+
+        @Override
+        public void visitLiteral(Literal tree) { result = tree; }
+
+        @Override
+        public void visitArray(ArrayLiteral tree) {
+            tree.map = reduce(tree.map);
+            result = tree;
+        }
+
+        @Override
+        public void visitInvocation(Invocation tree) {
+            tree.args = reduce(tree.args);
+            result = tree;
+        }
+
+        @Override
+        public void visitParens(Parens tree) {
+            tree.expr = reduce(tree.expr);
+            result = tree;
+        }
+    }
 }

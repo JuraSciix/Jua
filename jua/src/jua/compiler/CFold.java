@@ -6,7 +6,7 @@ import jua.runtime.heap.Operand;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class CFold implements Visitor {
+public class CFold extends Reducer {
 
     private final Map<String, Expression> literalConstants;
 
