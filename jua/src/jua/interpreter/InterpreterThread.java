@@ -46,6 +46,13 @@ public class InterpreterThread {
         return thread.get();
     }
 
+    public static void aError(String message) {
+        getInstance().error(message);
+    }
+    public static void aError(String message, Object... args) {
+        getInstance().error(message, args);
+    }
+
     @Deprecated
     public static InterpreterThread copy(InterpreterThread thread) {
         return new InterpreterThread(thread.javaThread, thread.environment);
