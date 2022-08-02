@@ -107,18 +107,16 @@ public class JuaParser {
     }
 
     private Statement parseConst(int position) throws ParseException {
-        List<String> names = new ArrayList<>();
-        List<Expression> expressions = new ArrayList<>();
+        List<Definition> definitions = new ArrayList<>();
 
         do {
             Tokens.Token name = currentToken;
             expect(IDENTIFIER, EQ);
-            names.add(name.getString());
-            expressions.add(parseExpression());
+            definitions.add(new Definition(new Name(name.getString(), name.pos), parseExpression()));
         } while (match(COMMA));
 
         expect(SEMICOLON);
-        return new ConstantDecl(position, names, expressions);
+        return new ConstantDecl(position, definitions);
     }
 
     private Statement parseContinue(int position) throws ParseException {
@@ -682,21 +680,22 @@ public class JuaParser {
         if (match(LPAREN)) {
             return parseInvocation(token);
         }
-        return new Var(token.pos, token.getString());
+        return new Var(token.pos, new Name(token.getString(), token.pos));
     }
 
     private Expression parseInvocation(Tokens.Token token) throws ParseException {
-        List<Expression> args = new ArrayList<>();
+        List<Argument> args = new ArrayList<>();
         boolean comma = false;
 
         while (!match(RPAREN)) {
             if (match(EOF) || comma && !match(COMMA)) {
                 expect(RPAREN);
             }
-            args.add(parseExpression());
+            //todo: именные аргументы
+            args.add(new Argument(new Name("", currentToken.pos), parseExpression()));
             comma = !match(COMMA);
         }
-        return new Invocation(token.pos, token.getString(), args);
+        return new Invocation(token.pos, new Name(token.getString(), currentToken.pos), args);
     }
 
     private Expression parseInt(Tokens.Token token) throws ParseException {
@@ -709,7 +708,7 @@ public class JuaParser {
     }
 
     private Expression parseArray(int position, Tokens.TokenKind enclosing) throws ParseException {
-        Map<Expression, Expression> map = new LinkedHashMap<>();
+        List<ArrayEntry> entries = new ArrayList<>();
         boolean comma = false;
 
         while (!match(enclosing)) {
@@ -725,10 +724,10 @@ public class JuaParser {
             } else {
                 key = Expression.empty();
             }
-            map.put(key, value);
+            entries.add(new ArrayEntry(key, value));
             comma = !match(COMMA);
         }
-        return new ArrayLiteral(position, map);
+        return new ArrayLiteral(position, entries);
     }
 
     private Expression parseParens(int position) throws ParseException {

@@ -12,9 +12,11 @@ import jua.runtime.heap.Operand;
 import jua.compiler.Tree.*;
 import jua.util.LineMap;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public final class Gen extends Analyzer {
 
@@ -226,23 +228,22 @@ public final class Gen extends Analyzer {
 
         code.putPos(expression.pos);
         emitNewArray();
-        generateArrayCreation(expression.map);
+        generateArrayCreation(expression.entries);
     }
 
-    private void generateArrayCreation(Map<Expression, Expression> entries) {
+    private void generateArrayCreation(List<ArrayEntry> entries) {
         long implicitIndex = 0;
-        Iterator<Map.Entry<Expression, Expression>> iterator
-                = entries.entrySet().iterator();
+        Iterator<ArrayEntry> iterator = entries.iterator();
         while (iterator.hasNext()) {
-            Map.Entry<Expression, Expression> entry = iterator.next();
+            ArrayEntry entry = iterator.next();
             if (iterator.hasNext() || isUsed()) emitDup();
-            if (entry.getKey().isEmpty()) {
-                code.putPos(entry.getValue().pos);
+            if (entry.key.isEmpty()) {
+                code.putPos(entry.value.pos);
                 emitPushLong(implicitIndex++);
             } else {
-                visitExpression(entry.getKey());
+                visitExpression(entry.key);
             }
-            visitExpression(entry.getValue());
+            visitExpression(entry.value);
             emitAStore();
         }
     }
@@ -412,24 +413,32 @@ public final class Gen extends Analyzer {
         if (isState(STATE_NO_DECLS)) {
             cError(statement.pos, "constants declaration is not allowed here.");
         }
-        for (int i = 0; i < statement.names.size(); i++) {
-            String name = statement.names.get(i);
-            if (codeData.testConstant(name)) {
+
+        //todo: а смысл было делать definitions если в итоге разделяется опять
+        List<Name> names = new ArrayList<>();
+        List<Expression> expressions = new ArrayList<>();
+        statement.definitions.forEach(definition -> {
+            names.add(definition.name);
+            expressions.add(definition.expr);
+        });
+        for (int i = 0; i < statement.definitions.size(); i++) {
+            Name name = names.get(i);
+            if (codeData.testConstant(name.value)) {
                 cError(statement.pos, "constant '" + name + "' already declared");
             }
-            Expression expr = statement.expressions.get(i);
+            Expression expr = expressions.get(i);
             Operand value;
             if (expr instanceof ArrayLiteral) {
                 value = new ArrayOperand();
-                if (((ArrayLiteral) expr).map.size() > 0) {
-                    code.addInstruction(new Getconst(codeData.constantIndex(name), name), 1);
-                    generateArrayCreation(((ArrayLiteral) expr).map);
+                if (((ArrayLiteral) expr).entries.size() > 0) {
+                    code.addInstruction(new Getconst(codeData.constantIndex(name.value), name), 1);
+                    generateArrayCreation(((ArrayLiteral) expr).entries);
                 }
             } else {
                 assert expr instanceof Literal;
                 value = TreeInfo.resolveLiteral((Literal) expr);
             }
-            codeData.setConstant(name, value);
+            codeData.setConstant(name.value, value);
         }
     }
 
@@ -524,22 +533,22 @@ public final class Gen extends Analyzer {
         Instruction instruction;
         int stack = 0;
         boolean noReturnValue = false;
-        switch (expression.name) {
+        switch (expression.name.value) {
             case "bool":
                 if (expression.args.size() != 1) {
                     cError(expression.pos, "mismatch call parameters: 1 expected, " + expression.args.size() + " got.");
                 }
-                visitExpression(expression.args.get(0));
+                visitExpression(expression.args.get(0).expr);
                 instruction = Bool.INSTANCE;
                 break;
             case "print":
-                visitExprList(expression.args);
+                visitList(expression.args);
                 instruction = new Print(expression.args.size());
                 stack = -expression.args.size();
                 noReturnValue = true;
                 break;
             case "println":
-                visitExprList(expression.args);
+                visitList(expression.args);
                 instruction = new Println(expression.args.size());
                 stack = -expression.args.size();
                 noReturnValue = true;
@@ -549,7 +558,7 @@ public final class Gen extends Analyzer {
                 if (expression.args.size() != 1) {
                     cError(expression.pos, "mismatch call parameters: 1 expected, " + expression.args.size() + " got.");
                 }
-                visitExpression(expression.args.get(0));
+                visitExpression(expression.args.get(0).expr);
                 instruction = Gettype.INSTANCE;
                 break;
             case "ns_time":
@@ -563,15 +572,15 @@ public final class Gen extends Analyzer {
                 if (expression.args.size() != 1) {
                     cError(expression.pos, "mismatch call parameters: 1 expected, " + expression.args.size() + " got.");
                 }
-                visitExpression(expression.args.get(0));
+                visitExpression(expression.args.get(0).expr);
                 instruction = Length.INSTANCE;
                 break;
             default:
                 if (expression.args.size() > 0xff) {
                     cError(expression.pos, "too many parameters.");
                 }
-                visitExprList(expression.args);
-                instruction = new Call(codeData.functionIndex(expression.name), (byte) expression.args.size(), expression.name);
+                visitList(expression.args);
+                instruction = new Call(codeData.functionIndex(expression.name.value), (byte) expression.args.size(), expression.name);
                 stack = -expression.args.size() + 1;
                 break;
         }
@@ -1008,12 +1017,12 @@ public final class Gen extends Analyzer {
 
     @Override
     public void visitVariable(Var expression) {
-        String name = expression.name;
+        Name name = expression.name;
         code.putPos(expression.pos);
-        if (codeData.testConstant(name)) {
-            code.addInstruction(new Getconst(codeData.constantIndex(name), name), 1);
+        if (codeData.testConstant(name.value)) {
+            code.addInstruction(new Getconst(codeData.constantIndex(name.value), name), 1);
         } else {
-            emitVLoad(expression.name);
+            emitVLoad(expression.name.value);
         }
     }
 
@@ -1121,10 +1130,10 @@ public final class Gen extends Analyzer {
         }
     }
 
-    private void visitExprList(List<? extends Expression> expressions) {
+    private void visitList(List<? extends Tree> expressions) {
         int prev_state = state;
         setState(STATE_RESIDUAL);
-        for (Expression expr : expressions)
+        for (Tree expr : expressions)
             expr.accept(this);
         state = prev_state;
     }
@@ -1254,7 +1263,7 @@ public final class Gen extends Analyzer {
                         emitDup();
                     }
                     code.putPos(expression.pos);
-                    emitVStore(variable.name);
+                    emitVStore(variable.name.value);
                     if (isUsed()) {
                         int el = code.makeChain();
                         emitGoto(el);
@@ -1277,7 +1286,7 @@ public final class Gen extends Analyzer {
                         emitDup();
                     }
                     code.putPos(expression.pos);
-                    emitVStore(variable.name);
+                    emitVStore(variable.name.value);
                 }
                 break;
             }
@@ -1375,7 +1384,7 @@ public final class Gen extends Analyzer {
                     variable.accept(this);
                 }
                 code.putPos(expression.pos);
-                code.addInstruction(increase2state(expression.getTag(), code.resolveLocal(variable.name)));
+                code.addInstruction(increase2state(expression.getTag(), code.resolveLocal(variable.name.value)));
                 if (isUsed() && (expression.hasTag(Tag.PRE_INC) || expression.hasTag(Tag.PRE_DEC))) {
                     variable.accept(this);
                 }

@@ -1,15 +1,16 @@
 package jua.interpreter.instruction;
 
 import jua.compiler.CodePrinter;
+import jua.compiler.Tree;
 import jua.interpreter.InterpreterState;
 
 public final class Call implements Instruction {
 
     private final int id;
     private final int argc;
-    private final String name; // todo: Исправить костыль. Нужно чтобы существование функции определялось на этапе компиляции
+    private final Tree.Name name; // todo: Исправить костыль. Нужно чтобы существование функции определялось на этапе компиляции
 
-    public Call(int id, int argc, String name) {
+    public Call(int id, int argc, Tree.Name name) {
         this.id = id;
         this.argc = argc;
         this.name = name;
@@ -27,7 +28,7 @@ public final class Call implements Instruction {
         // todo: Исправить костыль с вызовом несуществующей функции
         if (id == -1) {
             // Функции не существует.
-            state.thread().error("Function named '%s' does not exists", name);
+            state.thread().error("Function named '%s' does not exists", name.value);
             return ERROR;
         }
         state.set_cp_advance(1);

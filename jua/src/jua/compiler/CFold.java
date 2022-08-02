@@ -66,15 +66,15 @@ public class CFold extends Reducer {
 
     @Override
     public void visitArray(ArrayLiteral expression) {
-        Map<Expression, Expression> map = new LinkedHashMap<>();
-        expression.map.forEach((key, value) -> {
-            if (key.isEmpty()) {
-                map.put(key, getLowerExpression(value));
+        List<ArrayEntry> entries = new ArrayList<>();
+        expression.entries.forEach(entry -> {
+            if (entry.key.isEmpty()) {
+                entries.add(new ArrayEntry(entry.key, getLowerExpression(entry.value)));
             } else {
-                map.put(getLowerExpression(key), getLowerExpression(value));
+                entries.add(new ArrayEntry(getLowerExpression(entry.key), getLowerExpression(entry.value)));
             }
         });
-        expression.map = map;
+        expression.entries = entries;
         result = expression;
     }
 
@@ -128,19 +128,21 @@ public class CFold extends Reducer {
 
     @Override
     public void visitConstantDeclare(ConstantDecl statement) {
-        int size = statement.names.size() & statement.expressions.size();
-        for (int i = 0; i < size; i++) {
-            String name = statement.names.get(i);
-            if (statement.names.indexOf(name) != statement.names.lastIndexOf(name)) {
+        for (int i = 0; i < statement.definitions.size(); i++) {
+            Name name = statement.definitions.get(i).name;
+            List<Name> names = statement.definitions.stream()
+                    .map(definition -> definition.name)
+                    .collect(Collectors.toList());
+            if (names.indexOf(name) != names.lastIndexOf(name)) {
                 throw new CompileError("duplicate name '" + name + "'.", statement.pos);
             }
-            Expression expr = getLowerExpression(statement.expressions.get(i)).child();
+            Expression expr = getLowerExpression(statement.definitions.get(i).expr).child();
             if (expr.isLiteral() ||
                     ((Literal) expr).isNull() ||
                     ((Literal) expr).isBoolean()) {
-                literalConstants.put(name, expr);
+                literalConstants.put(name.value, expr);
             }
-            statement.expressions.set(i, expr);
+            statement.definitions.get(i).expr = expr;
         }
         result = statement;
     }

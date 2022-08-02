@@ -5,6 +5,7 @@ import jua.util.LineMap;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public abstract class Tree {
 
@@ -144,12 +145,11 @@ public abstract class Tree {
 
     public static class ArrayLiteral extends Expression {
 
-        // todo: Заменить это на List со своей структурой
-        public Map<Expression, Expression> map;
+        public List<ArrayEntry> entries;
 
-        public ArrayLiteral(int pos, Map<Expression, Expression> map) {
+        public ArrayLiteral(int pos, List<ArrayEntry> entries) {
             super(pos);
-            this.map = map;
+            this.entries = entries;
         }
 
         @Override
@@ -302,14 +302,11 @@ public abstract class Tree {
 
     public static class ConstantDecl extends Statement {
 
-        public List<String> names;
+        public List<Definition> definitions;
 
-        public List<Expression> expressions;
-
-        public ConstantDecl(int pos, List<String> names, List<Expression> expressions) {
+        public ConstantDecl(int pos, List<Definition> definitions) {
             super(pos);
-            this.names = names;
-            this.expressions = expressions;
+            this.definitions = definitions;
         }
 
         @Override
@@ -483,11 +480,11 @@ public abstract class Tree {
 
     public static class Invocation extends Expression {
 
-        public final String name;
+        public final Name name;
 
-        public List<Expression> args;
+        public List<Argument> args;
 
-        public Invocation(int pos, String name, List<Expression> args) {
+        public Invocation(int pos, Name name, List<Argument> args) {
             super(pos);
             this.name = name;
             this.args = args;
@@ -856,10 +853,9 @@ public abstract class Tree {
 
     public static class Var extends Expression {
 
-        // todo: Заменить это на свою структуру (механизм уже готов, его нужно только внедрить)
-        public final String name;
+        public final Name name;
 
-        public Var(int pos, String name) {
+        public Var(int pos, Name name) {
             super(pos);
             this.name = name;
         }
@@ -915,6 +911,109 @@ public abstract class Tree {
         @Override
         public void accept(Visitor visitor) {
             visitor.visitWhileLoop(this);
+        }
+    }
+
+    public static class Name {
+
+        public final String value;
+
+        public final int pos;
+
+        public Name(String value, int pos) {
+            this.value = value;
+            this.pos = pos;
+        }
+    }
+
+    public static class Parameter extends Tree {
+
+        public final Name name;
+
+        public Expression expr;
+
+        public Parameter(Name name, Expression expr) {
+            super(name.pos);
+            this.name = name;
+            this.expr = expr;
+        }
+
+        @Override
+        public Tag getTag() {
+            return expr.getTag();
+        }
+
+        @Override
+        public void accept(Visitor visitor) {
+            expr.accept(visitor);
+        }
+    }
+
+    public static class Argument extends Tree {
+
+        public final Name name;
+
+        public Expression expr;
+
+        public Argument(Name name, Expression expr) {
+            super(name.pos);
+            this.name = name;
+            this.expr = expr;
+        }
+
+        @Override
+        public Tag getTag() {
+            return expr.getTag();
+        }
+
+        @Override
+        public void accept(Visitor visitor) {
+            expr.accept(visitor);
+        }
+    }
+
+    public static class ArrayEntry extends Tree{
+
+        public Expression key, value;
+
+        public ArrayEntry(Expression key, Expression value) {
+            super(key.pos);
+            this.key = key;
+            this.value = value;
+        }
+
+        @Override
+        public Tag getTag() {
+            return value.getTag();
+        }
+
+        @Override
+        public void accept(Visitor visitor) {
+            key.accept(visitor);
+            value.accept(visitor);
+        }
+    }
+
+    public static class Definition extends Tree {
+
+        public final Name name;
+
+        public Expression expr;
+
+        public Definition(Name name, Expression expr) {
+            super(name.pos);
+            this.name = name;
+            this.expr = expr;
+        }
+
+        @Override
+        public Tag getTag() {
+            return null;
+        }
+
+        @Override
+        public void accept(Visitor visitor) {
+            expr.accept(visitor);
         }
     }
 
@@ -1092,7 +1191,7 @@ public abstract class Tree {
 
         @Override
         public void visitConstantDeclare(ConstantDecl tree) {
-            analyze(tree.expressions);
+            analyze(tree.definitions);
         }
 
         @Override
@@ -1196,7 +1295,7 @@ public abstract class Tree {
 
         @Override
         public void visitArray(ArrayLiteral tree) {
-            analyze(tree.map);
+            analyze(tree.entries);
         }
 
         @Override
@@ -1284,7 +1383,7 @@ public abstract class Tree {
 
         @Override
         public void visitConstantDeclare(ConstantDecl tree) {
-            tree.expressions = reduce(tree.expressions);
+            tree.definitions = reduce(tree.definitions);
             result = tree;
         }
 
@@ -1403,7 +1502,7 @@ public abstract class Tree {
 
         @Override
         public void visitArray(ArrayLiteral tree) {
-            tree.map = reduce(tree.map);
+            tree.entries = reduce(tree.entries);
             result = tree;
         }
 
