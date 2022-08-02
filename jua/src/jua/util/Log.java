@@ -2,6 +2,8 @@ package jua.util;
 
 public class Log {
 
+    // todo: Finish class
+
     public void error(int pos, String msg) {
         // todo
     }
