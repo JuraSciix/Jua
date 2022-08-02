@@ -1166,6 +1166,7 @@ public abstract class Tree {
             }
         }
 
+        @Deprecated
         public void analyze(Map<? extends Tree, ? extends Tree> relationalTrees) {
             for (Map.Entry<? extends Tree, ? extends Tree> relationalTree : relationalTrees.entrySet()) {
                 if (relationalTree.getKey() != null) relationalTree.getKey().accept(this);
@@ -1173,6 +1174,7 @@ public abstract class Tree {
             }
         }
 
+        @Deprecated
         public void analyzeValues(Map<?, ? extends Tree> relationalTrees) {
             for (Map.Entry<?, ? extends Tree> relationalTree : relationalTrees.entrySet()) {
                 if (relationalTree.getValue() != null) relationalTree.getValue().accept(this);
@@ -1336,6 +1338,7 @@ public abstract class Tree {
             return trees;
         }
 
+        @Deprecated
         @SuppressWarnings("unchecked")
         public <K extends Tree, V extends Tree>
         Map<K, V> reduce(Map<K, V> relationalTrees) {
@@ -1357,6 +1360,7 @@ public abstract class Tree {
             return relationalTrees;
         }
 
+        @Deprecated
         @SuppressWarnings("unchecked")
         public <K, V extends Tree> Map<K, V> reduceValues(Map<K, V> relationalTrees) {
             for (Map.Entry<?, V> relationalTree : relationalTrees.entrySet()) {
