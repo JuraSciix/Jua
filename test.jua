@@ -42,11 +42,12 @@ fn b(x) {
 }
 
 println("Start");
+
 # a(0) called
 # b(1) called
 # a(2) called
 # b(3) called
-# a(0);
+a(0);
 
 println();
 

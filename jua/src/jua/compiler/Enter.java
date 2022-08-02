@@ -25,7 +25,12 @@ public class Enter extends Tree.Analyzer {
     }
 
     @Override
-    public void visitCompilationUnit(Tree.CompilationUnit tree) {
-        // todo
+    public void visitConstantDeclare(Tree.ConstantDecl tree) {
+        for (Tree.Definition def : tree.definitions) {
+            if (codeData.testConstant(def.name.value)) {
+                throw new CompileError("Constant '" + def.name.value + "' redeclare", def.name.pos);
+            }
+            codeData.setConstant(def.name.value, null);
+        }
     }
 }

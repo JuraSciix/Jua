@@ -423,9 +423,10 @@ public final class Gen extends Analyzer {
         });
         for (int i = 0; i < statement.definitions.size(); i++) {
             Name name = names.get(i);
-            if (codeData.testConstant(name.value)) {
-                cError(statement.pos, "constant '" + name + "' already declared");
-            }
+            // Этим теперь занимается Enter
+//            if (codeData.testConstant(name.value)) {
+//                cError(statement.pos, "constant '" + name + "' already declared");
+//            }
             Expression expr = expressions.get(i);
             Operand value;
             if (expr instanceof ArrayLiteral) {
@@ -594,8 +595,9 @@ public final class Gen extends Analyzer {
     public void visitFunctionDecl(FunctionDecl tree) {
         if (isState(STATE_NO_DECLS))
             cError(tree.pos, "function declaration is not allowed here.");
-        if (codeData.testFunction(tree.name))
-            cError(tree.pos, "function '" + tree.name + "' already declared.");
+        // Этим теперь занимается Enter
+        //if (codeData.testFunction(tree.name))
+        //    cError(tree.pos, "function '" + tree.name + "' already declared.");
         code.pushContext(tree.pos);
         code.pushScope();
 
