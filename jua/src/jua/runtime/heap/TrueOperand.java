@@ -1,5 +1,9 @@
 package jua.runtime.heap;
 
+/**
+ * @deprecated Планируется переход на {@link jua.interpreter.Address} с {@link Heap}.
+ */
+@Deprecated
 public class TrueOperand extends BooleanOperand {
 
     public static final TrueOperand TRUE = new TrueOperand();

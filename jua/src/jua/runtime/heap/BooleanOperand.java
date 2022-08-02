@@ -1,5 +1,9 @@
 package jua.runtime.heap;
 
+/**
+ * @deprecated Планируется переход на {@link jua.interpreter.Address} с {@link Heap}.
+ */
+@Deprecated
 public abstract class BooleanOperand extends Operand {
 
     public static BooleanOperand valueOf(long value) {

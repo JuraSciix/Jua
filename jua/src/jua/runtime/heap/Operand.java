@@ -5,6 +5,10 @@ import jua.interpreter.InterpreterError;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * @deprecated Планируется переход на {@link jua.interpreter.Address} с {@link Heap}.
+ */
+@Deprecated
 public abstract class Operand {
 
     public enum Type {

@@ -1,5 +1,9 @@
 package jua.runtime.heap;
 
+/**
+ * @deprecated Планируется переход на {@link jua.interpreter.Address} с {@link Heap}.
+ */
+@Deprecated
 public final class NullOperand extends Operand {
 
     public static final NullOperand NULL = new NullOperand();

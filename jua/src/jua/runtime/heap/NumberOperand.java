@@ -1,5 +1,9 @@
 package jua.runtime.heap;
 
+/**
+ * @deprecated Планируется переход на {@link jua.interpreter.Address} с {@link Heap}.
+ */
+@Deprecated
 public abstract class NumberOperand extends Operand {
 
     @Override

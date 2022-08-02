@@ -2,6 +2,10 @@ package jua.runtime.heap;
 
 import jua.interpreter.InterpreterError;
 
+/**
+ * @deprecated Планируется переход на {@link jua.interpreter.Address} с {@link Heap}.
+ */
+@Deprecated
 public final class LongOperand extends NumberOperand {
 
     private static final LongOperand[] POOL;

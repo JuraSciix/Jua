@@ -8,6 +8,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * @deprecated Планируется переход на {@link jua.interpreter.Address} с {@link Heap}.
+ */
+@Deprecated
 public final class ArrayOperand extends Operand {
 
     // todo: Желательно, чтобы мы использовали свою реализацию LinkedHashMap..
