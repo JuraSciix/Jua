@@ -4,20 +4,20 @@ import jua.runtime.JuaFunction;
 
 public final class InterpreterFrame {
 
-    private final InterpreterFrame sender;
+    private final InterpreterFrame callingFrame;
 
-    private final JuaFunction function;
+    private final JuaFunction owningFunction;
 
     private final InterpreterState state;
 
     // Trusting constructor.
-    InterpreterFrame(InterpreterFrame sender, JuaFunction function, InterpreterState state) {
-        this.sender = sender;
-        this.function = function;
+    InterpreterFrame(InterpreterFrame callingFrame, JuaFunction owningFunction, InterpreterState state) {
+        this.callingFrame = callingFrame;
+        this.owningFunction = owningFunction;
         this.state = state;
     }
 
-    public InterpreterFrame sender() { return sender; }
-    public JuaFunction function()    { return function; }
+    public InterpreterFrame callingFrame() { return callingFrame; }
+    public JuaFunction owningFunction()    { return owningFunction; }
     public InterpreterState state()  { return state; }
 }

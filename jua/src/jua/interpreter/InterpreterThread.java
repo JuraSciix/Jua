@@ -11,19 +11,34 @@ import jua.runtime.heap.*;
 import java.net.URL;
 import java.util.Objects;
 
-public class InterpreterThread {
+public final class InterpreterThread {
 
-    public static final int MSG_CREATED = 0;
+    public interface Messages {
+        byte VIRGIN = 0;
+        byte RUNNING = 1;
+        byte CALL = 2;
+        byte RETURN = 3;
+        byte FALLEN = 4;
+        byte HALT = 5;
+    }
 
-    public static final byte MSG_RUNNING = 1;
+    @Deprecated
+    public static final int MSG_CREATED = Messages.VIRGIN;
 
-    public static final byte MSG_CALLING = 2;
+    @Deprecated
+    public static final byte MSG_RUNNING = Messages.RUNNING;
 
-    public static final byte MSG_POPPING = 3;
+    @Deprecated
+    public static final byte MSG_CALLING = Messages.CALL;
 
-    public static final byte MSG_CRASHED = 4;
+    @Deprecated
+    public static final byte MSG_POPPING = Messages.RETURN;
 
-    public static final byte MSG_HALTED = 5;
+    @Deprecated
+    public static final byte MSG_CRASHED = Messages.FALLEN;
+
+    @Deprecated
+    public static final byte MSG_HALTED = Messages.HALT;
 
     @Deprecated
     public static final int MAX_CALLSTACK_SIZE;
@@ -147,7 +162,7 @@ public class InterpreterThread {
         InterpreterFrame uf = current_frame;
         Operand returnVal = returnee;
         if (returnVal == null) throw new IllegalStateException("null return value");
-        InterpreterFrame uf1 = uf.sender();
+        InterpreterFrame uf1 = uf.callingFrame();
         if (uf1 == null) {
             msg = MSG_HALTED; // Выполнять больше нечего.
             current_frame = null;
@@ -266,11 +281,11 @@ public class InterpreterThread {
     }
 
     public URL current_location() {
-        return current_frame.function().location();
+        return current_frame.owningFunction().location();
     }
 
     public int current_line_number() {
-        return current_frame.function().codeSegment().lineNumberTable().lineNumberOf(current_frame.state().cp());
+        return current_frame.owningFunction().codeSegment().lineNumberTable().lineNumberOf(current_frame.state().cp());
     }
 
     @Deprecated

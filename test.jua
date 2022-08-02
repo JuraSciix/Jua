@@ -24,9 +24,34 @@ fn qfib(n) {
     return q2;
 }
 
-while true {
-    a = ns_time();
-    fib(10);
-    b = ns_time();
-    println((b - a) / 1E3 + "mcs");
+# while true {
+#     a = ns_time();
+#     fib(10);
+#     b = ns_time();
+#     println((b - a) / 1E3 + "mcs");
+# }
+
+fn a(x) {
+    println("a(" + x + ") called");
+    if x < 3 b(x + 1);
 }
+
+fn b(x) {
+    println("b(" + x + ") called");
+    if x < 3 a(x + 1);
+}
+
+println("Start");
+# a(0) called
+# b(1) called
+# a(2) called
+# b(3) called
+# a(0);
+
+println();
+
+# b(0) called
+# a(1) called
+# b(2) called
+# a(3) called
+b(0);

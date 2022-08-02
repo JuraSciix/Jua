@@ -44,7 +44,7 @@ public class CFold extends Reducer {
 
     public CFold(CodeData codeData) {
         literalConstants = new HashMap<>();
-        putFoldingNames(codeData.constantNames);
+        putFoldingNames(codeData.constantNames.keySet());
     }
 
     private void putFoldingNames(Set<String> names) {

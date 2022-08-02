@@ -7,10 +7,12 @@ public final class Call implements Instruction {
 
     private final int id;
     private final int argc;
+    private final String name; // todo: Исправить костыль. Нужно чтобы существование функции определялось на этапе компиляции
 
-    public Call(int id, int argc) {
+    public Call(int id, int argc, String name) {
         this.id = id;
         this.argc = argc;
+        this.name = name;
     }
 
     @Override
@@ -22,13 +24,14 @@ public final class Call implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        state.set_cp_advance(1);
-        if (state.thread().environment().getFunction(id) == null) {
+        // todo: Исправить костыль с вызовом несуществующей функции
+        if (id == -1) {
             // Функции не существует.
-            state.thread().error("calling an undefined function '" + id + "'");
+            state.thread().error("Function named '%s' does not exists", name);
             return ERROR;
         }
+        state.set_cp_advance(1);
         state.thread().set_callee(id, argc);
-        return 0; // I'l be back...
+        return 0; // I'll be back...
     }
 }

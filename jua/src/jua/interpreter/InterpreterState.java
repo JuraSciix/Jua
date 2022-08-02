@@ -12,7 +12,8 @@ public final class InterpreterState {
 
     private final ConstantPool constantPool;
 
-    private short cp, sp, cpAdvance;
+    // todo: This fields should be typed with short
+    private int cp, sp, cpAdvance;
 
     private final InterpreterThread thread;
 
@@ -54,7 +55,7 @@ public final class InterpreterState {
     }
 
     public void set_cp(int cp) {
-        this.cp = (short) cp;
+        this.cp =  cp;
     }
 
     public int sp() {
@@ -62,7 +63,7 @@ public final class InterpreterState {
     }
 
     public void set_sp(int sp) {
-        this.sp = (short) sp;
+        this.sp =  sp;
     }
 
     public int cp_advance() {
@@ -70,7 +71,7 @@ public final class InterpreterState {
     }
 
     public void set_cp_advance(int cpAdvance) {
-        this.cpAdvance = (short) cpAdvance;
+        this.cpAdvance =  cpAdvance;
     }
 
     public void pushStack(Operand operand) {
@@ -103,7 +104,7 @@ public final class InterpreterState {
     public Operand load(int index) {
         if (locals[index] == null) {
             thread.error("accessing an undefined variable '" +
-                    thread.currentFrame().function().codeSegment().localNameTable().nameOf(index) + "'.");
+                    thread.currentFrame().owningFunction().codeSegment().localNameTable().nameOf(index) + "'.");
         }
         return locals[index];
     }
@@ -163,4 +164,9 @@ public final class InterpreterState {
         sp += 2;
     }
 
+    public void cleanupStack() {
+        for (int i = stack.length - 1; i >= sp; i--)
+            // todo: stack[i].reset();
+            stack[i] = null;
+    }
 }

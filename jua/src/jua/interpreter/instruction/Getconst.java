@@ -7,8 +7,11 @@ public class Getconst implements Instruction {
 
     private final int id;
 
-    public Getconst(int id) {
+    private final String name; // todo: Исправить костыль. Нужно чтобы существование константы определялось на этапе компиляции
+
+    public Getconst(int id, String name) {
         this.id = id;
+        this.name = name;
     }
 
     @Override
@@ -19,6 +22,10 @@ public class Getconst implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
+        if (id == -1) {
+            state.thread().error("Constant named '%s' does not exists", name);
+            return ERROR;
+        }
         state.pushStack(state.getConstantById(id));
         return NEXT;
     }

@@ -1,9 +1,5 @@
 package jua.interpreter;
 
-import jua.util.ReflectionUtils;
-
-import java.lang.reflect.Method;
-
 public class Interpreter {
 
     public interface State {
@@ -15,7 +11,7 @@ public class Interpreter {
     private static final Interpreter interpreter = new Interpreter();
 
     public static void fallWithFatalError(String message) {
-        Method caller = ReflectionUtils.getCallerMethod();
+//        Method caller = ReflectionUtils.getCallerMethod();
 
 
     }

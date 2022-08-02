@@ -84,8 +84,9 @@ public class CodePrinter {
 //        }
     }
 
-    public static void printFunctions(Map<String, JuaFunction> functions) {
-        functions.forEach((name, function) -> {
+    public static void printFunctions(JuaFunction[] functions) {
+        Arrays.stream(functions).forEach(function -> {
+            String name = function.name();
             System.out.print("fn " + name + "(");
             CodeSegment p = function.codeSegment();
             for (int i = 0; i < function.maxNumArgs(); i++) {

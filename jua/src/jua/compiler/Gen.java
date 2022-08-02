@@ -422,7 +422,7 @@ public final class Gen extends Analyzer {
             if (expr instanceof ArrayLiteral) {
                 value = new ArrayOperand();
                 if (((ArrayLiteral) expr).map.size() > 0) {
-                    code.addInstruction(new Getconst(codeData.constantIndex(name)), 1);
+                    code.addInstruction(new Getconst(codeData.constantIndex(name), name), 1);
                     generateArrayCreation(((ArrayLiteral) expr).map);
                 }
             } else {
@@ -571,7 +571,7 @@ public final class Gen extends Analyzer {
                     cError(expression.pos, "too many parameters.");
                 }
                 visitExprList(expression.args);
-                instruction = new Call(codeData.functionIndex(expression.name), (byte) expression.args.size());
+                instruction = new Call(codeData.functionIndex(expression.name), (byte) expression.args.size(), expression.name);
                 stack = -expression.args.size() + 1;
                 break;
         }
@@ -1011,7 +1011,7 @@ public final class Gen extends Analyzer {
         String name = expression.name;
         code.putPos(expression.pos);
         if (codeData.testConstant(name)) {
-            code.addInstruction(new Getconst(codeData.constantIndex(name)), 1);
+            code.addInstruction(new Getconst(codeData.constantIndex(name), name), 1);
         } else {
             emitVLoad(expression.name);
         }

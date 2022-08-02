@@ -26,7 +26,7 @@ public class Result {
         // todo: закоментировал printConstants
         //CodePrinter.printConstants(codeData.constants);
         CodePrinter.print(main, 0);
-        //CodePrinter.printFunctions(codeData.functions);
+        CodePrinter.printFunctions(codeData.functions);
     }
 
     public JuaEnvironment toEnvironment() {

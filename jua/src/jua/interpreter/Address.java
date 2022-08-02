@@ -4,32 +4,39 @@ import jua.runtime.Types;
 import jua.runtime.heap.Heap;
 import jua.runtime.heap.MapHeap;
 import jua.runtime.heap.StringHeap;
+import jua.util.Conversions;
 
 public final class Address {
 
     public static Address copy(Address source) {
         Address clone = new Address();
         clone.typeCode = source.typeCode;
-        if (source.a != null) {
-            clone.a = source.a.copy();
-        } else {
-            clone.l = source.l;
-            clone.d = source.d;
-        }
+        clone.l = source.l;
+        clone.d = source.d;
+        if (source.a != null) clone.a = source.a.copy();
         return clone;
     }
 
-    public static Address[] allocate(int offset, int count) {
+    public static Address[] allocateMemory(int offset, int count) {
+        // 0 <= offset <= 2^16
+        // 0 <= count <= 2^16
+        // 0 <= offset+count <= 2^16
+
         Address[] memory = new Address[count];
 
-        for (int i = offset; i < count; i++) {
-            memory[i] = new Address();
+        for (int i = 0; i < count; i++) {
+            memory[offset + i] = new Address();
         }
 
         return memory;
     }
 
     public static void arraycopy(Address[] src, int srcOffset, Address[] dst, int dstOffset, int count) {
+        // 0 <= srcOffset < src.length
+        // 0 <= dstOffset < dst.length
+        // 0 <= srcOffset+count <= src.length
+        // 0 <= dstOffset+count <= dst.length
+
         for (int i = 0; i < count; i++) {
             src[srcOffset + i].set(dst[dstOffset + i]);
         }
@@ -58,7 +65,7 @@ public final class Address {
 
     public void set(boolean b) {
         typeCode = Types.BOOLEAN;
-        l = (b ? 1L : 0L);
+        l = Conversions.z2j(b);
     }
 
     public void set(double _d) {

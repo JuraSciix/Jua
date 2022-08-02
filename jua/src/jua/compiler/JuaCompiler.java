@@ -130,6 +130,7 @@ public class JuaCompiler {
 
     private static Result compile(Tree root, URL location, LineMap lineMap) {
         CodeData codeData = new CodeData(location);
+        root.accept(new Enter(codeData));
         Gen gen = new Gen(codeData, lineMap);
 
         try {
