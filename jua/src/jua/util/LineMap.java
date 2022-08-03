@@ -1,61 +1,57 @@
 package jua.util;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
 
-/**
- * Заметка: сделано на скорую руку.
- */
-public class LineMap {
+import java.io.IOException;
 
-    private int[] lineMap;
+public final class LineMap {
 
-    public LineMap(String content) {
-        this(content.toCharArray());
+    private final int[] lineStartPoints;
+
+    public LineMap(Source source) throws IOException {
+        lineStartPoints = buildLineMap(source);
     }
 
-    public LineMap(char[] content) {
-        if (content == null) {
-            throw new NullPointerException("content");
-        }
-        IntArrayList lineMap = new IntArrayList();
-        lineMap.add(0);
-        for (int i = 0; i < content.length; i++) {
-            if (content[i] == '\n') {
-                lineMap.add(i + 1);
+    private int[] buildLineMap(Source source) throws IOException {
+        try (BufferReader reader = source.createReader()) {
+            IntList lineStartPoints = new IntArrayList(reader.available());
+
+            while (reader.unreadAvailable()) {
+                int ch = reader.readChar();
+                if (ch == '\n') {
+                    lineStartPoints.add(reader.position());
+                }
             }
-        }
-        this.lineMap = lineMap.toIntArray();
-    }
 
-    int lb = -1, lt = -1, ln = -1;
+            return lineStartPoints.toIntArray();
+        }
+    }
 
     public int getLineNumber(int pos) {
-        // Мой код в тестах не нуждается B)
-
-        if (pos >= lb && pos <= lt) return ln;
-        int[] _startPositions = lineMap;
-
-        int f = 0;                      // from
-        int t = _startPositions.length; // to
-        int c = (t >> 1);               // center
-
-        while ((t - f) > 1) {
-            int sp = _startPositions[c];
-            if (pos >= sp) {
-                f = c;
-                lb = sp;
-            } else {
-                t = c;
-                lt = sp;
-            }
-            c = (t + f) >> 1;
-        }
-
-        return ln = c + 1;
+        int index = findLineIndex(pos);
+        return index + 1;
     }
 
-    public int getOffsetNumber(int pos) {
-        int linenum = getLineNumber(pos) - 1;
-        return pos - lineMap[linenum];
+    public int getColumnNumber(int pos) {
+        int index = findLineIndex(pos);
+        return pos - lineStartPoints[index];
+    }
+
+    private int findLineIndex(int pos) {
+        int bottom = 0;
+        int top = lineStartPoints.length;
+        int current = top >> 1;
+
+        while ((top - bottom) > 1) {
+           if (lineStartPoints[current] < pos) {
+               bottom = current;
+           } else {
+               top = current;
+           }
+           current = (bottom + top) >> 1;
+        }
+
+        return current;
     }
 }

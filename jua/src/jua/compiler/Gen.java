@@ -6,31 +6,17 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntStack;
 import jua.interpreter.instruction.*;
 import jua.interpreter.instruction.Switch;
-import jua.runtime.heap.ArrayOperand;
 import jua.runtime.JuaFunction;
-import jua.runtime.heap.Operand;
+import jua.runtime.heap.*;
 import jua.compiler.Tree.*;
 import jua.util.LineMap;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
-public final class Gen extends Analyzer {
-
-    private final CodeData codeData;
-
-    private final Code code;
-
-    private final IntStack breakChains;
-
-    private final IntStack continueChains;
-
-    private final IntStack fallthroughChains;
-
-    private final IntStack conditionalChains;
+public final class Gen extends Scanner {
 
     /**
      *
@@ -67,26 +53,27 @@ public final class Gen extends Analyzer {
      */
     static final int STATE_ALIVE_SWITCH = (1 << 6);
 
+    private final CodeData codeData;
 
-//    private int statementDepth = 0;
-//
-//    private int expressionDepth = 0;
-//
-//    private int conditionDepth = 0;
+    private Code code;
+
+    private final IntStack breakChains;
+
+    private final IntStack continueChains;
+
+    private final IntStack fallthroughChains;
+
+    private final IntStack conditionalChains;
 
     /**
      * Состояние кода.
      */
     private int state = 0; // unassigned state
-//
-//    private boolean invertCond = false;
-//
-//    private boolean loopInfinity = false;
 
-    public Gen(CodeData codeData, LineMap lineMap) {
+
+    public Gen(CodeData codeData) {
         this.codeData = codeData;
 
-        code = new Code(codeData.location, lineMap);
         breakChains = new IntArrayList();
         continueChains = new IntArrayList();
         fallthroughChains = new IntArrayList();
@@ -100,6 +87,12 @@ public final class Gen extends Analyzer {
 
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
+        try {
+            code = new Code(tree.source);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;//todo
+        }
         code.pushContext(0);
         code.pushScope();
         int prev_state = state;
@@ -197,15 +190,15 @@ public final class Gen extends Analyzer {
     }
 
     @Override
-    public void visitArrayAccess(ArrayAccess expression) {
-        visitExpression(expression.array);
-        visitExpression(expression.key);
-        code.putPos(expression.pos);
+    public void visitArrayAccess(ArrayAccess tree) {
+        visitExpression(tree.expr);
+        visitExpression(tree.index);
+        code.putPos(tree.pos);
         emitALoad();
     }
 
     @Override
-    public void visitArray(ArrayLiteral expression) {
+    public void visitArrayLiteral(ArrayLiteral tree) {
 //        code.incStack();
 //        code.addInstruction(Newarray.INSTANCE);
 //        AtomicInteger index = new AtomicInteger();
@@ -226,9 +219,9 @@ public final class Gen extends Analyzer {
 //        disableUsed();
 //        emitNecessaryPop();
 
-        code.putPos(expression.pos);
+        code.putPos(tree.pos);
         emitNewArray();
-        generateArrayCreation(expression.entries);
+        generateArrayCreation(tree.entries);
     }
 
     private void generateArrayCreation(List<ArrayEntry> entries) {
@@ -237,7 +230,7 @@ public final class Gen extends Analyzer {
         while (iterator.hasNext()) {
             ArrayEntry entry = iterator.next();
             if (iterator.hasNext() || isUsed()) emitDup();
-            if (entry.key.isEmpty()) {
+            if (entry.key == null) {
                 code.putPos(entry.value.pos);
                 emitPushLong(implicitIndex++);
             } else {
@@ -274,12 +267,12 @@ public final class Gen extends Analyzer {
     }
 
     private void generateBinary(BinaryOp tree) {
-        if (TreeInfo.isCondition(tree)) {
+        if (TreeInfo.isConditionalTag(tree.tag)) {
             generateComparison(tree);
             return;
         }
         tree.lhs.accept(this);
-        if (tree.hasTag(Tag.NULLCOALESCE)) {
+        if (tree.getTag() == Tag.NULLCOALESCE) {
             emitDup();
             int el = code.makeChain();
             code.putPos(tree.pos);
@@ -303,16 +296,16 @@ public final class Gen extends Analyzer {
             case REM: return Rem.INSTANCE;
             case SL: return Shl.INSTANCE;
             case SR: return Shr.INSTANCE;
-            case BITAND: return And.INSTANCE;
-            case BITOR: return Or.INSTANCE;
-            case BITXOR: return Xor.INSTANCE;
+            case AND: return And.INSTANCE;
+            case OR: return Or.INSTANCE;
+            case XOR: return Xor.INSTANCE;
             default: throw new AssertionError();
         }
     }
 
     @Override
-    public void visitBlock(Block statement) {
-        acceptTreeList(statement.statements);
+    public void visitBlock(Block tree) {
+        acceptTreeList(tree.stats);
     }
 
     private void acceptTreeList(List<? extends Tree> statements) {
@@ -326,12 +319,12 @@ public final class Gen extends Analyzer {
     }
 
     @Override
-    public void visitBreak(Break statement) {
+    public void visitBreak(Break tree) {
         if (breakChains.isEmpty()) {
-            cError(statement.pos, "'break' is not allowed outside of loop/switch.");
+            cError(tree.pos, "'break' is not allowed outside of loop/switch.");
             return;
         }
-        code.putPos(statement.pos);
+        code.putPos(tree.pos);
         emitGoto(breakChains.topInt());
         unsetState(STATE_INFINITY_LOOP);
     }
@@ -344,13 +337,13 @@ public final class Gen extends Analyzer {
 
     @Override
     public void visitCase(Case tree) {
-        if (tree.expressions != null) { // is not default case?
-            for (Expression expr : tree.expressions) {
-                if (!(expr instanceof Literal)) {
+        if (tree.labels != null) { // is not default case?
+            for (Expression expr : tree.labels) {
+                if (expr.getTag() != Tag.LITERAL) {
                     cError(expr.pos, "constant expected");
                     continue;
                 }
-                int cp = TreeInfo.resolveLiteral(code, (Literal) expr);
+                int cp = resolveLiteral((Literal) expr);
                 cases.put(cp, code.currentIP() - switch_start_ip);
             }
 
@@ -373,7 +366,7 @@ public final class Gen extends Analyzer {
 
     @Override
     public void visitSwitch(Tree.Switch tree) {
-        visitExpression(tree.selector);
+        visitExpression(tree.expr);
         // emit switch
         int b = code.makeChain();
         breakChains.push(b);
@@ -409,54 +402,54 @@ public final class Gen extends Analyzer {
     }
 
     @Override
-    public void visitConstantDeclare(ConstantDecl statement) {
-        if (isState(STATE_NO_DECLS)) {
-            cError(statement.pos, "constants declaration is not allowed here.");
+    public void visitConstDef(ConstDef tree) {
+        if (declarationsUnallowedHere()) {
+            cError(tree.pos, "constants declaration is not allowed here.");
         }
 
-        //todo: а смысл было делать definitions если в итоге разделяется опять
-        List<Name> names = new ArrayList<>();
-        List<Expression> expressions = new ArrayList<>();
-        statement.definitions.forEach(definition -> {
-            names.add(definition.name);
-            expressions.add(definition.expr);
-        });
-        for (int i = 0; i < statement.definitions.size(); i++) {
-            Name name = names.get(i);
-            // Этим теперь занимается Enter
-//            if (codeData.testConstant(name.value)) {
-//                cError(statement.pos, "constant '" + name + "' already declared");
-//            }
-            Expression expr = expressions.get(i);
-            Operand value;
-            if (expr instanceof ArrayLiteral) {
-                value = new ArrayOperand();
-                if (((ArrayLiteral) expr).entries.size() > 0) {
-                    code.addInstruction(new Getconst(codeData.constantIndex(name.value), name), 1);
-                    generateArrayCreation(((ArrayLiteral) expr).entries);
-                }
+        for (Definition def : tree.defs) {
+            Name name = def.name;
+            Expression expr = def.expr;
+            if (expr.getTag() == Tag.ARRAYLITERAL) {
+                ArrayLiteral arrayLiteral = (ArrayLiteral) expr;
+                codeData.setConstant(name.value, new ArrayOperand());
+                if (!arrayLiteral.entries.isEmpty())
+                    generateArrayCreation(arrayLiteral.entries);
+            } else if (expr.getTag() == Tag.LITERAL) {
+                Literal literal = (Literal) expr;
+                codeData.setConstant(name.value, resolveOperand(literal));
             } else {
-                assert expr instanceof Literal;
-                value = TreeInfo.resolveLiteral((Literal) expr);
+                // todo: Более детальное сообщение
+                cError(expr.pos, "Literal expected.");
             }
-            codeData.setConstant(name.value, value);
         }
     }
 
+    private Operand resolveOperand(Literal literal) {
+        Object value = literal.value;
+        if (value instanceof Long || value instanceof Integer) return LongOperand.valueOf(((Number) value).longValue());
+        if (value instanceof Double || value instanceof Float)
+            return DoubleOperand.valueOf(((Number) value).doubleValue());
+        if (value instanceof String) return StringOperand.valueOf((String) value);
+        if (value instanceof Boolean) return BooleanOperand.valueOf(((Boolean) value));
+        assert value == null;
+        return NullOperand.NULL;
+    }
+
     @Override
-    public void visitContinue(Continue statement) {
+    public void visitContinue(Continue tree) {
         if (continueChains.isEmpty()) {
-            cError(statement.pos, "'continue' is not allowed outside of loop.");
+            cError(tree.pos, "'continue' is not allowed outside of loop.");
             return;
         }
-        code.putPos(statement.pos);
+        code.putPos(tree.pos);
         emitGoto(continueChains.topInt());
         code.dead();
     }
 
     @Override
-    public void visitDoLoop(DoLoop statement) {
-        generateLoop(statement, null, statement.cond, null, statement.body, false);
+    public void visitDoLoop(DoLoop tree) {
+        generateLoop(tree, null, tree.cond, null, tree.body, false);
     }
 
     public void visitEqual(BinaryOp expression) {
@@ -513,116 +506,153 @@ public final class Gen extends Analyzer {
     }
 
     @Override
-    public void visitFallthrough(Fallthrough statement) {
+    public void visitFallthrough(Fallthrough tree) {
         if (fallthroughChains.isEmpty()) {
-            cError(statement.pos, "'fallthrough' is not allowed outside of switch.");
+            cError(tree.pos, "'fallthrough' is not allowed outside of switch.");
             return;
         }
-        code.putPos(statement.pos);
+        code.putPos(tree.pos);
         emitGoto(fallthroughChains.topInt());
         unsetState(STATE_INFINITY_LOOP); // for cases
         code.dead();
     }
 
     @Override
-    public void visitFor(ForLoop statement) {
-        generateLoop(statement, statement.init, statement.cond, statement.step, statement.body, true);
+    public void visitFor(ForLoop tree) {
+        generateLoop(tree, tree.init, tree.cond, tree.step, tree.body, true);
     }
 
     @Override
-    public void visitInvocation(Invocation expression) {
+    public void visitInvocation(Invocation tree) {
         Instruction instruction;
         int stack = 0;
         boolean noReturnValue = false;
-        switch (expression.name.value) {
+        switch (tree.name.value) {
             case "bool":
-                if (expression.args.size() != 1) {
-                    cError(expression.pos, "mismatch call parameters: 1 expected, " + expression.args.size() + " got.");
+                if (tree.args.size() != 1) {
+                    cError(tree.pos, "mismatch call parameters: 1 expected, " + tree.args.size() + " got.");
                 }
-                visitExpression(expression.args.get(0).expr);
+                visitExpression(tree.args.get(0).expr);
                 instruction = Bool.INSTANCE;
                 break;
             case "print":
-                visitList(expression.args);
-                instruction = new Print(expression.args.size());
-                stack = -expression.args.size();
+                visitList(tree.args);
+                instruction = new Print(tree.args.size());
+                stack = -tree.args.size();
                 noReturnValue = true;
                 break;
             case "println":
-                visitList(expression.args);
-                instruction = new Println(expression.args.size());
-                stack = -expression.args.size();
+                visitList(tree.args);
+                instruction = new Println(tree.args.size());
+                stack = -tree.args.size();
                 noReturnValue = true;
                 break;
             case "typeof":
             case "gettype":
-                if (expression.args.size() != 1) {
-                    cError(expression.pos, "mismatch call parameters: 1 expected, " + expression.args.size() + " got.");
+                if (tree.args.size() != 1) {
+                    cError(tree.pos, "mismatch call parameters: 1 expected, " + tree.args.size() + " got.");
                 }
-                visitExpression(expression.args.get(0).expr);
+                visitExpression(tree.args.get(0).expr);
                 instruction = Gettype.INSTANCE;
                 break;
             case "ns_time":
-                if (expression.args.size() != 0) {
-                    cError(expression.pos, "mismatch call parameters: 0 expected, " + expression.args.size() + " got.");
+                if (tree.args.size() != 0) {
+                    cError(tree.pos, "mismatch call parameters: 0 expected, " + tree.args.size() + " got.");
                 }
                 instruction = NsTime.INSTANCE;
                 stack = 1;
                 break;
             case "length":
-                if (expression.args.size() != 1) {
-                    cError(expression.pos, "mismatch call parameters: 1 expected, " + expression.args.size() + " got.");
+                if (tree.args.size() != 1) {
+                    cError(tree.pos, "mismatch call parameters: 1 expected, " + tree.args.size() + " got.");
                 }
-                visitExpression(expression.args.get(0).expr);
+                visitExpression(tree.args.get(0).expr);
                 instruction = Length.INSTANCE;
                 break;
             default:
-                if (expression.args.size() > 0xff) {
-                    cError(expression.pos, "too many parameters.");
+                if (tree.args.size() > 0xff) {
+                    cError(tree.pos, "too many parameters.");
                 }
-                visitList(expression.args);
-                instruction = new Call(codeData.functionIndex(expression.name.value), (byte) expression.args.size(), expression.name);
-                stack = -expression.args.size() + 1;
+                visitList(tree.args);
+                instruction = new Call(codeData.functionIndex(tree.name.value), (byte) tree.args.size(), tree.name);
+                stack = -tree.args.size() + 1;
                 break;
         }
-        code.putPos(expression.pos);
+        code.putPos(tree.pos);
         code.addInstruction(instruction, stack);
         if (noReturnValue)
             code.addInstruction(ConstNull.INSTANCE, 1);
     }
 
+    private int resolveLiteral(Literal literal) {
+        Object value = literal.value;
+        if (value == null) return code.get_cpb().putNullEntry();
+        if (value == Boolean.TRUE) return code.get_cpb().putTrueEntry();
+        if (value == Boolean.FALSE) return code.get_cpb().putFalseEntry();
+        if (value instanceof Long || value instanceof Integer || value instanceof Short || value instanceof Byte)
+            return code.resolveLong(((Number) value).longValue());
+        if (value instanceof Double || value instanceof Float)
+            return code.resolveDouble(((Number) value).doubleValue());
+        if (value instanceof String) return code.resolveString((String) value);
+        throw new IllegalArgumentException();
+    }
+
     @Override
-    public void visitFunctionDecl(FunctionDecl tree) {
-        if (isState(STATE_NO_DECLS))
-            cError(tree.pos, "function declaration is not allowed here.");
-        // Этим теперь занимается Enter
-        //if (codeData.testFunction(tree.name))
-        //    cError(tree.pos, "function '" + tree.name + "' already declared.");
+    public void visitFuncDef(FuncDef tree) {
+        if (declarationsUnallowedHere()) {
+            cError(tree.pos, "Function declaration is not allowed here");
+        }
+
         code.pushContext(tree.pos);
         code.pushScope();
 
-        tree.params.forEach(code::resolveLocal);
-        int a = tree.params.size() - tree.defaults.size();
+        {
+            int nOptionals = 0;
+            for (Parameter param : tree.params) {
+                Name name = param.name;
+                if (code.localExists(name.value)) {
+                    cError(name.pos, "Duplicate parameter named '" + name.value + "'.");
+                }
+                int localIdx = code.resolveLocal(name.value);
+                if (param.expr != null) {
+                    Expression expr = param.expr;
+                    if (expr.getTag() != Tag.LITERAL) {
+                        cError(expr.pos, "The values of the optional parameters can only be literals");
+                    }
+                    code.get_cpb().putDefaultLocalEntry(localIdx, resolveLiteral((Literal) expr));
+                    nOptionals++;
+                }
+            }
 
-        for (int i = 0; i < tree.defaults.size() ; i++) {
-            Literal l = (Literal) tree.defaults.get(i);
-            code.get_cpb().putDefaultLocalEntry(a + i, TreeInfo.resolveLiteral(code, l));
+            assert tree.body != null;
+
+            Statement body = tree.body;
+            body.accept(this);
+
+            if (body.getTag() == Tag.BLOCK) {
+                if (code.isAlive()) {
+                    emitRetnull();
+                }
+            } else {
+                assert body instanceof Expression;
+                emitReturn();
+            }
+
+            codeData.setFunction(tree.name.value, JuaFunction.fromCode(
+                    tree.name.value,
+                    tree.params.size() - nOptionals,
+                    tree.params.size(),
+                    code.buildCodeSegment(),
+                    codeData.location
+            ));
         }
 
-        visitStatement(tree.body);
-        if (!tree.body.hasTag(Tag.BLOCK))
-            emitReturn();
-        else
-            emitRetnull();
-        codeData.setFunction(tree.name, JuaFunction.fromCode(
-                tree.name,
-                tree.params.size() - tree.defaults.size(),
-                tree.params.size(),
-                code.buildCodeSegment(),
-                codeData.location
-        ));
         code.popScope();
         code.popContext();
+    }
+
+    private boolean declarationsUnallowedHere() {
+        return isState(STATE_NO_DECLS);
     }
 
     public void visitGreaterEqual(BinaryOp expression) {
@@ -676,23 +706,23 @@ public final class Gen extends Analyzer {
     }
 
     @Override
-    public void visitIf(If statement) {
-        if (statement.elseBody == null) {
+    public void visitIf(If tree) {
+        if (tree.elsebody == null) {
             pushMakeConditionChain();
-            generateCondition(statement.cond);
-            visitBody(statement.body);
+            generateCondition(tree.cond);
+            visitBody(tree.thenbody);
             code.resolveChain(popConditionChain());
         } else {
             int el = pushMakeConditionChain();
             int ex = code.makeChain();
-            generateCondition(statement.cond);
+            generateCondition(tree.cond);
             int cached_sp = code.getSp();
-            boolean thenAlive = visitBody(statement.body);
+            boolean thenAlive = visitBody(tree.thenbody);
             emitGoto(ex);
             code.resolveChain(el);
             int body_sp = code.getSp();
             code.setSp(cached_sp);
-            boolean elseAlive = visitBody(statement.elseBody);
+            boolean elseAlive = visitBody(tree.elsebody);
             code.setSp(Math.max(body_sp, code.getSp()));
             code.resolveChain(ex);
             if (!thenAlive && !elseAlive) code.dead();
@@ -753,6 +783,16 @@ public final class Gen extends Analyzer {
         generateComparison(expression);
     }
 
+    static boolean isShortIntegerLiteral(Expression tree) {
+        if (tree == null) return false;
+        if (!hasTag(tree, Tag.LITERAL)) return false;
+        Literal literal = (Literal) tree;
+        if (!(literal.value instanceof Number)) return false;
+        long value = ((Number) literal.value).longValue();
+        return (value >= Short.MIN_VALUE && value <= Short.MAX_VALUE);
+    }
+
+
     private void generateComparison(BinaryOp expression) {
         beginCondition();
         Expression lhs = expression.lhs;
@@ -762,8 +802,8 @@ public final class Gen extends Analyzer {
         int shortVal;
         boolean lhsNull = lhs instanceof Literal && ((Literal) lhs).isNull();
         boolean rhsNull = rhs instanceof Literal && ((Literal) rhs).isNull();
-        boolean lhsShort = TreeInfo.testShort(lhs);
-        boolean rhsShort = TreeInfo.testShort(rhs);
+        boolean lhsShort = isShortIntegerLiteral(lhs);
+        boolean rhsShort = isShortIntegerLiteral(rhs);
         if (lhsShort || rhsShort) {
             shortVal = ((Number) ((Literal) (lhsShort ? lhs : rhs)).value).shortValue();
             visitExpression(lhsShort ? rhs : lhs);
@@ -787,7 +827,7 @@ public final class Gen extends Analyzer {
                     resultStackAdjustment = -2;
                 }
                 break;
-            case NEQ:
+            case NE:
                 if (lhsNull || rhsNull) {
                     visitExpression(lhsNull ? rhs : lhs);
                     resultState = (invert ? Ifnonnull::new : Ifnull::new);
@@ -914,8 +954,8 @@ public final class Gen extends Analyzer {
     }
 
     @Override
-    public void visitParens(Parens expression) {
-        expression.expr.accept(this);
+    public void visitParens(Parens tree) {
+        tree.expr.accept(this);
         // todo: выбрасывается AssertionError
         //throw new AssertionError(
         //        "all brackets should have been removed in ConstantFolder");
@@ -923,25 +963,25 @@ public final class Gen extends Analyzer {
 
     private void generateUnary(UnaryOp tree) {
         switch (tree.getTag()) {
-            case POST_DEC:
-            case PRE_DEC:
-            case POST_INC:
-            case PRE_INC:
+            case POSTDEC:
+            case PREDEC:
+            case POSTINC:
+            case PREINC:
                 generateIncrease(tree);
                 return;
         }
 
         System.out.println(tree);
-        if (tree.hasTag(Tag.LOGCMPL)) {
+        if (hasTag(tree, Tag.NOT)) {
             beginCondition();
             int prev_state = state;
             state ^= STATE_COND_INVERT;
-            generateCondition(tree.hs);
+            generateCondition(tree.expr);
             state = prev_state;
             endCondition();
             return;
         }
-        tree.hs.accept(this);
+        tree.expr.accept(this);
         code.putPos(tree.pos);
         code.addInstruction(unary2instr(tree.getTag()));
     }
@@ -950,37 +990,17 @@ public final class Gen extends Analyzer {
         switch (tag) {
             case POS: return Pos.INSTANCE;
             case NEG: return Neg.INSTANCE;
-            case BITCMPL: return Not.INSTANCE;
+            case INVERSE: return Not.INSTANCE;
             default: throw new AssertionError();
         }
     }
 
-    @Deprecated
     @Override
-    public void visitPrintln(PrintlnStatement statement) {
-//        visitExprList(statement.expressions);
-//        int count = statement.expressions.size();
-//        code.putPos(statement.position);
-//        code.addInstruction(new Println(count), -count);
-        throw new AssertionError("deprecated");
-    }
-
-    @Deprecated
-    @Override
-    public void visitPrint(PrintStatement statement) {
-//        visitExprList(statement.expressions);
-//        int count = statement.expressions.size();
-//        code.putPos(statement.position);
-//        code.addInstruction(new Print(count), -count);
-        throw new AssertionError("deprecated");
-    }
-
-    @Override
-    public void visitReturn(Tree.Return statement) {
-        if (isNull(statement.expr)) {
+    public void visitReturn(Tree.Return tree) {
+        if (isNull(tree.expr)) {
             emitRetnull();
         } else {
-            visitExpression(statement.expr);
+            visitExpression(tree.expr);
             emitReturn();
         }
     }
@@ -990,47 +1010,47 @@ public final class Gen extends Analyzer {
         code.dead();
     }
 
-    private static boolean isNull(Expression expression) {
-        return TreeInfo.isNull(expression);
+    private static boolean isNull(Expression tree) {
+        return tree == null || tree.getTag() == Tag.LITERAL && ((Literal) tree).value == null;
     }
 
     @Override
-    public void visitTernaryOp(TernaryOp expression) {
+    public void visitTernaryOp(TernaryOp tree) {
         int el = pushMakeConditionChain();
         int ex = code.makeChain();
 
         int prev_state = state;
         unsetState(STATE_COND_INVERT);
-        generateCondition(expression.cond);
+        generateCondition(tree.cond);
         state = prev_state;
 
         int cached_sp = code.getSp();
         popConditionChain();
-        visitExpression(expression.lhs);
+        visitExpression(tree.thenexpr);
         int lhs_sp = code.getSp();
         code.setSp(cached_sp);
         emitGoto(ex);
         code.resolveChain(el);
         int rhs_sp = code.getSp();
-        visitExpression(expression.rhs);
+        visitExpression(tree.elseexpr);
         code.resolveChain(ex);
         code.setSp(Math.max(lhs_sp, rhs_sp));
     }
 
     @Override
-    public void visitVariable(Var expression) {
-        Name name = expression.name;
-        code.putPos(expression.pos);
+    public void visitVariable(Var tree) {
+        Name name = tree.name;
+        code.putPos(tree.pos);
         if (codeData.testConstant(name.value)) {
             code.addInstruction(new Getconst(codeData.constantIndex(name.value), name), 1);
         } else {
-            emitVLoad(expression.name.value);
+            emitVLoad(tree.name.value);
         }
     }
 
     @Override
-    public void visitWhileLoop(WhileLoop statement) {
-        generateLoop(statement, null, statement.cond, null, statement.body, true);
+    public void visitWhileLoop(WhileLoop tree) {
+        generateLoop(tree, null, tree.cond, null, tree.body, true);
     }
 
     private void generateLoop(Statement loop, List<Expression> initials, Expression condition, List<Expression> steps,
@@ -1085,14 +1105,14 @@ public final class Gen extends Analyzer {
     @Deprecated
     public void visitBinaryOp(BinaryOp expression) {
         switch (expression.tag) {
-            case LOGAND: visitAnd(expression);                  break;
+            case FLOW_AND: visitAnd(expression);                  break;
             case LT:     visitLess(expression);                 break;
             case EQ:     visitEqual(expression);                break;
             case GE:     visitGreaterEqual(expression);         break;
             case GT:     visitGreater(expression);              break;
             case LE:     visitLessEqual(expression);            break;
-            case NEQ:    visitNotEqual(expression);             break;
-            case LOGOR:  visitOr(expression);                   break;
+            case NE:    visitNotEqual(expression);             break;
+            case FLOW_OR:  visitOr(expression);                   break;
             case NULLCOALESCE: visitNullCoalesce(expression);   break;
         }
 
@@ -1140,32 +1160,30 @@ public final class Gen extends Analyzer {
         state = prev_state;
     }
 
-    private void generateCondition(Expression expression) {
-        assert expression != null;
+    private void generateCondition(Expression tree) {
+        assert tree != null;
         int prev_state = state;
         setState(STATE_COND);
-        visitExpression(expression);
+        visitExpression(tree);
         state = prev_state;
-        if (TreeInfo.isCondition(expression)) {
+        if (TreeInfo.isConditionalTag(tree.getTag())) {
             return;
         }
         // todo: Здешний код отвратителен. Следует переписать всё с нуля...
 //        code.addInstruction(Bool.INSTANCE);
-        code.putPos(expression.pos);
+        code.putPos(tree.pos);
         code.addChainedInstruction(isState(STATE_COND_INVERT) ? Iftrue::new : Iffalse::new,
                 peekConditionChain(), -1);
     }
 
     @Override
-    public void visitDiscarded(Discarded expression) {
-        visitStatement(expression.expression);
-        switch (expression.expression.getTag()) {
-            case ASG: case ASG_ADD: case ASG_SUB: case ASG_MUL:
-            case ASG_DIV: case ASG_REM: case ASG_BITAND: case ASG_BITOR:
-            case ASG_BITXOR: case ASG_SL: case ASG_SR: case ASG_NULLCOALESCE:
-            case PRE_INC: case PRE_DEC: case POST_INC: case POST_DEC:
-            case PRINT: case PRINTLN:
-                break;
+    public void visitDiscarded(Discarded tree) {
+        visitStatement(tree.expr);
+        switch (tree.expr.getTag()) {
+            case ASSIGN: case ASG_ADD: case ASG_SUB: case ASG_MUL:
+            case ASG_DIV: case ASG_REM: case ASG_AND: case ASG_OR:
+            case ASG_XOR: case ASG_SL: case ASG_SR: case ASG_NULLCOALESCE:
+            case PREINC: case PREDEC: case POSTINC: case POSTDEC:
             default:
                 code.addInstruction(Pop.INSTANCE, -1);
         }
@@ -1205,16 +1223,16 @@ public final class Gen extends Analyzer {
 //            emitVStore(line, ((Var) var).name);
 //        }
 
-        Expression lhs = expression.var;
-        Expression rhs = expression.expr;
+        Expression lhs = expression.dst;
+        Expression rhs = expression.src;
 
         switch (lhs.getTag()) {
-            case ARRAY_ACCESS: {
+            case ARRAYACCESS: {
                 ArrayAccess arrayAccess = (ArrayAccess) lhs;
                 code.putPos(arrayAccess.pos);
-                visitExpression(arrayAccess.array);
-                visitExpression(arrayAccess.key);
-                if (expression.hasTag(Tag.ASG_NULLCOALESCE)) {
+                visitExpression(arrayAccess.expr);
+                visitExpression(arrayAccess.index);
+                if (hasTag(expression, Tag.ASG_NULLCOALESCE)) {
                     int el = code.makeChain();
                     int ex = code.makeChain();
                     emitDup2();
@@ -1236,7 +1254,7 @@ public final class Gen extends Analyzer {
                     }
                     code.resolveChain(ex);
                 } else {
-                    if (!expression.hasTag(Tag.ASG)) {
+                    if (!hasTag(expression, Tag.ASSIGN)) {
                         emitDup2();
                         code.putPos(arrayAccess.pos);
                         emitALoad();
@@ -1256,7 +1274,7 @@ public final class Gen extends Analyzer {
             }
             case VARIABLE: {
                 Var variable = (Var) lhs;
-                if (expression.hasTag(Tag.ASG_NULLCOALESCE)) {
+                if (hasTag(expression, Tag.ASG_NULLCOALESCE)) {
                     int ex = code.makeChain();
                     visitExpression(lhs);
                     code.addChainedInstruction(Ifnonnull::new, ex, -1);
@@ -1276,7 +1294,7 @@ public final class Gen extends Analyzer {
                         code.resolveChain(ex);
                     }
                 } else {
-                    if (!expression.hasTag(Tag.ASG)) {
+                    if (!hasTag(expression, Tag.ASSIGN)) {
                         visitExpression(lhs);
                         visitExpression(rhs);
                         code.putPos(expression.pos);
@@ -1305,9 +1323,9 @@ public final class Gen extends Analyzer {
             case ASG_REM: return Rem.INSTANCE;
             case ASG_SL: return Shl.INSTANCE;
             case ASG_SR: return Shr.INSTANCE;
-            case ASG_BITAND: return And.INSTANCE;
-            case ASG_BITOR: return Or.INSTANCE;
-            case ASG_BITXOR: return Xor.INSTANCE;
+            case ASG_AND: return And.INSTANCE;
+            case ASG_OR: return Or.INSTANCE;
+            case ASG_XOR: return Xor.INSTANCE;
             default: throw new AssertionError();
         }
     }
@@ -1358,22 +1376,22 @@ public final class Gen extends Analyzer {
 //            }
 //        }
 
-        Expression hs = expression.hs;
+        Expression hs = expression.expr;
 
         switch (hs.getTag()) {
-            case ARRAY_ACCESS: {
+            case ARRAYACCESS: {
                 ArrayAccess arrayAccess = (ArrayAccess) hs;
                 code.putPos(arrayAccess.pos);
-                visitExpression(arrayAccess.array);
-                visitExpression(arrayAccess.key);
+                visitExpression(arrayAccess.expr);
+                visitExpression(arrayAccess.index);
                 emitDup2();
                 emitALoad();
-                if (isUsed() && (expression.hasTag(Tag.POST_INC) || expression.hasTag(Tag.POST_DEC))) {
+                if (isUsed() && (hasTag(expression, Tag.POSTINC) || hasTag(expression, Tag.POSTDEC))) {
                     emitDupX2();
                 }
                 code.putPos(expression.pos);
                 code.addInstruction(increase2state(expression.getTag(), -1));
-                if (isUsed() && (expression.hasTag(Tag.PRE_INC) || expression.hasTag(Tag.PRE_DEC))) {
+                if (isUsed() && (hasTag(expression, Tag.PREINC) || hasTag(expression, Tag.PREDEC))) {
                     emitDupX2();
                 }
                 code.putPos(arrayAccess.pos);
@@ -1382,12 +1400,12 @@ public final class Gen extends Analyzer {
             }
             case VARIABLE: {
                 Var variable = (Var) hs;
-                if (isUsed() && (expression.hasTag(Tag.POST_INC) || expression.hasTag(Tag.POST_DEC))) {
+                if (isUsed() && (hasTag(expression, Tag.POSTINC) || hasTag(expression, Tag.POSTDEC))) {
                     variable.accept(this);
                 }
                 code.putPos(expression.pos);
                 code.addInstruction(increase2state(expression.getTag(), code.resolveLocal(variable.name.value)));
-                if (isUsed() && (expression.hasTag(Tag.PRE_INC) || expression.hasTag(Tag.PRE_DEC))) {
+                if (isUsed() && (hasTag(expression, Tag.PREINC) || hasTag(expression, Tag.PREDEC))) {
                     variable.accept(this);
                 }
                 break;
@@ -1395,12 +1413,16 @@ public final class Gen extends Analyzer {
             default: cError(hs.pos, "assignable expression expected.");
         }
     }
+    
+    private static final boolean hasTag(Tree tree, Tag tag) {
+        return tree.getTag() == tag;
+    }
 
     public static Instruction increase2state(Tag tag, int id) {
         switch (tag) {
-            case PRE_INC: case POST_INC:
+            case PREINC: case POSTINC:
                 return id >= 0 ? new Vinc(id) : Inc.INSTANCE;
-            case PRE_DEC: case POST_DEC:
+            case PREDEC: case POSTDEC:
                 return id >= 0 ? new Vdec(id) : Dec.INSTANCE;
             default: throw new AssertionError();
         }

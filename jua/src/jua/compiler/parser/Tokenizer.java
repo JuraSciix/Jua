@@ -1,15 +1,18 @@
 package jua.compiler.parser;
 
 import jua.compiler.ParseException;
-import jua.util.TokenizeStream;
+import jua.util.BufferReader;
+import jua.util.Source;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.io.StringWriter;
 
 import static java.lang.Character.*;
 import static jua.compiler.parser.Tokens.*;
 import static jua.compiler.parser.Tokens.TokenKind.*;
 
-public class Tokenizer {
+public class Tokenizer implements Closeable {
 
     private static class TokenBuilder {
 
@@ -51,27 +54,29 @@ public class Tokenizer {
         }
     }
 
-    private final TokenizeStream stream;
+    private final Source source;
 
-    public Tokenizer(TokenizeStream stream) {
-        this.stream = stream;
+    private final BufferReader reader;
+
+    public Tokenizer(Source source) {
+        this.source = source;
+        reader = source.createReader();
     }
 
-    @Deprecated
-    public String getFilename() {
-        throw new UnsupportedOperationException();
+    public Source getSource() {
+        return source;
     }
 
     public boolean hasMoreTokens() {
-        return stream.peek() >= 0;
+        return true;
     }
 
-    public Tokens.Token nextToken() throws ParseException {
+    public Tokens.Token nextToken() throws ParseException, IOException {
         while (true) {
             int c;
 
-            if ((c = stream.next()) < 0)
-                return new DummyToken(EOF, stream.getPosition()+1);
+            if ((c = reader.readChar()) < 0)
+                return new DummyToken(EOF, reader.position()+1);
 
             if (c == '#') {
                 parseComment();
@@ -81,20 +86,18 @@ public class Tokenizer {
         }
     }
 
-    private void parseComment() {
-        while (stream.next() != '\n') {
-            if (stream.peek() < 0) {
-                stream.nextLine(); // for correctly printing positions of errors
-                return;
-            }
+    private void parseComment() throws IOException {
+        int c = reader.readChar();
+        while (c != -1 && c != '\n') {
+            c = reader.readChar();
         }
     }
 
-    private Tokens.Token parseCharacter(int c) throws ParseException {
+    private Tokens.Token parseCharacter(int c) throws ParseException, IOException {
         if (c == '\'' || c == '"') {
             return parseString(c);
         }
-        if (isDigit(c) || c == '.' && isDigit(stream.peek())) {
+        if (isDigit(c) || c == '.' && isDigit(reader.peekChar())) {
             return parseNumber(c);
         }
         if (isJavaIdentifierStart(c)) {
@@ -103,12 +106,12 @@ public class Tokenizer {
         return parseSpecial(c);
     }
 
-    private Tokens.Token parseString(int mark) throws ParseException {
+    private Tokens.Token parseString(int mark) throws ParseException, IOException {
         TokenBuilder builder = getBuilder();
 
-        for (int c; (c = stream.next()) != mark; ) {
+        for (int c; (c = reader.readChar()) != mark; ) {
             if (c < 0) {
-                tError(stream.getPosition(), "EOF reached while parsing string.");
+                tError(reader.position(), "EOF reached while parsing string.");
                 break;
             }
             if (c == '\\') {
@@ -120,8 +123,8 @@ public class Tokenizer {
         return builder.buildString();
     }
 
-    private void parseEscape(TokenBuilder builder) {
-        int c = stream.next();
+    private void parseEscape(TokenBuilder builder) throws IOException {
+        int c = reader.readChar();
 
         switch (c) {
             case 'b':  builder.putChar('\b'); return;
@@ -140,21 +143,21 @@ public class Tokenizer {
         builder.putChar('\\').putChar(c);
     }
 
-    private void parseEscapeOctal(TokenBuilder builder, int c) {
+    private void parseEscapeOctal(TokenBuilder builder, int c) throws IOException {
         int i    = (c >= '4' ? 2 : 3);
         int oct  = (c - '0');
-        int next = stream.peek();
+        int next = reader.peekChar();
 
         while (--i >= 0 && next >= '0' && next <= '7') {
-            oct = (oct << 3) + stream.next() - '0';
-            next = stream.peek();
+            oct = (oct << 3) + reader.readChar() - '0';
+            next = reader.peekChar();
         }
         builder.putChar(oct);
     }
 
-    private Tokens.Token parseNumber(int c) throws ParseException {
+    private Tokens.Token parseNumber(int c) throws ParseException, IOException {
         TokenBuilder builder = getBuilder();
-        int next = stream.peek();
+        int next = reader.peekChar();
         int radix = 10;
 
         if (c == '0') {
@@ -168,9 +171,9 @@ public class Tokenizer {
         return parseFraction(builder, radix, (c == '.'));
     }
 
-    private Tokens.Token parseHex(TokenBuilder builder) throws ParseException {
-        stream.next();
-        int next = stream.peek();
+    private Tokens.Token parseHex(TokenBuilder builder) throws ParseException, IOException {
+        reader.readChar();
+        int next = reader.peekChar();
 
         if (digit(next, 16) < 0 && next != '_') {
             tError(builder.pos, "illegal hexadecimal literal.");
@@ -179,9 +182,9 @@ public class Tokenizer {
         return builder.buildNumber(false, 16);
     }
 
-    private Tokens.Token parseBin(TokenBuilder builder) throws ParseException {
-        stream.next();
-        int next = stream.peek();
+    private Tokens.Token parseBin(TokenBuilder builder) throws ParseException, IOException {
+        reader.readChar();
+        int next = reader.peekChar();
 
         if (digit(next, 2) < 0 && next != '_') {
             tError(builder.pos, "illegal binary decimal literal.");
@@ -190,9 +193,9 @@ public class Tokenizer {
         return builder.buildNumber(false, 2);
     }
 
-    private Tokens.Token parseDuo(TokenBuilder builder) throws ParseException {
-        stream.next();
-        int next = stream.peek();
+    private Tokens.Token parseDuo(TokenBuilder builder) throws ParseException, IOException {
+        reader.readChar();
+        int next = reader.peekChar();
 
         if (digit(next, 12) < 0 && next != '_') {
             tError(builder.pos, "illegal duodecimal literal.");
@@ -201,25 +204,25 @@ public class Tokenizer {
         return builder.buildNumber(false, 12);
     }
 
-    private Tokens.Token parseFraction(TokenBuilder builder, int radix, boolean isFloat) throws ParseException {
+    private Tokens.Token parseFraction(TokenBuilder builder, int radix, boolean isFloat) throws ParseException, IOException {
         int c;
 
-        if ((c = stream.peek()) == '.') {
+        if ((c = reader.peekChar()) == '.') {
             if (isFloat) {
                 return builder.buildNumber(true, 10);
             }
-            builder.putChar(stream.next());
+            builder.putChar(reader.readChar());
             parseDigits(builder, '.', 10);
-            c = stream.peek();
+            c = reader.peekChar();
             isFloat = true;
         }
         if (c == 'e' || c == 'E') {
-            builder.putChar(stream.next());
-            c = stream.peek();
+            builder.putChar(reader.readChar());
+            c = reader.peekChar();
 
             if (c == '-' || c == '+') {
-                builder.putChar(stream.next());
-                c = stream.peek();
+                builder.putChar(reader.readChar());
+                c = reader.peekChar();
             }
             if (!isDigit(c) && c != '_') {
                 tError(builder.pos, "malformed floating literal.");
@@ -230,36 +233,36 @@ public class Tokenizer {
         return builder.buildNumber(isFloat, radix);
     }
 
-    private void parseDigits(TokenBuilder builder, int c, int radix) throws ParseException {
-        int next = stream.peek();
+    private void parseDigits(TokenBuilder builder, int c, int radix) throws ParseException, IOException {
+        int next = reader.peekChar();
 
         if (digit(c, radix) < 0 && next == '_') {
-            stream.next();
+            reader.readChar();
             underscore();
         }
         while (digit(next, radix) >= 0 || next == '_') {
-            if ((c = stream.next()) != '_') {
+            if ((c = reader.readChar()) != '_') {
                 builder.putChar(c);
             }
-            next = stream.peek();
+            next = reader.peekChar();
         }
         if (c == '_') underscore();
     }
 
-    private void underscore() throws ParseException {
-        tError(stream.getPosition(), "underscore is not allowed here.");
+    private void underscore() throws ParseException, IOException {
+        tError(reader.position(), "underscore is not allowed here.");
     }
 
-    private Tokens.Token parseKeyword(int c) {
+    private Tokens.Token parseKeyword(int c) throws IOException {
         TokenBuilder builder = getBuilder(c);
 
-        while (isJavaIdentifierPart(stream.peek())) {
-            builder.putChar(stream.next());
+        while (isJavaIdentifierPart(reader.peekChar())) {
+            builder.putChar(reader.readChar());
         }
         return builder.buildNamedOrString();
     }
 
-    private Tokens.Token parseSpecial(int c) throws ParseException {
+    private Tokens.Token parseSpecial(int c) throws ParseException, IOException {
         TokenBuilder builder = getBuilder(-1);
         TokenKind type = null;
         // Обожаю костыли.
@@ -273,19 +276,19 @@ public class Tokenizer {
                 break;
             }
             type = lookup;
-            c = stream.peek();
+            c = reader.peekChar();
             if (f) {
                 f = false;
             } else {
-                stream.next();
+                reader.readChar();
             }
         } while (seenSpecial());
 
         return checkSpecial(builder, type);
     }
 
-    private boolean seenSpecial() {
-        switch (stream.peek()) {
+    private boolean seenSpecial() throws IOException {
+        switch (reader.peekChar()) {
             case '&': case '|': case '^': case ':': case ',':
             case '.': case '=': case '!': case '>': case '{':
             case '[': case '(': case '<': case '-': case '%':
@@ -306,12 +309,12 @@ public class Tokenizer {
         return builder.buildNamed(type);
     }
 
-    private TokenBuilder getBuilder() {
+    private TokenBuilder getBuilder() throws IOException {
         return getBuilder(-1);
     }
 
-    private TokenBuilder getBuilder(int c) {
-        TokenBuilder builder = new TokenBuilder(stream.getPosition());
+    private TokenBuilder getBuilder(int c) throws IOException {
+        TokenBuilder builder = new TokenBuilder(reader.position());
 
         if (c >= 0) {
             builder.putChar(c);
@@ -323,7 +326,8 @@ public class Tokenizer {
         throw new ParseException(message, position);
     }
 
-    public TokenizeStream getStream() {
-        return stream;
+    @Override
+    public void close() throws IOException {
+        reader.close();
     }
 }

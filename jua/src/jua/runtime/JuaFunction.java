@@ -10,16 +10,16 @@ public final class JuaFunction {
                                        int minNumArgs,
                                        int maxNumArgs,
                                        CodeSegment code,
-                                       URL location) {
-        return new JuaFunction(name, minNumArgs, maxNumArgs, code, null, location);
+                                       String filename) {
+        return new JuaFunction(name, minNumArgs, maxNumArgs, code, null, filename);
     }
 
     public static JuaFunction fromNativeHandler(String name,
                                                 int minNumArgs,
                                                 int maxNumArgs,
                                                 JuaNativeExecutor nativeExecutor,
-                                                URL location) {
-        return new JuaFunction(name, minNumArgs, maxNumArgs, null, nativeExecutor, location);
+                                                String filename) {
+        return new JuaFunction(name, minNumArgs, maxNumArgs, null, nativeExecutor, filename);
     }
 
 
@@ -33,20 +33,20 @@ public final class JuaFunction {
 
     private final JuaNativeExecutor nativeExecutor;
 
-    private final URL location;
+    private final String filename;
 
     private JuaFunction(String name,
                         int minNumArgs,
                         int maxNumArgs,
                         CodeSegment codeSegment,
                         JuaNativeExecutor nativeExecutor,
-                        URL location) {
+                        String filename) {
         this.name = name;
         this.minNumArgs = minNumArgs;
         this.maxNumArgs = maxNumArgs;
         this.codeSegment = codeSegment;
         this.nativeExecutor = nativeExecutor;
-        this.location = location;
+        this.filename = filename;
     }
 
     public String name() {
@@ -87,7 +87,7 @@ public final class JuaFunction {
         }
     }
 
-    public URL location() {
-        return location;
+    public String filename() {
+        return filename;
     }
 }

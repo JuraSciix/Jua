@@ -1,6 +1,9 @@
 package jua.compiler;
 
-public class Enter extends Tree.Analyzer {
+import jua.compiler.Tree.*;
+
+public class Enter extends Scanner {
+
     private final CodeData codeData;
 
     public Enter(CodeData codeData) {
@@ -8,29 +11,20 @@ public class Enter extends Tree.Analyzer {
     }
 
     @Override
-    public void visitPrintln(Tree.PrintlnStatement statement) {
-        //todo: удали
+    public void visitFuncDef(FuncDef tree) {
+        if (codeData.testConstant(tree.name.value))
+            throw new CompileError("Function '" + tree.name + "' has been already declared.", tree.pos);
+        codeData.setFunction(tree.name.value, null);
     }
 
     @Override
-    public void visitPrint(Tree.PrintStatement statement) {
-        //todo: удали
-    }
-
-    @Override
-    public void visitFunctionDecl(Tree.FunctionDecl tree) {
-        if (codeData.testConstant(tree.name))
-            throw new CompileError("Function '" + tree.name + "' redeclare", tree.pos);
-        codeData.setFunction(tree.name, null);
-    }
-
-    @Override
-    public void visitConstantDeclare(Tree.ConstantDecl tree) {
-        for (Tree.Definition def : tree.definitions) {
-            if (codeData.testConstant(def.name.value)) {
-                throw new CompileError("Constant '" + def.name.value + "' redeclare", def.name.pos);
+    public void visitConstDef(ConstDef tree) {
+        for (Definition def : tree.defs) {
+            Name name = def.name;
+            if (codeData.testConstant(name.value)) {
+                throw new CompileError("Constant '" + name.value + "' has been already declared.", name.pos);
             }
-            codeData.setConstant(def.name.value, null);
+            codeData.setConstant(name.value, null);
         }
     }
 }

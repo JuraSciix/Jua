@@ -1,10 +1,7 @@
 package jua.runtime.code;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import jua.runtime.heap.DoubleOperand;
-import jua.runtime.heap.LongOperand;
-import jua.runtime.heap.Operand;
-import jua.runtime.heap.StringOperand;
+import jua.runtime.heap.*;
 
 import java.util.HashMap;
 
@@ -68,6 +65,27 @@ public final class ConstantPool {
                 defaultLocalEntriesOffset = local_idx;
             }
             defaultLocalEntries.add(entry_idx);
+        }
+
+        public int putNullEntry() {
+            if (!entries.containsKey(null)) {
+                entries.put(null, new IndexedOperand(entries.size(), NullOperand.NULL));
+            }
+            return entries.get(null).index;
+        }
+
+        public int putTrueEntry() {
+            if (!entries.containsKey(true)) {
+                entries.put(true, new IndexedOperand(entries.size(), TrueOperand.TRUE));
+            }
+            return entries.get(true).index;
+        }
+
+        public int putFalseEntry() {
+            if (!entries.containsKey(false)) {
+                entries.put(false, new IndexedOperand(entries.size(), FalseOperand.FALSE));
+            }
+            return entries.get(false).index;
         }
 
         public ConstantPool build() {

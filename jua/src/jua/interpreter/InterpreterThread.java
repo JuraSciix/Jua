@@ -8,7 +8,6 @@ import jua.runtime.RuntimeErrorException;
 import jua.runtime.code.CodeSegment;
 import jua.runtime.heap.*;
 
-import java.net.URL;
 import java.util.Objects;
 
 public final class InterpreterThread {
@@ -280,8 +279,8 @@ public final class InterpreterThread {
         }
     }
 
-    public URL current_location() {
-        return current_frame.owningFunction().location();
+    public String current_location() {
+        return current_frame.owningFunction().filename();
     }
 
     public int current_line_number() {

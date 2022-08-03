@@ -1,81 +1,41 @@
 package jua.compiler;
 
-import jua.compiler.Tree.*;
-import jua.runtime.heap.*;
+import jua.compiler.Tree.Expression;
+import jua.compiler.Tree.Parens;
+import jua.compiler.Tree.Tag;
 
 public final class TreeInfo {
 
-    /**
-     * @deprecated the {@link CFold} class removes the parens from AST, so this method is useless.
-     */
-    @Deprecated
     public static Expression removeParens(Expression tree) {
-        if (tree == null)
-            return null;
+        Expression result = tree;
 
-        Expression current = tree;
-
-        while (current.hasTag(Tag.PARENS)) {
-            current = ((Parens) current).expr;
+        while (result != null && result.getTag() == Tag.PARENS) {
+            Parens parens = (Parens) result;
+            result = parens.expr;
         }
 
-        return current;
+        return result;
     }
 
-    public static boolean testShort(Expression tree) {
-        return isShortIntegerLiteral(tree);
-    }
-
-    public static boolean isShortIntegerLiteral(Expression tree) {
-        if (tree == null) return false;
-        if (!tree.hasTag(Tag.LITERAL)) return false;
-        Literal literal = (Literal) tree;
-        if (!(literal.value instanceof Number)) return false;
-        long value = ((Number) literal.value).longValue();
-        return (value >= Short.MIN_VALUE && value <= Short.MAX_VALUE);
-    }
-
-    public static int resolveLiteral(Code code, Literal expression) {
-        Object value = expression.value;
-        if (value instanceof Long || value instanceof Integer) return code.resolveLong(((Number) value).longValue());
-        if (value instanceof Double || value instanceof Float)
-            return code.resolveDouble(((Number) value).doubleValue());
-        if (value instanceof String) return code.resolveString((String) value);
-        throw new IllegalArgumentException();
-    }
-
-    public static boolean isNull(Expression expression) {
-        Expression expr = removeParens(expression);
-        return expr == null || (expr instanceof Literal && ((Literal) expr).isNull());
-    }
-
-    public static boolean isCondition(Expression expression) {
-        switch (expression.getTag()) {
-            case LOGAND:
-            case LOGOR:
-            case LT:
-            case LE:
-            case GT:
-            case NEQ:
-            case GE:
-            case EQ:
-                return true;
-            default: return false;
+    public static Tag tagWithoutAsg(Tag tag) {
+        switch (tag) {
+            case ASG_ADD: return Tag.ADD;
+            case ASG_SUB: return Tag.SUB;
+            case ASG_MUL: return Tag.MUL;
+            case ASG_DIV: return Tag.DIV;
+            case ASG_REM: return Tag.REM;
+            case ASG_SL: return Tag.SL;
+            case ASG_SR: return Tag.SR;
+            case ASG_AND: return Tag.AND;
+            case ASG_OR: return Tag.OR;
+            case ASG_XOR: return Tag.XOR;
+            default: throw new IllegalArgumentException();
         }
     }
 
-    public static Operand resolveLiteral(Literal expression) {
-        Object value = expression.value;
-        if (value instanceof Long || value instanceof Integer) return LongOperand.valueOf(((Number) value).longValue());
-        if (value instanceof Double || value instanceof Float)
-            return DoubleOperand.valueOf(((Number) value).doubleValue());
-        if (value instanceof String) return StringOperand.valueOf((String) value);
-        if (value instanceof Boolean) return BooleanOperand.valueOf(((Boolean) value));
-        assert value == null;
-        return NullOperand.NULL;
+    public static boolean isConditionalTag(Tag tag) {
+        return (tag.compareTo(Tag.FLOW_OR) | Tag.LE.compareTo(tag)) >= 0;
     }
 
-    private TreeInfo() {
-        throw new UnsupportedOperationException();
-    }
+    private TreeInfo() { throw new UnsupportedOperationException(); }
 }

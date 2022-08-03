@@ -1,9 +1,7 @@
-const _NaN = 0.0 / 0.0;
-
 fn fib(n) {
     if n <= 2 {
         if n <= 0 {
-            return _NaN;
+            return 0;
         }
         return 1;
     }
@@ -12,7 +10,7 @@ fn fib(n) {
 
 fn qfib(n) {
     if n <= 0 {
-        return _NaN;
+        return 0;
     }
     q1 = 1;
     q2 = 1;
@@ -31,12 +29,12 @@ fn qfib(n) {
 #     println((b - a) / 1E3 + "mcs");
 # }
 
-fn a(x) {
+fn a(x = 0) {
     println("a(" + x + ") called");
     if x < 3 b(x + 1);
 }
 
-fn b(x) {
+fn b(x = 0) {
     println("b(" + x + ") called");
     if x < 3 a(x + 1);
 }
@@ -47,7 +45,7 @@ println("Start");
 # b(1) called
 # a(2) called
 # b(3) called
-a(0);
+a();
 
 println();
 
@@ -55,4 +53,8 @@ println();
 # a(1) called
 # b(2) called
 # a(3) called
-b(0);
+b();
+
+fn concat(x = "x", y = "y") = x + y;
+
+println(concat());

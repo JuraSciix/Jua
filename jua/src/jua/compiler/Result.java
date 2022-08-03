@@ -13,13 +13,13 @@ public class Result {
 
     private final CodeData codeData;
     private final CodeSegment main;
-    private final URL location;
+    private final String filename;
 
     // Trusting constructor.
-    Result(CodeData codeData, CodeSegment main, URL location) {
+    Result(CodeData codeData, CodeSegment main, String filename) {
         this.codeData = codeData;
         this.main = main;
-        this.location = location;
+        this.filename = filename;
     }
 
     public void print() {
@@ -38,7 +38,7 @@ public class Result {
         InterpreterThread j_thread = new InterpreterThread(Thread.currentThread(), toEnvironment());
 
         // jua function
-        JuaFunction main_function = JuaFunction.fromCode(null, 0, 0, main, location);
+        JuaFunction main_function = JuaFunction.fromCode(null, 0, 0, main, filename);
 
         // jua main frame
         InterpreterFrame j_mainFrame = j_thread.makeFrame(main_function);

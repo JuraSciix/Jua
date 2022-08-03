@@ -8,7 +8,7 @@ import java.net.URL;
 
 public class CodeData {
 
-    final URL location;
+    final String location;
 
     // todo: переместить в отдельную стадию компиляции
     final Object2IntArrayMap<String> functionNames = new Object2IntArrayMap<>();
@@ -17,7 +17,7 @@ public class CodeData {
     final Object2IntArrayMap<String> constantNames = new Object2IntArrayMap<>();
     final Operand[] constants = new Operand[1024];
 
-    public CodeData(URL filename) {
+    public CodeData(String filename) {
         this.location = filename;
     }
 

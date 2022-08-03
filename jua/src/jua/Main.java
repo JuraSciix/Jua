@@ -20,7 +20,7 @@ public class Main {
         } catch (Throwable t) {
             error("can't parse console arguments: " + t);
         }
-        JuaCompiler.load(testFilename().toURI().toURL());
+        JuaCompiler.load(testFilename());
     }
 
     private static File testFilename() {
@@ -28,13 +28,11 @@ public class Main {
 
         if (filename == null) {
             error("main file not specified.");
-            return null;
         }
         File file = new File(filename);
 
         if (!file.isFile()) {
             error("main file not found.");
-            return null;
         }
         return file;
     }

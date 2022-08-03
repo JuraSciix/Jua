@@ -65,7 +65,7 @@ public final class Address {
 
     public void set(boolean b) {
         typeCode = Types.BOOLEAN;
-        l = Conversions.z2j(b);
+        l = Conversions.b2l(b);
     }
 
     public void set(double _d) {

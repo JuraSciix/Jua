@@ -6,13 +6,16 @@ import jua.compiler.parser.Tokenizer;
 import jua.compiler.parser.Tokens;
 import jua.interpreter.InterpreterThread;
 import jua.runtime.RuntimeErrorException;
+import jua.util.IOUtils;
 import jua.util.LineMap;
-import jua.util.TokenizeStream;
+import jua.util.Source;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class JuaCompiler {
 
@@ -24,7 +27,7 @@ public class JuaCompiler {
         public void uncaughtException(Thread t, Throwable e) {
             if (e instanceof RuntimeErrorException) {
                 runtimeError(((RuntimeErrorException) e).thread,
-                             (RuntimeErrorException) e);
+                        (RuntimeErrorException) e);
             } else {
                 fatal("Fatal error occurred at runtime: ", e);
             }
@@ -34,15 +37,15 @@ public class JuaCompiler {
 
     public static final Thread.UncaughtExceptionHandler RUNTIME_EXCEPTION_HANDLER = new JuaExceptionHandler();
 
-    public static void load(URL location) {
-        TokenizeStream s;
+    public static void load(File file) {
+        Source source;
         try {
-            s = TokenizeStream.fromURL(location);
+            source = new Source(file.getName(), IOUtils.readCharsFromFile(file));
         } catch (IOException e) {
             fatal("IO error: ", e);
             return;
         }
-        Result result = compile(parse(s), s.getLocation(), s.getLineMap());
+        Result result = compile(parse(source), source);
 
         if (Options.disassembler()) {
             result.print();
@@ -63,7 +66,7 @@ public class JuaCompiler {
         public void visitOperator(Tokens.OperatorToken token) {
             System.out.printf("[%d:%d] %s (%s)%n",
                     lineMap.getLineNumber(token.pos),
-                    lineMap.getOffsetNumber(token.pos),
+                    lineMap.getColumnNumber(token.pos),
                     token.type.name(),
                     token.type.toString());
         }
@@ -72,7 +75,7 @@ public class JuaCompiler {
         public void visitDummy(Tokens.DummyToken token) {
             System.out.printf("[%d:%d] %s%n",
                     lineMap.getLineNumber(token.pos),
-                    lineMap.getOffsetNumber(token.pos),
+                    lineMap.getColumnNumber(token.pos),
                     token.type.name());
         }
 
@@ -80,7 +83,7 @@ public class JuaCompiler {
         public void visitString(Tokens.StringToken token) {
             System.out.printf("[%d:%d] %s: \"%s\" %n",
                     lineMap.getLineNumber(token.pos),
-                    lineMap.getOffsetNumber(token.pos),
+                    lineMap.getColumnNumber(token.pos),
                     token.type.name(),
                     token.value);
         }
@@ -89,70 +92,85 @@ public class JuaCompiler {
         public void visitNumeric(Tokens.NumberToken token) {
             System.out.printf("[%d:%d] %s: %s * %s %n",
                     lineMap.getLineNumber(token.pos),
-                    lineMap.getOffsetNumber(token.pos),
+                    lineMap.getColumnNumber(token.pos),
                     token.type.name(),
                     token.value,
                     token.radix);
         }
     }
 
-    private static Tree parse(TokenizeStream s) {
+    private static Tree parse(Source source) {
         if (Options.lint()) {
-            Tokenizer tokenizer = new Tokenizer(s);
-            TokenPrinter printer = new TokenPrinter(s.getLineMap());
-            while (tokenizer.hasMoreTokens()) {
-                try {
-                    tokenizer.nextToken().accept(printer);
-                } catch (ParseException e) {
-                    if (Options.stop()) {
-                        parseError(e, s.getLocation(), s.getLineMap());
+            try (Tokenizer tokenizer = new Tokenizer(source)) {
+                TokenPrinter printer = new TokenPrinter(source.getLineMap());
+                while (tokenizer.hasMoreTokens()) {
+                    try {
+                        tokenizer.nextToken().accept(printer);
+                    } catch (ParseException e) {
+                        if (Options.stop()) {
+                            parseError(e, source);
+                        }
+                        break;
                     }
-                    break;
                 }
+                if (Options.stop()) throw new ThreadDeath();
+            } catch (IOException e) {
+                fatal("IO error: ", e);
             }
-            if (Options.stop()) throw new ThreadDeath();
         }
-        try (TokenizeStream stream = s) {
-            return new JuaParser(new Tokenizer(stream)).parse();
+        try (Tokenizer tokenizer = new Tokenizer(source)) {
+            return new JuaParser(tokenizer).parse();
         } catch (ParseException e) {
-            parseError(e, s.getLocation(), s.getLineMap());
+            parseError(e, source);
         } catch (Throwable t) {
             fatal("Fatal error occurred at parser: ", t);
         }
         return null;
     }
 
-    private static void parseError(ParseException e, URL filename, LineMap lnt) {
+    private static void parseError(ParseException e, Source source) {
         System.err.println("Parse error: " + e.getMessage());
-        printPosition(filename, lnt.getLineNumber(e.position), lnt.getOffsetNumber(e.position));
+        try {
+            printPosition(source.filename(),
+                    source.getLineMap().getLineNumber(e.position),
+                    source.getLineMap().getColumnNumber(e.position));
+        } catch (IOException ex) {
+            //nope
+        }
         System.exit(1);
     }
 
-    private static Result compile(Tree root, URL location, LineMap lineMap) {
-        CodeData codeData = new CodeData(location);
-        root.accept(new Enter(codeData));
-        Gen gen = new Gen(codeData, lineMap);
+    private static Result compile(Tree root, Source source) {
+        CodeData codeData = new CodeData(source.filename());
+        Gen gen = new Gen(codeData);
 
         try {
             // Свёртка констант - это обязательный этап.
             if (true || Options.optimize()) {
-                root.accept(new CFold(codeData));
+                root.accept(new Lower());
             } else {
                 System.err.println("Warning: disabling optimization is strongly discouraged. " +
                         "This feature may be removed in a future version");
             }
+            root.accept(new Enter(codeData));
             root.accept(gen);
         } catch (CompileError e) {
-            compileError(e, lineMap, location);
+            compileError(e, source);
         } catch (Throwable t) {
             fatal("Fatal error occurred at compiler: ", t);
         }
         return gen.getResult();
     }
 
-    private static void compileError(CompileError e, LineMap lineMap, URL location) {
+    private static void compileError(CompileError e, Source source) {
         System.err.println("Compile error: " + e.getMessage());
-        printPosition(location, lineMap.getLineNumber(e.position), lineMap.getOffsetNumber(e.position));
+        try {
+            printPosition(source.filename(),
+                    source.getLineMap().getLineNumber(e.position),
+                    source.getLineMap().getColumnNumber(e.position));
+        } catch (IOException ex) {
+            //nope
+        }
         System.exit(1);
     }
 
@@ -168,18 +186,18 @@ public class JuaCompiler {
         System.exit(1);
     }
 
-    private static void printPosition(URL location, int line, int offset) {
-        System.err.printf("File: %s, line: %d.%n", location, line);
+    private static void printPosition(String filename, int line, int offset) {
+        System.err.printf("File: %s, line: %d.%n", filename, line);
 
         if (offset >= 0) {
-            printLine(location, line, offset);
+            printLine(filename, line, offset);
         }
     }
 
-    private static void printLine(URL location, int line, int offset) {
+    private static void printLine(String filename, int line, int offset) {
         String s;
 
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(location.openStream()))) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(Files.newInputStream(Paths.get(filename))))) {
             while (--line > 0) {
                 br.readLine();
             }

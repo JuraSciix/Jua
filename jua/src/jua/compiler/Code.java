@@ -15,8 +15,9 @@ import jua.runtime.code.LocalNameTable;
 import jua.runtime.heap.Operand;
 import jua.runtime.code.LineNumberTable;
 import jua.util.LineMap;
+import jua.util.Source;
 
-import java.net.URL;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -67,13 +68,8 @@ public final class Code {
 
     private Context context;
 
-    private final Map<Object, Operand> literals__ = new HashMap<>();
-
-    private final URL location;
-
-    public Code(URL location, LineMap lineMap) {
-        this.location = location;
-        this.lineMap = lineMap;
+    public Code(Source source) throws IOException {
+        this.lineMap = source.getLineMap();
     }
 
     public void pushContext(int startPos) {
@@ -186,9 +182,13 @@ public final class Code {
         return context.scopes.topBoolean() == SCOPE_ALIVE;
     }
 
+    public boolean localExists(String name) {
+        return context.localNames.containsKey(name);
+    }
+
     public int resolveLocal(String name) {
 //        if (!isAlive()) return -1;
-        if (!context.localNames.containsKey(name)) {
+        if (!localExists(name)) {
             int newIndex = context.nlocals++;
             context.localNames.put(name, newIndex);
             return newIndex;
@@ -200,7 +200,6 @@ public final class Code {
     public int resolveLong(long value) { return context.constant_pool_b.putLongEntry(value); }
     public int resolveDouble(double value) { return context.constant_pool_b.putDoubleEntry(value); }
     public int resolveString(String value) { return context.constant_pool_b.putStringEntry(value); }
-
 
     public CodeSegment buildCodeSegment() {
         return new CodeSegment(buildCode(),
