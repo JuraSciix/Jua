@@ -1,6 +1,7 @@
 package jua.compiler;
 
 import jua.compiler.Tree.*;
+import jua.runtime.heap.Operand;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -60,13 +61,105 @@ public final class Lower extends Translator {
 
     @Override
     public void visitBinaryOp(BinaryOp tree) {
-        // todo: task for JavaKira
-        super.visitBinaryOp(tree);
+        if (tree.lhs.getTag() != Tag.LITERAL || tree.rhs.getTag() != Tag.LITERAL) {
+            super.visitBinaryOp(tree);
+            return;
+        }
+
+        switch (tree.tag) {
+            case SL:  case SR:
+                result = foldShift(tree);                        break;
+            case ADD: case SUB: case MUL: case DIV: case REM:
+                result = foldArithmetic(tree);                   break;
+            case AND: case OR: case XOR:
+                result = foldBitwise(tree);                      break;
+            case LE: case EQ: case GE: case NE: case GT: case LT:
+                result = foldRelational(tree);                   break;
+            case FLOW_AND:
+                result = foldAnd(tree);                          break;
+            case FLOW_OR:
+                result = foldOr(tree);                          break;
+            default: throw new IllegalArgumentException("Could fold binary " + tree.tag);
+        }
     }
 
     @Override
     public void visitUnaryOp(UnaryOp tree) {
         // todo: task for JavaKira
         super.visitUnaryOp(tree);
+    }
+
+    private static Expression foldShift(BinaryOp tree) {
+        Literal left = (Literal) tree.lhs;
+        Literal right = (Literal) tree.rhs;
+        if (!left.isInteger() || !right.isInteger())
+            return tree;
+
+        switch (tree.getTag()) {
+            case SL: return new Literal(left.pos, left.longValue() << right.longValue());
+            case SR: return new Literal(left.pos, left.longValue() >> right.longValue());
+            default: throw new IllegalArgumentException(tree.getTag() + " is not shift operation");
+        }
+    }
+
+    private static Expression foldBitwise(BinaryOp tree) {
+        Literal left = (Literal) tree.lhs;
+        Literal right = (Literal) tree.rhs;
+        if (!left.isInteger() || !right.isInteger())
+            return tree;
+
+        switch (tree.getTag()) {
+            case AND: return new Literal(left.pos, left.longValue() & right.longValue());
+            case OR: return new Literal(left.pos, left.longValue() ^ right.longValue());
+            case XOR: return new Literal(left.pos, left.longValue() | right.longValue());
+            default: throw new IllegalArgumentException(tree.getTag() + " is not bitwise operation");
+        }
+    }
+
+    private static Expression foldRelational(BinaryOp tree) {
+        Literal left = (Literal) tree.lhs;
+        Literal right = (Literal) tree.rhs;
+
+        switch (tree.getTag()) {
+            case LE: return new Literal(left.pos, left.doubleValue() <= right.doubleValue());
+            case LT: return new Literal(left.pos, left.doubleValue() < right.doubleValue());
+            case GT: return new Literal(left.pos, left.doubleValue() > right.doubleValue());
+            case GE: return new Literal(left.pos, left.doubleValue() >= right.doubleValue());
+            case NE: return new Literal(left.pos, left.doubleValue() != right.doubleValue());
+            case EQ: return new Literal(left.pos, left.doubleValue() == right.doubleValue());
+            default: throw new IllegalArgumentException(tree.getTag() + " is not relational operation");
+        }
+    }
+
+    private static Expression foldArithmetic(BinaryOp tree) {
+        Literal left = (Literal) tree.lhs;
+        Literal right = (Literal) tree.rhs;
+
+        switch (tree.getTag()) {
+            case ADD: return new Literal(left.pos, left.doubleValue() + right.doubleValue());
+            case MUL: return new Literal(left.pos, left.doubleValue() * right.doubleValue());
+            case SUB: return new Literal(left.pos, left.doubleValue() - right.doubleValue());
+            case REM: return new Literal(left.pos, left.doubleValue() % right.doubleValue());
+            case DIV:
+                if (left.isInteger() && right.isInteger()) {
+                    if (right.longValue() == 0)
+                        return tree;
+                    return new Literal(left.pos, left.longValue() / right.longValue());
+                } else
+                    return new Literal(left.pos, left.doubleValue() / right.doubleValue());
+            default: throw new IllegalArgumentException(tree.getTag() + " is not arithmetic operation");
+        }
+    }
+
+    private static Expression foldAnd(BinaryOp tree) {
+        Literal left = (Literal) tree.lhs;
+        Literal right = (Literal) tree.rhs;
+        return new Literal(left.pos, left.booleanValue() && right.booleanValue());
+    }
+
+    private static Expression foldOr(BinaryOp tree) {
+        Literal left = (Literal) tree.lhs;
+        Literal right = (Literal) tree.rhs;
+        return new Literal(left.pos, left.booleanValue() || right.booleanValue());
     }
 }
