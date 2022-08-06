@@ -105,13 +105,28 @@ public final class Lower extends Translator {
     private static Expression foldBitwise(BinaryOp tree) {
         Literal left = (Literal) tree.lhs;
         Literal right = (Literal) tree.rhs;
-        if (!left.isInteger() || !right.isInteger())
-            return tree;
-
         switch (tree.getTag()) {
-            case AND: return new Literal(left.pos, left.longValue() & right.longValue());
-            case OR: return new Literal(left.pos, left.longValue() ^ right.longValue());
-            case XOR: return new Literal(left.pos, left.longValue() | right.longValue());
+            case AND:
+                if (left.isInteger() && right.isInteger())
+                    return new Literal(left.pos, left.longValue() & right.longValue());
+                else if (left.isBoolean() && right.isBoolean())
+                    return new Literal(left.pos, left.booleanValue() & right.booleanValue());
+                else
+                    return tree;
+            case OR:
+                if (left.isInteger() && right.isInteger())
+                    return new Literal(left.pos, left.longValue() ^ right.longValue());
+                else if (left.isBoolean() && right.isBoolean())
+                    return new Literal(left.pos, left.booleanValue() ^ right.booleanValue());
+                else
+                    return tree;
+            case XOR:
+                if (left.isInteger() && right.isInteger())
+                    return new Literal(left.pos, left.longValue() | right.longValue());
+                else if (left.isBoolean() && right.isBoolean())
+                    return new Literal(left.pos, left.booleanValue() | right.booleanValue());
+                else
+                    return tree;
             default: throw new IllegalArgumentException(tree.getTag() + " is not bitwise operation");
         }
     }
@@ -136,17 +151,38 @@ public final class Lower extends Translator {
         Literal right = (Literal) tree.rhs;
 
         switch (tree.getTag()) {
-            case ADD: return new Literal(left.pos, left.doubleValue() + right.doubleValue());
-            case MUL: return new Literal(left.pos, left.doubleValue() * right.doubleValue());
-            case SUB: return new Literal(left.pos, left.doubleValue() - right.doubleValue());
-            case REM: return new Literal(left.pos, left.doubleValue() % right.doubleValue());
+            case ADD:
+                if (left.isInteger() && right.isInteger())
+                    return new Literal(left.pos, left.longValue() + right.longValue());
+                else if (left.isNumber() && right.isNumber())
+                    return new Literal(left.pos, left.doubleValue() + right.doubleValue());
+                return tree;
+            case MUL:
+                if (left.isInteger() && right.isInteger())
+                    return new Literal(left.pos, left.longValue() * right.longValue());
+                else if (left.isNumber() && right.isNumber())
+                    return new Literal(left.pos, left.doubleValue() * right.doubleValue());
+                return tree;
+            case SUB:
+                if (left.isInteger() && right.isInteger())
+                    return new Literal(left.pos, left.longValue() - right.longValue());
+                else if (left.isNumber() && right.isNumber())
+                    return new Literal(left.pos, left.doubleValue() - right.doubleValue());
+                return tree;
+            case REM:
+                if (left.isInteger() && right.isInteger())
+                    return new Literal(left.pos, left.longValue() % right.longValue());
+                else if (left.isNumber() && right.isNumber())
+                    return new Literal(left.pos, left.doubleValue() % right.doubleValue());
+                return tree;
             case DIV:
                 if (left.isInteger() && right.isInteger()) {
                     if (right.longValue() == 0)
                         return tree;
                     return new Literal(left.pos, left.longValue() / right.longValue());
-                } else
+                } else if (left.isNumber() && right.isNumber())
                     return new Literal(left.pos, left.doubleValue() / right.doubleValue());
+                return tree;
             default: throw new IllegalArgumentException(tree.getTag() + " is not arithmetic operation");
         }
     }
