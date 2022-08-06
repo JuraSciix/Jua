@@ -85,8 +85,39 @@ public final class Lower extends Translator {
 
     @Override
     public void visitUnaryOp(UnaryOp tree) {
-        // todo: task for JavaKira
+        Expression foldResult = foldUnary(tree);
+        if (foldResult != tree) {
+            result = foldResult;
+            return;
+        }
+
         super.visitUnaryOp(tree);
+    }
+
+    private static Expression foldUnary(UnaryOp tree) {
+        Expression lower = tree;
+        Expression oldLower;
+        Expression result = tree;
+        while (lower.getTag() == Tag.NOT) {
+            oldLower = lower;
+            lower = ((UnaryOp) lower).expr;
+            if (oldLower.getTag() == Tag.NOT && lower.getTag() == Tag.NOT) {
+                result = ((UnaryOp) lower).expr;
+                lower = ((UnaryOp) lower).expr;
+            }
+        }
+
+        lower = tree; // начинаем заново
+        while (lower.getTag() == Tag.NEG) {
+            oldLower = lower;
+            lower = ((UnaryOp) lower).expr;
+            if (oldLower.getTag() == Tag.NEG && lower.getTag() == Tag.NEG) {
+                result = ((UnaryOp) lower).expr;
+                lower = ((UnaryOp) lower).expr;
+            }
+        }
+
+        return result;
     }
 
     private static Expression foldShift(BinaryOp tree) {
