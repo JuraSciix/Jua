@@ -61,8 +61,11 @@ public final class Lower extends Translator {
 
     @Override
     public void visitBinaryOp(BinaryOp tree) {
+        tree.lhs = translate(tree.rhs);
+        tree.rhs = translate(tree.rhs);
+
         if (tree.lhs.getTag() != Tag.LITERAL || tree.rhs.getTag() != Tag.LITERAL) {
-            super.visitBinaryOp(tree);
+            result = tree;
             return;
         }
 
@@ -85,16 +88,15 @@ public final class Lower extends Translator {
 
     @Override
     public void visitUnaryOp(UnaryOp tree) {
-        Expression foldResult = foldUnary(tree);
-        if (foldResult != tree) {
-            result = foldResult;
-            return;
-        }
+        tree.expr = translate(tree.expr);
 
-        super.visitUnaryOp(tree);
+        if (tree.expr.getTag() == Tag.LITERAL) {
+            result = foldUnary(tree);
+        }
     }
 
     private static Expression foldUnary(UnaryOp tree) {
+        // todo: Влад, включай уже голову..
         Expression lower = tree;
         Expression oldLower;
         Expression result = tree;
