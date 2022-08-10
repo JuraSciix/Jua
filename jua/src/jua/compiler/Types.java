@@ -121,12 +121,15 @@ public final class Types {
             if (other.isLong()) {
                 return new LongType(value + other.longValue());
             }
+
             if (other.isDouble()) {
                 return new DoubleType(value + other.doubleValue());
             }
+
             if (other.isString()) {
                 return new StringType(value + other.stringValue());
             }
+
             return this;
         }
 
@@ -135,9 +138,11 @@ public final class Types {
             if (other.isLong()) {
                 return new LongType(value - other.longValue());
             }
+
             if (other.isDouble()) {
                 return new DoubleType(value - other.doubleValue());
             }
+
             return this;
         }
 
@@ -146,9 +151,11 @@ public final class Types {
             if (other.isLong()) {
                 return new LongType(value * other.longValue());
             }
+
             if (other.isDouble()) {
                 return new DoubleType(value * other.doubleValue());
             }
+
             return this;
         }
 
@@ -157,9 +164,11 @@ public final class Types {
             if (other.isLong() && other.longValue() != 0L) {
                 return new LongType(value / other.longValue());
             }
+
             if (other.isDouble()) {
                 return new DoubleType(value / other.doubleValue());
             }
+
             return this;
         }
 
@@ -168,9 +177,29 @@ public final class Types {
             if (other.isLong() && other.longValue() != 0L) {
                 return new LongType(value % other.longValue());
             }
+
             if (other.isDouble() && other.doubleValue() != 0.0D) {
                 return new DoubleType(value % other.doubleValue());
             }
+
+            return this;
+        }
+
+        @Override
+        public Type shl(Type other) {
+            if (other.isLong()) {
+                return new LongType(value << other.longValue());
+            }
+
+            return this;
+        }
+
+        @Override
+        public Type shr(Type other) {
+            if (other.isLong()) {
+                return new LongType(value >> other.longValue());
+            }
+
             return this;
         }
     }
@@ -207,10 +236,112 @@ public final class Types {
         public String stringValue() {
             return Double.toString(value);
         }
+
+        @Override
+        public Type add(Type other) {
+            //мб метод isNumber() нужен
+            if (other.isLong() && other.isDouble()) {
+                return new DoubleType(value + other.doubleValue());
+            }
+
+            if (other.isString()) {
+                return new StringType(value + other.stringValue());
+            }
+
+            return this;
+        }
+
+        @Override
+        public Type sub(Type other) {
+            if (other.isLong() && other.isDouble()) {
+                return new DoubleType(value - other.doubleValue());
+            }
+
+            return this;
+        }
+
+        @Override
+        public Type mul(Type other) {
+            if (other.isLong() && other.isDouble()) {
+                return new DoubleType(value * other.doubleValue());
+            }
+
+            return this;
+        }
+
+        @Override
+        public Type div(Type other) {
+            if (other.isLong() && other.isDouble()) {
+                return new DoubleType(value / other.doubleValue());
+            }
+
+            return this;
+        }
+
+        @Override
+        public Type rem(Type other) {
+            if (other.isDouble() && other.doubleValue() != 0.0D) {
+                return new DoubleType(value % other.doubleValue());
+            }
+
+            return this;
+        }
     }
 
     public static final class BooleanType extends Type {
 
+        private final boolean value;
+
+        public BooleanType(boolean value) {
+            this.value = value;
+        }
+
+        @Override
+        public boolean booleanValue() {
+            return value;
+        }
+
+        @Override
+        public boolean isBoolean() {
+            return true;
+        }
+
+        @Override
+        public String stringValue() {
+            return Boolean.toString(value);
+        }
+
+        @Override
+        public Type and(Type other) {
+            if (other.isBoolean()) {
+                return new BooleanType(value && other.booleanValue());
+            }
+
+            return this;
+        }
+
+        @Override
+        public Type or(Type other) {
+            if (other.isBoolean()) {
+                return new BooleanType(value || other.booleanValue());
+            }
+
+            return this;
+        }
+
+        @Override
+        public Type xor(Type other) {
+            if (other.isBoolean()) {
+                return new BooleanType(value ^ other.booleanValue());
+            }
+
+            return this;
+        }
+
+        @Override
+        public Type not() {
+            return new BooleanType(!value);
+        }
     }
 
     public static final class StringType extends Type {
@@ -235,6 +366,23 @@ public final class Types {
         public boolean booleanValue() {
             return !value.isEmpty();
         }
+
+        @Override
+        public Type add(Type other) {
+            if (other.isLong()) {
+                return new StringType(value + other.longValue());
+            }
+
+            if (other.isDouble()) {
+                return new StringType(value + other.doubleValue());
+            }
+
+            if (other.isString()) {
+                return new StringType(value + other.stringValue());
+            }
+
+            return this;
+        }
     }
 
     public static final class NullType extends Type {
@@ -244,7 +392,10 @@ public final class Types {
         private NullType() {
             super();
         }
-    }
 
-    // todo: Задача для JavaKira
+        @Override
+        public boolean isNull() {
+            return true;
+        }
+    }
 }
