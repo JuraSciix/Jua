@@ -34,7 +34,7 @@ fn a(x = 0) {
     if x < 3 b(x + 1);
 }
 
-fn b(x = a) {
+fn b(x = 0) {
     println("b(" + x + ") called");
     if x < 3 a(x + 1);
 }

@@ -1103,9 +1103,7 @@ public interface Tree {
         public Tag getTag() { return Tag.DEF; }
 
         @Override
-        public void accept(Visitor visitor) {
-            expr.accept(visitor);
-        }
+        public void accept(Visitor visitor) { visitor.visitDefinition(this); }
     }
 
     class Parameter implements Tree {
