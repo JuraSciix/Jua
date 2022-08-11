@@ -17,6 +17,9 @@ public final class LineMap {
         try (BufferReader reader = source.createReader()) {
             IntList lineStartPoints = new IntArrayList(reader.available());
 
+            // Первая линия
+            lineStartPoints.add(0);
+
             while (reader.unreadAvailable()) {
                 int ch = reader.readChar();
                 if (ch == '\n') {
