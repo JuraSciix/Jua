@@ -290,6 +290,9 @@ public final class Types {
 
     public static final class BooleanType extends Type {
 
+        public static final BooleanType TRUE = new BooleanType(true);
+        public static final BooleanType FALSE = new BooleanType(false);
+
         private final boolean value;
 
         public BooleanType(boolean value) {

@@ -1,5 +1,6 @@
 package jua.compiler;
 
+import jua.compiler.Types.*;
 import jua.util.Source;
 
 import java.util.List;
@@ -862,32 +863,46 @@ public interface Tree {
 
     class Literal extends Expression {
 
-        public final Object value; // todo: Заменить на структуру Type.
+        // todo: Отрефакторить. Убрать перегруженные конструкторы и лишние методы.
 
-        public Literal(int pos, Object value) {
+        public final Type value;
+
+        public Literal(int pos) {
+            this(pos, NullType.INSTANCE);
+        }
+
+        public Literal(int pos, long value) {
+            this(pos, new LongType(value));
+        }
+
+        public Literal(int pos, double value) {
+            this(pos, new DoubleType(value));
+        }
+
+        public Literal(int pos, boolean value) {
+            this(pos, value ? BooleanType.TRUE : BooleanType.FALSE);
+        }
+
+        public Literal(int pos, String value) {
+            this(pos, new StringType(value));
+        }
+
+        public Literal(int pos, Type value) {
             super(pos);
             this.value = value;
         }
 
-        public boolean isInteger() {
-            if (value == null) return false;
-            Class<?> c = value.getClass();
-            return c == Long.class || c == Integer.class || c == Short.class || c == Byte.class;
-        }
-        public boolean isFloatingPoint() {
-            if (value == null) return false;
-            Class<?> c = value.getClass();
-            return c == Double.class || c == Float.class;
-        }
-        public boolean isNumber() { return value != null && Number.class.isAssignableFrom(value.getClass()); }
-        public boolean isBoolean() { return value != null && value.getClass() == Boolean.class; }
-        public boolean isString() { return value != null && value.getClass() == String.class; }
-        public boolean isNull() { return value == null; }
+        public boolean isInteger() { return value.isLong(); }
+        public boolean isFloatingPoint() { return value.isDouble(); }
+        public boolean isNumber() { return value.isLong()||value.isDouble(); }
+        public boolean isBoolean() { return value.isBoolean(); }
+        public boolean isString() { return value.isString(); }
+        public boolean isNull() { return value.isNull(); }
 
-        public long longValue() { return ((Number) value).longValue(); }
-        public double doubleValue() { return ((Number) value).doubleValue(); }
-        public boolean booleanValue() { return (Boolean) value; }
-        public String stringValue() { return String.valueOf(value); }
+        public long longValue() { return value.longValue(); }
+        public double doubleValue() { return value.doubleValue(); }
+        public boolean booleanValue() { return value.booleanValue(); }
+        public String stringValue() { return value.stringValue(); }
 
         @Override
         public Tag getTag() { return Tag.LITERAL; }

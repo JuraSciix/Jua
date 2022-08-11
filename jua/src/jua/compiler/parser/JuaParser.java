@@ -646,7 +646,7 @@ public class JuaParser {
             return parseParens(token.pos);
         }
         if (match(NULL)) {
-            return new Literal(token.pos, null);
+            return new Literal(token.pos);
         }
         if (match(STRINGLITERAL)) {
             return new Literal(token.pos, token.getString());

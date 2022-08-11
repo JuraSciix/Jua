@@ -61,7 +61,7 @@ public final class Lower extends Translator {
 
     @Override
     public void visitBinaryOp(BinaryOp tree) {
-        tree.lhs = translate(tree.rhs);
+        tree.lhs = translate(tree.lhs);
         tree.rhs = translate(tree.rhs);
 
         if (tree.lhs.getTag() != Tag.LITERAL || tree.rhs.getTag() != Tag.LITERAL) {

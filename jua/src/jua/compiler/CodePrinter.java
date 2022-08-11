@@ -86,6 +86,7 @@ public class CodePrinter {
 
     public static void printFunctions(JuaFunction[] functions) {
         Arrays.stream(functions).forEach(function -> {
+            if (function == null) return;
             String name = function.name();
             System.out.print("fn " + name + "(");
             CodeSegment p = function.codeSegment();

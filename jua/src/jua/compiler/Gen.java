@@ -585,15 +585,14 @@ public final class Gen extends Scanner {
     }
 
     private int resolveLiteral(Literal literal) {
-        Object value = literal.value;
-        if (value == null) return code.get_cpb().putNullEntry();
-        if (value == Boolean.TRUE) return code.get_cpb().putTrueEntry();
-        if (value == Boolean.FALSE) return code.get_cpb().putFalseEntry();
-        if (value instanceof Long || value instanceof Integer || value instanceof Short || value instanceof Byte)
-            return code.resolveLong(((Number) value).longValue());
-        if (value instanceof Double || value instanceof Float)
-            return code.resolveDouble(((Number) value).doubleValue());
-        if (value instanceof String) return code.resolveString((String) value);
+        // todo: Хм. Нижний код, наверное, можно перенести в Types
+        Types.Type value = literal.value;
+        if (value.isNull()) return code.get_cpb().putNullEntry();
+        if (value.isBoolean() && value.booleanValue()) return code.get_cpb().putTrueEntry();
+        if (value.isBoolean() && !value.booleanValue()) return code.get_cpb().putFalseEntry();
+        if (value.isLong()) return code.resolveLong(value.longValue());
+        if (value.isDouble()) return code.resolveDouble(value.doubleValue());
+        if (value.isString()) return code.resolveString(value.stringValue());
         throw new IllegalArgumentException();
     }
 
@@ -787,8 +786,8 @@ public final class Gen extends Scanner {
         if (tree == null) return false;
         if (!hasTag(tree, Tag.LITERAL)) return false;
         Literal literal = (Literal) tree;
-        if (!(literal.value instanceof Number)) return false;
-        long value = ((Number) literal.value).longValue();
+        if (!literal.isInteger()) return false;
+        long value = literal.value.longValue();
         return (value >= Short.MIN_VALUE && value <= Short.MAX_VALUE);
     }
 
@@ -798,6 +797,7 @@ public final class Gen extends Scanner {
         Expression lhs = expression.lhs;
         Expression rhs = expression.rhs;
         Code.ChainInstructionFactory resultState;
+        // todo: Отрефакторить
         int resultStackAdjustment;
         int shortVal;
         boolean lhsNull = lhs instanceof Literal && ((Literal) lhs).isNull();
@@ -805,7 +805,7 @@ public final class Gen extends Scanner {
         boolean lhsShort = isShortIntegerLiteral(lhs);
         boolean rhsShort = isShortIntegerLiteral(rhs);
         if (lhsShort || rhsShort) {
-            shortVal = ((Number) ((Literal) (lhsShort ? lhs : rhs)).value).shortValue();
+            shortVal = (int) ((Literal) (lhsShort ? lhs : rhs)).value.longValue();
             visitExpression(lhsShort ? rhs : lhs);
         } else {
             shortVal = Integer.MIN_VALUE;
