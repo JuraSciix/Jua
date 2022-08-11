@@ -9,12 +9,12 @@ import jua.util.Conversions;
 public final class Address {
 
     public static Address copy(Address source) {
-        Address clone = new Address();
-        clone.typeCode = source.typeCode;
-        clone.l = source.l;
-        clone.d = source.d;
-        if (source.a != null) clone.a = source.a.copy();
-        return clone;
+        Address result = new Address();
+        result.typeCode = source.typeCode;
+        result.l = source.l;
+        result.d = source.d;
+        if (source.a != null) result.a = source.a.copy();
+        return result;
     }
 
     public static Address[] allocateMemory(int offset, int count) {
@@ -38,7 +38,7 @@ public final class Address {
         // 0 <= dstOffset+count <= dst.length
 
         for (int i = 0; i < count; i++) {
-            src[srcOffset + i].set(dst[dstOffset + i]);
+            src[srcOffset + i].quickSet(dst[dstOffset + i]);
         }
     }
 
@@ -53,7 +53,7 @@ public final class Address {
     public boolean isScalar() { return Types.isTypeScalar(typeCode); }
 
     public long longVal() { return l; }
-    public boolean booleanVal() { return (l != 0L); }
+    public boolean booleanVal() { return Conversions.l2b(l); }
     public double doubleVal() { return d; }
     public StringHeap stringVal() { return (StringHeap) a; }
     public MapHeap mapValue() { return (MapHeap) a; }
@@ -83,11 +83,25 @@ public final class Address {
         a = m;
     }
 
-    public void set(Address source) {
+    public void quickSet(Address source) {
         typeCode = source.typeCode;
         l = source.l;
         d = source.d;
         a = source.a;
+    }
+
+    public void set(Address source) {
+        typeCode = source.typeCode;
+        l = source.l;
+        d = source.d;
+        if (source.a != null) a = source.a.copy();
+    }
+
+    public void slowSet(Address origin) {
+        typeCode = origin.typeCode;
+        l = origin.l;
+        d = origin.d;
+        if (origin.a != null) a = origin.a.deepCopy();
     }
 
     public void setNull() {
@@ -119,7 +133,7 @@ public final class Address {
     @Override
     public int hashCode() {
         switch (typeCode) {
-            case Types.UNDEFINED: throw new IllegalStateException("Trying calculate a hash-code of undefined value");
+            case Types.UNDEFINED: throw new IllegalStateException("Trying calculate a hash-code of undefined type");
             case Types.LONG: return Long.hashCode(longVal());
             case Types.BOOLEAN: return Boolean.hashCode(booleanVal());
             case Types.DOUBLE: return Double.hashCode(doubleVal());

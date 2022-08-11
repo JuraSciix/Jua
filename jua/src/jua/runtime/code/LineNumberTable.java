@@ -1,5 +1,7 @@
 package jua.runtime.code;
 
+import jua.util.Conversions;
+
 public final class LineNumberTable {
 
     private final short[] codePoints;
@@ -11,23 +13,23 @@ public final class LineNumberTable {
         this.codePoints = codePoints.clone();
     }
 
-    public int lineNumberOf(int codePoint) {
+    public int getLineNumber(int codePoint) {
         short[] _codePoints = codePoints;
 
-        int f = 0;                  // from
-        int t = _codePoints.length; // to
-        int c = (t >> 1);           // center
+        int bottom = 0;
+        int top = _codePoints.length;
+        int current = (top >> 1);
 
-        while ((t - f) > 1) {
-            int cp = _codePoints[c] & 0xffff;
+        while ((top - bottom) > 1) {
+            int cp = Conversions.unsigned(_codePoints[current]);
             if (codePoint >= cp) {
-                f = c;
+                bottom = current;
             } else {
-                t = c;
+                top = current;
             }
-            c = (t + f) >> 1;
+            current = (top + bottom) >> 1;
         }
 
-        return lineNumbers[c];
+        return lineNumbers[current];
     }
 }

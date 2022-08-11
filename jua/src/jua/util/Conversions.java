@@ -18,5 +18,7 @@ public final class Conversions {
         return Double.toString(d);
     }
 
+    public static int unsigned(short s) { return s & 0xffff; }
+
     private Conversions() { throw new UnsupportedOperationException(); }
 }

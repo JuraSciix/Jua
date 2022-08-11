@@ -40,7 +40,7 @@ public final class MapHeap implements Heap {
         ensureScalarKey(key);
         Address storage = map.get(key);
         if (storage != null) {
-            storage.set(value);
+            storage.quickSet(value);
         } else {
             map.put(Address.copy(key), Address.copy(value));
         }

@@ -284,7 +284,7 @@ public final class InterpreterThread {
     }
 
     public int current_line_number() {
-        return current_frame.owningFunction().codeSegment().lineNumberTable().lineNumberOf(current_frame.state().cp());
+        return current_frame.owningFunction().codeSegment().lineNumberTable().getLineNumber(current_frame.state().cp());
     }
 
     @Deprecated

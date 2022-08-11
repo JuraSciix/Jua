@@ -115,7 +115,7 @@ public class CodePrinter {
         int length = code.length;
         for (int i = 0; i < length; i++) {
             code[i].print(printer);
-            int line = program.lineNumberTable().lineNumberOf(i);
+            int line = program.lineNumberTable().getLineNumber(i);
             if (line != lastLineNumber) {
                 printer.printLine(line);
                 lastLineNumber = line;

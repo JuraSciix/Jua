@@ -1,13 +1,9 @@
 package jua.util;
 
-import sun.nio.cs.ThreadLocalCoders;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
 public final class IOUtils {
@@ -22,8 +18,7 @@ public final class IOUtils {
                 byteArrayOutputStream.write(buffer, 0, nRead);
             }
 
-            return ThreadLocalCoders.decoderFor(StandardCharsets.UTF_8)
-                    .decode(ByteBuffer.wrap(buffer)).array();
+            return byteArrayOutputStream.toString().toCharArray();
         }
     }
 
