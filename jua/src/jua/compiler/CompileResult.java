@@ -7,17 +7,17 @@ import jua.runtime.JuaEnvironment;
 import jua.runtime.code.CodeSegment;
 import jua.runtime.JuaFunction;
 
-import java.net.URL;
+public class CompileResult {
 
-public class Result {
+    // todo: Отрефакторить.
 
-    private final CodeData codeData;
-    private final CodeSegment main;
-    private final String filename;
+    public final CodeLayout codeLayout;
+    public final CodeSegment main;
+    public final String filename;
 
     // Trusting constructor.
-    Result(CodeData codeData, CodeSegment main, String filename) {
-        this.codeData = codeData;
+    CompileResult(CodeLayout codeLayout, CodeSegment main, String filename) {
+        this.codeLayout = codeLayout;
         this.main = main;
         this.filename = filename;
     }
@@ -26,11 +26,11 @@ public class Result {
         // todo: закоментировал printConstants
         //CodePrinter.printConstants(codeData.constants);
         CodePrinter.print(main, 0);
-        CodePrinter.printFunctions(codeData.functions);
+        CodePrinter.printFunctions(codeLayout.functions);
     }
 
     public JuaEnvironment toEnvironment() {
-        return new JuaEnvironment(codeData.functions, codeData.constants);
+        return new JuaEnvironment(codeLayout.functions, codeLayout.constants);
     }
 
     public InterpreterThread toThread() {

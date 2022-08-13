@@ -4,27 +4,27 @@ import jua.compiler.Tree.*;
 
 public class Enter extends Scanner {
 
-    private final CodeData codeData;
+    private final CodeLayout codeLayout;
 
-    public Enter(CodeData codeData) {
-        this.codeData = codeData;
+    public Enter(CodeLayout codeLayout) {
+        this.codeLayout = codeLayout;
     }
 
     @Override
     public void visitFuncDef(FuncDef tree) {
-        if (codeData.testConstant(tree.name.value))
+        if (codeLayout.testConstant(tree.name.value))
             throw new CompileError("Function '" + tree.name + "' has been already declared.", tree.pos);
-        codeData.setFunction(tree.name.value, null);
+        codeLayout.setFunction(tree.name.value, null);
     }
 
     @Override
     public void visitConstDef(ConstDef tree) {
         for (Definition def : tree.defs) {
             Name name = def.name;
-            if (codeData.testConstant(name.value)) {
+            if (codeLayout.testConstant(name.value)) {
                 throw new CompileError("Constant '" + name.value + "' has been already declared.", name.pos);
             }
-            codeData.setConstant(name.value, null);
+            codeLayout.setConstant(name.value, null);
         }
     }
 }

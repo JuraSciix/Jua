@@ -6,6 +6,8 @@ public final class Conversions {
         return (l & 1) != 0L;
     }
 
+    public static boolean d2b(double d) { return (d != 0.0); }
+
     public static long b2l(boolean b) {
         return b ? 1L : 0L;
     }

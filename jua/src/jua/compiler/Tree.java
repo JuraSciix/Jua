@@ -863,46 +863,12 @@ public interface Tree {
 
     class Literal extends Expression {
 
-        // todo: Отрефакторить. Убрать перегруженные конструкторы и лишние методы.
-
         public final Type value;
-
-        public Literal(int pos) {
-            this(pos, NullType.INSTANCE);
-        }
-
-        public Literal(int pos, long value) {
-            this(pos, new LongType(value));
-        }
-
-        public Literal(int pos, double value) {
-            this(pos, new DoubleType(value));
-        }
-
-        public Literal(int pos, boolean value) {
-            this(pos, value ? BooleanType.TRUE : BooleanType.FALSE);
-        }
-
-        public Literal(int pos, String value) {
-            this(pos, new StringType(value));
-        }
 
         public Literal(int pos, Type value) {
             super(pos);
             this.value = value;
         }
-
-        public boolean isInteger() { return value.isLong(); }
-        public boolean isFloatingPoint() { return value.isDouble(); }
-        public boolean isNumber() { return value.isLong()||value.isDouble(); }
-        public boolean isBoolean() { return value.isBoolean(); }
-        public boolean isString() { return value.isString(); }
-        public boolean isNull() { return value.isNull(); }
-
-        public long longValue() { return value.longValue(); }
-        public double doubleValue() { return value.doubleValue(); }
-        public boolean booleanValue() { return value.booleanValue(); }
-        public String stringValue() { return value.stringValue(); }
 
         @Override
         public Tag getTag() { return Tag.LITERAL; }
@@ -921,14 +887,10 @@ public interface Tree {
         }
 
         @Override
-        public Tag getTag() {
-            return Tag.ARRAYLITERAL;
-        }
+        public Tag getTag() { return Tag.ARRAYLITERAL; }
 
         @Override
-        public void accept(Visitor visitor) {
-            visitor.visitArrayLiteral(this);
-        }
+        public void accept(Visitor visitor) { visitor.visitArrayLiteral(this); }
     }
 
     class Var extends Expression {

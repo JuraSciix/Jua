@@ -1,89 +1,57 @@
 package jua.compiler;
 
+import jua.util.Conversions;
+
+import java.util.Objects;
+
 public final class Types {
 
-    public abstract static class Type {
+    private final Code code;
 
-        public long longValue() {
-            throw new UnsupportedOperationException();
-        }
-
-        public double doubleValue() {
-            throw new UnsupportedOperationException();
-        }
-
-        public boolean booleanValue() {
-            throw new UnsupportedOperationException();
-        }
-
-        public String stringValue() {
-            throw new UnsupportedOperationException();
-        }
-
-        public boolean isLong() { return false; }
-        public boolean isDouble() { return false; }
-        public boolean isBoolean() { return false; }
-        public boolean isString() { return false; }
-        public boolean isNull() { return false; }
-
-        public Type add(Type other) {
-            throw new UnsupportedOperationException();
-        }
-
-        public Type sub(Type other) {
-            throw new UnsupportedOperationException();
-        }
-
-        public Type mul(Type other) {
-            throw new UnsupportedOperationException();
-        }
-
-        public Type div(Type other) {
-            throw new UnsupportedOperationException();
-        }
-
-        public Type rem(Type other) {
-            throw new UnsupportedOperationException();
-        }
-
-        public Type shl(Type other) {
-            throw new UnsupportedOperationException();
-        }
-
-        public Type shr(Type other) {
-            throw new UnsupportedOperationException();
-        }
-
-        public Type and(Type other) {
-            throw new UnsupportedOperationException();
-        }
-
-        public Type or(Type other) {
-            throw new UnsupportedOperationException();
-        }
-
-        public Type xor(Type other) {
-            throw new UnsupportedOperationException();
-        }
-
-        public Type neg() {
-            throw new UnsupportedOperationException();
-        }
-
-        public Type pos() {
-            throw new UnsupportedOperationException();
-        }
-
-        public Type not() {
-            throw new UnsupportedOperationException();
-        }
-
-        public Type inverse() {
-            throw new UnsupportedOperationException();
-        }
+    public Types(Code code) {
+        this.code = Objects.requireNonNull(code, "Code is null");
     }
 
-    public static final class LongType extends Type {
+    public static abstract class Type {
+
+        public boolean isLong() { return false; }
+
+        public boolean isDouble() { return false; }
+
+        public boolean isBoolean() { return false; }
+
+        public boolean isString() { return false; }
+
+        public boolean isNull() { return false; }
+
+        public boolean isNumber() { return false; }
+
+        public boolean isScalar() { return false; }
+
+        public long longValue() { throw new UnsupportedOperationException(); }
+
+        public double doubleValue() { throw new UnsupportedOperationException(); }
+
+        public boolean booleanValue() { throw new UnsupportedOperationException(); }
+
+        public String stringValue() { throw new UnsupportedOperationException(); }
+
+        public abstract int getConstantIndex();
+    }
+
+    public static abstract class ScalarType extends Type {
+
+        @Override
+        public boolean isScalar() { return true; }
+    }
+
+    public static abstract class NumberType extends ScalarType {
+
+        @Override
+        public boolean isNumber() { return true; }
+    }
+
+    public final class LongType extends NumberType {
 
         private final long value;
 
@@ -92,119 +60,25 @@ public final class Types {
         }
 
         @Override
-        public boolean isLong() {
-            return true;
-        }
+        public boolean isLong() { return true; }
 
         @Override
-        public long longValue() {
-            return value;
-        }
+        public long longValue() { return value; }
 
         @Override
-        public double doubleValue() {
-            return value;
-        }
+        public double doubleValue() { return value; }
 
         @Override
-        public boolean booleanValue() {
-            return (value & 1) != 0L;
-        }
+        public boolean booleanValue() { return Conversions.l2b(value); }
 
         @Override
-        public String stringValue() {
-            return Long.toString(value);
-        }
+        public String stringValue() { return Long.toString(value); }
 
         @Override
-        public Type add(Type other) {
-            if (other.isLong()) {
-                return new LongType(value + other.longValue());
-            }
-
-            if (other.isDouble()) {
-                return new DoubleType(value + other.doubleValue());
-            }
-
-            if (other.isString()) {
-                return new StringType(value + other.stringValue());
-            }
-
-            return this;
-        }
-
-        @Override
-        public Type sub(Type other) {
-            if (other.isLong()) {
-                return new LongType(value - other.longValue());
-            }
-
-            if (other.isDouble()) {
-                return new DoubleType(value - other.doubleValue());
-            }
-
-            return this;
-        }
-
-        @Override
-        public Type mul(Type other) {
-            if (other.isLong()) {
-                return new LongType(value * other.longValue());
-            }
-
-            if (other.isDouble()) {
-                return new DoubleType(value * other.doubleValue());
-            }
-
-            return this;
-        }
-
-        @Override
-        public Type div(Type other) {
-            if (other.isLong() && other.longValue() != 0L) {
-                return new LongType(value / other.longValue());
-            }
-
-            if (other.isDouble()) {
-                return new DoubleType(value / other.doubleValue());
-            }
-
-            return this;
-        }
-
-        @Override
-        public Type rem(Type other) {
-            if (other.isLong() && other.longValue() != 0L) {
-                return new LongType(value % other.longValue());
-            }
-
-            if (other.isDouble() && other.doubleValue() != 0.0D) {
-                return new DoubleType(value % other.doubleValue());
-            }
-
-            return this;
-        }
-
-        @Override
-        public Type shl(Type other) {
-            if (other.isLong()) {
-                return new LongType(value << other.longValue());
-            }
-
-            return this;
-        }
-
-        @Override
-        public Type shr(Type other) {
-            if (other.isLong()) {
-                return new LongType(value >> other.longValue());
-            }
-
-            return this;
-        }
+        public int getConstantIndex() { return code.resolveLong(value); }
     }
 
-    public static final class DoubleType extends Type {
+    public final class DoubleType extends NumberType {
 
         private final double value;
 
@@ -218,187 +92,130 @@ public final class Types {
         }
 
         @Override
-        public long longValue() {
-            return (long) value;
-        }
+        public long longValue() { return (long) value; }
 
         @Override
-        public double doubleValue() {
-             return value;
-        }
+        public double doubleValue() { return value; }
 
         @Override
-        public boolean booleanValue() {
-            return value != 0.0;
-        }
+        public boolean booleanValue() { return Conversions.d2b(value); }
 
         @Override
-        public String stringValue() {
-            return Double.toString(value);
-        }
+        public String stringValue() { return Double.toString(value); }
 
         @Override
-        public Type add(Type other) {
-            //мб метод isNumber() нужен
-            if (other.isLong() && other.isDouble()) {
-                return new DoubleType(value + other.doubleValue());
-            }
-
-            if (other.isString()) {
-                return new StringType(value + other.stringValue());
-            }
-
-            return this;
-        }
-
-        @Override
-        public Type sub(Type other) {
-            if (other.isLong() && other.isDouble()) {
-                return new DoubleType(value - other.doubleValue());
-            }
-
-            return this;
-        }
-
-        @Override
-        public Type mul(Type other) {
-            if (other.isLong() && other.isDouble()) {
-                return new DoubleType(value * other.doubleValue());
-            }
-
-            return this;
-        }
-
-        @Override
-        public Type div(Type other) {
-            if (other.isLong() && other.isDouble()) {
-                return new DoubleType(value / other.doubleValue());
-            }
-
-            return this;
-        }
-
-        @Override
-        public Type rem(Type other) {
-            if (other.isDouble() && other.doubleValue() != 0.0D) {
-                return new DoubleType(value % other.doubleValue());
-            }
-
-            return this;
-        }
+        public int getConstantIndex() { return code.resolveDouble(value); }
     }
 
-    public static final class BooleanType extends Type {
-
-        public static final BooleanType TRUE = new BooleanType(true);
-        public static final BooleanType FALSE = new BooleanType(false);
-
-        private final boolean value;
-
-        public BooleanType(boolean value) {
-            this.value = value;
-        }
+    public static abstract class BooleanType extends ScalarType {
 
         @Override
-        public boolean booleanValue() {
-            return value;
-        }
-
-        @Override
-        public boolean isBoolean() {
-            return true;
-        }
-
-        @Override
-        public String stringValue() {
-            return Boolean.toString(value);
-        }
-
-        @Override
-        public Type and(Type other) {
-            if (other.isBoolean()) {
-                return new BooleanType(value && other.booleanValue());
-            }
-
-            return this;
-        }
-
-        @Override
-        public Type or(Type other) {
-            if (other.isBoolean()) {
-                return new BooleanType(value || other.booleanValue());
-            }
-
-            return this;
-        }
-
-        @Override
-        public Type xor(Type other) {
-            if (other.isBoolean()) {
-                return new BooleanType(value ^ other.booleanValue());
-            }
-
-            return this;
-        }
-
-        @Override
-        public Type not() {
-            return new BooleanType(!value);
-        }
+        public boolean isBoolean() { return true; }
     }
 
-    public static final class StringType extends Type {
+    public final class TrueType extends BooleanType {
+
+        private TrueType() {
+            super();
+        }
+
+        @Override
+        public long longValue() { return 1L; }
+
+        @Override
+        public double doubleValue() { return 1.0; }
+
+        @Override
+        public boolean booleanValue() { return true; }
+
+        @Override
+        public String stringValue() { return "true"; }
+
+        @Override
+        public int getConstantIndex() { return code.get_cpb().putTrueEntry(); }
+    }
+
+    public final class FalseType extends BooleanType {
+
+        private FalseType() {
+            super();
+        }
+
+        @Override
+        public long longValue() { return 0L; }
+
+        @Override
+        public double doubleValue() { return 0.0; }
+
+        @Override
+        public boolean booleanValue() { return false; }
+
+        @Override
+        public String stringValue() { return "false"; }
+
+        @Override
+        public int getConstantIndex() { return code.get_cpb().putFalseEntry(); }
+    }
+
+    public final class StringType extends ScalarType {
 
         private final String value;
 
         public StringType(String value) {
-            this.value = value;
+            this.value = Objects.requireNonNull(value, "Value is null");
         }
 
         @Override
-        public boolean isString() {
-            return true;
-        }
+        public boolean isString() { return true; }
 
         @Override
-        public String stringValue() {
-            return value;
-        }
+        public boolean booleanValue() { return !value.isEmpty(); }
 
         @Override
-        public boolean booleanValue() {
-            return !value.isEmpty();
-        }
+        public String stringValue() { return value; }
 
         @Override
-        public Type add(Type other) {
-            if (other.isLong()) {
-                return new StringType(value + other.longValue());
-            }
-
-            if (other.isDouble()) {
-                return new StringType(value + other.doubleValue());
-            }
-
-            if (other.isString()) {
-                return new StringType(value + other.stringValue());
-            }
-
-            return this;
-        }
+        public int getConstantIndex() { return code.resolveString(value); }
     }
 
-    public static final class NullType extends Type {
-
-        public static final NullType INSTANCE = new NullType();
+    public final class NullType extends Type {
 
         private NullType() {
             super();
         }
 
         @Override
-        public boolean isNull() {
-            return true;
-        }
+        public boolean isNull() { return true; }
+
+        @Override
+        public long longValue() { return 0L; }
+
+        @Override
+        public double doubleValue() { return 0.0; }
+
+        @Override
+        public boolean booleanValue() { return false; }
+
+        @Override
+        public String stringValue() { return "null"; }
+
+        @Override
+        public int getConstantIndex() { return code.get_cpb().putNullEntry(); }
     }
+
+    public final TrueType True = new TrueType();
+
+    public final FalseType False = new FalseType();
+
+    public final NullType Null = new NullType();
+
+    public LongType asLong(long value) { return new LongType(value); }
+
+    public DoubleType asDouble(double value) { return new DoubleType(value); }
+
+    public BooleanType asBoolean(boolean value) { return value ? True : False; }
+
+    public StringType asString(String value) { return new StringType(value); }
+
+    public NullType asNull() { return Null; }
 }

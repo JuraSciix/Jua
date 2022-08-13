@@ -9,10 +9,8 @@ import jua.interpreter.instruction.Switch;
 import jua.runtime.JuaFunction;
 import jua.runtime.heap.*;
 import jua.compiler.Tree.*;
-import jua.util.LineMap;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -53,7 +51,7 @@ public final class Gen extends Scanner {
      */
     static final int STATE_ALIVE_SWITCH = (1 << 6);
 
-    private final CodeData codeData;
+    private final CodeLayout codeLayout;
 
     private Code code;
 
@@ -71,8 +69,8 @@ public final class Gen extends Scanner {
     private int state = 0; // unassigned state
 
 
-    public Gen(CodeData codeData) {
-        this.codeData = codeData;
+    public Gen(CodeLayout codeLayout) {
+        this.codeLayout = codeLayout;
 
         breakChains = new IntArrayList();
         continueChains = new IntArrayList();
@@ -81,14 +79,14 @@ public final class Gen extends Scanner {
     }
 
     // todo: исправить этот low-cohesion
-    public Result getResult() {
-        return new Result(codeData, code.buildCodeSegment(), codeData.location);
+    public CompileResult getResult() {
+        return new CompileResult(codeLayout, code.buildCodeSegment(), codeLayout.source.filename());
     }
 
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
         try {
-            code = new Code(tree.source);
+            code = codeLayout.getCode();
         } catch (IOException e) {
             e.printStackTrace();
             return;//todo
@@ -343,7 +341,7 @@ public final class Gen extends Scanner {
                     cError(expr.pos, "constant expected");
                     continue;
                 }
-                int cp = resolveLiteral((Literal) expr);
+                int cp = ((Literal) expr).value.getConstantIndex();
                 cases.put(cp, code.currentIP() - switch_start_ip);
             }
 
@@ -412,12 +410,12 @@ public final class Gen extends Scanner {
             Expression expr = def.expr;
             if (expr.getTag() == Tag.ARRAYLITERAL) {
                 ArrayLiteral arrayLiteral = (ArrayLiteral) expr;
-                codeData.setConstant(name.value, new ArrayOperand());
+                codeLayout.setConstant(name.value, new ArrayOperand());
                 if (!arrayLiteral.entries.isEmpty())
                     generateArrayCreation(arrayLiteral.entries);
             } else if (expr.getTag() == Tag.LITERAL) {
                 Literal literal = (Literal) expr;
-                codeData.setConstant(name.value, resolveOperand(literal));
+                codeLayout.setConstant(name.value, resolveOperand(literal));
             } else {
                 // todo: Более детальное сообщение
                 cError(expr.pos, "Literal expected.");
@@ -574,7 +572,7 @@ public final class Gen extends Scanner {
                     cError(tree.pos, "too many parameters.");
                 }
                 visitList(tree.args);
-                instruction = new Call(codeData.functionIndex(tree.name.value), (byte) tree.args.size(), tree.name);
+                instruction = new Call(codeLayout.functionIndex(tree.name.value), (byte) tree.args.size(), tree.name);
                 stack = -tree.args.size() + 1;
                 break;
         }
@@ -582,18 +580,6 @@ public final class Gen extends Scanner {
         code.addInstruction(instruction, stack);
         if (noReturnValue)
             code.addInstruction(ConstNull.INSTANCE, 1);
-    }
-
-    private int resolveLiteral(Literal literal) {
-        // todo: Хм. Нижний код, наверное, можно перенести в Types
-        Types.Type value = literal.value;
-        if (value.isNull()) return code.get_cpb().putNullEntry();
-        if (value.isBoolean() && value.booleanValue()) return code.get_cpb().putTrueEntry();
-        if (value.isBoolean() && !value.booleanValue()) return code.get_cpb().putFalseEntry();
-        if (value.isLong()) return code.resolveLong(value.longValue());
-        if (value.isDouble()) return code.resolveDouble(value.doubleValue());
-        if (value.isString()) return code.resolveString(value.stringValue());
-        throw new IllegalArgumentException();
     }
 
     @Override
@@ -618,7 +604,7 @@ public final class Gen extends Scanner {
                     if (expr.getTag() != Tag.LITERAL) {
                         cError(expr.pos, "The values of the optional parameters can only be literals");
                     }
-                    code.get_cpb().putDefaultLocalEntry(localIdx, resolveLiteral((Literal) expr));
+                    code.get_cpb().putDefaultLocalEntry(localIdx, ((Literal) expr).value.getConstantIndex());
                     nOptionals++;
                 }
             }
@@ -637,12 +623,12 @@ public final class Gen extends Scanner {
                 emitReturn();
             }
 
-            codeData.setFunction(tree.name.value, JuaFunction.fromCode(
+            codeLayout.setFunction(tree.name.value, JuaFunction.fromCode(
                     tree.name.value,
                     tree.params.size() - nOptionals,
                     tree.params.size(),
                     code.buildCodeSegment(),
-                    codeData.location
+                    codeLayout.source.filename()
             ));
         }
 
@@ -786,7 +772,7 @@ public final class Gen extends Scanner {
         if (tree == null) return false;
         if (!hasTag(tree, Tag.LITERAL)) return false;
         Literal literal = (Literal) tree;
-        if (!literal.isInteger()) return false;
+        if (!literal.value.isLong()) return false;
         long value = literal.value.longValue();
         return (value >= Short.MIN_VALUE && value <= Short.MAX_VALUE);
     }
@@ -800,8 +786,8 @@ public final class Gen extends Scanner {
         // todo: Отрефакторить
         int resultStackAdjustment;
         int shortVal;
-        boolean lhsNull = lhs instanceof Literal && ((Literal) lhs).isNull();
-        boolean rhsNull = rhs instanceof Literal && ((Literal) rhs).isNull();
+        boolean lhsNull = lhs instanceof Literal && ((Literal) lhs).value.isNull();
+        boolean rhsNull = rhs instanceof Literal && ((Literal) rhs).value.isNull();
         boolean lhsShort = isShortIntegerLiteral(lhs);
         boolean rhsShort = isShortIntegerLiteral(rhs);
         if (lhsShort || rhsShort) {
@@ -1041,8 +1027,8 @@ public final class Gen extends Scanner {
     public void visitVariable(Var tree) {
         Name name = tree.name;
         code.putPos(tree.pos);
-        if (codeData.testConstant(name.value)) {
-            code.addInstruction(new Getconst(codeData.constantIndex(name.value), name), 1);
+        if (codeLayout.testConstant(name.value)) {
+            code.addInstruction(new Getconst(codeLayout.constantIndex(name.value), name), 1);
         } else {
             emitVLoad(tree.name.value);
         }
@@ -1133,19 +1119,19 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitLiteral(Literal tree) {
-        if (tree.isInteger()) {
-            emitPushLong(tree.longValue());
-        } else if (tree.isFloatingPoint()) {
-            emitPushDouble(tree.doubleValue());
-        } else if (tree.isBoolean()) {
-            if (tree.booleanValue()) {
+        if (tree.value.isLong()) {
+            emitPushLong(tree.value.longValue());
+        } else if (tree.value.isDouble()) {
+            emitPushDouble(tree.value.doubleValue());
+        } else if (tree.value.isBoolean()) {
+            if (tree.value.booleanValue()) {
                 emitPushTrue();
             } else {
                 emitPushFalse();
             }
-        } else if (tree.isString()) {
-            emitPushString(tree.stringValue());
-        } else if (tree.isNull()) {
+        } else if (tree.value.isString()) {
+            emitPushString(tree.value.stringValue());
+        } else if (tree.value.isNull()) {
             code.addInstruction(ConstNull.INSTANCE, 1);
         } else {
             throw new AssertionError();

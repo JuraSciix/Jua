@@ -12,16 +12,13 @@ import jua.interpreter.instruction.ChainInstruction;
 import jua.interpreter.instruction.Instruction;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.LocalNameTable;
-import jua.runtime.heap.Operand;
 import jua.runtime.code.LineNumberTable;
 import jua.util.LineMap;
 import jua.util.Source;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public final class Code {
 
@@ -235,5 +232,12 @@ public final class Code {
 
     ConstantPool.Builder get_cpb() {
         return context.constant_pool_b;
+    }
+
+    private Types types;
+
+    Types getTypes() {
+        if (types == null) types = new Types(this);
+        return types;
     }
 }

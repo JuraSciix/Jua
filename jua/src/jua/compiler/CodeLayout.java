@@ -3,12 +3,12 @@ package jua.compiler;
 import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
 import jua.runtime.JuaFunction;
 import jua.runtime.heap.Operand;
+import jua.util.Source;
 
-import java.net.URL;
+import java.io.IOException;
+import java.util.Objects;
 
-public class CodeData {
-
-    final String location;
+public class CodeLayout {
 
     // todo: переместить в отдельную стадию компиляции
     final Object2IntArrayMap<String> functionNames = new Object2IntArrayMap<>();
@@ -17,8 +17,18 @@ public class CodeData {
     final Object2IntArrayMap<String> constantNames = new Object2IntArrayMap<>();
     final Operand[] constants = new Operand[1024];
 
-    public CodeData(String filename) {
-        this.location = filename;
+    public final Source source;
+
+    public CodeLayout(Source source) {
+        Objects.requireNonNull(source, "Source is null");
+        this.source = source;
+    }
+
+    private Code code;
+
+    public Code getCode() throws IOException {
+        if (code == null) code = new Code(source);
+        return code;
     }
 
     // todo: не находит некоторые функции

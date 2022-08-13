@@ -6,7 +6,7 @@
 
     <groupId>jua</groupId>
     <artifactId>minorjua</artifactId>
-    <version>1.95.19</version>
+    <version>1.95.209</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>

@@ -3,11 +3,13 @@ package jua.compiler.parser;
 import jua.compiler.ParseException;
 import jua.compiler.Tree;
 import jua.compiler.Tree.*;
+import jua.compiler.Types;
 import jua.compiler.parser.Tokens.DummyToken;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static jua.compiler.parser.Tokens.TokenKind.*;
 
@@ -17,10 +19,13 @@ public class JuaParser {
 
     private final Tokenizer tokenizer;
 
+    private final Types types;
+
     private Tokens.Token currentToken;
 
-    public JuaParser(Tokenizer tokenizer) {
-        this.tokenizer = tokenizer;
+    public JuaParser(Tokenizer tokenizer, Types types) {
+        this.tokenizer = Objects.requireNonNull(tokenizer, "Tokenizer is null");
+        this.types = Objects.requireNonNull(types, "Types is null");
     }
 
     public Tree parse() throws ParseException, IOException {
@@ -587,7 +592,8 @@ public class JuaParser {
             if (match(DOT)) {
                 Tokens.Token token = currentToken;
                 expect(IDENTIFIER);
-                expression = new ArrayAccess(position, expression, new Literal(token.pos, token.getString()));
+                expression = new ArrayAccess(position, expression,
+                        new Literal(token.pos, types.asString(token.getString())));
             } else if (match(LBRACKET)) {
                 expression = new ArrayAccess(position, expression, parseExpression());
                 expect(RBRACKET);
@@ -625,7 +631,7 @@ public class JuaParser {
             pError(token.pos, "missing expected expression.");
         }
         if (match(FALSE)) {
-            return new Literal(token.pos, false);
+            return new Literal(token.pos, types.asBoolean(false));
         }
         if (match(FLOATLITERAL)) {
             return parseFloat(token);
@@ -646,13 +652,13 @@ public class JuaParser {
             return parseParens(token.pos);
         }
         if (match(NULL)) {
-            return new Literal(token.pos);
+            return new Literal(token.pos, types.asNull());
         }
         if (match(STRINGLITERAL)) {
-            return new Literal(token.pos, token.getString());
+            return new Literal(token.pos, types.asString(token.getString()));
         }
         if (match(TRUE)) {
-            return new Literal(token.pos, true);
+            return new Literal(token.pos, types.asBoolean(true));
         }
         unexpected(currentToken);
         return null;
@@ -668,7 +674,7 @@ public class JuaParser {
         if ((d == 0.0) && !token.getString().matches("\\.?0\\.?\\d*(?:[Ee][+-]\\d+)?$")) {
             pError(token.pos, "number too small.");
         }
-        return new Literal(token.pos, d);
+        return new Literal(token.pos, types.asDouble(d));
     }
 
     private Expression parseIdentifier(Tokens.Token token) throws ParseException, IOException {
@@ -696,7 +702,7 @@ public class JuaParser {
 
     private Expression parseInt(Tokens.Token token) throws ParseException, IOException {
         try {
-            return new Literal(token.pos, token.getLong());
+            return new Literal(token.pos, types.asLong(token.getLong()));
         } catch (NumberFormatException e) {
             pError(token.pos, "number too large.");
             return null;

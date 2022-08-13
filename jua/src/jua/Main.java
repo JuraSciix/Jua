@@ -1,18 +1,24 @@
 package jua;
 
+import jua.compiler.CompileResult;
 import jua.compiler.JuaCompiler;
+import jua.runtime.RuntimeErrorException;
+import jua.util.IOUtils;
+import jua.util.Source;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.Collections;
 
 public class Main {
 
     public static final String NAME = "Jua";
     // todo: Разделить версию на мажорную и минорную
-    public static final String VERSION = "1.95";
+    public static final String VERSION = "1.95.209";
 
     // todo: Мне лень сейчас обработкой исключений заниматься..
-    public static void main(String[] args) throws MalformedURLException {
+    public static void main(String[] args) throws IOException {
         try {
             Options.bind(args);
         } catch (IllegalArgumentException e) {
@@ -20,14 +26,27 @@ public class Main {
         } catch (Throwable t) {
             error("can't parse console arguments: " + t);
         }
-        JuaCompiler.load(testFilename());
+
+        // todo: Работа с несколькими файлами одновременно
+
+        File file = testTargetFile();
+        Source targetSource = new Source(file.getName(), IOUtils.readCharsFromFile(file));
+        JuaCompiler compiler = new JuaCompiler(Collections.singletonList(targetSource));
+        CompileResult result = compiler.next();
+
+        try{
+            result.toThread().run();
+        } catch (RuntimeErrorException e) {
+            compiler.error("Runtime error", result.codeLayout, e.getMessage(), e.thread.current_line_number(), false);
+        }
     }
 
-    private static File testFilename() {
+    private static File testTargetFile() {
         String filename = Options.filename();
 
         if (filename == null) {
             error("main file not specified.");
+            throw new ThreadDeath(); // avoiding warnings
         }
         File file = new File(filename);
 
