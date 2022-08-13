@@ -1,7 +1,5 @@
 package jua.compiler;
 
-import jua.compiler.parser.JuaParser;
-import jua.compiler.parser.Tokenizer;
 import jua.util.LineMap;
 import jua.util.Source;
 

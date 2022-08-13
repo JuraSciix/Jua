@@ -1,6 +1,5 @@
-package jua.compiler.parser;
+package jua.compiler;
 
-import jua.compiler.ParseException;
 import jua.util.BufferReader;
 import jua.util.Source;
 
@@ -9,8 +8,8 @@ import java.io.IOException;
 import java.io.StringWriter;
 
 import static java.lang.Character.*;
-import static jua.compiler.parser.Tokens.*;
-import static jua.compiler.parser.Tokens.TokenKind.*;
+import static jua.compiler.Tokens.*;
+import static jua.compiler.Tokens.TokenKind.*;
 
 public class Tokenizer implements Closeable {
 

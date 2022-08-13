@@ -1,17 +1,14 @@
-package jua.compiler.parser;
+package jua.compiler;
 
-import jua.compiler.ParseException;
-import jua.compiler.Tree;
 import jua.compiler.Tree.*;
-import jua.compiler.Types;
-import jua.compiler.parser.Tokens.DummyToken;
+import jua.compiler.Tokens.DummyToken;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static jua.compiler.parser.Tokens.TokenKind.*;
+import static jua.compiler.Tokens.TokenKind.*;
 
 public class JuaParser {
 

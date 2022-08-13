@@ -1,4 +1,4 @@
-package jua.compiler.parser;
+package jua.compiler;
 
 import java.util.HashMap;
 
