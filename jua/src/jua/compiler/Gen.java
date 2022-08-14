@@ -222,11 +222,11 @@ public final class Gen extends Scanner {
         generateArrayCreation(tree.entries);
     }
 
-    private void generateArrayCreation(List<ArrayEntry> entries) {
+    private void generateArrayCreation(List<ArrayLiteral.Entry> entries) {
         long implicitIndex = 0;
-        Iterator<ArrayEntry> iterator = entries.iterator();
+        Iterator<ArrayLiteral.Entry> iterator = entries.iterator();
         while (iterator.hasNext()) {
-            ArrayEntry entry = iterator.next();
+            ArrayLiteral.Entry entry = iterator.next();
             if (iterator.hasNext() || isUsed()) emitDup();
             if (entry.key == null) {
                 code.putPos(entry.value.pos);
@@ -405,7 +405,7 @@ public final class Gen extends Scanner {
             cError(tree.pos, "constants declaration is not allowed here.");
         }
 
-        for (Definition def : tree.defs) {
+        for (ConstDef.Definition def : tree.defs) {
             Name name = def.name;
             Expression expr = def.expr;
             if (expr.getTag() == Tag.ARRAYLITERAL) {
@@ -534,13 +534,13 @@ public final class Gen extends Scanner {
                 instruction = Bool.INSTANCE;
                 break;
             case "print":
-                visitList(tree.args);
+                visitInvocationArgs(tree.args);
                 instruction = new Print(tree.args.size());
                 stack = -tree.args.size();
                 noReturnValue = true;
                 break;
             case "println":
-                visitList(tree.args);
+                visitInvocationArgs(tree.args);
                 instruction = new Println(tree.args.size());
                 stack = -tree.args.size();
                 noReturnValue = true;
@@ -571,7 +571,7 @@ public final class Gen extends Scanner {
                 if (tree.args.size() > 0xff) {
                     cError(tree.pos, "too many parameters.");
                 }
-                visitList(tree.args);
+                visitInvocationArgs(tree.args);
                 instruction = new Call(codeLayout.functionIndex(tree.name.value), (byte) tree.args.size(), tree.name);
                 stack = -tree.args.size() + 1;
                 break;
@@ -580,6 +580,12 @@ public final class Gen extends Scanner {
         code.addInstruction(instruction, stack);
         if (noReturnValue)
             code.addInstruction(ConstNull.INSTANCE, 1);
+    }
+
+    private void visitInvocationArgs(List<Invocation.Argument> args) {
+        for (Invocation.Argument arg : args) {
+            visitExpression(arg.expr);
+        }
     }
 
     @Override
@@ -593,7 +599,7 @@ public final class Gen extends Scanner {
 
         {
             int nOptionals = 0;
-            for (Parameter param : tree.params) {
+            for (FuncDef.Parameter param : tree.params) {
                 Name name = param.name;
                 if (code.localExists(name.value)) {
                     cError(name.pos, "Duplicate parameter named '" + name.value + "'.");

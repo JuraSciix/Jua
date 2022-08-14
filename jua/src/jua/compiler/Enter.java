@@ -19,7 +19,7 @@ public class Enter extends Scanner {
 
     @Override
     public void visitConstDef(ConstDef tree) {
-        for (Definition def : tree.defs) {
+        for (ConstDef.Definition def : tree.defs) {
             Name name = def.name;
             if (codeLayout.testConstant(name.value)) {
                 throw new CompileError("Constant '" + name.value + "' has been already declared.", name.pos);

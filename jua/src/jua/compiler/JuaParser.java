@@ -103,12 +103,12 @@ public class JuaParser {
     }
 
     private Statement parseConst(int position) throws ParseException, IOException {
-        List<Definition> definitions = new ArrayList<>();
+        List<ConstDef.Definition> definitions = new ArrayList<>();
 
         do {
             Tokens.Token name = currentToken;
             expect(IDENTIFIER, EQ);
-            definitions.add(new Definition(new Name(name.getString(), name.pos), parseExpression()));
+            definitions.add(new ConstDef.Definition(new Name(name.getString(), name.pos), parseExpression()));
         } while (match(COMMA));
 
         expect(SEMICOLON);
@@ -136,7 +136,7 @@ public class JuaParser {
     private Statement parseFunction(int pos) throws ParseException, IOException {
         Name funcName = new Name(currentToken.getString(), currentToken.pos);
         expect(IDENTIFIER, LPAREN);
-        List<Parameter> params = new ArrayList<>();
+        List<FuncDef.Parameter> params = new ArrayList<>();
         boolean comma = false, optionalState = false;
 
         while (!match(RPAREN)) {
@@ -154,7 +154,7 @@ public class JuaParser {
             } else if (optionalState) {
                 pError(name0.pos, "here must be a optional argument.");
             }
-            params.add(new Parameter(name1, optional));
+            params.add(new FuncDef.Parameter(name1, optional));
             comma = !match(COMMA);
         }
         Statement body = parseBody();
@@ -682,7 +682,7 @@ public class JuaParser {
     }
 
     private Expression parseInvocation(Tokens.Token token) throws ParseException, IOException {
-        List<Argument> args = new ArrayList<>();
+        List<Invocation.Argument> args = new ArrayList<>();
         boolean comma = false;
 
         while (!match(RPAREN)) {
@@ -691,7 +691,7 @@ public class JuaParser {
             }
             // todo: именные аргументы
             // Название аргумента равно null по умолчанию.
-            args.add(new Argument(null, parseExpression()));
+            args.add(new Invocation.Argument(null, parseExpression()));
             comma = !match(COMMA);
         }
         return new Invocation(token.pos, new Name(token.getString(), currentToken.pos), args);
@@ -707,7 +707,7 @@ public class JuaParser {
     }
 
     private Expression parseArray(int position, Tokens.TokenKind enclosing) throws ParseException, IOException {
-        List<ArrayEntry> entries = new ArrayList<>();
+        List<ArrayLiteral.Entry> entries = new ArrayList<>();
         boolean comma = false;
 
         while (!match(enclosing)) {
@@ -721,7 +721,7 @@ public class JuaParser {
                 key = value;
                 value = parseExpression();
             }
-            entries.add(new ArrayEntry(key, value));
+            entries.add(new ArrayLiteral.Entry(key, value));
             comma = !match(COMMA);
         }
         return new ArrayLiteral(position, entries);

@@ -18,7 +18,7 @@ public final class Lower extends Translator {
 
     @Override
     public void visitConstDef(ConstDef tree) {
-        for (Definition def : tree.defs) {
+        for (ConstDef.Definition def : tree.defs) {
             Expression expr = translate(def.expr);
             if (expr != null && expr.getTag() == Tag.LITERAL) {
                 // Сохраняем объект литерала для встраивания.

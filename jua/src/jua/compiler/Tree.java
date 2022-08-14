@@ -70,12 +70,7 @@ public interface Tree {
         PREINC,
         PREDEC,
         POSTINC,
-        POSTDEC,
-
-        DEF,
-        PARAM,
-        ARRAYENTRY,
-        ARG
+        POSTDEC
     }
 
     interface Visitor {
@@ -104,12 +99,6 @@ public interface Tree {
         void visitTernaryOp(TernaryOp tree);
         void visitBinaryOp(BinaryOp tree);
         void visitUnaryOp(UnaryOp tree);
-
-        // todo: Удалить нижеперечисленные методы
-        void visitDefinition(Definition tree);
-        void visitParameter(Parameter tree);
-        void visitArgument(Argument tree);
-        void visitArrayEntry(ArrayEntry tree);
     }
 
     abstract class AbstractVisitor implements Visitor {
@@ -189,18 +178,6 @@ public interface Tree {
         @Override
         public void visitDiscarded(Discarded tree) { visitTree(tree); }
 
-        @Override
-        public void visitDefinition(Definition tree) { visitTree(tree); }
-
-        @Override
-        public void visitParameter(Parameter tree) { visitTree(tree); }
-
-        @Override
-        public void visitArgument(Argument tree) { visitTree(tree); }
-
-        @Override
-        public void visitArrayEntry(ArrayEntry tree) { visitTree(tree); }
-
         public void visitTree(Tree tree) { throw new AssertionError(); }
     }
 
@@ -228,12 +205,16 @@ public interface Tree {
 
         @Override
         public void visitConstDef(ConstDef tree) {
-            scan(tree.defs);
+            for (ConstDef.Definition def : tree.defs) {
+                scan(def.expr);
+            }
         }
 
         @Override
         public void visitFuncDef(FuncDef tree) {
-            scan(tree.params);
+            for (FuncDef.Parameter param : tree.params) {
+                scan(param.expr);
+            }
             scan(tree.body);
         }
 
@@ -300,7 +281,10 @@ public interface Tree {
 
         @Override
         public void visitArrayLiteral(ArrayLiteral tree) {
-            scan(tree.entries);
+            for (ArrayLiteral.Entry entry : tree.entries) {
+                scan(entry.key);
+                scan(entry.value);
+            }
         }
 
         @Override
@@ -314,7 +298,9 @@ public interface Tree {
 
         @Override
         public void visitInvocation(Invocation tree) {
-            scan(tree.args);
+            for (Invocation.Argument arg : tree.args) {
+                scan(arg.expr);
+            }
         }
 
         @Override
@@ -348,27 +334,6 @@ public interface Tree {
 
         @Override
         public void visitDiscarded(Discarded tree) { }
-
-        @Override
-        public void visitDefinition(Definition tree) {
-            scan(tree.expr);
-        }
-
-        @Override
-        public void visitParameter(Parameter tree) {
-            scan(tree.expr);
-        }
-
-        @Override
-        public void visitArgument(Argument tree) {
-            scan(tree.expr);
-        }
-
-        @Override
-        public void visitArrayEntry(ArrayEntry tree) {
-            scan(tree.key);
-            scan(tree.value);
-        }
     }
 
     abstract class Translator extends AbstractVisitor {
@@ -407,13 +372,17 @@ public interface Tree {
 
         @Override
         public void visitConstDef(ConstDef tree) {
-            tree.defs = translate(tree.defs);
+            for (ConstDef.Definition def : tree.defs) {
+                def.expr = translate(def.expr);
+            }
             result = tree;
         }
 
         @Override
         public void visitFuncDef(FuncDef tree) {
-            tree.params = translate(tree.params);
+            for (FuncDef.Parameter param : tree.params) {
+                param.expr = translate(param.expr);
+            }
             tree.body = translate(tree.body);
             result = tree;
         }
@@ -489,7 +458,10 @@ public interface Tree {
 
         @Override
         public void visitArrayLiteral(ArrayLiteral tree) {
-            tree.entries = translate(tree.entries);
+            for (ArrayLiteral.Entry entry : tree.entries) {
+                entry.key = translate(entry.key);
+                entry.value = translate(entry.value);
+            }
             result = tree;
         }
 
@@ -505,7 +477,9 @@ public interface Tree {
 
         @Override
         public void visitInvocation(Invocation tree) {
-            tree.args = translate(tree.args);
+            for (Invocation.Argument arg : tree.args) {
+                arg.expr = translate(arg.expr);
+            }
             result = tree;
         }
 
@@ -548,38 +522,25 @@ public interface Tree {
             tree.expr = translate(tree.expr);
             result = tree;
         }
-
-        @Override
-        public void visitDefinition(Definition tree) {
-            tree.expr = translate(tree.expr);
-            result = tree;
-        }
-
-        @Override
-        public void visitParameter(Parameter tree) {
-            tree.expr = translate(tree.expr);
-            result = tree;
-        }
-
-        @Override
-        public void visitArgument(Argument tree) {
-            tree.expr = translate(tree.expr);
-            result = tree;
-        }
-
-        @Override
-        public void visitArrayEntry(ArrayEntry tree) {
-            tree.key = translate(tree.key);
-            tree.value = translate(tree.value);
-            result = tree;
-        }
     }
 
     Tag getTag();
 
     void accept(Visitor visitor);
 
-    class CompilationUnit implements Tree {
+    final class Name {
+
+        public final String value;
+
+        public final int pos;
+
+        public Name(String value, int pos) {
+            this.value = value;
+            this.pos = pos;
+        }
+    }
+
+    final class CompilationUnit implements Tree {
 
         public final Source source;
 
@@ -606,7 +567,19 @@ public interface Tree {
         }
     }
 
-    class ConstDef extends Statement {
+    final class ConstDef extends Statement {
+
+        public static final class Definition {
+
+            public final Name name;
+
+            public Expression expr;
+
+            public Definition(Name name, Expression expr) {
+                this.name = name;
+                this.expr = expr;
+            }
+        }
 
         public List<Definition> defs;
 
@@ -622,8 +595,20 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitConstDef(this); }
     }
 
-    class FuncDef extends Statement {
+    final class FuncDef extends Statement {
 
+        public static final class Parameter {
+
+            public final Name name;
+
+            public Expression expr;
+
+            public Parameter(Name name, Expression expr) {
+                this.name = name;
+                this.expr = expr;
+            }
+        }
+        
         public final Name name;
 
         public List<Parameter> params;
@@ -644,7 +629,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitFuncDef(this); }
     }
 
-    class Block extends Statement {
+    final class Block extends Statement {
 
         public List<Statement> stats;
 
@@ -660,7 +645,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitBlock(this); }
     }
 
-    class If extends Statement {
+    final class If extends Statement {
 
         public Expression cond;
 
@@ -682,7 +667,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitIf(this); }
     }
 
-    class WhileLoop extends Statement {
+    final class WhileLoop extends Statement {
 
         public Expression cond;
 
@@ -701,7 +686,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitWhileLoop(this); }
     }
 
-    class ForLoop extends Statement {
+    final class ForLoop extends Statement {
 
         public List<Expression> init;
 
@@ -726,7 +711,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitFor(this); }
     }
 
-    class DoLoop extends Statement {
+    final class DoLoop extends Statement {
 
         public Statement body;
 
@@ -745,7 +730,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitDoLoop(this); }
     }
 
-    class Switch extends Statement {
+    final class Switch extends Statement {
 
         public Expression expr;
 
@@ -764,7 +749,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitSwitch(this); }
     }
 
-    class Case extends Statement {
+    final class Case extends Statement {
 
         public List<Expression> labels;
 
@@ -783,7 +768,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitCase(this); }
     }
 
-    class Break extends Statement {
+    final class Break extends Statement {
 
         public Break(int pos) {
             super(pos);
@@ -796,7 +781,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitBreak(this); }
     }
 
-    class Continue extends Statement {
+    final class Continue extends Statement {
 
         public Continue(int pos) {
             super(pos);
@@ -809,7 +794,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitContinue(this); }
     }
 
-    class Fallthrough extends Statement {
+    final class Fallthrough extends Statement {
 
         public Fallthrough(int pos) {
             super(pos);
@@ -822,7 +807,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitFallthrough(this); }
     }
 
-    class Return extends Statement {
+    final class Return extends Statement {
 
         public Expression expr;
 
@@ -838,7 +823,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitReturn(this); }
     }
 
-    class Discarded extends Statement {
+    final class Discarded extends Statement {
 
         public Expression expr;
 
@@ -861,7 +846,7 @@ public interface Tree {
         }
     }
 
-    class Literal extends Expression {
+    final class Literal extends Expression {
 
         public final Type value;
 
@@ -877,11 +862,21 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitLiteral(this); }
     }
 
-    class ArrayLiteral extends Expression {
+    final class ArrayLiteral extends Expression {
 
-        public List<ArrayEntry> entries;
+        public static final class Entry {
 
-        public ArrayLiteral(int pos, List<ArrayEntry> entries) {
+            public Expression key, value;
+
+            public Entry(Expression key, Expression value) {
+                this.key = key;
+                this.value = value;
+            }
+        }
+        
+        public List<Entry> entries;
+
+        public ArrayLiteral(int pos, List<Entry> entries) {
             super(pos);
             this.entries = entries;
         }
@@ -893,7 +888,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitArrayLiteral(this); }
     }
 
-    class Var extends Expression {
+    final class Var extends Expression {
 
         public final Name name;
 
@@ -909,7 +904,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitVariable(this); }
     }
 
-    class ArrayAccess extends Expression {
+    final class ArrayAccess extends Expression {
 
         public Expression expr, index;
 
@@ -926,8 +921,20 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitArrayAccess(this); }
     }
 
-    class Invocation extends Expression {
+    final class Invocation extends Expression {
 
+        public static final class Argument {
+
+            public final Name name; // todo: Значение этого поля всегда null, потому что не реализовано.
+
+            public Expression expr;
+
+            public Argument(Name name, Expression expr) {
+                this.name = name;
+                this.expr = expr;
+            }
+        }
+        
         public final Name name;
 
         public List<Argument> args;
@@ -945,7 +952,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitInvocation(this); }
     }
 
-    class Parens extends Expression {
+    final class Parens extends Expression {
 
         public Expression expr;
 
@@ -961,7 +968,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitParens(this); }
     }
 
-    class AssignOp extends Expression {
+    final class AssignOp extends Expression {
 
         public final Tag tag;
 
@@ -981,7 +988,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitAssignOp(this); }
     }
 
-    class TernaryOp extends Expression {
+    final class TernaryOp extends Expression {
 
         public Expression cond, thenexpr, elseexpr;
 
@@ -999,7 +1006,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitTernaryOp(this); }
     }
 
-    class BinaryOp extends Expression {
+    final class BinaryOp extends Expression {
 
         public final Tag tag;
 
@@ -1019,7 +1026,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitBinaryOp(this); }
     }
 
-    class UnaryOp extends Expression {
+    final class UnaryOp extends Expression {
 
         public final Tag tag;
 
@@ -1036,87 +1043,5 @@ public interface Tree {
 
         @Override
         public void accept(Visitor visitor) { visitor.visitUnaryOp(this); }
-    }
-
-    class Name {
-
-        public final String value;
-
-        public final int pos;
-
-        public Name(String value, int pos) {
-            this.value = value;
-            this.pos = pos;
-        }
-    }
-
-    class Definition implements Tree {
-
-        public final Name name;
-
-        public Expression expr;
-
-        public Definition(Name name, Expression expr) {
-            this.name = name;
-            this.expr = expr;
-        }
-
-        @Override
-        public Tag getTag() { return Tag.DEF; }
-
-        @Override
-        public void accept(Visitor visitor) { visitor.visitDefinition(this); }
-    }
-
-    class Parameter implements Tree {
-
-        public final Name name;
-
-        public Expression expr;
-
-        public Parameter(Name name, Expression expr) {
-            this.name = name;
-            this.expr = expr;
-        }
-
-        @Override
-        public Tag getTag() { return Tag.PARAM; }
-
-        @Override
-        public void accept(Visitor visitor) { visitor.visitParameter(this); }
-    }
-
-    class Argument implements Tree {
-
-        public final Name name;
-
-        public Expression expr;
-
-        public Argument(Name name, Expression expr) {
-            this.name = name;
-            this.expr = expr;
-        }
-
-        @Override
-        public Tag getTag() { return Tag.ARG; }
-
-        @Override
-        public void accept(Visitor visitor) { visitor.visitArgument(this); }
-    }
-
-    class ArrayEntry implements Tree {
-
-        public Expression key, value;
-
-        public ArrayEntry(Expression key, Expression value) {
-            this.key = key;
-            this.value = value;
-        }
-
-        @Override
-        public Tag getTag() { return Tag.ARRAYENTRY; }
-
-        @Override
-        public void accept(Visitor visitor) { visitor.visitArrayEntry(this); }
     }
 }
