@@ -1,5 +1,8 @@
 package jua.util;
 
+import jua.Target;
+import jua.Version;
+
 import java.io.IOException;
 
 public final class Source {
@@ -13,6 +16,10 @@ public final class Source {
     public Source(String filename, char[] buffer) {
         this.filename = filename;
         this.buffer = buffer;
+    }
+
+    public Target target() {
+        return new Target(Version.JUA_1_3); // todo
     }
 
     public String filename() { return filename; }

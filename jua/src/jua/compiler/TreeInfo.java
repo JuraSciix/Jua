@@ -1,13 +1,15 @@
 package jua.compiler;
 
+import jua.Target;
 import jua.compiler.Tree.Expression;
+import jua.compiler.Tree.Name;
 import jua.compiler.Tree.Parens;
 import jua.compiler.Tree.Tag;
 
 public final class TreeInfo {
 
-    public static Expression removeParens(Expression tree) {
-        Expression result = tree;
+    public static Tree removeParens(Tree tree) {
+        Tree result = tree;
 
         while (result != null && result.getTag() == Tag.PARENS) {
             Parens parens = (Parens) result;
@@ -35,6 +37,20 @@ public final class TreeInfo {
 
     public static boolean isConditionalTag(Tag tag) {
         return (tag.compareTo(Tag.FLOW_OR) | Tag.LE.compareTo(tag)) >= 0;
+    }
+
+    public static boolean isNameEquals(Name name1, Name name2) {
+        if (name1 == name2) return true;
+        if (name1 == null || name2 == null) return false;
+        if (name1.value == null || name2.value == null) return false;
+        return name1.value.equals(name2.value);
+    }
+
+    public static boolean testNamedArgument(Target target, Name name1, Name name2) {
+        if (!target.isNamedArgumentInvocationAllowed()) {
+            return name1 == null && name2 == null;
+        }
+        return isNameEquals(name1, name2);
     }
 
     private TreeInfo() { throw new UnsupportedOperationException(); }

@@ -341,7 +341,7 @@ public final class Gen extends Scanner {
                     cError(expr.pos, "constant expected");
                     continue;
                 }
-                int cp = ((Literal) expr).value.getConstantIndex();
+                int cp = ((Literal) expr).type.getConstantIndex();
                 cases.put(cp, code.currentIP() - switch_start_ip);
             }
 
@@ -424,7 +424,7 @@ public final class Gen extends Scanner {
     }
 
     private Operand resolveOperand(Literal literal) {
-        Object value = literal.value;
+        Object value = literal.type;
         if (value instanceof Long || value instanceof Integer) return LongOperand.valueOf(((Number) value).longValue());
         if (value instanceof Double || value instanceof Float)
             return DoubleOperand.valueOf(((Number) value).doubleValue());
@@ -610,7 +610,7 @@ public final class Gen extends Scanner {
                     if (expr.getTag() != Tag.LITERAL) {
                         cError(expr.pos, "The values of the optional parameters can only be literals");
                     }
-                    code.get_cpb().putDefaultLocalEntry(localIdx, ((Literal) expr).value.getConstantIndex());
+                    code.get_cpb().putDefaultLocalEntry(localIdx, ((Literal) expr).type.getConstantIndex());
                     nOptionals++;
                 }
             }
@@ -778,8 +778,8 @@ public final class Gen extends Scanner {
         if (tree == null) return false;
         if (!hasTag(tree, Tag.LITERAL)) return false;
         Literal literal = (Literal) tree;
-        if (!literal.value.isLong()) return false;
-        long value = literal.value.longValue();
+        if (!literal.type.isLong()) return false;
+        long value = literal.type.longValue();
         return (value >= Short.MIN_VALUE && value <= Short.MAX_VALUE);
     }
 
@@ -792,12 +792,12 @@ public final class Gen extends Scanner {
         // todo: Отрефакторить
         int resultStackAdjustment;
         int shortVal;
-        boolean lhsNull = lhs instanceof Literal && ((Literal) lhs).value.isNull();
-        boolean rhsNull = rhs instanceof Literal && ((Literal) rhs).value.isNull();
+        boolean lhsNull = lhs instanceof Literal && ((Literal) lhs).type.isNull();
+        boolean rhsNull = rhs instanceof Literal && ((Literal) rhs).type.isNull();
         boolean lhsShort = isShortIntegerLiteral(lhs);
         boolean rhsShort = isShortIntegerLiteral(rhs);
         if (lhsShort || rhsShort) {
-            shortVal = (int) ((Literal) (lhsShort ? lhs : rhs)).value.longValue();
+            shortVal = (int) ((Literal) (lhsShort ? lhs : rhs)).type.longValue();
             visitExpression(lhsShort ? rhs : lhs);
         } else {
             shortVal = Integer.MIN_VALUE;
@@ -1003,7 +1003,7 @@ public final class Gen extends Scanner {
     }
 
     private static boolean isNull(Expression tree) {
-        return tree == null || tree.getTag() == Tag.LITERAL && ((Literal) tree).value == null;
+        return tree == null || tree.getTag() == Tag.LITERAL && ((Literal) tree).type == null;
     }
 
     @Override
@@ -1125,19 +1125,19 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitLiteral(Literal tree) {
-        if (tree.value.isLong()) {
-            emitPushLong(tree.value.longValue());
-        } else if (tree.value.isDouble()) {
-            emitPushDouble(tree.value.doubleValue());
-        } else if (tree.value.isBoolean()) {
-            if (tree.value.booleanValue()) {
+        if (tree.type.isLong()) {
+            emitPushLong(tree.type.longValue());
+        } else if (tree.type.isDouble()) {
+            emitPushDouble(tree.type.doubleValue());
+        } else if (tree.type.isBoolean()) {
+            if (tree.type.booleanValue()) {
                 emitPushTrue();
             } else {
                 emitPushFalse();
             }
-        } else if (tree.value.isString()) {
-            emitPushString(tree.value.stringValue());
-        } else if (tree.value.isNull()) {
+        } else if (tree.type.isString()) {
+            emitPushString(tree.type.stringValue());
+        } else if (tree.type.isNull()) {
             code.addInstruction(ConstNull.INSTANCE, 1);
         } else {
             throw new AssertionError();

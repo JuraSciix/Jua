@@ -146,6 +146,9 @@ public interface Tree {
         public void visitReturn(Return tree) { visitTree(tree); }
 
         @Override
+        public void visitDiscarded(Discarded tree) { visitTree(tree); }
+
+        @Override
         public void visitLiteral(Literal tree) { visitTree(tree); }
 
         @Override
@@ -174,9 +177,6 @@ public interface Tree {
 
         @Override
         public void visitUnaryOp(UnaryOp tree) { visitTree(tree); }
-
-        @Override
-        public void visitDiscarded(Discarded tree) { visitTree(tree); }
 
         public void visitTree(Tree tree) { throw new AssertionError(); }
     }
@@ -277,6 +277,9 @@ public interface Tree {
         }
 
         @Override
+        public void visitDiscarded(Discarded tree) { }
+
+        @Override
         public void visitLiteral(Literal tree) {  }
 
         @Override
@@ -331,9 +334,6 @@ public interface Tree {
         public void visitUnaryOp(UnaryOp tree) {
             scan(tree.expr);
         }
-
-        @Override
-        public void visitDiscarded(Discarded tree) { }
     }
 
     abstract class Translator extends AbstractVisitor {
@@ -454,6 +454,12 @@ public interface Tree {
         }
 
         @Override
+        public void visitDiscarded(Discarded tree) {
+            tree.expr = translate(tree.expr);
+            result = tree;
+        }
+
+        @Override
         public void visitLiteral(Literal tree) { result = tree; }
 
         @Override
@@ -513,12 +519,6 @@ public interface Tree {
 
         @Override
         public void visitUnaryOp(UnaryOp tree) {
-            tree.expr = translate(tree.expr);
-            result = tree;
-        }
-
-        @Override
-        public void visitDiscarded(Discarded tree) {
             tree.expr = translate(tree.expr);
             result = tree;
         }
@@ -848,11 +848,11 @@ public interface Tree {
 
     final class Literal extends Expression {
 
-        public final Type value;
+        public final Type type;
 
-        public Literal(int pos, Type value) {
+        public Literal(int pos, Type type) {
             super(pos);
-            this.value = value;
+            this.type = type;
         }
 
         @Override
