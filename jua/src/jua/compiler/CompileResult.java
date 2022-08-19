@@ -6,6 +6,7 @@ import jua.interpreter.InterpreterFrame;
 import jua.runtime.JuaEnvironment;
 import jua.runtime.code.CodeSegment;
 import jua.runtime.JuaFunction;
+import jua.runtime.heap.Operand;
 
 public class CompileResult {
 
@@ -30,7 +31,7 @@ public class CompileResult {
     }
 
     public JuaEnvironment toEnvironment() {
-        return new JuaEnvironment(codeLayout.functions, codeLayout.constants);
+        return new JuaEnvironment(codeLayout.functions.toArray(new JuaFunction[0]), codeLayout.constants.toArray(new Operand[0]));
     }
 
     public InterpreterThread toThread() {

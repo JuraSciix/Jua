@@ -6,16 +6,17 @@ import jua.runtime.heap.Operand;
 import jua.util.Source;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Objects;
 
 public class CodeLayout {
 
     // todo: переместить в отдельную стадию компиляции
     final Object2IntArrayMap<String> functionNames = new Object2IntArrayMap<>();
-    final JuaFunction[] functions = new JuaFunction[1024];
+    final ArrayList<JuaFunction> functions = new ArrayList<>();
 
     final Object2IntArrayMap<String> constantNames = new Object2IntArrayMap<>();
-    final Operand[] constants = new Operand[1024];
+    final ArrayList<Operand> constants = new ArrayList<>();
 
     public final Source source;
 
@@ -54,12 +55,18 @@ public class CodeLayout {
     public void setFunction(String name, JuaFunction function) {
         functionNames.putIfAbsent(name, functionNames.size());
         int id = functionNames.getInt(name);
-        functions[id] = function;
+        if (id < functions.size())
+            functions.set(id, function);
+        else
+            functions.add(function);
     }
 
     public void setConstant(String name, Operand constant) {
         constantNames.putIfAbsent(name, constantNames.size());
         int id = constantNames.getInt(name);
-        constants[id] = constant;
+        if (id < constants.size())
+            constants.set(id, constant);
+        else
+            constants.add(constant);
     }
 }
