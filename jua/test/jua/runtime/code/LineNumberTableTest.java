@@ -1,11 +1,11 @@
 package jua.runtime.code;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeAll;
 
 public class LineNumberTableTest {
 
-    @Before
+    @BeforeAll
     public void doInit() {
 
     }

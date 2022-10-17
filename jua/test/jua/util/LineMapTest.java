@@ -1,12 +1,12 @@
 package jua.util;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeAll;
 
 
 public class LineMapTest {
 
-    @Before
+    @BeforeAll
     public void doInit() {
 
     }

@@ -1,14 +1,14 @@
 package jua.runtime.heap;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeAll;
 
 public class LongOperandTest {
 
     private long testRatio;
 
-    @Before
+    @BeforeAll
     public void doInit() {
         testRatio = Long.getLong("jua.long-operand.test-ratio", 512L);
     }
@@ -18,7 +18,7 @@ public class LongOperandTest {
         for (long l = 0; l < testRatio; l++) {
             long x = l - (testRatio >> 1);
             LongOperand operand = LongOperand.valueOf(x);
-            Assert.assertEquals(x, operand.longValue());
+            Assertions.assertEquals(x, operand.longValue());
         }
     }
 }
