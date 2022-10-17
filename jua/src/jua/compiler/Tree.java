@@ -5,6 +5,7 @@ import jua.util.Source;
 
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Objects;
 
 public interface Tree {
 
@@ -860,6 +861,14 @@ public interface Tree {
 
         @Override
         public void accept(Visitor visitor) { visitor.visitLiteral(this); }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Literal literal = (Literal) o;
+            return Objects.equals(type, literal.type);
+        }
     }
 
     final class ArrayLiteral extends Expression {

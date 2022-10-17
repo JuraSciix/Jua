@@ -76,6 +76,14 @@ public final class Types {
 
         @Override
         public int getConstantIndex() { return code.resolveLong(value); }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            LongType longType = (LongType) o;
+            return value == longType.value;
+        }
     }
 
     public final class DoubleType extends NumberType {
@@ -105,12 +113,28 @@ public final class Types {
 
         @Override
         public int getConstantIndex() { return code.resolveDouble(value); }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            DoubleType that = (DoubleType) o;
+            return Double.compare(that.value, value) == 0;
+        }
     }
 
     public static abstract class BooleanType extends ScalarType {
 
         @Override
         public boolean isBoolean() { return true; }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            BooleanType that = (BooleanType) o;
+            return Objects.equals(booleanValue(), that.booleanValue());
+        }
     }
 
     public final class TrueType extends BooleanType {
@@ -176,6 +200,14 @@ public final class Types {
 
         @Override
         public int getConstantIndex() { return code.resolveString(value); }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            StringType that = (StringType) o;
+            return Objects.equals(value, that.value);
+        }
     }
 
     public final class NullType extends Type {
@@ -201,6 +233,13 @@ public final class Types {
 
         @Override
         public int getConstantIndex() { return code.get_cpb().putNullEntry(); }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            return true;
+        }
     }
 
     public final TrueType True = new TrueType();
