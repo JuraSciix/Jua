@@ -107,11 +107,34 @@ public class LowerTest {
         Assertions.assertEquals(lower.result, literal(types.asBoolean(false)));
     }
 
+    @Test
+    public void doUnary() {
+        lower.visitUnaryOp(unaryOp(Tree.Tag.NOT, literal(types.asBoolean(true))));
+        Assertions.assertEquals(literal(types.asBoolean(false)), lower.result);
+
+        lower.visitUnaryOp(unaryOp(Tree.Tag.NOT, literal(types.asBoolean(false))));
+        Assertions.assertEquals(literal(types.asBoolean(true)), lower.result);
+
+        lower.visitUnaryOp(unaryOp(Tree.Tag.NEG, literal(types.asLong(5))));
+        Assertions.assertEquals(literal(types.asLong(-5)), lower.result);
+
+        lower.visitUnaryOp(unaryOp(Tree.Tag.POS, literal(types.asLong(-5))));
+        Assertions.assertEquals(literal(types.asLong(5)), lower.result);
+
+        Tree.UnaryOp op = unaryOp(Tree.Tag.POS, literal(types.asString("something")));
+        lower.visitUnaryOp(op);
+        Assertions.assertEquals(op, lower.result);
+    }
+
     public Tree.Literal literal(Types.Type type) {
         return new Tree.Literal(0, type);
     }
 
     public Tree.BinaryOp binaryOp(Tree.Tag tag, Tree.Expression lhs, Tree.Expression rhs) {
         return new Tree.BinaryOp(0, tag, lhs, rhs);
+    }
+
+    public Tree.UnaryOp unaryOp(Tree.Tag tag, Tree.Expression expr) {
+        return new Tree.UnaryOp(0, tag, expr);
     }
 }

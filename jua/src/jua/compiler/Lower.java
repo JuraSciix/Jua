@@ -101,31 +101,28 @@ public final class Lower extends Translator {
         }
     }
 
-    private static Expression foldUnary(UnaryOp tree) {
-        // todo: Влад, включай уже голову..
-        Expression lower = tree;
-        Expression oldLower;
-        Expression result = tree;
-        while (lower.getTag() == Tag.NOT) {
-            oldLower = lower;
-            lower = ((UnaryOp) lower).expr;
-            if (oldLower.getTag() == Tag.NOT && lower.getTag() == Tag.NOT) {
-                result = ((UnaryOp) lower).expr;
-                lower = ((UnaryOp) lower).expr;
-            }
-        }
+    private Expression foldUnary(UnaryOp tree) {
+        Literal literal = (Literal) tree.expr;
 
-        lower = tree; // начинаем заново
-        while (lower.getTag() == Tag.NEG) {
-            oldLower = lower;
-            lower = ((UnaryOp) lower).expr;
-            if (oldLower.getTag() == Tag.NEG && lower.getTag() == Tag.NEG) {
-                result = ((UnaryOp) lower).expr;
-                lower = ((UnaryOp) lower).expr;
-            }
+        switch (tree.tag) {
+            case NOT:
+                if (literal.type.isBoolean())
+                    return new Literal(tree.pos, types.asBoolean(!literal.type.booleanValue()));
+                else return tree;
+            case NEG:
+                if (literal.type.isLong())
+                    return new Literal(tree.pos, types.asLong(-literal.type.longValue()));
+                else if (literal.type.isNumber())
+                    return new Literal(tree.pos, types.asDouble(-literal.type.doubleValue()));
+                else return tree;
+            case POS:
+                if (literal.type.isLong())
+                    return new Literal(tree.pos, types.asLong(Math.abs(literal.type.longValue())));
+                else if (literal.type.isNumber())
+                    return new Literal(tree.pos, types.asDouble(Math.abs(literal.type.doubleValue())));
+                else return tree;
+            default: throw new IllegalArgumentException(tree.getTag() + " is not unary operation");
         }
-
-        return result;
     }
 
     private Expression foldShift(BinaryOp tree) {
