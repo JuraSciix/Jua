@@ -63,6 +63,7 @@ public final class InterpreterThread {
     public static void aError(String message) {
         getInstance().error(message);
     }
+
     public static void aError(String message, Object... args) {
         getInstance().error(message, args);
     }
@@ -100,6 +101,7 @@ public final class InterpreterThread {
         if (thread.get() != null) {
             throw new IllegalStateException("Thread already present");
         }
+        thread.set(this);
         this.javaThread = javaThread;
         this.environment = environment;
     }
