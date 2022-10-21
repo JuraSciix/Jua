@@ -963,7 +963,7 @@ public final class Gen extends Scanner {
                 return;
         }
 
-        System.out.println(tree);
+//        System.out.println(tree);
         if (hasTag(tree, Tag.NOT)) {
             beginCondition();
             int prev_state = state;
@@ -1176,6 +1176,7 @@ public final class Gen extends Scanner {
             case ASG_DIV: case ASG_REM: case ASG_AND: case ASG_OR:
             case ASG_XOR: case ASG_SL: case ASG_SR: case ASG_NULLCOALESCE:
             case PREINC: case PREDEC: case POSTINC: case POSTDEC:
+                break;
             default:
                 code.addInstruction(Pop.INSTANCE, -1);
         }

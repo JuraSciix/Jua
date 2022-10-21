@@ -117,6 +117,7 @@ public class CodePrinter {
             code[i].print(printer);
             int line = program.lineNumberTable().getLineNumber(i);
             if (line != lastLineNumber) {
+                // todo: Sometimes an instruction that is not on the first line outputs L1
                 printer.printLine(line);
                 lastLineNumber = line;
             }
