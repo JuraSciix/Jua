@@ -8,7 +8,6 @@ import jua.util.Source;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.Collections;
 
 public class Main {
@@ -34,7 +33,13 @@ public class Main {
         JuaCompiler compiler = new JuaCompiler(Collections.singletonList(targetSource));
         CompileResult result = compiler.next();
 
-        try{
+        if (Options.disassembler()) {
+            result.print();
+            if (Options.stop()) {
+                return;
+            }
+        }
+        try {
             result.toThread().run();
         } catch (RuntimeErrorException e) {
             compiler.error("Runtime error", result.codeLayout, e.getMessage(), e.thread.current_line_number(), false);

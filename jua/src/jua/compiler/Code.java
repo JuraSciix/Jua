@@ -138,6 +138,7 @@ public final class Code {
     public void putPos(int pos) {
         int line = lineMap.getLineNumber(pos);
 
+        // todo: line always have int type
         if (line > 0 && line < (1<<16) && line != context.current_lineNumber) {
             context.lineTable.put((short) currentIP(), (short) line);
             context.current_lineNumber = line;
