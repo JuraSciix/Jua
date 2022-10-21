@@ -239,8 +239,16 @@ public final class InterpreterThread {
             try {
                 state.advance();
 
-                while (isRunning()) {
-                    code_point += code[code_point].run(state);
+                try {
+                    while (isRunning()) {
+                        code_point += code[code_point].run(state);
+                    }
+                } catch (Throwable t) {
+                    aError("FATAL ERROR. DETAILS:\n\t" +
+                            "FILE: " + current_location() + "\n\t" +
+                            "LINE: " + current_line_number() + "\n\t" +
+                            "CP: " + code_point + "\n\t" +
+                            "SP: " + state.sp());
                 }
 
                 switch (msg) {
