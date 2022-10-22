@@ -1,6 +1,6 @@
 package jua.interpreter;
 
-import jua.runtime.Types;
+import jua.runtime.ValueType;
 import jua.runtime.heap.Heap;
 import jua.runtime.heap.MapHeap;
 import jua.runtime.heap.StringHeap;
@@ -49,8 +49,8 @@ public final class Address {
     private Heap a;
 
     public byte typeCode() { return typeCode; }
-    public String typeName() { return Types.nameOf(typeCode); }
-    public boolean isScalar() { return Types.isTypeScalar(typeCode); }
+    public String typeName() { return ValueType.nameOf(typeCode); }
+    public boolean isScalar() { return ValueType.isTypeScalar(typeCode); }
 
     public long longVal() { return l; }
     public boolean booleanVal() { return Conversions.l2b(l); }
@@ -59,27 +59,27 @@ public final class Address {
     public MapHeap mapValue() { return (MapHeap) a; }
 
     public void set(long _l) {
-        typeCode = Types.LONG;
+        typeCode = ValueType.LONG;
         l = _l;
     }
 
     public void set(boolean b) {
-        typeCode = Types.BOOLEAN;
+        typeCode = ValueType.BOOLEAN;
         l = Conversions.b2l(b);
     }
 
     public void set(double _d) {
-        typeCode = Types.DOUBLE;
+        typeCode = ValueType.DOUBLE;
         d = _d;
     }
 
     public void set(StringHeap s) {
-        typeCode = Types.STRING;
+        typeCode = ValueType.STRING;
         a = s;
     }
 
     public void set(MapHeap m) {
-        typeCode = Types.MAP;
+        typeCode = ValueType.MAP;
         a = m;
     }
 
@@ -105,11 +105,11 @@ public final class Address {
     }
 
     public void setNull() {
-        typeCode = Types.NULL;
+        typeCode = ValueType.NULL;
     }
 
     public void reset() {
-        typeCode = Types.UNDEFINED;
+        typeCode = ValueType.UNDEFINED;
         l = 0L;
         d = 0.0;
         a = null;
@@ -117,31 +117,31 @@ public final class Address {
 
     public boolean isSame(Address that) {
         if (that == this) return true;
-        int p = Types.pairOf(typeCode, that.typeCode);
+        int p = ValueType.pairOf(typeCode, that.typeCode);
 
-        if (p == Types.P_LL ||
-            p == Types.P_DD) return l == that.l;
-        if (p == Types.P_LD) return l == that.d;
-        if (p == Types.P_DL) return d == that.l;
-        if (p == Types.P_SS ||
-            p == Types.P_AA ||
-            p == Types.P_MM ||
-            p == Types.P_II) return a.equals(that.a);
-        return p == Types.P_NN; // null == null
+        if (p == ValueType.P_LL ||
+            p == ValueType.P_DD) return l == that.l;
+        if (p == ValueType.P_LD) return l == that.d;
+        if (p == ValueType.P_DL) return d == that.l;
+        if (p == ValueType.P_SS ||
+            p == ValueType.P_AA ||
+            p == ValueType.P_MM ||
+            p == ValueType.P_II) return a.equals(that.a);
+        return p == ValueType.P_NN; // null == null
     }
 
     @Override
     public int hashCode() {
         switch (typeCode) {
-            case Types.UNDEFINED: throw new IllegalStateException("Trying calculate a hash-code of undefined type");
-            case Types.LONG: return Long.hashCode(longVal());
-            case Types.BOOLEAN: return Boolean.hashCode(booleanVal());
-            case Types.DOUBLE: return Double.hashCode(doubleVal());
-            case Types.STRING: // fallthrough
-            case Types.ARRAY: // fallthrough
-            case Types.MAP: // fallthrough
-            case Types.ITERATOR: return a.hashCode();
-            case Types.NULL:  return 0;
+            case ValueType.UNDEFINED: throw new IllegalStateException("Trying calculate a hash-code of undefined type");
+            case ValueType.LONG: return Long.hashCode(longVal());
+            case ValueType.BOOLEAN: return Boolean.hashCode(booleanVal());
+            case ValueType.DOUBLE: return Double.hashCode(doubleVal());
+            case ValueType.STRING: // fallthrough
+            case ValueType.ARRAY: // fallthrough
+            case ValueType.MAP: // fallthrough
+            case ValueType.ITERATOR: return a.hashCode();
+            case ValueType.NULL:  return 0;
             default:  throw new IllegalStateException("Unknown type");
         }
     }
@@ -155,15 +155,15 @@ public final class Address {
     @Override
     public String toString() {
         switch (typeCode) {
-            case Types.UNDEFINED: return "...";
-            case Types.LONG: return Long.toString(longVal());
-            case Types.BOOLEAN: return Boolean.toString(booleanVal());
-            case Types.DOUBLE: return Double.toString(doubleVal());
-            case Types.STRING: // fallthrough
-            case Types.ARRAY: // fallthrough
-            case Types.MAP: // fallthrough
-            case Types.ITERATOR:  return a.toString();
-            case Types.NULL:  return "null";
+            case ValueType.UNDEFINED: return "...";
+            case ValueType.LONG: return Long.toString(longVal());
+            case ValueType.BOOLEAN: return Boolean.toString(booleanVal());
+            case ValueType.DOUBLE: return Double.toString(doubleVal());
+            case ValueType.STRING: // fallthrough
+            case ValueType.ARRAY: // fallthrough
+            case ValueType.MAP: // fallthrough
+            case ValueType.ITERATOR:  return a.toString();
+            case ValueType.NULL:  return "null";
             default:  throw new IllegalStateException("Unknown type");
         }
     }

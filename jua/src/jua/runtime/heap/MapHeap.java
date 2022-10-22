@@ -1,7 +1,7 @@
 package jua.runtime.heap;
 
 import jua.interpreter.Address;
-import jua.runtime.Types;
+import jua.runtime.ValueType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -73,7 +73,7 @@ public final class MapHeap implements Heap {
             esb.append(entry.getKey().toString());
             esb.append(": ");
             Address value = entry.getValue();
-            if (value.typeCode() == Types.MAP && value.mapValue() == this) {
+            if (value.typeCode() == ValueType.MAP && value.mapValue() == this) {
                 esb.append("<self>");
             } else {
                 esb.append(value);

@@ -2,7 +2,7 @@ package jua.runtime;
 
 import jua.interpreter.Interpreter;
 
-public interface Types {
+public interface ValueType {
 
     byte UNDEFINED = 0;
     byte LONG = 1;
