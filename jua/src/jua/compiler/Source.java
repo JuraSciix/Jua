@@ -1,8 +1,5 @@
 package jua.compiler;
 
-import jua.Target;
-import jua.Version;
-
 import java.io.IOException;
 
 public final class Source {

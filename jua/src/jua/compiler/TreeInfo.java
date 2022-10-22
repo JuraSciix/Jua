@@ -1,7 +1,5 @@
 package jua.compiler;
 
-import jua.Target;
-import jua.compiler.Tree.Expression;
 import jua.compiler.Tree.Name;
 import jua.compiler.Tree.Parens;
 import jua.compiler.Tree.Tag;

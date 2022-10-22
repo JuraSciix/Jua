@@ -1,4 +1,4 @@
-package jua;
+package jua.compiler;
 
 public final class Target {
 
