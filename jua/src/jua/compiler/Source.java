@@ -1,4 +1,4 @@
-package jua.util;
+package jua.compiler;
 
 import jua.Target;
 import jua.Version;

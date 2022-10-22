@@ -13,8 +13,6 @@ import jua.interpreter.instruction.Instruction;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.LocalNameTable;
 import jua.runtime.code.LineNumberTable;
-import jua.util.LineMap;
-import jua.util.Source;
 
 import java.io.IOException;
 import java.util.ArrayList;

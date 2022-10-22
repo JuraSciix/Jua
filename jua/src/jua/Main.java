@@ -4,7 +4,7 @@ import jua.compiler.CompileResult;
 import jua.compiler.JuaCompiler;
 import jua.runtime.RuntimeErrorException;
 import jua.util.IOUtils;
-import jua.util.Source;
+import jua.compiler.Source;
 
 import java.io.File;
 import java.io.IOException;

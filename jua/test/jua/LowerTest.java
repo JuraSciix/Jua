@@ -5,7 +5,7 @@ import jua.compiler.Code;
 import jua.compiler.Lower;
 import jua.compiler.Tree;
 import jua.compiler.Types;
-import jua.util.Source;
+import jua.compiler.Source;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

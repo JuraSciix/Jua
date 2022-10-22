@@ -1,8 +1,5 @@
 package jua.compiler;
 
-import jua.util.LineMap;
-import jua.util.Source;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;

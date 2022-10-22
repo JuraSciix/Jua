@@ -1,4 +1,4 @@
-package jua.util;
+package jua.compiler;
 
 public class Log {
 

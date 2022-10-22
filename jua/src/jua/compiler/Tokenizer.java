@@ -1,8 +1,5 @@
 package jua.compiler;
 
-import jua.util.BufferReader;
-import jua.util.Source;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.StringWriter;

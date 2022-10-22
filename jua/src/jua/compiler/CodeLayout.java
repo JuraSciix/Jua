@@ -3,7 +3,6 @@ package jua.compiler;
 import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
 import jua.runtime.JuaFunction;
 import jua.runtime.heap.Operand;
-import jua.util.Source;
 
 import java.io.IOException;
 import java.util.ArrayList;
