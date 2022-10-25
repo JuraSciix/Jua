@@ -28,7 +28,7 @@ public class JuaParser {
         this.log = log;
     }
 
-    public Tree parse() throws ParseException, IOException {
+    public Tree parse() throws IOException {
         List<Tree> trees = new ArrayList<>();
         next();
         while (!match(EOF)) {
@@ -37,7 +37,7 @@ public class JuaParser {
         return new CompilationUnit(tokenizer.getSource(), trees);
     }
 
-    private Statement parseStatement() throws ParseException, IOException {
+    private Statement parseStatement() throws IOException {
         int position = currentToken.pos;
 
         if (match(BREAK)) {
@@ -100,12 +100,12 @@ public class JuaParser {
         return parseUnusedExpression();
     }
 
-    private Statement parseBreak(int position) throws ParseException, IOException {
+    private Statement parseBreak(int position) throws IOException {
         expect(SEMICOLON);
         return new Break(position);
     }
 
-    private Statement parseConst(int position) throws ParseException, IOException {
+    private Statement parseConst(int position) throws IOException {
         List<ConstDef.Definition> definitions = new ArrayList<>();
 
         do {
@@ -118,12 +118,12 @@ public class JuaParser {
         return new ConstDef(position, definitions);
     }
 
-    private Statement parseContinue(int position) throws ParseException, IOException {
+    private Statement parseContinue(int position) throws IOException {
         expect(SEMICOLON);
         return new Continue(position);
     }
 
-    private Statement parseDo(int position) throws ParseException, IOException {
+    private Statement parseDo(int position) throws IOException {
         Statement body = parseStatement();
         expect(WHILE);
         Expression cond = parseExpression();
@@ -131,12 +131,12 @@ public class JuaParser {
         return new DoLoop(position, body, cond);
     }
 
-    private Statement parseFallthrough(int position) throws ParseException, IOException {
+    private Statement parseFallthrough(int position) throws IOException {
         expect(SEMICOLON);
         return new Fallthrough(position);
     }
 
-    private Statement parseFunction(int pos) throws ParseException, IOException {
+    private Statement parseFunction(int pos) throws IOException {
         Name funcName = new Name(currentToken.getString(), currentToken.pos);
         expect(IDENTIFIER, LPAREN);
         List<FuncDef.Parameter> params = new ArrayList<>();
@@ -164,7 +164,7 @@ public class JuaParser {
         return new FuncDef(pos, funcName, params, body);
     }
 
-    private Statement parseBody() throws ParseException, IOException {
+    private Statement parseBody() throws IOException {
         int pos = currentToken.pos;
         if (match(LBRACE)) return parseBlock(pos);
         if (match(EQ)) {
@@ -176,7 +176,7 @@ public class JuaParser {
         return null;
     }
 
-    private Statement parseFor(int position) throws ParseException, IOException {
+    private Statement parseFor(int position) throws IOException {
         boolean parens = match(LPAREN);
         List<Expression> init = null;
 
@@ -203,7 +203,7 @@ public class JuaParser {
         return new ForLoop(position, init, cond, step, parseStatement());
     }
 
-    private Statement parseIf(int position) throws ParseException, IOException {
+    private Statement parseIf(int position) throws IOException {
         Expression cond = parseExpression();
         Statement body = parseStatement();
 
@@ -213,7 +213,7 @@ public class JuaParser {
         return new If(position, cond, body, parseStatement());
     }
 
-    private Statement parseBlock(int position) throws ParseException, IOException {
+    private Statement parseBlock(int position) throws IOException {
         List<Statement> statements = new ArrayList<>();
 
         while (!match(RBRACE)) {
@@ -225,19 +225,19 @@ public class JuaParser {
         return new Block(position, statements);
     }
 
-//    private Statement parsePrint(int position) throws ParseException, IOException {
+//    private Statement parsePrint(int position) throws IOException {
 //        List<Expression> expressions = parseExpressions();
 //        expect(SEMICOLON);
 //        return new PrintStatement(position, expressions);
 //    }
 //
-//    private Statement parsePrintln(int position) throws ParseException, IOException {
+//    private Statement parsePrintln(int position) throws IOException {
 //        List<Expression> expressions = parseExpressions();
 //        expect(SEMICOLON);
 //        return new PrintlnStatement(position, expressions);
 //    }
 
-    private Statement parseReturn(int position) throws ParseException, IOException {
+    private Statement parseReturn(int position) throws IOException {
         if (match(SEMICOLON)) {
             return new Return(position, null);
         }
@@ -246,7 +246,7 @@ public class JuaParser {
         return new Return(position, expr);
     }
 
-    private Statement parseSwitch(int position) throws ParseException, IOException {
+    private Statement parseSwitch(int position) throws IOException {
         Expression selector = parseExpression();
         List<Case> cases = new ArrayList<>();
         expect(LBRACE);
@@ -267,7 +267,7 @@ public class JuaParser {
         return new Switch(position, selector, cases);
     }
 
-    private Case parseCase(int position, boolean isDefault) throws ParseException, IOException {
+    private Case parseCase(int position, boolean isDefault) throws IOException {
         List<Expression> expressions = null;
 
         if (!isDefault) {
@@ -277,14 +277,14 @@ public class JuaParser {
         return new Case(position, expressions, parseStatement());
     }
 
-    private Statement parseUnusedExpression() throws ParseException, IOException {
+    private Statement parseUnusedExpression() throws IOException {
         int position = currentToken.pos;
         Expression expr = parseExpression();
         expect(SEMICOLON);
         return new Discarded(position, expr);
     }
 
-    private List<Expression> parseExpressions() throws ParseException, IOException {
+    private List<Expression> parseExpressions() throws IOException {
         List<Expression> expressions = new ArrayList<>();
 
         do {
@@ -294,11 +294,11 @@ public class JuaParser {
         return expressions;
     }
 
-    private Expression parseExpression() throws ParseException, IOException {
+    private Expression parseExpression() throws IOException {
         return parseAssignment();
     }
 
-    private Expression parseAssignment() throws ParseException, IOException {
+    private Expression parseAssignment() throws IOException {
         Expression expr = parseNullCoalesce();
         int position = currentToken.pos;
 
@@ -341,7 +341,7 @@ public class JuaParser {
         return expr;
     }
 
-    private Expression parseNullCoalesce() throws ParseException, IOException {
+    private Expression parseNullCoalesce() throws IOException {
         Expression expr = parseTernary();
 
         while (true) {
@@ -355,7 +355,7 @@ public class JuaParser {
         }
     }
 
-    private Expression parseTernary() throws ParseException, IOException {
+    private Expression parseTernary() throws IOException {
         Expression expr = parseOr();
 
         while (true) {
@@ -369,13 +369,13 @@ public class JuaParser {
         }
     }
 
-    private Expression parseTernary0(int position, Expression cond) throws ParseException, IOException {
+    private Expression parseTernary0(int position, Expression cond) throws IOException {
         Expression right = parseExpression();
         expect(COLON);
         return new TernaryOp(position, cond, right, parseExpression());
     }
 
-    private Expression parseOr() throws ParseException, IOException {
+    private Expression parseOr() throws IOException {
         Expression expr = parseAnd();
         int position = currentToken.pos;
 
@@ -386,7 +386,7 @@ public class JuaParser {
         return expr;
     }
 
-    private Expression parseAnd() throws ParseException, IOException {
+    private Expression parseAnd() throws IOException {
         Expression expr = parseBitOr();
 
         while (true) {
@@ -401,7 +401,7 @@ public class JuaParser {
     }
 
 
-    private Expression parseBitOr() throws ParseException, IOException {
+    private Expression parseBitOr() throws IOException {
         Expression expr = parseBitXor();
 
         while (true) {
@@ -415,7 +415,7 @@ public class JuaParser {
         }
     }
 
-    private Expression parseBitXor() throws ParseException, IOException {
+    private Expression parseBitXor() throws IOException {
         Expression expr = parseBitAnd();
 
         while (true) {
@@ -429,7 +429,7 @@ public class JuaParser {
         }
     }
 
-    private Expression parseBitAnd() throws ParseException, IOException {
+    private Expression parseBitAnd() throws IOException {
         Expression expr = parseEquality();
 
         while (true) {
@@ -443,7 +443,7 @@ public class JuaParser {
         }
     }
 
-    private Expression parseEquality() throws ParseException, IOException {
+    private Expression parseEquality() throws IOException {
         Expression expr = parseConditional();
 
         while (true) {
@@ -459,7 +459,7 @@ public class JuaParser {
         }
     }
 
-    private Expression parseConditional() throws ParseException, IOException {
+    private Expression parseConditional() throws IOException {
         Expression expr = parseShift();
 
         while (true) {
@@ -479,7 +479,7 @@ public class JuaParser {
         }
     }
 
-    private Expression parseShift() throws ParseException, IOException {
+    private Expression parseShift() throws IOException {
         Expression expr = parseAdditive();
 
         while (true) {
@@ -495,7 +495,7 @@ public class JuaParser {
         }
     }
 
-    private Expression parseAdditive() throws ParseException, IOException {
+    private Expression parseAdditive() throws IOException {
         Expression expr = parseMultiplicative();
 
         while (true) {
@@ -511,7 +511,7 @@ public class JuaParser {
         }
     }
 
-    private Expression parseMultiplicative() throws ParseException, IOException {
+    private Expression parseMultiplicative() throws IOException {
         Expression expr = parseUnary();
 
         while (true) {
@@ -529,7 +529,7 @@ public class JuaParser {
         }
     }
 
-    private Expression parseUnary() throws ParseException, IOException {
+    private Expression parseUnary() throws IOException {
         int position = currentToken.pos;
 
         if (match(EXCL)) {
@@ -553,7 +553,7 @@ public class JuaParser {
         return parseClone();
     }
 
-    private Expression parseClone() throws ParseException, IOException {
+    private Expression parseClone() throws IOException {
         int position = currentToken.pos;
 
         if (match(CLONE)) {
@@ -562,7 +562,7 @@ public class JuaParser {
         return parsePost();
     }
 
-    private Expression parsePost() throws ParseException, IOException {
+    private Expression parsePost() throws IOException {
         Expression expr = parseAccess();
 
         while (true) {
@@ -578,7 +578,7 @@ public class JuaParser {
         }
     }
 
-    private Expression parseAccess() throws ParseException, IOException {
+    private Expression parseAccess() throws IOException {
 //        Expression expr = parsePrimary();
 //        int position = currentToken.position;
 //        int i = match(DOT) ? 1 : match(LBRACKET) ? 0 : -1;
@@ -605,7 +605,7 @@ public class JuaParser {
     }
 
 //    private Expression parseArrayAccess(int position, Expression expr, int dot)
-//            throws ParseException, IOException {
+//            throws IOException {
 //        List<Expression> keys = new ArrayList<>();
 //
 //        while (true) {
@@ -624,7 +624,7 @@ public class JuaParser {
 //        }
 //    }
 
-    private Expression parsePrimary() throws ParseException, IOException {
+    private Expression parsePrimary() throws IOException {
         Tokens.Token token = currentToken;
 
         if (match(EOF)) {
@@ -664,7 +664,7 @@ public class JuaParser {
         return null;
     }
 
-    private Expression parseFloat(Tokens.Token token) throws ParseException, IOException {
+    private Expression parseFloat(Tokens.Token token) throws IOException {
         double d = token.getDouble();
 
         if (Double.isInfinite(d)) {
@@ -677,14 +677,14 @@ public class JuaParser {
         return new Literal(token.pos, types.asDouble(d));
     }
 
-    private Expression parseIdentifier(Tokens.Token token) throws ParseException, IOException {
+    private Expression parseIdentifier(Tokens.Token token) throws IOException {
         if (match(LPAREN)) {
             return parseInvocation(token);
         }
         return new Var(token.pos, new Name(token.getString(), token.pos));
     }
 
-    private Expression parseInvocation(Tokens.Token token) throws ParseException, IOException {
+    private Expression parseInvocation(Tokens.Token token) throws IOException {
         List<Invocation.Argument> args = new ArrayList<>();
         boolean comma = false;
 
@@ -700,7 +700,7 @@ public class JuaParser {
         return new Invocation(token.pos, new Name(token.getString(), currentToken.pos), args);
     }
 
-    private Expression parseInt(Tokens.Token token) throws ParseException, IOException {
+    private Expression parseInt(Tokens.Token token) throws IOException {
         try {
             return new Literal(token.pos, types.asLong(token.getLong()));
         } catch (NumberFormatException e) {
@@ -709,7 +709,7 @@ public class JuaParser {
         }
     }
 
-    private Expression parseArray(int position, Tokens.TokenKind enclosing) throws ParseException, IOException {
+    private Expression parseArray(int position, Tokens.TokenKind enclosing) throws IOException {
         List<ArrayLiteral.Entry> entries = new ArrayList<>();
         boolean comma = false;
 
@@ -730,17 +730,17 @@ public class JuaParser {
         return new ArrayLiteral(position, entries);
     }
 
-    private Expression parseParens(int position) throws ParseException, IOException {
+    private Expression parseParens(int position) throws IOException {
         Expression expr = parseExpression();
         expect(RPAREN);
         return new Parens(position, expr);
     }
 
-    private void next() throws ParseException, IOException {
+    private void next() throws IOException {
         currentToken = tokenizer.nextToken();
     }
 
-    private boolean match(Tokens.TokenKind type) throws ParseException, IOException {
+    private boolean match(Tokens.TokenKind type) throws IOException {
         if (currentToken.type == type) {
             next();
             return true;
@@ -748,7 +748,7 @@ public class JuaParser {
         return false;
     }
 
-    private void expect(Tokens.TokenKind... types) throws ParseException, IOException {
+    private void expect(Tokens.TokenKind... types) throws IOException {
         for (Tokens.TokenKind type : types) {
             if (match(type)) {
                 continue;
@@ -771,11 +771,11 @@ public class JuaParser {
         }
     }
 
-    private void unexpected(Tokens.Token token) throws ParseException {
+    private void unexpected(Tokens.Token token)  {
         pError(token.pos, "unexpected " + token + '.');
     }
 
-    private void pError(int position, String message) throws ParseException {
+    private void pError(int position, String message)  {
         log.error(position, message);
     }
 }

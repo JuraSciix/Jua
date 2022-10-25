@@ -70,7 +70,7 @@ public class Tokenizer implements Closeable {
         return true;
     }
 
-    public Tokens.Token nextToken() throws ParseException, IOException {
+    public Tokens.Token nextToken() throws IOException {
         while (true) {
             int c;
 
@@ -92,7 +92,7 @@ public class Tokenizer implements Closeable {
         }
     }
 
-    private Tokens.Token parseCharacter(int c) throws ParseException, IOException {
+    private Tokens.Token parseCharacter(int c) throws IOException {
         if (c == '\'' || c == '"') {
             return parseString(c);
         }
@@ -105,7 +105,7 @@ public class Tokenizer implements Closeable {
         return parseSpecial(c);
     }
 
-    private Tokens.Token parseString(int mark) throws ParseException, IOException {
+    private Tokens.Token parseString(int mark) throws IOException {
         TokenBuilder builder = getBuilder();
 
         for (int c; (c = reader.readChar()) != mark; ) {
@@ -154,7 +154,7 @@ public class Tokenizer implements Closeable {
         builder.putChar(oct);
     }
 
-    private Tokens.Token parseNumber(int c) throws ParseException, IOException {
+    private Tokens.Token parseNumber(int c) throws IOException {
         TokenBuilder builder = getBuilder();
         int next = reader.peekChar();
         int radix = 10;
@@ -170,7 +170,7 @@ public class Tokenizer implements Closeable {
         return parseFraction(builder, radix, (c == '.'));
     }
 
-    private Tokens.Token parseHex(TokenBuilder builder) throws ParseException, IOException {
+    private Tokens.Token parseHex(TokenBuilder builder) throws IOException {
         reader.readChar();
         int next = reader.peekChar();
 
@@ -181,7 +181,7 @@ public class Tokenizer implements Closeable {
         return builder.buildNumber(false, 16);
     }
 
-    private Tokens.Token parseBin(TokenBuilder builder) throws ParseException, IOException {
+    private Tokens.Token parseBin(TokenBuilder builder) throws IOException {
         reader.readChar();
         int next = reader.peekChar();
 
@@ -192,7 +192,7 @@ public class Tokenizer implements Closeable {
         return builder.buildNumber(false, 2);
     }
 
-    private Tokens.Token parseDuo(TokenBuilder builder) throws ParseException, IOException {
+    private Tokens.Token parseDuo(TokenBuilder builder) throws IOException {
         reader.readChar();
         int next = reader.peekChar();
 
@@ -203,7 +203,7 @@ public class Tokenizer implements Closeable {
         return builder.buildNumber(false, 12);
     }
 
-    private Tokens.Token parseFraction(TokenBuilder builder, int radix, boolean isFloat) throws ParseException, IOException {
+    private Tokens.Token parseFraction(TokenBuilder builder, int radix, boolean isFloat) throws IOException {
         int c;
 
         if ((c = reader.peekChar()) == '.') {
@@ -232,7 +232,7 @@ public class Tokenizer implements Closeable {
         return builder.buildNumber(isFloat, radix);
     }
 
-    private void parseDigits(TokenBuilder builder, int c, int radix) throws ParseException, IOException {
+    private void parseDigits(TokenBuilder builder, int c, int radix) throws IOException {
         int next = reader.peekChar();
 
         if (digit(c, radix) < 0 && next == '_') {
@@ -248,7 +248,7 @@ public class Tokenizer implements Closeable {
         if (c == '_') underscore();
     }
 
-    private void underscore() throws ParseException, IOException {
+    private void underscore() throws IOException {
         tError(reader.position(), "underscore is not allowed here.");
     }
 
@@ -261,7 +261,7 @@ public class Tokenizer implements Closeable {
         return builder.buildNamedOrString();
     }
 
-    private Tokens.Token parseSpecial(int c) throws ParseException, IOException {
+    private Tokens.Token parseSpecial(int c) throws IOException {
         TokenBuilder builder = getBuilder(-1);
         TokenKind type = null;
         // Обожаю костыли.
@@ -299,7 +299,7 @@ public class Tokenizer implements Closeable {
         }
     }
 
-    private Tokens.Token checkSpecial(TokenBuilder builder, Tokens.TokenKind type) throws ParseException {
+    private Tokens.Token checkSpecial(TokenBuilder builder, Tokens.TokenKind type)  {
         if (type == null) {
             tError(builder.pos, "illegal character.");
         } else if (false && !type.name.equals(builder.buffer.toString())) {
@@ -321,7 +321,7 @@ public class Tokenizer implements Closeable {
         return builder;
     }
 
-    private void tError(int position, String message) throws ParseException {
+    private void tError(int position, String message)  {
         log.error(position, message);
     }
 
