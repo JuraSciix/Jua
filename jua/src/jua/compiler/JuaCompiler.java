@@ -36,8 +36,7 @@ public final class JuaCompiler {
             tree.accept(gen);
 
             return gen.getResult();
-        } catch (ParseException e) {
-            error("Compile error", layout, e.getMessage(), e.position, true);
+//        }
         } catch (CompileError e) {
             error("Compile error", layout, e.getMessage(), e.position, true);
         }
