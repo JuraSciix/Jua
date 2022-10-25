@@ -26,8 +26,8 @@ public final class JuaCompiler {
         Code code = layout.getCode();
         Types types = code.getTypes();
 
-        try (Tokenizer tokenizer = new Tokenizer(source)) {
-            JuaParser parser = new JuaParser(tokenizer, types);
+        try (Tokenizer tokenizer = new Tokenizer(source)) { // todo: Log
+            JuaParser parser = new JuaParser(tokenizer, types, source.getLog());
             Tree tree = parser.parse();
 
             tree.accept(new Enter(layout));

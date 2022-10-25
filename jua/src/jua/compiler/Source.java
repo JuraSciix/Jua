@@ -15,12 +15,22 @@ public final class Source {
         this.buffer = buffer;
     }
 
+
+    public Log getLog() {
+        return new Log(); // todo
+    }
+
     public Target target() {
         return new Target(Version.JUA_1_3); // todo
     }
 
-    public String filename() { return filename; }
-    public char[] buffer() { return buffer.clone(); }
+    public String filename() {
+        return filename;
+    }
+
+    public char[] buffer() {
+        return buffer.clone();
+    }
 
     public BufferReader createReader() {
         return new BufferReader(buffer, 0, buffer.length);

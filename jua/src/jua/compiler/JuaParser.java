@@ -20,9 +20,12 @@ public class JuaParser {
 
     private Tokens.Token currentToken;
 
-    public JuaParser(Tokenizer tokenizer, Types types) {
+    private final Log log;
+
+    public JuaParser(Tokenizer tokenizer, Types types, Log log) {
         this.tokenizer = Objects.requireNonNull(tokenizer, "Tokenizer is null");
         this.types = Objects.requireNonNull(types, "Types is null");
+        this.log = log;
     }
 
     public Tree parse() throws ParseException, IOException {
@@ -773,6 +776,6 @@ public class JuaParser {
     }
 
     private void pError(int position, String message) throws ParseException {
-        throw new ParseException(message, position);
+        log.error(position, message);
     }
 }

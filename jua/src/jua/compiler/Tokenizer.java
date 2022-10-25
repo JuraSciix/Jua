@@ -54,9 +54,12 @@ public class Tokenizer implements Closeable {
 
     private final BufferReader reader;
 
+    private final Log log;
+
     public Tokenizer(Source source) {
         this.source = source;
         reader = source.createReader();
+        log = source.getLog();
     }
 
     public Source getSource() {
@@ -319,7 +322,7 @@ public class Tokenizer implements Closeable {
     }
 
     private void tError(int position, String message) throws ParseException {
-        throw new ParseException(message, position);
+        log.error(position, message);
     }
 
     @Override
