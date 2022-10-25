@@ -10,6 +10,7 @@ import java.util.Objects;
 
 public final class JuaCompiler {
 
+    private Log log;
     private final Iterator<Source> sources;
 
     public JuaCompiler(Iterable<Source> sources) {
@@ -23,11 +24,13 @@ public final class JuaCompiler {
         // todo: CodeLayout должен уметь работать с несколькими сурсами одновременно.
         CodeLayout layout = new CodeLayout(source);
 
+        log = source.createLog();
+
         Code code = layout.getCode();
         Types types = code.getTypes();
 
         try (Tokenizer tokenizer = new Tokenizer(source)) { // todo: Log
-            JuaParser parser = new JuaParser(tokenizer, types, source.createLog());
+            JuaParser parser = new JuaParser(tokenizer, types, log);
             Tree tree = parser.parse();
 
             tree.accept(new Enter(layout));
@@ -39,6 +42,8 @@ public final class JuaCompiler {
 //        }
         } catch (CompileError e) {
             error("Compile error", layout, e.getMessage(), e.position, true);
+        } catch (CompileInterrupter interrupter) {
+            log.flush();
         } catch (Exception e) {
             e.printStackTrace(); // todo
         }

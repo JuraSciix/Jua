@@ -868,6 +868,11 @@ public interface Tree {
             Literal literal = (Literal) o;
             return Objects.equals(type, literal.type);
         }
+
+        @Override
+        public String toString() {
+            return String.valueOf(type.longValue());
+        }
     }
 
     final class ArrayLiteral extends Expression {
