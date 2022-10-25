@@ -3,7 +3,6 @@ package jua.compiler;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.LinkedList;
 
 public class Log {
     private static final int maxErrors = 1;

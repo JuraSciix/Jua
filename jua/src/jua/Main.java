@@ -43,7 +43,7 @@ public class Main {
         try {
             result.toThread().run();
         } catch (RuntimeErrorException e) {
-            compiler.error("Runtime error", result.codeLayout, e.getMessage(), e.thread.current_line_number(), false);
+            compiler.getLog().error(e.thread.current_line_number(), e.getMessage());
         }
     }
 

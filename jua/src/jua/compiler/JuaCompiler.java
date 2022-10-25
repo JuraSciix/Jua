@@ -1,10 +1,6 @@
 package jua.compiler;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.Objects;
 
@@ -41,7 +37,7 @@ public final class JuaCompiler {
             return gen.getResult();
 //        }
         } catch (CompileError e) {
-            error("Compile error", layout, e.getMessage(), e.position, true);
+            log.error(e.position, e.getMessage());
         } catch (CompileInterrupter interrupter) {
             log.flush();
         } catch (Exception e) {
@@ -50,49 +46,7 @@ public final class JuaCompiler {
         throw new ThreadDeath();
     }
 
-    public void error(String prefix, CodeLayout layout, String msg, int pos, boolean calculateLineNum) {
-        System.err.println(prefix + ": " + msg);
-        try {
-            Source source = layout.source;
-            LineMap lineMap = source.getLineMap();
-            printPosition(source.filename(),
-                    calculateLineNum ? lineMap.getLineNumber(pos) : pos,
-                    calculateLineNum ? lineMap.getColumnNumber(pos) : -1);
-        } catch (IOException ex) {
-            //nope
-        }
-        System.exit(1);
-    }
-
-    private void printPosition(String filename, int line, int offset) {
-        System.err.printf("File: %s, line: %d.%n", filename, line);
-
-        if (offset >= 0) {
-            printLine(filename, line, offset);
-        }
-    }
-
-    private void printLine(String filename, int line, int offset) {
-        String s;
-
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(Files.newInputStream(Paths.get(filename))))) {
-            while (--line > 0) {
-                br.readLine();
-            }
-            s = br.readLine();
-        } catch (IOException e) {
-            return;
-        }
-        printOffset((s == null) ? "" : s, offset);
-    }
-
-    private void printOffset(String s, int offset) {
-        StringBuilder sb = new StringBuilder(offset);
-
-        for (int i = 0; i < (offset - 1); i++) {
-            sb.append(i >= s.length() || s.charAt(i) != '\t' ? ' ' : '\t');
-        }
-        System.err.println(s);
-        System.err.println(sb.append('^'));
+    public Log getLog() {
+        return log;
     }
 }
