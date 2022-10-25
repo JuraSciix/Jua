@@ -1,7 +1,5 @@
 package jua.compiler;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.io.StringWriter;
 
 import static java.lang.Character.*;
@@ -31,7 +29,7 @@ public class Tokenizer implements AutoCloseable {
 
         public Tokens.Token buildNamedOrString() {
             String s = buffer.toString();
-            TokenKind k  = lookupKind(s);
+            TokenKind k = lookupKind(s);
             if (k == null) k = IDENTIFIER;
             // identifier requires saving the name, StringToken allows this
             return new StringToken(k, pos, s);
@@ -70,12 +68,11 @@ public class Tokenizer implements AutoCloseable {
         return true;
     }
 
-    public Tokens.Token nextToken() throws IOException {
+    public Tokens.Token nextToken() {
         while (true) {
             int c;
 
-            if (!reader.hasMore())
-                return new DummyToken(EOF, reader.cursor()+1);
+            if (!reader.hasMore()) return new DummyToken(EOF, reader.cursor() + 1);
 
             c = reader.readCodePoint();
 
@@ -87,14 +84,14 @@ public class Tokenizer implements AutoCloseable {
         }
     }
 
-    private void parseComment() throws IOException {
-        int c = reader.readChar();
-        while (c != -1 && c != '\n') {
+    private void parseComment() {
+        int c;
+        while (reader.hasMore() && (c = reader.readChar()) != '\n') {
             c = reader.readChar();
         }
     }
 
-    private Tokens.Token parseCharacter(int c) throws IOException {
+    private Tokens.Token parseCharacter(int c) {
         if (c == '\'' || c == '"') {
             return parseString(c);
         }
@@ -107,35 +104,51 @@ public class Tokenizer implements AutoCloseable {
         return parseSpecial(c);
     }
 
-    private Tokens.Token parseString(int mark) throws IOException {
+    private Tokens.Token parseString(int mark) {
         TokenBuilder builder = getBuilder();
+        int c = 0;
 
-        for (int c; (c = reader.readChar()) != mark; ) {
-            if (c < 0) {
-                tError(reader.cursor(), "EOF reached while parsing string.");
-                break;
-            }
+        while (reader.hasMore() && (c = reader.readChar()) != mark) {
             if (c == '\\') {
                 parseEscape(builder);
             } else {
                 builder.putChar(c);
             }
         }
+        if (!reader.hasMore() && c != mark) {
+            tError(reader.cursor(), "EOF reached while parsing string.");
+        }
         return builder.buildString();
     }
 
-    private void parseEscape(TokenBuilder builder) throws IOException {
+    private void parseEscape(TokenBuilder builder) {
         int c = reader.readChar();
 
         switch (c) {
-            case 'b':  builder.putChar('\b'); return;
-            case 'f':  builder.putChar('\f'); return;
-            case 'n':  builder.putChar('\n'); return;
-            case 'r':  builder.putChar('\r'); return;
-            case 't':  builder.putChar('\t'); return;
-            case '\'': builder.putChar('\''); return;
-            case '\"': builder.putChar('\"'); return;
-            case '\\': builder.putChar('\\'); return;
+            case 'b':
+                builder.putChar('\b');
+                return;
+            case 'f':
+                builder.putChar('\f');
+                return;
+            case 'n':
+                builder.putChar('\n');
+                return;
+            case 'r':
+                builder.putChar('\r');
+                return;
+            case 't':
+                builder.putChar('\t');
+                return;
+            case '\'':
+                builder.putChar('\'');
+                return;
+            case '\"':
+                builder.putChar('\"');
+                return;
+            case '\\':
+                builder.putChar('\\');
+                return;
         }
         if (c >= '0' && c <= '7') {
             parseEscapeOctal(builder, c);
@@ -144,9 +157,9 @@ public class Tokenizer implements AutoCloseable {
         builder.putChar('\\').putChar(c);
     }
 
-    private void parseEscapeOctal(TokenBuilder builder, int c) throws IOException {
-        int i    = (c >= '4' ? 2 : 3);
-        int oct  = (c - '0');
+    private void parseEscapeOctal(TokenBuilder builder, int c) {
+        int i = (c >= '4' ? 2 : 3);
+        int oct = (c - '0');
         int next = reader.peekChar();
 
         while (--i >= 0 && next >= '0' && next <= '7') {
@@ -156,7 +169,7 @@ public class Tokenizer implements AutoCloseable {
         builder.putChar(oct);
     }
 
-    private Tokens.Token parseNumber(int c) throws IOException {
+    private Tokens.Token parseNumber(int c) {
         TokenBuilder builder = getBuilder();
         int next = reader.peekChar();
         int radix = 10;
@@ -172,7 +185,7 @@ public class Tokenizer implements AutoCloseable {
         return parseFraction(builder, radix, (c == '.'));
     }
 
-    private Tokens.Token parseHex(TokenBuilder builder) throws IOException {
+    private Tokens.Token parseHex(TokenBuilder builder) {
         reader.readChar();
         int next = reader.peekChar();
 
@@ -183,7 +196,7 @@ public class Tokenizer implements AutoCloseable {
         return builder.buildNumber(false, 16);
     }
 
-    private Tokens.Token parseBin(TokenBuilder builder) throws IOException {
+    private Tokens.Token parseBin(TokenBuilder builder) {
         reader.readChar();
         int next = reader.peekChar();
 
@@ -194,7 +207,7 @@ public class Tokenizer implements AutoCloseable {
         return builder.buildNumber(false, 2);
     }
 
-    private Tokens.Token parseDuo(TokenBuilder builder) throws IOException {
+    private Tokens.Token parseDuo(TokenBuilder builder) {
         reader.readChar();
         int next = reader.peekChar();
 
@@ -205,7 +218,7 @@ public class Tokenizer implements AutoCloseable {
         return builder.buildNumber(false, 12);
     }
 
-    private Tokens.Token parseFraction(TokenBuilder builder, int radix, boolean isFloat) throws IOException {
+    private Tokens.Token parseFraction(TokenBuilder builder, int radix, boolean isFloat) {
         int c;
 
         if ((c = reader.peekChar()) == '.') {
@@ -234,7 +247,7 @@ public class Tokenizer implements AutoCloseable {
         return builder.buildNumber(isFloat, radix);
     }
 
-    private void parseDigits(TokenBuilder builder, int c, int radix) throws IOException {
+    private void parseDigits(TokenBuilder builder, int c, int radix) {
         int next = reader.peekChar();
 
         if (digit(c, radix) < 0 && next == '_') {
@@ -250,11 +263,11 @@ public class Tokenizer implements AutoCloseable {
         if (c == '_') underscore();
     }
 
-    private void underscore() throws IOException {
+    private void underscore() {
         tError(reader.cursor(), "underscore is not allowed here.");
     }
 
-    private Tokens.Token parseKeyword(int c) throws IOException {
+    private Tokens.Token parseKeyword(int c) {
         TokenBuilder builder = getBuilder(c);
 
         while (isJavaIdentifierPart(reader.peekCodePoint())) {
@@ -263,7 +276,7 @@ public class Tokenizer implements AutoCloseable {
         return builder.buildNamedOrString();
     }
 
-    private Tokens.Token parseSpecial(int c) throws IOException {
+    private Tokens.Token parseSpecial(int c) {
         TokenBuilder builder = getBuilder(-1);
         TokenKind type = null;
         // Обожаю костыли.
@@ -288,31 +301,49 @@ public class Tokenizer implements AutoCloseable {
         return checkSpecial(builder, type);
     }
 
-    private boolean seenSpecial() throws IOException {
+    private boolean seenSpecial() {
         switch (reader.peekChar()) {
-            case '&': case '|': case '^': case ':': case ',':
-            case '.': case '=': case '!': case '>': case '{':
-            case '[': case '(': case '<': case '-': case '%':
-            case '+': case '?': case '}': case ']': case ')':
-            case ';': case '*': case '~':
+            case '&':
+            case '|':
+            case '^':
+            case ':':
+            case ',':
+            case '.':
+            case '=':
+            case '!':
+            case '>':
+            case '{':
+            case '[':
+            case '(':
+            case '<':
+            case '-':
+            case '%':
+            case '+':
+            case '?':
+            case '}':
+            case ']':
+            case ')':
+            case ';':
+            case '*':
+            case '~':
                 return true;
             default:
                 return false;
         }
     }
 
-    private Tokens.Token checkSpecial(TokenBuilder builder, Tokens.TokenKind type)  {
+    private Tokens.Token checkSpecial(TokenBuilder builder, Tokens.TokenKind type) {
         if (type == null) {
             tError(builder.pos, "illegal character.");
         }
         return builder.buildNamed(type);
     }
 
-    private TokenBuilder getBuilder() throws IOException {
+    private TokenBuilder getBuilder() {
         return getBuilder(-1);
     }
 
-    private TokenBuilder getBuilder(int c) throws IOException {
+    private TokenBuilder getBuilder(int c) {
         TokenBuilder builder = new TokenBuilder(reader.cursor());
 
         if (c >= 0) {
@@ -321,7 +352,7 @@ public class Tokenizer implements AutoCloseable {
         return builder;
     }
 
-    private void tError(int position, String message)  {
+    private void tError(int position, String message) {
         log.error(position, message);
     }
 
