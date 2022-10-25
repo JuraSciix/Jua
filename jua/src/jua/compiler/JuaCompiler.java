@@ -27,7 +27,7 @@ public final class JuaCompiler {
         Types types = code.getTypes();
 
         try (Tokenizer tokenizer = new Tokenizer(source)) { // todo: Log
-            JuaParser parser = new JuaParser(tokenizer, types, source.getLog());
+            JuaParser parser = new JuaParser(tokenizer, types, source.createLog());
             Tree tree = parser.parse();
 
             tree.accept(new Enter(layout));
@@ -39,6 +39,8 @@ public final class JuaCompiler {
 //        }
         } catch (CompileError e) {
             error("Compile error", layout, e.getMessage(), e.position, true);
+        } catch (Exception e) {
+            e.printStackTrace(); // todo
         }
         throw new ThreadDeath();
     }

@@ -8,7 +8,7 @@ import static java.lang.Character.*;
 import static jua.compiler.Tokens.*;
 import static jua.compiler.Tokens.TokenKind.*;
 
-public class Tokenizer implements Closeable {
+public class Tokenizer implements AutoCloseable {
 
     private static class TokenBuilder {
 
@@ -52,14 +52,14 @@ public class Tokenizer implements Closeable {
 
     private final Source source;
 
-    private final BufferReader reader;
+    private final SourceReader reader;
 
     private final Log log;
 
     public Tokenizer(Source source) {
         this.source = source;
         reader = source.createReader();
-        log = source.getLog();
+        log = source.createLog();
     }
 
     public Source getSource() {
@@ -74,14 +74,16 @@ public class Tokenizer implements Closeable {
         while (true) {
             int c;
 
-            if ((c = reader.readChar()) < 0)
-                return new DummyToken(EOF, reader.position()+1);
+            if (!reader.hasMore())
+                return new DummyToken(EOF, reader.cursor()+1);
+
+            c = reader.readCodePoint();
 
             if (c == '#') {
                 parseComment();
                 continue;
             }
-            if (c > ' ') return parseCharacter(c);
+            if (!Character.isWhitespace(c)) return parseCharacter(c);
         }
     }
 
@@ -110,7 +112,7 @@ public class Tokenizer implements Closeable {
 
         for (int c; (c = reader.readChar()) != mark; ) {
             if (c < 0) {
-                tError(reader.position(), "EOF reached while parsing string.");
+                tError(reader.cursor(), "EOF reached while parsing string.");
                 break;
             }
             if (c == '\\') {
@@ -249,14 +251,14 @@ public class Tokenizer implements Closeable {
     }
 
     private void underscore() throws IOException {
-        tError(reader.position(), "underscore is not allowed here.");
+        tError(reader.cursor(), "underscore is not allowed here.");
     }
 
     private Tokens.Token parseKeyword(int c) throws IOException {
         TokenBuilder builder = getBuilder(c);
 
-        while (isJavaIdentifierPart(reader.peekChar())) {
-            builder.putChar(reader.readChar());
+        while (isJavaIdentifierPart(reader.peekCodePoint())) {
+            builder.putChar(reader.readCodePoint());
         }
         return builder.buildNamedOrString();
     }
@@ -302,8 +304,6 @@ public class Tokenizer implements Closeable {
     private Tokens.Token checkSpecial(TokenBuilder builder, Tokens.TokenKind type)  {
         if (type == null) {
             tError(builder.pos, "illegal character.");
-        } else if (false && !type.name.equals(builder.buffer.toString())) {
-            tError(builder.pos, "invalid token.");
         }
         return builder.buildNamed(type);
     }
@@ -313,7 +313,7 @@ public class Tokenizer implements Closeable {
     }
 
     private TokenBuilder getBuilder(int c) throws IOException {
-        TokenBuilder builder = new TokenBuilder(reader.position());
+        TokenBuilder builder = new TokenBuilder(reader.cursor());
 
         if (c >= 0) {
             builder.putChar(c);
@@ -326,7 +326,7 @@ public class Tokenizer implements Closeable {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() throws Exception {
         reader.close();
     }
 }

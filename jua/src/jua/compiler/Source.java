@@ -1,22 +1,25 @@
 package jua.compiler;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public final class Source {
 
-    private final String filename;
+    private final Path path;
 
-    private final char[] buffer;
+    private char[] content;
 
     private LineMap lineMap;
 
-    public Source(String filename, char[] buffer) {
-        this.filename = filename;
-        this.buffer = buffer;
+    public Source(String path) {
+        this.path = Paths.get(path);
     }
 
-
-    public Log getLog() {
+    public Log createLog() {
         return new Log(); // todo
     }
 
@@ -25,15 +28,28 @@ public final class Source {
     }
 
     public String filename() {
-        return filename;
+        return path.toString();
     }
 
     public char[] buffer() {
-        return buffer.clone();
+        return content.clone();
     }
 
-    public BufferReader createReader() {
-        return new BufferReader(buffer, 0, buffer.length);
+    public void read() throws IOException {
+        byte[] fileContentBytes = Files.readAllBytes(path);
+        ByteBuffer fileContentByteBuffer = ByteBuffer.wrap(fileContentBytes);
+        content = StandardCharsets.UTF_8.decode(fileContentByteBuffer).array();
+    }
+
+    public SourceReader createReader() {
+        ensureContent();
+        return SourceReader.wrap(content);
+    }
+
+    private void ensureContent() {
+        if (content == null) {
+            throw new IllegalStateException("Content was not loaded. Call read() before it");
+        }
     }
 
     public LineMap getLineMap() throws IOException {

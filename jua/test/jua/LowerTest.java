@@ -19,7 +19,7 @@ public class LowerTest {
     @BeforeAll
     public static void doInit() {
         try {
-            types = new Types(new Code(new Source("none", new char[]{})));
+            types = new Types(new Code(new Source("none")));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

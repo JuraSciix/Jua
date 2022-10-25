@@ -14,20 +14,23 @@ public final class LineMap {
     }
 
     private int[] buildLineMap(Source source) throws IOException {
-        try (BufferReader reader = source.createReader()) {
-            IntList lineStartPoints = new IntArrayList(reader.available());
+        try (SourceReader reader = source.createReader()) {
+            IntList lineStartPoints = new IntArrayList(reader.length() - reader.cursor());
 
             // Первая линия
             lineStartPoints.add(0);
 
-            while (reader.unreadAvailable()) {
+            while (reader.hasMore()) {
                 int ch = reader.readChar();
                 if (ch == '\n') {
-                    lineStartPoints.add(reader.position());
+                    lineStartPoints.add(reader.cursor());
                 }
             }
+            lineStartPoints.add(reader.length());
 
             return lineStartPoints.toIntArray();
+        } catch (Exception e) {
+            throw new IOException(e);
         }
     }
 
