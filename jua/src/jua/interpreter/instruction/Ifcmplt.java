@@ -19,16 +19,7 @@ public final class Ifcmplt extends ChainInstruction {
 
     @Override
     public int run(InterpreterState state) {
-        Operand rhs = state.popStack();
-        Operand lhs = state.popStack();
-
-        if (!lhs.isNumber() || !rhs.isNumber()) {
-            // op inverted due to VM mechanics
-            throw InterpreterError.binaryApplication(">=", lhs.type(), rhs.type());
-        }
-        if ((lhs.isDouble() || rhs.isDouble())
-                ? lhs.doubleValue() >= rhs.doubleValue()
-                : lhs.longValue() >= rhs.longValue()) {
+        if (!state.stackCmplt()) {
             return NEXT;
         } else {
             return destIp;

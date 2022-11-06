@@ -17,7 +17,7 @@ public final class Ifcmpne extends ChainInstruction {
 
     @Override
     public int run(InterpreterState state) {
-        if (!state.popStack().equals(state.popStack())) {
+        if (!state.stackCmpeq()) {
             return destIp;
         } else {
             return NEXT;

@@ -15,10 +15,7 @@ public enum And implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        Operand rhs = state.popStack();
-        Operand lhs = state.popStack();
-
-        state.pushStack(lhs.and(rhs));
+        state.stackAnd();
         return NEXT;
     }
 }

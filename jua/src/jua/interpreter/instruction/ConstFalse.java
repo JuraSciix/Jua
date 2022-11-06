@@ -19,7 +19,7 @@ public final class ConstFalse implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        state.pushStack(FalseOperand.FALSE);
+        state.constFalse();
         return NEXT;
     }
 }

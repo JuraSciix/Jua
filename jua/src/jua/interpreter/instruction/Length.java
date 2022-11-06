@@ -16,7 +16,7 @@ public enum Length implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        state.pushStack(new LongOperand(state.popStack().length()));
+        state.stackLength();
         return NEXT;
     }
 }

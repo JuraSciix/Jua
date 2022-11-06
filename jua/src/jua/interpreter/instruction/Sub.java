@@ -15,10 +15,7 @@ public enum Sub implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        Operand rhs = state.popStack();
-        Operand lhs = state.popStack();
-
-        state.pushStack(lhs.sub(rhs));
+        state.stackSub();
         return NEXT;
     }
 }

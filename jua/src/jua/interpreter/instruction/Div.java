@@ -1,8 +1,7 @@
 package jua.interpreter.instruction;
 
-import jua.interpreter.InterpreterState;
-import jua.runtime.heap.Operand;
 import jua.compiler.CodePrinter;
+import jua.interpreter.InterpreterState;
 
 public enum Div implements Instruction {
 
@@ -15,10 +14,7 @@ public enum Div implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        Operand rhs = state.popStack();
-        Operand lhs = state.popStack();
-
-        state.pushStack(lhs.div(rhs));
+        state.stackDiv();
         return NEXT;
     }
 }

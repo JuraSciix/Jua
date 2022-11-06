@@ -14,7 +14,7 @@ public enum Dec implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        state.pushStack(state.popStack().decrement());
+        state.stackDec();
         return NEXT;
     }
 }

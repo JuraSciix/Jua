@@ -15,7 +15,7 @@ public enum Newarray implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        state.pushStack(new ArrayOperand());
+        state.stackNewArray();
         return NEXT;
     }
 }

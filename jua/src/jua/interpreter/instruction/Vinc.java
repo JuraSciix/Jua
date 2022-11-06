@@ -20,8 +20,7 @@ public class Vinc implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        Operand local = state.load(id);
-        state.store(id, local.increment());
+        state.stackVInc(id);
         return NEXT;
     }
 }

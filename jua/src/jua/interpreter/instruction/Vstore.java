@@ -19,7 +19,7 @@ public final class Vstore implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        state.store(id, state.popStack());
+        state.stackVStore(id);
         return NEXT;
     }
 }

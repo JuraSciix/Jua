@@ -1,8 +1,7 @@
 package jua.interpreter.instruction;
 
-import jua.interpreter.InterpreterState;
-import jua.runtime.heap.Operand;
 import jua.compiler.CodePrinter;
+import jua.interpreter.InterpreterState;
 
 public final class Vdec implements Instruction {
 
@@ -20,8 +19,7 @@ public final class Vdec implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        Operand local = state.load(id);
-        state.store(id, local.decrement());
+        state.stackVDec(id);
         return NEXT;
     }
 }

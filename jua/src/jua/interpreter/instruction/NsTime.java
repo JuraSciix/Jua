@@ -20,7 +20,7 @@ public enum NsTime implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        state.pushStack(new LongOperand(System.nanoTime()));
+        state.stackNsTime();
         return NEXT;
     }
 }

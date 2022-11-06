@@ -20,8 +20,7 @@ public final class Vload implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        Operand operand = state.load(id);
-        state.pushStack(operand);
+        state.stackVLoad(id);
         return NEXT;
     }
 }

@@ -14,7 +14,7 @@ public enum Clone implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        state.pushStack(state.popStack().doClone());
+        state.stackClone();
         return NEXT;
     }
 }

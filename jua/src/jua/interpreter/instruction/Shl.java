@@ -15,10 +15,7 @@ public enum Shl implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        Operand rhs = state.popStack();
-        Operand lhs = state.popStack();
-
-        state.pushStack(lhs.shl(rhs));
+        state.stackShl();
         return NEXT;
     }
 }

@@ -17,7 +17,7 @@ public final class ConstNull implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        state.pushStack(NullOperand.NULL);
+        state.constNull();
         return NEXT;
     }
 }

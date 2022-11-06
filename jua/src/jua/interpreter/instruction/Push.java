@@ -4,12 +4,13 @@ import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 import jua.runtime.heap.LongOperand;
 
+// todo: Переименовать инструкцию в iconst
 public final class Push implements Instruction {
 
-    private final LongOperand value;
+    private final short value;
 
     public Push(short value) {
-        this.value = LongOperand.valueOf(value);
+        this.value = value;
     }
 
     @Override

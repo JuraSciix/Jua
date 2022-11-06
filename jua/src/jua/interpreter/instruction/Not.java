@@ -15,8 +15,7 @@ public enum Not implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        Operand val = state.popStack();
-        state.pushStack(val.not());
+        state.stackNot();
         return NEXT;
     }
 }

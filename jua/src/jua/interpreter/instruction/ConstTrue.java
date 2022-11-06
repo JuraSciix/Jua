@@ -2,7 +2,6 @@ package jua.interpreter.instruction;
 
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
-import jua.runtime.heap.TrueOperand;
 
 public final class ConstTrue implements Instruction {
 
@@ -19,7 +18,7 @@ public final class ConstTrue implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        state.pushStack(TrueOperand.TRUE);
+        state.constTrue();
         return NEXT;
     }
 }

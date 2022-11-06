@@ -16,10 +16,7 @@ public enum Pos implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        Operand val = state.peekStack();
-
-        if (!val.isNumber())
-            throw InterpreterError.unaryApplication("+", val.type());
+        state.stackPos();
         return NEXT;
     }
 }

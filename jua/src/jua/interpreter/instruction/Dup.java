@@ -15,7 +15,7 @@ public enum Dup implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        state.pushStack(state.peekStack());
+        state.dup();
         return NEXT;
     }
 }

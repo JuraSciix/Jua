@@ -15,10 +15,7 @@ public enum Rem implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        Operand rhs = state.popStack();
-        Operand lhs = state.popStack();
-
-        state.pushStack(lhs.rem(rhs));
+        state.stackRem();
         return NEXT;
     }
 }
