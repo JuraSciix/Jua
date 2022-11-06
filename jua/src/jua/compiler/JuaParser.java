@@ -713,6 +713,7 @@ public class JuaParser {
         boolean comma = false;
 
         while (!match(enclosing)) {
+            System.out.println(position);
             if (match(EOF) || comma && !match(COMMA)) {
                 expect(enclosing);
             }

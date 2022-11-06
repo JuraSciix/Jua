@@ -64,13 +64,6 @@ println(++i);
 println(~i & 0b1010);
 println(i<<31>>31);
 
-# todo: fix follow
-# Exception in thread "main" java.lang.ArrayIndexOutOfBoundsException: -1
-#  	at jua.interpreter.InterpreterState.popStack(InterpreterState.java:82)
-#  	at jua.interpreter.instruction.Pop.run(Pop.java:17)
-#  	at jua.interpreter.InterpreterThread.run(InterpreterThread.java:241)
-#  	at jua.Main.main(Main.java:38)
-
 fn test1(i = 0) = test2(i + 1);
 fn test2(i = 0) = test3(i + 1);
 fn test3(i = 0) = test4(i + 1);

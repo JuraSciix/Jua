@@ -4,6 +4,8 @@ import java.util.Objects;
 
 public final class SourceReader implements AutoCloseable {
 
+    private static final int UNPEEKED = -1;
+
     public static SourceReader of(String str) {
         return wrap(str.toCharArray());
     }
@@ -29,9 +31,7 @@ public final class SourceReader implements AutoCloseable {
 
     private int cursor;
 
-    private int peekedChar = -1;
-
-    private int peekedCodePoint = -1;
+    private int peeked = UNPEEKED;
 
     private SourceReader(char[] buffer, int offset, int length) {
         this.buffer = buffer;
@@ -40,53 +40,53 @@ public final class SourceReader implements AutoCloseable {
     }
 
     public boolean hasMore() { return cursor() < length(); }
-
     public int cursor() { return cursor; }
-
     public int length() { return length; }
 
     public char peekChar() {
-        if (peekedChar == -1) {
-            peekedChar = readCharInternal();
+        if (peeked == -1) {
+            peeked = buffer[cursor];
         }
-
-        return (char) peekedChar;
+        if (Character.charCount(peeked) > 1)
+            return Character.highSurrogate(peeked);
+        else
+            return (char) peeked;
     }
 
     public char readChar() {
-        if (peekedChar != -1) {
-            int ch = peekedChar;
-            peekedChar = -1;
-            return (char) ch;
+        int c;
+        if (peeked != -1) {
+            if (Character.charCount(peeked) > 1) {
+                c = Character.highSurrogate(peeked);
+                peeked = Character.lowSurrogate(peeked);
+            } else {
+                c = peeked;
+                peeked = -1;
+            }
+        } else {
+            c = buffer[cursor];
         }
-
-        return readCharInternal();
-    }
-
-    private char readCharInternal() {
-        if (!hasMore()) {
-            throw new IndexOutOfBoundsException();
-        }
-
-        return buffer[cursor++];
+        cursor++;
+        return (char) c;
     }
 
     public int peekCodePoint() {
-        if (peekedCodePoint == -1) {
-            peekedCodePoint = readCodePointInternal();
+        if (peeked == -1) {
+            peeked = readCodePointInternal();
         }
-
-        return peekedCodePoint;
+        return peeked;
     }
 
     public int readCodePoint() {
-        if (peekedCodePoint != -1) {
-            int codePoint = peekedCodePoint;
-            peekedCodePoint = -1;
-            return codePoint;
+        int c;
+        if (peeked != -1) {
+            c = peeked;
+            peeked = -1;
+        } else {
+            c = readCodePointInternal();
         }
-
-        return readCodePointInternal();
+        cursor += Character.charCount(c);
+        return c;
     }
 
     private int readCodePointInternal() {
@@ -102,18 +102,13 @@ public final class SourceReader implements AutoCloseable {
             char low = buffer[cursor + 1];
 
             if (Character.isSurrogatePair(high, low)) {
-                cursor += 2;
                 return Character.toCodePoint(high, low);
             }
         }
-
-        cursor += 1;
 
         return high;
     }
 
     @Override
-    public void close() throws Exception {
-        /* no-op */
-    }
+    public void close() { /* no-op */ }
 }

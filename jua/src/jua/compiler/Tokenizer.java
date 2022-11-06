@@ -290,6 +290,7 @@ public class Tokenizer implements AutoCloseable {
                 break;
             }
             type = lookup;
+            if (!reader.hasMore()) break;
             c = reader.peekChar();
             if (f) {
                 f = false;
@@ -302,6 +303,7 @@ public class Tokenizer implements AutoCloseable {
     }
 
     private boolean seenSpecial() {
+        if (!reader.hasMore()) return false;
         switch (reader.peekChar()) {
             case '&':
             case '|':

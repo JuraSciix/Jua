@@ -1,6 +1,6 @@
 package jua.compiler;
 
-public class ParseException extends Exception {
+public class ParseException extends RuntimeException {
 
     public final int position;
 
