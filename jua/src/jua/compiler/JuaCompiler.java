@@ -36,8 +36,8 @@ public final class JuaCompiler {
 
             return gen.getResult();
 //        }
-        } catch (ParseException e) {
-            error("Compile error", layout, e.getMessage(), e.position, true);
+//        } catch (ParseException e) {
+//            error("Compile error", layout, e.getMessage(), e.position, true);
         } catch (CompileError e) {
             log.error(e.position, e.getMessage());
         } catch (CompileInterrupter interrupter) {
