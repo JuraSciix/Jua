@@ -29,7 +29,7 @@ public final class TreeInfo {
             case ASG_AND: return Tag.AND;
             case ASG_OR: return Tag.OR;
             case ASG_XOR: return Tag.XOR;
-            default: throw new IllegalArgumentException();
+            default: throw new IllegalArgumentException(tag.name());
         }
     }
 

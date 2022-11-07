@@ -198,13 +198,18 @@ public final class TreeComparator extends Scanner {
 
     @Override
     public void visitArrayLiteral(ArrayLiteral tree) {
-        super.visitArrayLiteral(tree);
+        super.visitArrayLiteral(tree); // todo
     }
 
     @Override
     public void visitVariable(Var tree) {
         Var that = (Var) parameter;
         result = TreeInfo.isNameEquals(tree.name, that.name);
+    }
+
+    @Override
+    public void visitFieldAccess(FieldAccess tree) {
+        super.visitFieldAccess(tree); // todo
     }
 
     @Override
@@ -245,8 +250,13 @@ public final class TreeComparator extends Scanner {
     }
 
     @Override
-    public void visitAssignOp(AssignOp tree) {
-        AssignOp that = (AssignOp) parameter;
+    public void visitAssign(Assign tree) {
+        super.visitAssign(tree); // todo
+    }
+
+    @Override
+    public void visitCompoundAssign(CompoundAssign tree) {
+        CompoundAssign that = (CompoundAssign) parameter;
         result = compare(tree.dst, that.dst) && compare(tree.src, that.src);
     }
 

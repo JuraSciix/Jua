@@ -43,26 +43,43 @@ public final class Lower extends Translator {
     }
 
     @Override
+    public void visitFieldAccess(FieldAccess tree) {
+        // todo: Gen пока плохо умеет работать с FieldAccess --
+        //  1. Исправить это
+        //  2. Удалить это преобразование
+        result = new ArrayAccess(tree.pos, translate(tree.expr),
+                new Literal(tree.field.pos, types.asString(tree.field.value)));
+    }
+
+    @Override
     public void visitParens(Parens tree) {
         // Удаляем скобки.
         result = translate(tree.expr);
     }
 
     @Override
-    public void visitAssignOp(AssignOp tree) {
-        // todo: Удаление выражений {a=a}
-        // todo: Не преобразовывать ASG_NULLCOALESCE
-        if (tree.getTag() == Tag.ASSIGN) {
+    public void visitCompoundAssign(CompoundAssign tree) {
+        Expression dst = translate(tree.dst);
+        Expression src = translate(tree.src);
+        // По-хорошему мы должны избегать дублирования кода.
+        // Например, попытка преобразования следующего кода:
+        //  a[sqrt(x*x+y*y)] ??= z;
+        // В следующий вид:
+        //  a[sqrt(x*x+y*y)] = a[sqrt(x*x+y*y)] ?? z;
+        // Сулит, как видно, сложными дублированиями.
+        if (tree.tag == Tag.ASG_NULLCOALESCE) {
+            tree.dst = dst;
+            tree.src = translate(src);
             result = tree;
             return;
         }
-
         // Преобразуем выражение типов {a+=b} в {a=a+b}
-        result = new AssignOp(tree.pos, Tag.ASSIGN,
-                tree.dst,
-                new BinaryOp(tree.src.pos, TreeInfo.tagWithoutAsg(tree.tag),
-                        tree.dst,
-                        tree.src));
+        result = new Assign(tree.pos,
+                dst,
+                new BinaryOp(src.pos,
+                        TreeInfo.tagWithoutAsg(tree.tag),
+                        dst,
+                        src));
     }
 
     @Override

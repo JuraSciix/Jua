@@ -243,7 +243,7 @@ public final class Gen extends Scanner {
         code.addInstruction(Newarray.INSTANCE, 1);
     }
 
-    public void visitAssignNullCoalesce(AssignOp expression) {
+    public void visitAssignNullCoalesce(CompoundAssign tree) {
 //        int el = code.createFlow();
 //        int ex = code.createFlow();
 //        boolean isArray = (expression.var.child() instanceof ArrayAccess);
@@ -261,7 +261,7 @@ public final class Gen extends Scanner {
 //        }
 //        code.resolveFlow(ex);
 
-        generateAssignment(expression);
+        generateAssignment(tree.pos, tree.tag, tree.dst, tree.src);
     }
 
     private void generateBinary(BinaryOp tree) {
@@ -698,6 +698,10 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitIf(If tree) {
+        // todo: Лишние стековые слоты (sp) не могут браться из воздуха
+        //  Это значит, что вместо ленивого присвоения нового sp
+        //  Нужно строго сравнивать и выбрасывать исключение в случае несоответствия.
+        //  То же самое касается и visitTernary
         if (tree.elsebody == null) {
             pushMakeConditionChain();
             generateCondition(tree.cond);
@@ -953,6 +957,11 @@ public final class Gen extends Scanner {
         //        "all brackets should have been removed in ConstantFolder");
     }
 
+    @Override
+    public void visitAssign(Assign tree) {
+        generateAssignment(tree.pos, Tag.ASSIGN, tree.var, tree.expr);
+    }
+
     private void generateUnary(UnaryOp tree) {
         switch (tree.getTag()) {
             case POSTDEC:
@@ -1125,10 +1134,13 @@ public final class Gen extends Scanner {
     }
 
     @Override
-    public void visitAssignOp(AssignOp tree) {
-        if (tree.tag == Tag.ASG_NULLCOALESCE) visitAssignNullCoalesce(tree);
+    public void visitCompoundAssign(CompoundAssign tree) {
+        if (tree.tag == Tag.ASG_NULLCOALESCE) {
+            visitAssignNullCoalesce(tree);
+            return;
+        }
 
-        generateAssignment(tree);
+        generateAssignment(tree.pos, tree.tag, tree.dst, tree.src);
     }
 
     @Override
@@ -1190,7 +1202,7 @@ public final class Gen extends Scanner {
         }
     }
 
-    private void generateAssignment(AssignOp expression) {
+    private void generateAssignment(int pos, Tag tag, Expression lhs, Expression rhs) {
 //        Expression var = expression.var.child();
 //        checkAssignable(var);
 //        int line = line(expression);
@@ -1224,21 +1236,19 @@ public final class Gen extends Scanner {
 //            emitVStore(line, ((Var) var).name);
 //        }
 
-        Expression lhs = expression.dst;
-        Expression rhs = expression.src;
-
         switch (lhs.getTag()) {
             case ARRAYACCESS: {
                 ArrayAccess arrayAccess = (ArrayAccess) lhs;
                 code.putPos(arrayAccess.pos);
                 visitExpression(arrayAccess.expr);
                 visitExpression(arrayAccess.index);
-                if (hasTag(expression, Tag.ASG_NULLCOALESCE)) {
+                if (tag == Tag.ASG_NULLCOALESCE) {
                     int el = code.makeChain();
                     int ex = code.makeChain();
                     emitDup2();
                     emitALoad();
                     code.addChainedInstruction(Ifnonnull::new, el, -1);
+                    int sp_cache = code.getSp();
                     visitExpression(rhs);
                     if (isUsed()) {
                         emitDupX2();
@@ -1246,7 +1256,9 @@ public final class Gen extends Scanner {
                     code.putPos(arrayAccess.pos);
                     emitAStore();
                     emitGoto(ex);
+                    int sp_cache2 = code.getSp();
                     code.resolveChain(el);
+                    code.setSp(sp_cache);
                     if (isUsed()) {
                         code.putPos(arrayAccess.pos);
                         emitALoad();
@@ -1254,14 +1266,15 @@ public final class Gen extends Scanner {
                         code.addInstruction(Pop2.INSTANCE, -2);
                     }
                     code.resolveChain(ex);
+                    assert code.getSp() == sp_cache2;
                 } else {
-                    if (!hasTag(expression, Tag.ASSIGN)) {
+                    if (tag != Tag.ASSIGN) {
                         emitDup2();
                         code.putPos(arrayAccess.pos);
                         emitALoad();
                         visitExpression(rhs);
-                        code.putPos(expression.pos);
-                        code.addInstruction(asg2state(expression.getTag()), -1);
+                        code.putPos(pos);
+                        code.addInstruction(asg2state(tag), -1);
                     } else {
                         visitExpression(rhs);
                     }
@@ -1275,7 +1288,7 @@ public final class Gen extends Scanner {
             }
             case VARIABLE: {
                 Var variable = (Var) lhs;
-                if (hasTag(expression, Tag.ASG_NULLCOALESCE)) {
+                if (tag == Tag.ASG_NULLCOALESCE) {
                     int ex = code.makeChain();
                     visitExpression(lhs);
                     code.addChainedInstruction(Ifnonnull::new, ex, -1);
@@ -1283,7 +1296,7 @@ public final class Gen extends Scanner {
                     if (isUsed()) {
                         emitDup();
                     }
-                    code.putPos(expression.pos);
+                    code.putPos(pos);
                     emitVStore(variable.name.value);
                     if (isUsed()) {
                         int el = code.makeChain();
@@ -1295,18 +1308,18 @@ public final class Gen extends Scanner {
                         code.resolveChain(ex);
                     }
                 } else {
-                    if (!hasTag(expression, Tag.ASSIGN)) {
+                    if (tag != Tag.ASSIGN) {
                         visitExpression(lhs);
                         visitExpression(rhs);
-                        code.putPos(expression.pos);
-                        code.addInstruction(asg2state(expression.getTag()), -1);
+                        code.putPos(pos);
+                        code.addInstruction(asg2state(tag), -1);
                     } else {
                         visitExpression(rhs);
                     }
                     if (isUsed()) {
                         emitDup();
                     }
-                    code.putPos(expression.pos);
+                    code.putPos(pos);
                     emitVStore(variable.name.value);
                 }
                 break;
@@ -1316,19 +1329,7 @@ public final class Gen extends Scanner {
     }
 
     public static Instruction asg2state(Tag tag) {
-        switch (tag) {
-            case ASG_ADD: return Add.INSTANCE;
-            case ASG_SUB: return Sub.INSTANCE;
-            case ASG_MUL: return Mul.INSTANCE;
-            case ASG_DIV: return Div.INSTANCE;
-            case ASG_REM: return Rem.INSTANCE;
-            case ASG_SL: return Shl.INSTANCE;
-            case ASG_SR: return Shr.INSTANCE;
-            case ASG_AND: return And.INSTANCE;
-            case ASG_OR: return Or.INSTANCE;
-            case ASG_XOR: return Xor.INSTANCE;
-            default: throw new AssertionError();
-        }
+        return bin2instr(TreeInfo.tagWithoutAsg(tag));
     }
 
     // todo: В будущем планируется заменить поле expressionDepth на более удобный механизм.

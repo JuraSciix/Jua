@@ -302,40 +302,40 @@ public class JuaParser {
         int position = currentToken.pos;
 
         if (match(AMPEQ)) {
-            return new AssignOp(position, Tag.ASG_AND, expr, parseAssignment());
+            return new CompoundAssign(position, Tag.ASG_AND, expr, parseAssignment());
         }
         if (match(BAREQ)) {
-            return new AssignOp(position, Tag.ASG_OR, expr, parseAssignment());
+            return new CompoundAssign(position, Tag.ASG_OR, expr, parseAssignment());
         }
         if (match(CARETEQ)) {
-            return new AssignOp(position, Tag.XOR, expr, parseAssignment());
+            return new CompoundAssign(position, Tag.XOR, expr, parseAssignment());
         }
         if (match(EQ)) {
-            return new AssignOp(position, Tag.ASSIGN, expr, parseAssignment());
+            return new Assign(position, expr, parseAssignment());
         }
         if (match(GTGTEQ)) {
-            return new AssignOp(position, Tag.ASG_SL, expr, parseAssignment());
+            return new CompoundAssign(position, Tag.ASG_SL, expr, parseAssignment());
         }
         if (match(LTLTEQ)) {
-            return new AssignOp(position, Tag.ASG_SR, expr, parseAssignment());
+            return new CompoundAssign(position, Tag.ASG_SR, expr, parseAssignment());
         }
         if (match(MINUSEQ)) {
-            return new AssignOp(position, Tag.ASG_SUB, expr, parseAssignment());
+            return new CompoundAssign(position, Tag.ASG_SUB, expr, parseAssignment());
         }
         if (match(PERCENTEQ)) {
-            return new AssignOp(position, Tag.ASG_REM, expr, parseAssignment());
+            return new CompoundAssign(position, Tag.ASG_REM, expr, parseAssignment());
         }
         if (match(PLUSEQ)) {
-            return new AssignOp(position, Tag.ASG_ADD, expr, parseAssignment());
+            return new CompoundAssign(position, Tag.ASG_ADD, expr, parseAssignment());
         }
         if (match(QUESQUESEQ)) {
-            return new AssignOp(position, Tag.ASG_NULLCOALESCE, expr, parseAssignment());
+            return new CompoundAssign(position, Tag.ASG_NULLCOALESCE, expr, parseAssignment());
         }
         if (match(SLASHEQ)) {
-            return new AssignOp(position, Tag.ASG_DIV, expr, parseAssignment());
+            return new CompoundAssign(position, Tag.ASG_DIV, expr, parseAssignment());
         }
         if (match(STAREQ)) {
-            return new AssignOp(position, Tag.ASG_MUL, expr, parseAssignment());
+            return new CompoundAssign(position, Tag.ASG_MUL, expr, parseAssignment());
         }
         return expr;
     }

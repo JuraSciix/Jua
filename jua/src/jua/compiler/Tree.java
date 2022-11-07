@@ -97,7 +97,8 @@ public interface Tree {
         void visitArrayAccess(ArrayAccess tree);
         void visitInvocation(Invocation tree);
         void visitParens(Parens tree);
-        void visitAssignOp(AssignOp tree);
+        void visitAssign(Assign tree);
+        void visitCompoundAssign(CompoundAssign tree);
         void visitTernaryOp(TernaryOp tree);
         void visitBinaryOp(BinaryOp tree);
         void visitUnaryOp(UnaryOp tree);
@@ -171,7 +172,10 @@ public interface Tree {
         public void visitParens(Parens tree) { visitTree(tree); }
 
         @Override
-        public void visitAssignOp(AssignOp tree) { visitTree(tree); }
+        public void visitAssign(Assign tree) { visitTree(tree); }
+
+        @Override
+        public void visitCompoundAssign(CompoundAssign tree) { visitTree(tree); }
 
         @Override
         public void visitTernaryOp(TernaryOp tree) { visitTree(tree); }
@@ -321,7 +325,13 @@ public interface Tree {
         }
 
         @Override
-        public void visitAssignOp(AssignOp tree) {
+        public void visitAssign(Assign tree) {
+            scan(tree.var);
+            scan(tree.expr);
+        }
+
+        @Override
+        public void visitCompoundAssign(CompoundAssign tree) {
             scan(tree.src);
             scan(tree.dst);
         }
@@ -511,7 +521,14 @@ public interface Tree {
         }
 
         @Override
-        public void visitAssignOp(AssignOp tree) {
+        public void visitAssign(Assign tree) {
+            tree.var = translate(tree.var);
+            tree.expr = translate(tree.expr);
+            result = tree;
+        }
+
+        @Override
+        public void visitCompoundAssign(CompoundAssign tree) {
             tree.dst = translate(tree.dst);
             tree.src = translate(tree.src);
             result = tree;
@@ -1015,13 +1032,30 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitParens(this); }
     }
 
-    final class AssignOp extends Expression {
+    final class Assign extends Expression {
+
+        public Expression var, expr;
+
+        public Assign(int pos, Expression var, Expression expr) {
+            super(pos);
+            this.var = var;
+            this.expr = expr;
+        }
+
+        @Override
+        public Tag getTag() { return Tag.ASSIGN; }
+
+        @Override
+        public void accept(Visitor visitor) { visitor.visitAssign(this); }
+    }
+
+    final class CompoundAssign extends Expression {
 
         public final Tag tag;
 
         public Expression dst, src;
 
-        public AssignOp(int pos, Tag tag, Expression dst, Expression src) {
+        public CompoundAssign(int pos, Tag tag, Expression dst, Expression src) {
             super(pos);
             this.tag = tag;
             this.dst = dst;
@@ -1032,7 +1066,7 @@ public interface Tree {
         public Tag getTag() { return tag; }
 
         @Override
-        public void accept(Visitor visitor) { visitor.visitAssignOp(this); }
+        public void accept(Visitor visitor) { visitor.visitCompoundAssign(this); }
     }
 
     final class TernaryOp extends Expression {

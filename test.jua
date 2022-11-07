@@ -1,5 +1,12 @@
 a = {
-    'foo': 'bar'
+    'foo1': 'bar1'
 };
 
-println(a.foo);
+a.foo1 ??= 'new bar1';
+a.foo2 ??= 'new bar2';
+
+if a != {'foo1': 'bar1', 'foo2': 'new bar2'} {
+    println("Test failed. Details: a.foo1=" + a.foo1 + ", a.foo2=" + a.foo2);
+} else {
+    println("Test passed");
+}

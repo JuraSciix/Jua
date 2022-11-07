@@ -146,14 +146,20 @@ public final class Code {
     private void adjustStack(int stackAdjustment) {
         if ((context.current_nstack += stackAdjustment) > context.nstack)
             context.nstack = context.current_nstack;
+        assert context.current_nstack >= 0 : "context.current_nstack < 0, currentIP: " +  currentIP();
+//        System.out.println(context.current_nstack); // DEBUG
     }
 
     public int getSp() {
-        return context.nstack;
+        return context.current_nstack;
     }
 
     public void setSp(int nstack) {
-        context.nstack = nstack;
+        // todo: Я не уверен, что замена nstack на current_nstack ничего плохого
+        //  за собой не повлечет
+        context.current_nstack = nstack;
+        if (context.current_nstack > context.nstack)
+            context.nstack = context.current_nstack;
     }
 
     private static final boolean SCOPE_ALIVE = true;
