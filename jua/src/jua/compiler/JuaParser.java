@@ -3,7 +3,8 @@ package jua.compiler;
 import jua.compiler.Tokens.DummyToken;
 import jua.compiler.Tree.*;
 
-import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
@@ -28,7 +29,7 @@ public class JuaParser {
     }
 
     public Tree parse() {
-        List<Tree> trees = new ArrayList<>();
+        List<Tree> trees = new LinkedList<>();
         next();
         while (!match(EOF)) {
             trees.add(parseStatement());
@@ -88,7 +89,7 @@ public class JuaParser {
             return parseReturn(position);
         }
         if (match(SEMICOLON)) {
-            return parseStatement(); // todo: Убрать рекурсию
+            return new Block(position, Collections.emptyList()); // todo: Убрать рекурсию
         }
         if (match(SWITCH)) {
             return parseSwitch(position);
@@ -105,7 +106,7 @@ public class JuaParser {
     }
 
     private Statement parseConst(int position) {
-        List<ConstDef.Definition> definitions = new ArrayList<>();
+        List<ConstDef.Definition> definitions = new LinkedList<>();
 
         do {
             Tokens.Token name = currentToken;
@@ -138,7 +139,7 @@ public class JuaParser {
     private Statement parseFunction(int pos) {
         Name funcName = new Name(currentToken.getString(), currentToken.pos);
         expect(IDENTIFIER, LPAREN);
-        List<FuncDef.Parameter> params = new ArrayList<>();
+        List<FuncDef.Parameter> params = new LinkedList<>();
         boolean comma = false, optionalState = false;
 
         while (!match(RPAREN)) {
@@ -213,7 +214,7 @@ public class JuaParser {
     }
 
     private Statement parseBlock(int position) {
-        List<Statement> statements = new ArrayList<>();
+        List<Statement> statements = new LinkedList<>();
 
         while (!match(RBRACE)) {
             if (match(EOF)) {
@@ -247,7 +248,7 @@ public class JuaParser {
 
     private Statement parseSwitch(int position) {
         Expression selector = parseExpression();
-        List<Case> cases = new ArrayList<>();
+        List<Case> cases = new LinkedList<>();
         expect(LBRACE);
 
         while (!match(RBRACE)) {
@@ -284,7 +285,7 @@ public class JuaParser {
     }
 
     private List<Expression> parseExpressions() {
-        List<Expression> expressions = new ArrayList<>();
+        List<Expression> expressions = new LinkedList<>();
 
         do {
             expressions.add(parseExpression());
@@ -605,7 +606,7 @@ public class JuaParser {
 
 //    private Expression parseArrayAccess(int position, Expression expr, int dot)
 //            {
-//        List<Expression> keys = new ArrayList<>();
+//        List<Expression> keys = new LinkedList<>();
 //
 //        while (true) {
 //            if ((dot == 1) || match(DOT)) {
@@ -684,7 +685,7 @@ public class JuaParser {
     }
 
     private Expression parseInvocation(Tokens.Token token) {
-        List<Invocation.Argument> args = new ArrayList<>();
+        List<Invocation.Argument> args = new LinkedList<>();
         boolean comma = false;
 
         while (!match(RPAREN)) {
@@ -709,7 +710,7 @@ public class JuaParser {
     }
 
     private Expression parseArray(int position, Tokens.TokenKind enclosing) {
-        List<ArrayLiteral.Entry> entries = new ArrayList<>();
+        List<ArrayLiteral.Entry> entries = new LinkedList<>();
         boolean comma = false;
 
         while (!match(enclosing)) {
