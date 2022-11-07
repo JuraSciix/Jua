@@ -55,7 +55,7 @@ public final class TreeComparator extends Scanner {
 
         try {
             source = tree.source;
-            result = compare(tree.trees, that.trees);
+            result = compare(tree.stats, that.stats);
         } finally {
             source = null;
         }

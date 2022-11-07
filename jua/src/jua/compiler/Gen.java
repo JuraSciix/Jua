@@ -82,8 +82,8 @@ public final class Gen extends Scanner {
     }
     // todo: исправить этот low-cohesion
 
-    public CompileResult getResult() {
-        return new CompileResult(codeLayout, code.buildCodeSegment(), codeLayout.source.filename());
+    public CompilerResult getResult() {
+        return new CompilerResult(codeLayout, code.buildCodeSegment(), codeLayout.source.filename());
     }
 
     @Override
@@ -98,7 +98,7 @@ public final class Gen extends Scanner {
         code.pushScope();
         int prev_state = state;
         setState(STATE_ROOTED);
-        acceptTreeList(tree.trees);
+        acceptTreeList(tree.stats);
         state = prev_state;
         code.addInstruction(Halt.INSTANCE);
         code.popScope();

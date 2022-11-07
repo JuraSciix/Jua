@@ -29,12 +29,12 @@ public class JuaParser {
     }
 
     public Tree parse() {
-        List<Tree> trees = new LinkedList<>();
+        List<Statement> stats = new LinkedList<>();
         next();
         while (!match(EOF)) {
-            trees.add(parseStatement());
+            stats.add(parseStatement());
         }
-        return new CompilationUnit(tokenizer.getSource(), trees);
+        return new CompilationUnit(tokenizer.getSource(), stats);
     }
 
     private Statement parseStatement() {

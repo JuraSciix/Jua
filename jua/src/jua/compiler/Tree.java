@@ -208,7 +208,7 @@ public interface Tree {
 
         @Override
         public void visitCompilationUnit(CompilationUnit tree) {
-            scan(tree.trees);
+            scan(tree.stats);
         }
 
         @Override
@@ -385,7 +385,7 @@ public interface Tree {
 
         @Override
         public void visitCompilationUnit(CompilationUnit tree) {
-            tree.trees = translate(tree.trees);
+            tree.stats = translate(tree.stats);
             result = tree;
         }
 
@@ -560,6 +560,8 @@ public interface Tree {
 
     void accept(Visitor visitor);
 
+    default boolean hasTag(Tag tag) { return getTag() == tag; }
+
     final class Name {
 
         public final String value;
@@ -576,11 +578,11 @@ public interface Tree {
 
         public final Source source;
 
-        public List<Tree> trees;
+        public List<Statement> stats;
 
-        public CompilationUnit(Source source, List<Tree> trees) {
+        public CompilationUnit(Source source, List<Statement> stats) {
             this.source = source;
-            this.trees = trees;
+            this.stats = stats;
         }
 
         @Override
