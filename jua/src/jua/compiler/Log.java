@@ -15,6 +15,9 @@ public class Log {
         bufferStream = new PrintStream(new BufferedOutputStream(stream));
     }
 
+
+    public boolean hasErrors() { return errors > 0;}
+
     public void flush() {
         bufferStream.flush();
     }

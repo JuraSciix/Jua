@@ -34,6 +34,11 @@ public final class JuaCompiler {
             Gen gen = new Gen(layout);
             tree.accept(gen);
 
+            if (log.hasErrors()) {
+                log.flush();
+                return null;
+            }
+
             return gen.getResult();
 //        }
 //        } catch (ParseException e) {
@@ -44,6 +49,8 @@ public final class JuaCompiler {
             log.flush();
         } catch (Exception e) {
             e.printStackTrace(); // todo
+        } finally {
+            if (log.hasErrors()) log.flush();
         }
         throw new ThreadDeath();
     }

@@ -20,7 +20,7 @@ public final class Source {
     }
 
     public Log createLog() {
-        return new Log(System.out, this); // todo
+        return new Log(System.err, this); // todo
     }
 
     public Target target() {

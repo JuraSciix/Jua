@@ -34,6 +34,7 @@ public class Main {
         JuaCompiler compiler = new JuaCompiler(Collections.singletonList(targetSource));
         CompileResult result = compiler.next();
 
+        if (result == null) return;
         if (Options.disassembler()) {
             result.print();
             if (Options.stop()) {
@@ -43,7 +44,8 @@ public class Main {
         try {
             result.toThread().run();
         } catch (RuntimeErrorException e) {
-            compiler.getLog().error(e.thread.current_line_number(), e.getMessage());
+            // todo: Починить вывод который влад сломал
+            e.printStackTrace();
         }
     }
 
