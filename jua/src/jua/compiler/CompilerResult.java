@@ -8,7 +8,7 @@ import jua.runtime.code.CodeSegment;
 import jua.runtime.JuaFunction;
 import jua.runtime.heap.Operand;
 
-public class CompileResult {
+public final class CompilerResult {
 
     // todo: Отрефакторить.
 
@@ -17,7 +17,7 @@ public class CompileResult {
     public final String filename;
 
     // Trusting constructor.
-    CompileResult(CodeLayout codeLayout, CodeSegment main, String filename) {
+    CompilerResult(CodeLayout codeLayout, CodeSegment main, String filename) {
         this.codeLayout = codeLayout;
         this.main = main;
         this.filename = filename;

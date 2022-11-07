@@ -14,7 +14,7 @@ public final class JuaCompiler {
         this.sources = sources.iterator();
     }
 
-    public CompileResult next() throws IOException {
+    public CompilerResult next() throws IOException {
         Source source = sources.next();
 
         // todo: CodeLayout должен уметь работать с несколькими сурсами одновременно.

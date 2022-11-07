@@ -1,9 +1,8 @@
 package jua;
 
-import jua.compiler.CompileResult;
+import jua.compiler.CompilerResult;
 import jua.compiler.JuaCompiler;
 import jua.runtime.RuntimeErrorException;
-import jua.util.IOUtils;
 import jua.compiler.Source;
 
 import java.io.File;
@@ -32,7 +31,7 @@ public class Main {
         Source targetSource = new Source(file.getName());
         targetSource.read();
         JuaCompiler compiler = new JuaCompiler(Collections.singletonList(targetSource));
-        CompileResult result = compiler.next();
+        CompilerResult result = compiler.next();
 
         if (result == null) return;
         if (Options.disassembler()) {
