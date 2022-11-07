@@ -27,6 +27,7 @@ public interface Tree {
         LITERAL,
         ARRAYLITERAL,
         VARIABLE,
+        FIELDACCESS,
         ARRAYACCESS,
         INVOCATION,
         PARENS,
@@ -92,6 +93,7 @@ public interface Tree {
         void visitLiteral(Literal tree);
         void visitArrayLiteral(ArrayLiteral tree);
         void visitVariable(Var tree);
+        void visitFieldAccess(FieldAccess tree);
         void visitArrayAccess(ArrayAccess tree);
         void visitInvocation(Invocation tree);
         void visitParens(Parens tree);
@@ -103,8 +105,7 @@ public interface Tree {
 
     abstract class AbstractVisitor implements Visitor {
         @Override
-        public void visitCompilationUnit(CompilationUnit tree) { visitTree(tree);
-        }
+        public void visitCompilationUnit(CompilationUnit tree) { visitTree(tree); }
 
         @Override
         public void visitConstDef(ConstDef tree) { visitTree(tree); }
@@ -156,6 +157,9 @@ public interface Tree {
 
         @Override
         public void visitVariable(Var tree) { visitTree(tree); }
+
+        @Override
+        public void visitFieldAccess(FieldAccess tree) { visitTree(tree); }
 
         @Override
         public void visitArrayAccess(ArrayAccess tree) { visitTree(tree); }
@@ -292,6 +296,11 @@ public interface Tree {
 
         @Override
         public void visitVariable(Var tree) {  }
+
+        @Override
+        public void visitFieldAccess(FieldAccess tree) {
+            scan(tree.expr);
+        }
 
         @Override
         public void visitArrayAccess(ArrayAccess tree) {
@@ -473,6 +482,12 @@ public interface Tree {
 
         @Override
         public void visitVariable(Var tree) { result = tree; }
+
+        @Override
+        public void visitFieldAccess(FieldAccess tree) {
+            tree.expr = translate(tree.expr);
+            result = tree;
+        }
 
         @Override
         public void visitArrayAccess(ArrayAccess tree) {
@@ -915,6 +930,25 @@ public interface Tree {
 
         @Override
         public void accept(Visitor visitor) { visitor.visitVariable(this); }
+    }
+
+    final class FieldAccess extends Expression {
+
+        public Expression expr;
+
+        public Name field;
+
+        public FieldAccess(int pos, Expression expr, Name field) {
+            super(pos);
+            this.expr = expr;
+            this.field = field;
+        }
+
+        @Override
+        public Tag getTag() { return Tag.FIELDACCESS; }
+
+        @Override
+        public void accept(Visitor visitor) { visitor.visitFieldAccess(this); }
     }
 
     final class ArrayAccess extends Expression {

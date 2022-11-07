@@ -591,8 +591,8 @@ public class JuaParser {
             if (match(DOT)) {
                 Tokens.Token token = currentToken;
                 expect(IDENTIFIER);
-                expression = new ArrayAccess(position, expression,
-                        new Literal(token.pos, types.asString(token.getString())));
+                expression = new FieldAccess(position, expression,
+                        new Name(token.getString(), token.pos));
             } else if (match(LBRACKET)) {
                 expression = new ArrayAccess(position, expression, parseExpression());
                 expect(RBRACKET);
@@ -713,7 +713,6 @@ public class JuaParser {
         boolean comma = false;
 
         while (!match(enclosing)) {
-            System.out.println(position);
             if (match(EOF) || comma && !match(COMMA)) {
                 expect(enclosing);
             }

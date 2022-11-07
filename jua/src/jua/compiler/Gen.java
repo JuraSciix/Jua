@@ -1041,6 +1041,14 @@ public final class Gen extends Scanner {
     }
 
     @Override
+    public void visitFieldAccess(FieldAccess tree) {
+        visitExpression(tree.expr);
+        emitPushString(tree.field.value);
+        code.putPos(tree.pos);
+        emitALoad();
+    }
+
+    @Override
     public void visitWhileLoop(WhileLoop tree) {
         generateLoop(tree, null, tree.cond, null, tree.body, true);
     }
