@@ -23,11 +23,11 @@ public class Tokenizer implements AutoCloseable {
             return this;
         }
 
-        public Tokens.Token buildNamed(Tokens.TokenKind type) {
+        public Token buildNamed(TokenKind type) {
             return new OperatorToken(type, pos);
         }
 
-        public Tokens.Token buildNamedOrString() {
+        public Token buildNamedOrString() {
             String s = buffer.toString();
             TokenKind k = lookupKind(s);
             if (k == null) k = IDENTIFIER;
@@ -35,11 +35,11 @@ public class Tokenizer implements AutoCloseable {
             return new StringToken(k, pos, s);
         }
 
-        public Tokens.Token buildString() {
+        public Token buildString() {
             return new StringToken(STRINGLITERAL, pos, buffer.toString());
         }
 
-        public Tokens.Token buildNumber(boolean isFloat, int radix) {
+        public Token buildNumber(boolean isFloat, int radix) {
             if (isFloat) {
                 return new NumberToken(FLOATLITERAL, pos, buffer.toString(), 10);
             } else {
@@ -53,6 +53,8 @@ public class Tokenizer implements AutoCloseable {
     private final SourceReader reader;
 
     private final Log log;
+
+    private Token eofToken;
 
     public Tokenizer(Source source) {
         this.source = source;
@@ -68,40 +70,149 @@ public class Tokenizer implements AutoCloseable {
         return true;
     }
 
-    public Tokens.Token nextToken() {
-        while (true) {
-            int c;
+    public Token nextToken() {
+        while (reader.hasMore()) {
+            int pos = reader.cursor();
+            char ch = reader.peekChar();
 
-            if (!reader.hasMore()) return new DummyToken(EOF, reader.cursor() + 1);
+            switch (ch) {
+                // ASCII whitespaces
+                case '\r': case '\n': case '\t': case ' ':
+                case '\u0000': case '\u0001': case '\u0002':
+                case '\u0003': case '\u0004': case '\u0005':
+                case '\u0006': case '\u0007': case '\u0008':
+                case '\u000E': case '\u000F': case '\u0010':
+                case '\u0011': case '\u0012': case '\u0013':
+                case '\u0014': case '\u0015': case '\u0016':
+                case '\u0017': case '\u0018': case '\u0019':
+                case '\u001B': case '\u007F':
+                    reader.readChar();
+                    continue;
 
-            c = reader.readCodePoint();
+                // ASCII identifier start chars
+                case 'a': case 'b': case 'c': case 'd':
+                case 'e': case 'f': case 'g': case 'h':
+                case 'i': case 'j': case 'k': case 'l':
+                case 'm': case 'n': case 'o': case 'p':
+                case 'q': case 'r': case 's': case 't':
+                case 'u': case 'v': case 'w': case 'x':
+                case 'y': case 'z':
+                case 'A': case 'B': case 'C': case 'D':
+                case 'E': case 'F': case 'G': case 'H':
+                case 'I': case 'J': case 'K': case 'L':
+                case 'M': case 'N': case 'O': case 'P':
+                case 'Q': case 'R': case 'S': case 'T':
+                case 'U': case 'V': case 'W': case 'X':
+                case 'Y': case 'Z':
+                case '$': case '_': case '\u001A':
+                    reader.readChar();
+                    return parseKeyword(ch);
 
-            if (c == '#') {
-                parseComment();
-                continue;
+                case '0': case '1': case '2': case '3':
+                case '4': case '5': case '6': case '7':
+                case '8': case '9':
+                    reader.readChar();
+                    return parseNumber(ch);
+
+                case '.':
+                    reader.readChar();
+                    if (reader.hasMore()) {
+                        switch (reader.peekChar()) {
+                            case '0': case '1': case '2': case '3':
+                            case '4': case '5': case '6': case '7':
+                            case '8': case '9':
+                                return parseNumber('.');
+                        }
+                    }
+                    return new OperatorToken(DOT, pos);
+
+                case '#':
+                    // todo: warning: Comments which starts with '#' are deprecated and will be removed in near future.
+                    reader.readChar();
+                    parseSingleLineComment();
+                    continue;
+
+                case '/':
+                    reader.readChar();
+                    if (reader.hasMore()) {
+                        ch = reader.peekChar();
+                        switch (ch) {
+                            case '/':
+                                reader.readChar();
+                                parseSingleLineComment();
+                                continue;
+                            case '*':
+                                reader.readChar();
+                                parseMultiLineComment(pos);
+                                continue;
+                            case '=':
+                                reader.readChar();
+                                return new OperatorToken(SLASHEQ, pos);
+                        }
+                    }
+                    return new OperatorToken(SLASH, pos);
+
+                case '&': case '|': case '^':
+                case '=': case '!': case '>':
+                case '<': case '-': case '%':
+                case '+': case '?': case '*':
+                    reader.readChar();
+                    return parseSpecial(ch);
+
+                case ',': reader.readChar(); return new OperatorToken(COMMA, pos);
+                case ';': reader.readChar(); return new OperatorToken(SEMICOLON, pos);
+                case ':': reader.readChar(); return new OperatorToken(COLON, pos);
+                case '~': reader.readChar(); return new OperatorToken(TILDE, pos);
+                case '{': reader.readChar(); return new OperatorToken(LBRACE, pos);
+                case '(': reader.readChar(); return new OperatorToken(LPAREN, pos);
+                case '[': reader.readChar(); return  new OperatorToken(LBRACKET, pos);
+                case '}': reader.readChar(); return new OperatorToken(RBRACE, pos);
+                case ')': reader.readChar(); return new OperatorToken(RPAREN, pos);
+                case ']': reader.readChar(); return  new OperatorToken(RBRACKET, pos);
+
+                case '\'': reader.readChar(); return parseString('\'');
+                case '\"': reader.readChar(); return parseString('\"');
+
+                default:
+                    if (Character.isHighSurrogate(ch) || ch > 0x7f) { // Все валидные ASCII обработаны выше.
+                        int cp = reader.readCodePoint();
+
+                        if (Character.isWhitespace(cp)) {
+                            continue;
+                        }
+
+                        if (Character.isJavaIdentifierStart(cp)) {
+                            return parseKeyword(cp);
+                        }
+                    } else {
+                        reader.readChar();
+                    }
+                    log.error(pos, "Illegal character");
             }
-            if (!Character.isWhitespace(c)) return parseCharacter(c);
         }
+
+        if (eofToken == null) eofToken = new DummyToken(EOF, reader.cursor() + 1);
+        return eofToken;
     }
 
-    private void parseComment() {
-        while (reader.hasMore() && reader.readChar() != '\n');
+    private void parseSingleLineComment() {
+        while (reader.hasMore() && reader.readChar() != '\n') ;
     }
 
-    private Tokens.Token parseCharacter(int c) {
-        if (c == '\'' || c == '"') {
-            return parseString(c);
+    private void parseMultiLineComment(int pos) {
+        while (reader.hasMore()) {
+            char c1 = reader.readChar();
+            if (c1 == '*' && reader.hasMore()) {
+                char c2 = reader.readChar();
+                if (c2 == '/') {
+                    return;
+                }
+            }
         }
-        if (isDigit(c) || c == '.' && isDigit(reader.peekChar())) {
-            return parseNumber(c);
-        }
-        if (isJavaIdentifierStart(c)) {
-            return parseKeyword(c);
-        }
-        return parseSpecial(c);
+        log.error(pos, "Unterminated multi-line comment");
     }
 
-    private Tokens.Token parseString(int mark) {
+    private Token parseString(int mark) {
         TokenBuilder builder = getBuilder();
         int c = 0;
 
@@ -122,30 +233,14 @@ public class Tokenizer implements AutoCloseable {
         int c = reader.readChar();
 
         switch (c) {
-            case 'b':
-                builder.putChar('\b');
-                return;
-            case 'f':
-                builder.putChar('\f');
-                return;
-            case 'n':
-                builder.putChar('\n');
-                return;
-            case 'r':
-                builder.putChar('\r');
-                return;
-            case 't':
-                builder.putChar('\t');
-                return;
-            case '\'':
-                builder.putChar('\'');
-                return;
-            case '\"':
-                builder.putChar('\"');
-                return;
-            case '\\':
-                builder.putChar('\\');
-                return;
+            case 'b': builder.putChar('\b'); return;
+            case 'f': builder.putChar('\f'); return;
+            case 'n': builder.putChar('\n'); return;
+            case 'r': builder.putChar('\r'); return;
+            case 't': builder.putChar('\t'); return;
+            case '\'': builder.putChar('\''); return;
+            case '\"': builder.putChar('\"'); return;
+            case '\\': builder.putChar('\\'); return;
         }
         if (c >= '0' && c <= '7') {
             parseEscapeOctal(builder, c);
@@ -166,7 +261,7 @@ public class Tokenizer implements AutoCloseable {
         builder.putChar(oct);
     }
 
-    private Tokens.Token parseNumber(int c) {
+    private Token parseNumber(int c) {
         TokenBuilder builder = getBuilder();
         int next = reader.peekChar();
         int radix = 10;
@@ -182,7 +277,7 @@ public class Tokenizer implements AutoCloseable {
         return parseFraction(builder, radix, (c == '.'));
     }
 
-    private Tokens.Token parseHex(TokenBuilder builder) {
+    private Token parseHex(TokenBuilder builder) {
         reader.readChar();
         int next = reader.peekChar();
 
@@ -193,7 +288,7 @@ public class Tokenizer implements AutoCloseable {
         return builder.buildNumber(false, 16);
     }
 
-    private Tokens.Token parseBin(TokenBuilder builder) {
+    private Token parseBin(TokenBuilder builder) {
         reader.readChar();
         int next = reader.peekChar();
 
@@ -204,7 +299,7 @@ public class Tokenizer implements AutoCloseable {
         return builder.buildNumber(false, 2);
     }
 
-    private Tokens.Token parseDuo(TokenBuilder builder) {
+    private Token parseDuo(TokenBuilder builder) {
         reader.readChar();
         int next = reader.peekChar();
 
@@ -215,7 +310,7 @@ public class Tokenizer implements AutoCloseable {
         return builder.buildNumber(false, 12);
     }
 
-    private Tokens.Token parseFraction(TokenBuilder builder, int radix, boolean isFloat) {
+    private Token parseFraction(TokenBuilder builder, int radix, boolean isFloat) {
         int c;
 
         if ((c = reader.peekChar()) == '.') {
@@ -264,7 +359,7 @@ public class Tokenizer implements AutoCloseable {
         tError(reader.cursor(), "underscore is not allowed here.");
     }
 
-    private Tokens.Token parseKeyword(int c) {
+    private Token parseKeyword(int c) {
         TokenBuilder builder = getBuilder(c);
 
         while (isJavaIdentifierPart(reader.peekCodePoint())) {
@@ -273,7 +368,7 @@ public class Tokenizer implements AutoCloseable {
         return builder.buildNamedOrString();
     }
 
-    private Tokens.Token parseSpecial(int c) {
+    private Token parseSpecial(int c) {
         TokenBuilder builder = getBuilder(-1);
         TokenKind type = null;
         // Обожаю костыли.
@@ -302,36 +397,17 @@ public class Tokenizer implements AutoCloseable {
     private boolean seenSpecial() {
         if (!reader.hasMore()) return false;
         switch (reader.peekChar()) {
-            case '&':
-            case '|':
-            case '^':
-            case ':':
-            case ',':
-            case '.':
-            case '=':
-            case '!':
-            case '>':
-            case '{':
-            case '[':
-            case '(':
-            case '<':
-            case '-':
-            case '%':
-            case '+':
-            case '?':
-            case '}':
-            case ']':
-            case ')':
-            case ';':
-            case '*':
-            case '~':
+            case '&': case '|': case '^':
+            case '=': case '!': case '>':
+            case '<': case '-': case '%':
+            case '+': case '?': case '*':
                 return true;
             default:
                 return false;
         }
     }
 
-    private Tokens.Token checkSpecial(TokenBuilder builder, Tokens.TokenKind type) {
+    private Token checkSpecial(TokenBuilder builder, TokenKind type) {
         if (type == null) {
             tError(builder.pos, "illegal character.");
         }

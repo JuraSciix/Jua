@@ -23,10 +23,10 @@ public final class LineMap {
             while (reader.hasMore()) {
                 int ch = reader.readChar();
                 if (ch == '\n') {
-                    lineStartPoints.add(reader.cursor());
+                    lineStartPoints.add(reader.cursor() - 1);
                 }
             }
-            lineStartPoints.add(reader.length());
+            lineStartPoints.add(reader.length() - 1);
 
             return lineStartPoints.toIntArray();
         } catch (Exception e) {
