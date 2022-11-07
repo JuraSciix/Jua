@@ -92,6 +92,13 @@ public final class ArrayOperand extends Operand {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || o.getClass() != ArrayOperand.class) return false;
+        return ((ArrayOperand) o).map.equals(map);
+    }
+
+    @Override
     public Operand doClone() {
         return new ArrayOperand(map);
     }
