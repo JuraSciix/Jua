@@ -6,14 +6,19 @@ public class Enter extends Scanner {
 
     private final CodeLayout codeLayout;
 
-    public Enter(CodeLayout codeLayout) {
+    private final Log log;
+
+    public Enter(CodeLayout codeLayout, Log log) {
         this.codeLayout = codeLayout;
+        this.log = log;
     }
 
     @Override
     public void visitFuncDef(FuncDef tree) {
-        if (codeLayout.testConstant(tree.name.value))
-            throw new CompileError("Function '" + tree.name + "' has been already declared.", tree.pos);
+        if (codeLayout.testConstant(tree.name.value)) {
+            log.error(tree.name.pos, "Function '" + tree.name + "' has been already declared.");
+            return;
+        }
         codeLayout.setFunction(tree.name.value, null);
     }
 
@@ -22,7 +27,8 @@ public class Enter extends Scanner {
         for (ConstDef.Definition def : tree.defs) {
             Name name = def.name;
             if (codeLayout.testConstant(name.value)) {
-                throw new CompileError("Constant '" + name.value + "' has been already declared.", name.pos);
+                log.error(name.pos, "Constant '" + name.value + "' has been already declared.");
+                continue;
             }
             codeLayout.setConstant(name.value, null);
         }

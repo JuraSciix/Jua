@@ -24,8 +24,6 @@ public class Log {
 
     public void error(int pos, String msg) {
         errors++;
-        if (errors > maxErrors)
-            throw new CompileInterrupter();
 
         //Compile error: %message%
         //File: %file%, line: %line%
@@ -38,9 +36,13 @@ public class Log {
                     lineMap.getLineNumber(pos),
                     lineMap.getColumnNumber(pos)
             );
+            bufferStream.flush();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
+        if (errors >= maxErrors)
+            throw new CompileInterrupter();
     }
 
     public void error(int pos, String fmt, Object... args) {

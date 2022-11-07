@@ -69,16 +69,19 @@ public final class Gen extends Scanner {
     private int state = 0; // unassigned state
 
 
-    public Gen(CodeLayout codeLayout) {
+    private final Log log;
+
+    public Gen(CodeLayout codeLayout, Log log) {
         this.codeLayout = codeLayout;
+        this.log = log;
 
         breakChains = new IntArrayList();
         continueChains = new IntArrayList();
         fallthroughChains = new IntArrayList();
         conditionalChains = new IntArrayList();
     }
-
     // todo: исправить этот low-cohesion
+
     public CompileResult getResult() {
         return new CompileResult(codeLayout, code.buildCodeSegment(), codeLayout.source.filename());
     }
@@ -1530,6 +1533,10 @@ public final class Gen extends Scanner {
     }
 
     private void cError(int position, String message) {
-        throw new CompileError(message, position);
+        log.error(position, message);
     }
+
+    /* НИЖЕ РАСПОЛАГАЕТСЯ НОВЫЙ ЭКСПЕРИМЕНТАЛЬНЫЙ КОД */
+
+    // Но его пока нет
 }
