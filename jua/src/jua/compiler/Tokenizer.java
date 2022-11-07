@@ -85,10 +85,7 @@ public class Tokenizer implements AutoCloseable {
     }
 
     private void parseComment() {
-        int c;
-        while (reader.hasMore() && (c = reader.readChar()) != '\n') {
-            c = reader.readChar();
-        }
+        while (reader.hasMore() && reader.readChar() != '\n');
     }
 
     private Tokens.Token parseCharacter(int c) {
@@ -291,12 +288,12 @@ public class Tokenizer implements AutoCloseable {
             }
             type = lookup;
             if (!reader.hasMore()) break;
-            c = reader.peekChar();
             if (f) {
                 f = false;
             } else {
                 reader.readChar();
             }
+            c = reader.peekChar();
         } while (seenSpecial());
 
         return checkSpecial(builder, type);

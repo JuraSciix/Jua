@@ -80,6 +80,11 @@ public final class SourceReader implements AutoCloseable {
     public int readCodePoint() {
         int c;
         if (peeked != -1) {
+            // todo: Требует тестирования, а вообще лучше переписать заново весь класс
+            if (Character.charCount(peeked) == 1 && length() - cursor() > 2 &&
+                    Character.isSurrogatePair((char) peeked, buffer[cursor + 1])) {
+                peeked = Character.toCodePoint((char) peeked, buffer[cursor + 1]);
+            }
             c = peeked;
             peeked = -1;
         } else {
