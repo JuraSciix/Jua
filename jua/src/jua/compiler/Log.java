@@ -45,6 +45,11 @@ public class Log {
             throw new CompileInterrupter();
     }
 
+    public void waring(String msg) {
+        bufferStream.println("Warning: " + msg);
+        bufferStream.flush();
+    }
+
     public void error(int pos, String fmt, Object... args) {
         error(pos, String.format(fmt, args));
     }
