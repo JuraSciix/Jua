@@ -31,7 +31,7 @@ public final class JuaCompiler {
 
             tree.accept(new Enter(layout, log));
             tree.accept(new Lower(types));
-            Gen gen = new Gen(layout, log);
+            Gen gen = new MinorGen(layout, log);
             tree.accept(gen);
 
             if (log.hasErrors()) {
