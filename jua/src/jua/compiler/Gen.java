@@ -98,7 +98,7 @@ public final class Gen extends Scanner {
         code.pushScope();
         int prev_state = state;
         setState(STATE_ROOTED);
-        acceptTreeList(tree.stats);
+        scan(tree.stats);
         state = prev_state;
         code.addInstruction(Halt.INSTANCE);
         code.popScope();
@@ -116,7 +116,7 @@ public final class Gen extends Scanner {
         state |= state_flag;
     }
 
-    public void visitAnd(BinaryOp expression) {
+    public void generateAnd(BinaryOp expression) {
 //        beginCondition();
 //        if (invertCond) {
 //            if (expression.rhs == null) {
@@ -153,7 +153,7 @@ public final class Gen extends Scanner {
         endCondition();
     }
 
-    public void visitOr(BinaryOp expression) {
+    public void geterateOr(BinaryOp expression) {
 //        beginCondition();
 //        if (invertCond) {
 //            generateCondition(expression.lhs);
@@ -246,27 +246,6 @@ public final class Gen extends Scanner {
         code.addInstruction(Newarray.INSTANCE, 1);
     }
 
-    public void visitAssignNullCoalesce(CompoundAssign tree) {
-//        int el = code.createFlow();
-//        int ex = code.createFlow();
-//        boolean isArray = (expression.var.child() instanceof ArrayAccess);
-//        visitAssignment(expression, line -> {
-//            code.addFlow(el, new Ifnonnull());
-//            code.decStack();
-//            visitExpression(expression.expr);
-//        });
-//        insertGoto(0, ex);
-//        code.resolveFlow(el);
-//        if (isArray) {
-//            insertALoad(line(expression));
-//        } else {
-//            visitExpression(expression.var);
-//        }
-//        code.resolveFlow(ex);
-
-        generateAssignment(tree.pos, tree.tag, tree.dst, tree.src);
-    }
-
     private void generateBinary(BinaryOp tree) {
         if (TreeInfo.isConditionalTag(tree.tag)) {
             generateComparison(tree);
@@ -285,38 +264,7 @@ public final class Gen extends Scanner {
         }
         tree.rhs.accept(this);
         code.putPos(tree.pos);
-        code.addInstruction(bin2instr(tree.getTag()));
-    }
-
-    public static Instruction bin2instr(Tag tag) {
-        switch (tag) {
-            case ADD: return Add.INSTANCE;
-            case SUB: return Sub.INSTANCE;
-            case MUL: return Mul.INSTANCE;
-            case DIV: return Div.INSTANCE;
-            case REM: return Rem.INSTANCE;
-            case SL: return Shl.INSTANCE;
-            case SR: return Shr.INSTANCE;
-            case AND: return And.INSTANCE;
-            case OR: return Or.INSTANCE;
-            case XOR: return Xor.INSTANCE;
-            default: throw new AssertionError();
-        }
-    }
-
-    @Override
-    public void visitBlock(Block tree) {
-        acceptTreeList(tree.stats);
-    }
-
-    private void acceptTreeList(List<? extends Tree> statements) {
-        for (Tree tree : statements) {
-            // Таким образом, мы упускаем ошибки в мертвом коде
-//            if (!code.isAlive()) {
-//                break;
-//            }
-            tree.accept(this);
-        }
+        code.addInstruction(InstructionUtils.fromBinaryOpTag(tree.getTag()));
     }
 
     @Override
@@ -427,13 +375,14 @@ public final class Gen extends Scanner {
     }
 
     private Operand resolveOperand(Literal literal) {
-        Object value = literal.type;
-        if (value instanceof Long || value instanceof Integer) return LongOperand.valueOf(((Number) value).longValue());
-        if (value instanceof Double || value instanceof Float)
-            return DoubleOperand.valueOf(((Number) value).doubleValue());
-        if (value instanceof String) return StringOperand.valueOf((String) value);
-        if (value instanceof Boolean) return BooleanOperand.valueOf(((Boolean) value));
-        assert value == null;
+        // todo: Довести до literal.type.toOperand()
+        Types.Type value = literal.type;
+        if (value.isLong()) return LongOperand.valueOf(value.longValue());
+        if (value.isDouble())
+            return DoubleOperand.valueOf(value.doubleValue());
+        if (value.isString()) return StringOperand.valueOf(value.stringValue());
+        if (value.isBoolean()) return BooleanOperand.valueOf(value.booleanValue());
+        assert value.isNull();
         return NullOperand.NULL;
     }
 
@@ -451,45 +400,6 @@ public final class Gen extends Scanner {
     @Override
     public void visitDoLoop(DoLoop tree) {
         generateLoop(tree, null, tree.cond, null, tree.body, false);
-    }
-
-    public void visitEqual(BinaryOp expression) {
-//        beginCondition();
-//        Expression lhs = expression.lhs;
-//        Expression rhs = expression.rhs;
-//        int line = TreeInfo.line(expression);
-//        if (lhs instanceof NullExpression) {
-//            visitExpression(rhs);
-//            code.addChainedInstruction(line,
-//                    invertCond ? new Ifnull() : new Ifnonnull(),
-//                    peekConditionChain(), -1);
-//        } else if (rhs instanceof NullExpression) {
-//            visitExpression(lhs);
-//            code.addChainedInstruction(line,
-//                    (invertCond ? new Ifnull() : new Ifnonnull()),
-//                    peekConditionChain(), -1);
-//        } else if (TreeInfo.resolveShort(lhs) >= 0) {
-//            visitExpression(rhs);
-//            int shortVal = TreeInfo.resolveShort(lhs);
-//            code.addChainedInstruction(line,
-//                    (invertCond ? new Ifeq(shortVal) : new Ifne(shortVal)),
-//                    peekConditionChain(), -1);
-//        } else if (TreeInfo.resolveShort(rhs) >= 0) {
-//            visitExpression(rhs);
-//            int shortVal = TreeInfo.resolveShort(lhs);
-//            code.addChainedInstruction(line,
-//                    (invertCond ? new Ifeq(shortVal) : new Ifne(shortVal)),
-//                    peekConditionChain(), -1);
-//        } else {
-//            visitExpression(lhs);
-//            visitExpression(rhs);
-//            code.addChainedInstruction(line,
-//                    (invertCond ? new Ifcmpeq() : new Ifcmpne()),
-//                    peekConditionChain(), -2);
-//        }
-//        endCondition();
-
-        generateComparison(expression);
     }
 
     private int pushMakeConditionChain() {
@@ -783,7 +693,7 @@ public final class Gen extends Scanner {
 
     static boolean isShortIntegerLiteral(Expression tree) {
         if (tree == null) return false;
-        if (!hasTag(tree, Tag.LITERAL)) return false;
+        if (!tree.hasTag(Tag.LITERAL)) return false;
         Literal literal = (Literal) tree;
         if (!literal.type.isLong()) return false;
         long value = literal.type.longValue();
@@ -939,7 +849,7 @@ public final class Gen extends Scanner {
         generateComparison(expression);
     }
 
-    public void visitNullCoalesce(BinaryOp expression) {
+    public void generateNullCoalescing(BinaryOp expression) {
         // todo: Это очевидно неполноценная реализация.
 //        visitExpression(expression.lhs);
 //        emitDup();
@@ -976,7 +886,7 @@ public final class Gen extends Scanner {
         }
 
 //        System.out.println(tree);
-        if (hasTag(tree, Tag.NOT)) {
+        if (tree.hasTag(Tag.NOT)) {
             beginCondition();
             int prev_state = state;
             state ^= STATE_COND_INVERT;
@@ -987,16 +897,7 @@ public final class Gen extends Scanner {
         }
         tree.expr.accept(this);
         code.putPos(tree.pos);
-        code.addInstruction(unary2instr(tree.getTag()));
-    }
-
-    public static Instruction unary2instr(Tag tag) {
-        switch (tag) {
-            case POS: return Pos.INSTANCE;
-            case NEG: return Neg.INSTANCE;
-            case INVERSE: return Not.INSTANCE;
-            default: throw new AssertionError();
-        }
+        code.addInstruction(InstructionUtils.fromUnaryOpTag(tree.getTag()));
     }
 
     @Override
@@ -1114,35 +1015,27 @@ public final class Gen extends Scanner {
         state = prev_state;
     }
 
-    @Deprecated
-    public void visitBinaryOp(BinaryOp expression) {
-        switch (expression.tag) {
-            case FLOW_AND: visitAnd(expression);                  break;
-            case LT:     visitLess(expression);                 break;
-            case EQ:     visitEqual(expression);                break;
-            case GE:     visitGreaterEqual(expression);         break;
-            case GT:     visitGreater(expression);              break;
-            case LE:     visitLessEqual(expression);            break;
-            case NE:    visitNotEqual(expression);             break;
-            case FLOW_OR:  visitOr(expression);                   break;
-            case NULLCOALESCE: visitNullCoalesce(expression);   break;
+    public void visitBinaryOp(BinaryOp tree) {
+        switch (tree.tag) {
+            case FLOW_AND:     generateAnd(tree);            break;
+            case LT:           generateComparison(tree);     break;
+            case EQ:           generateComparison(tree);     break;
+            case GE:           generateComparison(tree);     break;
+            case GT:           generateComparison(tree);     break;
+            case LE:           generateComparison(tree);     break;
+            case NE:           generateComparison(tree);     break;
+            case FLOW_OR:      geterateOr(tree);             break;
+            case NULLCOALESCE: generateNullCoalescing(tree); break;
+            default:           generateBinary(tree);
         }
-
-        generateBinary(expression);
     }
 
-    @Deprecated
     public void visitUnaryOp(UnaryOp expression) {
         generateUnary(expression);
     }
 
     @Override
     public void visitCompoundAssign(CompoundAssign tree) {
-        if (tree.tag == Tag.ASG_NULLCOALESCE) {
-            visitAssignNullCoalesce(tree);
-            return;
-        }
-
         generateAssignment(tree.pos, tree.tag, tree.dst, tree.src);
     }
 
@@ -1332,7 +1225,7 @@ public final class Gen extends Scanner {
     }
 
     public static Instruction asg2state(Tag tag) {
-        return bin2instr(TreeInfo.tagWithoutAsg(tag));
+        return InstructionUtils.fromBinaryOpTag(TreeInfo.tagWithoutAsg(tag));
     }
 
     // todo: В будущем планируется заменить поле expressionDepth на более удобный механизм.
@@ -1391,12 +1284,12 @@ public final class Gen extends Scanner {
                 visitExpression(arrayAccess.index);
                 emitDup2();
                 emitALoad();
-                if (isUsed() && (hasTag(expression, Tag.POSTINC) || hasTag(expression, Tag.POSTDEC))) {
+                if (isUsed() && (expression.hasTag(Tag.POSTINC) || expression.hasTag(Tag.POSTDEC))) {
                     emitDupX2();
                 }
                 code.putPos(expression.pos);
                 code.addInstruction(increase2state(expression.getTag(), -1));
-                if (isUsed() && (hasTag(expression, Tag.PREINC) || hasTag(expression, Tag.PREDEC))) {
+                if (isUsed() && (expression.hasTag(Tag.PREINC) || expression.hasTag(Tag.PREDEC))) {
                     emitDupX2();
                 }
                 code.putPos(arrayAccess.pos);
@@ -1405,22 +1298,18 @@ public final class Gen extends Scanner {
             }
             case VARIABLE: {
                 Var variable = (Var) hs;
-                if (isUsed() && (hasTag(expression, Tag.POSTINC) || hasTag(expression, Tag.POSTDEC))) {
+                if (isUsed() && (expression.hasTag(Tag.POSTINC) || expression.hasTag(Tag.POSTDEC))) {
                     variable.accept(this);
                 }
                 code.putPos(expression.pos);
                 code.addInstruction(increase2state(expression.getTag(), code.resolveLocal(variable.name.value)));
-                if (isUsed() && (hasTag(expression, Tag.PREINC) || hasTag(expression, Tag.PREDEC))) {
+                if (isUsed() && (expression.hasTag(Tag.PREINC) || expression.hasTag(Tag.PREDEC))) {
                     variable.accept(this);
                 }
                 break;
             }
             default: cError(hs.pos, "assignable expression expected.");
         }
-    }
-    
-    private static final boolean hasTag(Tree tree, Tag tag) {
-        return tree.getTag() == tag;
     }
 
     public static Instruction increase2state(Tag tag, int id) {

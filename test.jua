@@ -1,0 +1,36 @@
+fn slow_fib(n) {
+    if n <= 2 {
+        if n <= 0 {
+            return 0;
+        }
+        return 1;
+    }
+    return fib(n - 1) + fib(n - 2);
+}
+
+fn fast_fib(n) {
+    if n <= 0 {
+        return 0;
+    }
+    q1 = 1;
+    q2 = 1;
+    for i = 2; i < n; i++ {
+        qt = q1 + q2;
+        q1 = q2;
+        q2 = qt;
+    }
+    return q2;
+}
+
+fn bubble_sort(a) {
+    for i = 0; i < length(a); i++ {
+        for j = 1; j < length(a); j++ {
+            x = a[j - 1];
+            y = a[j];
+            if x > y {
+                a[j - 1] = y;
+                a[j] = x;
+            }
+        }
+    }
+}
