@@ -4,133 +4,13 @@ import java.util.HashMap;
 
 public final class Tokens {
 
-    private Tokens() {
-        throw new AssertionError();
-    }
-
-    public interface TokenVisitor {
-        void visitOperator(OperatorToken token);
-        void visitDummy(DummyToken token);
-        void visitString(StringToken token);
-        void visitNumeric(NumberToken token);
-    }
-
-    public abstract static class Token {
-
-        public final TokenKind type;
-
-        public final int pos;
-
-        protected Token(TokenKind type, int pos) {
-            this.type = type;
-            this.pos = pos;
-        }
-
-        public String getString() {
-            return unsupported();
-        }
-
-        public double getDouble() {
-            return unsupported();
-        }
-
-        public long getLong() {
-            return unsupported();
-        }
-
-        private <T> T unsupported() {
-            throw new UnsupportedOperationException(getClass().getSimpleName());
-        }
-
-        public abstract void accept(TokenVisitor visitor);
-    }
-
-    public static class DummyToken extends Token {
-
-        // used only for EOF
-        public DummyToken(TokenKind type, int pos) {
-            super(type, pos);
-        }
-
-        @Override
-        public void accept(TokenVisitor visitor) {
-            visitor.visitDummy(this);
-        }
-    }
-
-    public static class OperatorToken extends Token {
-
-        public OperatorToken(TokenKind type, int pos) {
-            super(type, pos);
-        }
-
-        @Override
-        public String toString() {
-            return type.toString();
-        }
-
-        @Override
-        public void accept(TokenVisitor visitor) {
-            visitor.visitOperator(this);
-        }
-    }
-
-    public static class StringToken extends Token {
-
-        public final String value;
-
-        public StringToken(TokenKind type, int pos, String value) {
-            super(type, pos);
-            this.value = value;
-        }
-
-        @Override
-        public String getString() {
-            return value;
-        }
-
-        @Override
-        public String toString() {
-            return '\'' + value + '\'';
-        }
-
-        @Override
-        public void accept(TokenVisitor visitor) {
-            visitor.visitString(this);
-        }
-    }
-
-    public static class NumberToken extends StringToken {
-
-        public final int radix;
-
-        public NumberToken(TokenKind type, int position, String value, int radix) {
-            super(type, position, value);
-            this.radix = radix;
-        }
-
-        @Override
-        public double getDouble() {
-            return Double.parseDouble(value);
-        }
-
-        @Override
-        public long getLong() {
-            return Long.parseLong(value, radix);
-        }
-
-        @Override
-        public void accept(TokenVisitor visitor) {
-            visitor.visitNumeric(this);
-        }
-    }
-
-    @SuppressWarnings("SpellCheckingInspection")
-    public enum TokenKind {
-
+    public enum TokenType {
         AMP("&"),
         AMPAMP("&&"),
         AMPEQ("&="),
+        AT("@"),
+        BANG("!"),
+        BANGEQ("!="),
         BAR("|"),
         BARBAR("||"),
         BAREQ("|="),
@@ -138,32 +18,32 @@ public final class Tokens {
         CARET("^"),
         CARETEQ("^="),
         CASE("case"),
-        CLONE("clone"),
-        COLON(":"),
+        COL(":"),
+        COLCOL("::"),
         COMMA(","),
         CONST("const"),
         CONTINUE("continue"),
+        CUSTOM,
         DEFAULT("default"),
         DO("do"),
         DOT("."),
+        ELLIPSIS("..."),
         ELSE("else"),
         EOF,
         EQ("="),
         EQEQ("=="),
-        EXCL("!"),
-        EXLCEQ("!="),
         FALLTHROUGH("fallthrough"),
         FALSE("false"),
-        FLOATLITERAL,
+        FLOATLITERAL(TokenKind.NUMERIC),
         FN("fn"),
         FOR("for"),
         GT(">"),
         GTEQ(">="),
         GTGT(">>"),
         GTGTEQ(">>="),
-        IDENTIFIER,
+        IDENTIFIER(TokenKind.NAMED),
         IF("if"),
-        INTLITERAL,
+        INTLITERAL(TokenKind.NUMERIC),
         LBRACE("{"),
         LBRACKET("["),
         LPAREN("("),
@@ -175,63 +55,152 @@ public final class Tokens {
         MINUSEQ("-="),
         MINUSMINUS("--"),
         NULL("null"),
+        OF("of"),
         PERCENT("%"),
         PERCENTEQ("%="),
         PLUS("+"),
         PLUSEQ("+="),
         PLUSPLUS("++"),
-        //    PRINT("print"),
-        //    PRINTLN("println"),
         QUES("?"),
+        QUESDOT("?."),
+        QUESLBRACKET("?["),
         QUESQUES("??"),
         QUESQUESEQ("??="),
         RBRACE("}"),
         RBRACKET("]"),
         RETURN("return"),
         RPAREN(")"),
-        SEMICOLON(";"),
+        SEMI(";"),
         SLASH("/"),
         SLASHEQ("/="),
         STAR("*"),
         STAREQ("*="),
-        STRINGLITERAL,
+        STR("str", TokenKind.NAMED),
+        STRINGLITERAL(TokenKind.STRING),
         SWITCH("switch"),
         TILDE("~"),
         TRUE("true"),
         WHILE("while");
 
-        public final String name;
+        private static class Lookup extends HashMap<String, TokenType> {
+            static final Lookup INSTANCE = new Lookup();
 
-        TokenKind() {
-            this(null);
+            Lookup() {
+                super(16, 1.0f);
+            }
         }
 
-        TokenKind(String name) {
+        public static TokenType lookupNullable(String value) {
+            return Lookup.INSTANCE.get(value);
+        }
+
+        public static TokenType lookupIdentifier(String value) {
+            return Lookup.INSTANCE.getOrDefault(value, IDENTIFIER);
+        }
+
+        public final String value;
+
+        public final TokenKind kind;
+
+        TokenType() {
+            this(null, TokenKind.DEFAULT);
+        }
+
+        TokenType(TokenKind kind) {
+            this(null, kind);
+        }
+
+        TokenType(String value) {
+            this(value, TokenKind.DEFAULT);
+        }
+
+        TokenType(String value, TokenKind kind) {
+            this.value = value;
+            this.kind = kind;
+            if (value != null) Lookup.INSTANCE.put(value, this);
+        }
+    }
+
+    public enum TokenKind {
+        DEFAULT,
+        NAMED,
+        NUMERIC,
+        STRING
+    }
+
+    public static class Token {
+
+        public final TokenType type;
+
+        public final int pos;
+
+        Token(TokenType type, int pos) {
+            this.type = type;
+            this.pos = pos;
+        }
+
+        public Tree.Name toName() { throw unsupportedOperationException(); }
+
+        public Types.Type toType() { throw unsupportedOperationException(); }
+
+        public String name() { throw unsupportedOperationException(); }
+
+        public String value() { throw unsupportedOperationException(); }
+
+        public int radix() { throw unsupportedOperationException(); }
+
+        private UnsupportedOperationException unsupportedOperationException() {
+            return new UnsupportedOperationException(type.name());
+        }
+    }
+
+    public static class NamedToken extends Token {
+
+        public final String name;
+
+        public NamedToken(TokenType type, int pos, String name) {
+            super(type, pos);
             this.name = name;
         }
 
         @Override
-        public String toString() {
-            return (name != null) ? '\'' + name + '\'' : '<' + name() + '>';
-        }
+        public Tree.Name toName() { return new Tree.Name(name, pos); }
+
+        @Override
+        public String name() { return name; }
     }
 
-    private static final HashMap<String, TokenKind> LOOKUP_KINDS;
+    public static class StringToken extends Token {
 
-    static {
-        TokenKind[] kinds = TokenKind.values();
-        HashMap<String, TokenKind> lookupKinds = new HashMap<>(kinds.length, 1.0f);
+        public final String value;
 
-        for (TokenKind kind : kinds) {
-            if (kind.name != null) {
-                lookupKinds.put(kind.name, kind);
-            }
+        public StringToken(TokenType type, int pos, String value) {
+            super(type, pos);
+            this.value = value;
         }
 
-        LOOKUP_KINDS = lookupKinds;
+        @Override
+        public Types.Type toType() { return super.toType(); }
+
+        @Override
+        public String value() { return value; }
     }
 
-    public static TokenKind lookupKind(String name) {
-        return LOOKUP_KINDS.get(name);
+    public static class NumericToken extends StringToken {
+
+        public final int radix;
+
+        public NumericToken(TokenType type, int pos, String value, int radix) {
+            super(type, pos, value);
+            this.radix = radix;
+        }
+
+        @Override
+        public Types.Type toType() { return super.toType(); }
+
+        @Override
+        public int radix() { return radix; }
     }
+
+    private Tokens() { throw new UnsupportedOperationException("Instantiation this class is useless"); }
 }

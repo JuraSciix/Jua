@@ -1,6 +1,6 @@
 package jua.compiler;
 
-import jua.compiler.Tokens.DummyToken;
+import jua.compiler.Tokens.*;
 import jua.compiler.Tree.*;
 
 import java.util.Collections;
@@ -8,7 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
-import static jua.compiler.Tokens.TokenKind.*;
+import static jua.compiler.Tokens.TokenType.*;
 
 public class JuaParser {
 
@@ -18,7 +18,7 @@ public class JuaParser {
 
     private final Types types;
 
-    private Tokens.Token currentToken;
+    private Token currentToken;
 
     private final Log log;
 
@@ -88,7 +88,7 @@ public class JuaParser {
         if (match(RETURN)) {
             return parseReturn(position);
         }
-        if (match(SEMICOLON)) {
+        if (match(SEMI)) {
             return new Block(position, Collections.emptyList()); // todo: Убрать рекурсию
         }
         if (match(SWITCH)) {
@@ -101,7 +101,7 @@ public class JuaParser {
     }
 
     private Statement parseBreak(int position) {
-        expect(SEMICOLON);
+        expect(SEMI);
         return new Break(position);
     }
 
@@ -109,17 +109,17 @@ public class JuaParser {
         List<ConstDef.Definition> definitions = new LinkedList<>();
 
         do {
-            Tokens.Token name = currentToken;
+            Token name = currentToken;
             expect(IDENTIFIER, EQ);
-            definitions.add(new ConstDef.Definition(new Name(name.getString(), name.pos), parseExpression()));
+            definitions.add(new ConstDef.Definition(new Name(name.value(), name.pos), parseExpression()));
         } while (match(COMMA));
 
-        expect(SEMICOLON);
+        expect(SEMI);
         return new ConstDef(position, definitions);
     }
 
     private Statement parseContinue(int position) {
-        expect(SEMICOLON);
+        expect(SEMI);
         return new Continue(position);
     }
 
@@ -127,17 +127,17 @@ public class JuaParser {
         Statement body = parseStatement();
         expect(WHILE);
         Expression cond = parseExpression();
-        expect(SEMICOLON);
+        expect(SEMI);
         return new DoLoop(position, body, cond);
     }
 
     private Statement parseFallthrough(int position) {
-        expect(SEMICOLON);
+        expect(SEMI);
         return new Fallthrough(position);
     }
 
     private Statement parseFunction(int pos) {
-        Name funcName = new Name(currentToken.getString(), currentToken.pos);
+        Name funcName = new Name(currentToken.value(), currentToken.pos);
         expect(IDENTIFIER, LPAREN);
         List<FuncDef.Parameter> params = new LinkedList<>();
         boolean comma = false, optionalState = false;
@@ -146,9 +146,9 @@ public class JuaParser {
             if (match(EOF) || comma && !match(COMMA)) {
                 expect(RPAREN);
             }
-            Tokens.Token name0 = currentToken;
+            Token name0 = currentToken;
             expect(IDENTIFIER);
-            Name name1 = new Name(name0.getString(), name0.pos);
+            Name name1 = new Name(name0.value(), name0.pos);
             Expression optional = null;
 
             if (match(EQ)) {
@@ -169,7 +169,7 @@ public class JuaParser {
         if (match(LBRACE)) return parseBlock(pos);
         if (match(EQ)) {
             Expression expr = parseExpression();
-            expect(SEMICOLON);
+            expect(SEMI);
             return expr;
         }
         pError(pos, "Illegal function body");
@@ -180,15 +180,15 @@ public class JuaParser {
         boolean parens = match(LPAREN);
         List<Expression> init = null;
 
-        if (!match(SEMICOLON)) {
+        if (!match(SEMI)) {
             init = parseExpressions();
-            expect(SEMICOLON);
+            expect(SEMI);
         }
         Expression cond = null;
 
-        if (!match(SEMICOLON)) {
+        if (!match(SEMI)) {
             cond = parseExpression();
-            expect(SEMICOLON);
+            expect(SEMI);
         }
         List<Expression> step = null;
 
@@ -227,22 +227,22 @@ public class JuaParser {
 
 //    private Statement parsePrint(int position) {
 //        List<Expression> expressions = parseExpressions();
-//        expect(SEMICOLON);
+//        expect(SEMI);
 //        return new PrintStatement(position, expressions);
 //    }
 //
 //    private Statement parsePrintln(int position) {
 //        List<Expression> expressions = parseExpressions();
-//        expect(SEMICOLON);
+//        expect(SEMI);
 //        return new PrintlnStatement(position, expressions);
 //    }
 
     private Statement parseReturn(int position) {
-        if (match(SEMICOLON)) {
+        if (match(SEMI)) {
             return new Return(position, null);
         }
         Expression expr = parseExpression();
-        expect(SEMICOLON);
+        expect(SEMI);
         return new Return(position, expr);
     }
 
@@ -273,14 +273,14 @@ public class JuaParser {
         if (!isDefault) {
             expressions = parseExpressions();
         }
-        expect(COLON);
+        expect(COL);
         return new Case(position, expressions, parseStatement());
     }
 
     private Statement parseUnusedExpression() {
         int position = currentToken.pos;
         Expression expr = parseExpression();
-        expect(SEMICOLON);
+        expect(SEMI);
         return new Discarded(position, expr);
     }
 
@@ -371,7 +371,7 @@ public class JuaParser {
 
     private Expression parseTernary0(int position, Expression cond) {
         Expression right = parseExpression();
-        expect(COLON);
+        expect(COL);
         return new TernaryOp(position, cond, right, parseExpression());
     }
 
@@ -451,7 +451,7 @@ public class JuaParser {
 
             if (match(EQEQ)) {
                 expr = new BinaryOp(position, Tag.EQ, expr, parseConditional());
-            } else if (match(EXLCEQ)) {
+            } else if (match(BANGEQ)) {
                 expr = new BinaryOp(position, Tag.NE, expr, parseConditional());
             } else {
                 return expr;
@@ -532,7 +532,7 @@ public class JuaParser {
     private Expression parseUnary() {
         int position = currentToken.pos;
 
-        if (match(EXCL)) {
+        if (match(BANG)) {
             return new UnaryOp(position, Tag.NOT, parseUnary());
         }
         if (match(MINUS)) {
@@ -556,7 +556,9 @@ public class JuaParser {
     private Expression parseClone() {
         int position = currentToken.pos;
 
-        if (match(CLONE)) {
+        // HACK todo
+        if (currentToken.type == IDENTIFIER && currentToken.value().equals("clone")) {
+            next();
             return new UnaryOp(position, Tag.CLONE, parsePost());
         }
         return parsePost();
@@ -590,10 +592,10 @@ public class JuaParser {
             int position = currentToken.pos;
 
             if (match(DOT)) {
-                Tokens.Token token = currentToken;
+                Token token = currentToken;
                 expect(IDENTIFIER);
                 expression = new FieldAccess(position, expression,
-                        new Name(token.getString(), token.pos));
+                        new Name(token.value(), token.pos));
             } else if (match(LBRACKET)) {
                 expression = new ArrayAccess(position, expression, parseExpression());
                 expect(RBRACKET);
@@ -612,7 +614,7 @@ public class JuaParser {
 //            if ((dot == 1) || match(DOT)) {
 //                Token key = currentToken;
 //                expect(IDENTIFIER);
-//                keys.add(new StringExpression(currentToken.position, key.getString()));
+//                keys.add(new StringExpression(currentToken.position, key.value()));
 //                dot = 2;
 //            } else if ((dot == 0) || match(LBRACKET)) {
 //                keys.add(parseExpression());
@@ -625,7 +627,7 @@ public class JuaParser {
 //    }
 
     private Expression parsePrimary() {
-        Tokens.Token token = currentToken;
+        Token token = currentToken;
 
         if (match(EOF)) {
             pError(token.pos, "missing expected expression.");
@@ -655,7 +657,7 @@ public class JuaParser {
             return new Literal(token.pos, types.asNull());
         }
         if (match(STRINGLITERAL)) {
-            return new Literal(token.pos, types.asString(token.getString()));
+            return new Literal(token.pos, types.asString(token.value()));
         }
         if (match(TRUE)) {
             return new Literal(token.pos, types.asBoolean(true));
@@ -664,27 +666,26 @@ public class JuaParser {
         return null;
     }
 
-    private Expression parseFloat(Tokens.Token token) {
-        double d = token.getDouble();
-
+    private Expression parseFloat(Token token) {
+        double d = Double.parseDouble(token.value());
         if (Double.isInfinite(d)) {
             pError(token.pos, "number too large.");
         }
         // todo: Может проверку стоит убрать?
-        if ((d == 0.0) && !token.getString().matches("\\.?0\\.?\\d*(?:[Ee][+-]\\d+)?$")) {
+        if ((d == 0.0) && !token.value().matches("\\.?0\\.?\\d*(?:[Ee][+-]\\d+)?$")) {
             pError(token.pos, "number too small.");
         }
         return new Literal(token.pos, types.asDouble(d));
     }
 
-    private Expression parseIdentifier(Tokens.Token token) {
+    private Expression parseIdentifier(Token token) {
         if (match(LPAREN)) {
             return parseInvocation(token);
         }
-        return new Var(token.pos, new Name(token.getString(), token.pos));
+        return new Var(token.pos, new Name(token.value(), token.pos));
     }
 
-    private Expression parseInvocation(Tokens.Token token) {
+    private Expression parseInvocation(Token token) {
         List<Invocation.Argument> args = new LinkedList<>();
         boolean comma = false;
 
@@ -697,19 +698,19 @@ public class JuaParser {
             args.add(new Invocation.Argument(null, parseExpression()));
             comma = !match(COMMA);
         }
-        return new Invocation(token.pos, new Name(token.getString(), currentToken.pos), args);
+        return new Invocation(token.pos, new Name(token.value(), currentToken.pos), args);
     }
 
-    private Expression parseInt(Tokens.Token token) {
+    private Expression parseInt(Token token) {
         try {
-            return new Literal(token.pos, types.asLong(token.getLong()));
+            return new Literal(token.pos, types.asLong(Long.parseLong(token.value())));
         } catch (NumberFormatException e) {
             pError(token.pos, "number too large.");
             return null;
         }
     }
 
-    private Expression parseArray(int position, Tokens.TokenKind enclosing) {
+    private Expression parseArray(int position, TokenType enclosing) {
         List<ArrayLiteral.Entry> entries = new LinkedList<>();
         boolean comma = false;
 
@@ -720,7 +721,7 @@ public class JuaParser {
             Expression key = null;
             Expression value = parseExpression();
 
-            if (match(COLON)) {
+            if (match(COL)) {
                 key = value;
                 value = parseExpression();
             }
@@ -740,7 +741,7 @@ public class JuaParser {
         currentToken = tokenizer.nextToken();
     }
 
-    private boolean match(Tokens.TokenKind type) {
+    private boolean match(TokenType type) {
         if (currentToken.type == type) {
             next();
             return true;
@@ -748,14 +749,14 @@ public class JuaParser {
         return false;
     }
 
-    private void expect(Tokens.TokenKind... types) {
-        for (Tokens.TokenKind type : types) {
+    private void expect(TokenType... types) {
+        for (TokenType type : types) {
             if (match(type)) {
                 continue;
             }
             //next();
 
-            if (type.name == null) {
+            if (type.value == null) {
                 if (type == IDENTIFIER) {
                     pError(currentToken.pos, "identifier expected.");
                 } else {
@@ -763,7 +764,7 @@ public class JuaParser {
                 }
                 return;
             }
-            if (currentToken instanceof DummyToken) {
+            if (currentToken.getClass() == Token.class) {
                 pError(currentToken.pos, type + " expected.");
                 return;
             }
@@ -771,7 +772,7 @@ public class JuaParser {
         }
     }
 
-    private void unexpected(Tokens.Token token) {
+    private void unexpected(Token token) {
         pError(token.pos, "unexpected " + token + '.');
     }
 

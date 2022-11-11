@@ -4,7 +4,7 @@ import java.io.StringWriter;
 
 import static java.lang.Character.*;
 import static jua.compiler.Tokens.*;
-import static jua.compiler.Tokens.TokenKind.*;
+import static jua.compiler.Tokens.TokenType.*;
 
 public class Tokenizer implements AutoCloseable {
 
@@ -23,14 +23,13 @@ public class Tokenizer implements AutoCloseable {
             return this;
         }
 
-        public Token buildNamed(TokenKind type) {
-            return new OperatorToken(type, pos);
+        public Token buildNamed(TokenType type) {
+            return new Token(type, pos);
         }
 
         public Token buildNamedOrString() {
             String s = buffer.toString();
-            TokenKind k = lookupKind(s);
-            if (k == null) k = IDENTIFIER;
+            TokenType k = TokenType.lookupIdentifier(s);
             // identifier requires saving the name, StringToken allows this
             return new StringToken(k, pos, s);
         }
@@ -41,9 +40,9 @@ public class Tokenizer implements AutoCloseable {
 
         public Token buildNumber(boolean isFloat, int radix) {
             if (isFloat) {
-                return new NumberToken(FLOATLITERAL, pos, buffer.toString(), 10);
+                return new NumericToken(FLOATLITERAL, pos, buffer.toString(), 10);
             } else {
-                return new NumberToken(INTLITERAL, pos, buffer.toString(), radix);
+                return new NumericToken(INTLITERAL, pos, buffer.toString(), radix);
             }
         }
     }
@@ -124,7 +123,7 @@ public class Tokenizer implements AutoCloseable {
                                 return parseNumber('.');
                         }
                     }
-                    return new OperatorToken(DOT, pos);
+                    return new Token(DOT, pos);
 
                 case '#':
                     // todo: warning: Comments which starts with '#' are deprecated and will be removed in near future.
@@ -147,10 +146,10 @@ public class Tokenizer implements AutoCloseable {
                                 continue;
                             case '=':
                                 reader.readChar();
-                                return new OperatorToken(SLASHEQ, pos);
+                                return new Token(SLASHEQ, pos);
                         }
                     }
-                    return new OperatorToken(SLASH, pos);
+                    return new Token(SLASH, pos);
 
                 case '&': case '|': case '^':
                 case '=': case '!': case '>':
@@ -159,16 +158,16 @@ public class Tokenizer implements AutoCloseable {
                     reader.readChar();
                     return parseSpecial(ch);
 
-                case ',': reader.readChar(); return new OperatorToken(COMMA, pos);
-                case ';': reader.readChar(); return new OperatorToken(SEMICOLON, pos);
-                case ':': reader.readChar(); return new OperatorToken(COLON, pos);
-                case '~': reader.readChar(); return new OperatorToken(TILDE, pos);
-                case '{': reader.readChar(); return new OperatorToken(LBRACE, pos);
-                case '(': reader.readChar(); return new OperatorToken(LPAREN, pos);
-                case '[': reader.readChar(); return  new OperatorToken(LBRACKET, pos);
-                case '}': reader.readChar(); return new OperatorToken(RBRACE, pos);
-                case ')': reader.readChar(); return new OperatorToken(RPAREN, pos);
-                case ']': reader.readChar(); return  new OperatorToken(RBRACKET, pos);
+                case ',': reader.readChar(); return new Token(COMMA, pos);
+                case ';': reader.readChar(); return new Token(SEMI, pos);
+                case ':': reader.readChar(); return new Token(COL, pos);
+                case '~': reader.readChar(); return new Token(TILDE, pos);
+                case '{': reader.readChar(); return new Token(LBRACE, pos);
+                case '(': reader.readChar(); return new Token(LPAREN, pos);
+                case '[': reader.readChar(); return new Token(LBRACKET, pos);
+                case '}': reader.readChar(); return new Token(RBRACE, pos);
+                case ')': reader.readChar(); return new Token(RPAREN, pos);
+                case ']': reader.readChar(); return new Token(RBRACKET, pos);
 
                 case '\'': reader.readChar(); return parseString('\'');
                 case '\"': reader.readChar(); return parseString('\"');
@@ -191,7 +190,7 @@ public class Tokenizer implements AutoCloseable {
             }
         }
 
-        if (eofToken == null) eofToken = new DummyToken(EOF, reader.cursor() + 1);
+        if (eofToken == null) eofToken = new Token(EOF, reader.cursor() + 1);
         return eofToken;
     }
 
@@ -370,13 +369,13 @@ public class Tokenizer implements AutoCloseable {
 
     private Token parseSpecial(int c) {
         TokenBuilder builder = getBuilder(-1);
-        TokenKind type = null;
+        TokenType type = null;
         // Обожаю костыли.
         // todo: Переписать лексер.
         boolean f = true;
         do {
             builder.putChar(c);
-            TokenKind lookup = lookupKind(builder.buffer.toString());
+            TokenType lookup = TokenType.lookupNullable(builder.buffer.toString());
 
             if (lookup == null) {
                 break;
@@ -407,7 +406,7 @@ public class Tokenizer implements AutoCloseable {
         }
     }
 
-    private Token checkSpecial(TokenBuilder builder, TokenKind type) {
+    private Token checkSpecial(TokenBuilder builder, TokenType type) {
         if (type == null) {
             tError(builder.pos, "illegal character.");
         }
