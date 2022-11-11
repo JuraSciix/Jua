@@ -887,6 +887,23 @@ public final class MinorGen extends Gen {
 
 //        System.out.println(tree);
         if (tree.hasTag(Tag.NOT)) {
+            // todo: Exception in thread "main" java.lang.AssertionError: context.current_nstack < 0, currentIP: 65, lineNumber: 44
+            //	at jua.compiler.Code.adjustStack(Code.java:150)
+            //	at jua.compiler.Code.addChainedInstruction0(Code.java:125)
+            //	at jua.compiler.Code.addChainedInstruction(Code.java:118)
+            //	at jua.compiler.MinorGen.generateCondition(MinorGen.java:1083)
+            //	at jua.compiler.MinorGen.visitIf(MinorGen.java:626)
+            //	at jua.compiler.Tree$If.accept(Tree.java:701)
+            //	at jua.compiler.Tree$Scanner.scan(Tree.java:204)
+            //	at jua.compiler.Tree$Scanner.visitBlock(Tree.java:231)
+            //	at jua.compiler.Tree$Block.accept(Tree.java:679)
+            //	at jua.compiler.MinorGen.visitFuncDef(MinorGen.java:534)
+            //	at jua.compiler.Tree$FuncDef.accept(Tree.java:663)
+            //	at jua.compiler.Tree$Scanner.scan(Tree.java:204)
+            //	at jua.compiler.MinorGen.visitCompilationUnit(MinorGen.java:101)
+            //	at jua.compiler.Tree$CompilationUnit.accept(Tree.java:592)
+            //	at jua.compiler.JuaCompiler.next(JuaCompiler.java:35)
+            //	at jua.Main.main(Main.java:34)
             beginCondition();
             int prev_state = state;
             state ^= STATE_COND_INVERT;

@@ -146,8 +146,9 @@ public final class Code {
     private void adjustStack(int stackAdjustment) {
         if ((context.current_nstack += stackAdjustment) > context.nstack)
             context.nstack = context.current_nstack;
-        assert context.current_nstack >= 0 : "context.current_nstack < 0, currentIP: " +  currentIP();
-//        System.out.println(context.current_nstack); // DEBUG
+        assert context.current_nstack >= 0 : "context.current_nstack < 0, " +
+                "currentIP: " +  currentIP() + ", " +
+                "lineNumber: " + context.current_lineNumber;
     }
 
     public int getSp() {

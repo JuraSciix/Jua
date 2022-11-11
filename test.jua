@@ -34,3 +34,34 @@ fn bubble_sort(a) {
         }
     }
 }
+
+test_bubble_sort();
+
+fn test_bubble_sort() {
+    x = [5, 2, 7, 2, 9, 0, 1];
+    y = [0, 1, 2, 2, 5, 7, 9];
+
+    bubble_sort(x);
+    if x == y {
+        println("Test passed");
+    } else {
+        println("Test failed: x(" + print_list(bubble_sort(x), true) + ") != y(" + print_list(y, true) + ")");
+    }
+}
+
+fn print_list(l, keys = true) {
+    s = "[";
+    b = false;
+    for i = 0; i < length(l); i++ {
+        if b {
+            s += ", ";
+        }
+        if keys {
+            s += i;
+            s += ": ";
+        }
+        s += l[i];
+        b = true;
+    }
+    return s + "]";
+}
