@@ -128,7 +128,7 @@ public class Tokenizer implements AutoCloseable {
                     return new Token(DOT, pos);
 
                 case '#':
-                    // todo: warning: Comments which starts with '#' are deprecated and will be removed in near future.
+                    log.waring("Comments which starts with '#' are deprecated and will be removed in near future");
                     reader.readChar();
                     parseSingleLineComment();
                     continue;
