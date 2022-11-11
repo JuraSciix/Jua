@@ -1422,7 +1422,7 @@ public final class MinorGen extends Gen {
     private void emitSub() { code.addInstruction(Sub.INSTANCE, -1); }
     private void emitALoad() { code.addInstruction(Aload.INSTANCE, -1); }
     private void emitVLoad(String name) { code.addInstruction(new Vload(code.resolveLocal(name)), 1); }
-    private void emitAStore() { code.addInstruction(Astore.INSTANCE, -3); }
+    private void emitAStore() { code.addInstruction(Astore.INSTANCE, -3); } // todo: Тут тоже было sp<0, вроде при generateArrayCreation.
     private void emitVStore(String name) { code.addInstruction(new Vstore(code.resolveLocal(name)), -1); }
     private void emitCaseBody(Statement body) {
         code.resolveChain(fallthroughChains.popInt());
