@@ -1,5 +1,6 @@
 package jua.compiler;
 
+@Deprecated
 public class CompileError extends RuntimeException {
 
     public final int position;
