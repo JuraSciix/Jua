@@ -55,6 +55,8 @@ public class Tokenizer implements AutoCloseable {
 
     private Token eofToken;
 
+    private int pos;
+
     public Tokenizer(Source source) {
         this.source = source;
         reader = source.createReader();
@@ -71,7 +73,7 @@ public class Tokenizer implements AutoCloseable {
 
     public Token nextToken() {
         while (reader.hasMore()) {
-            int pos = reader.cursor();
+            pos = reader.cursor();
             char ch = reader.peekChar();
 
             switch (ch) {
@@ -418,7 +420,7 @@ public class Tokenizer implements AutoCloseable {
     }
 
     private TokenBuilder getBuilder(int c) {
-        TokenBuilder builder = new TokenBuilder(reader.cursor());
+        TokenBuilder builder = new TokenBuilder(pos);
 
         if (c >= 0) {
             builder.putChar(c);

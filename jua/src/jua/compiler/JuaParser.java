@@ -14,11 +14,23 @@ public class JuaParser {
 
     // todo: Рефакторинг и оптимизация.
 
+    private static class ParseNodeExit extends Error {
+
+        final int pos;
+
+        final String msg;
+
+        ParseNodeExit(int pos, String msg) {
+            this.pos = pos;
+            this.msg = msg;
+        }
+    }
+
     private final Tokenizer tokenizer;
 
     private final Types types;
 
-    private Token currentToken;
+    private Token token;
 
     private final Log log;
 
@@ -28,80 +40,97 @@ public class JuaParser {
         this.log = log;
     }
 
-    public Tree parse() {
+     public Tree parse() {
         List<Statement> stats = new LinkedList<>();
-        next();
-        while (!match(EOF)) {
-            stats.add(parseStatement());
+        nextToken();
+        while (!acceptToken(EOF)) {
+            try {
+                stats.add(parseStatement());
+            } catch (ParseNodeExit e) {
+                log.error(e.pos, e.msg);
+            }
         }
         return new CompilationUnit(tokenizer.getSource(), stats);
     }
 
     private Statement parseStatement() {
-        int position = currentToken.pos;
+        int position = token.pos;
 
-        if (match(BREAK)) {
-            return parseBreak(position);
+        switch (token.type) {
+            case BREAK: {
+                nextToken();
+                return parseBreak(position);
+            }
+            case CASE: {
+                nextToken();
+                pError(position, "'case' is not allowed outside of switch.");
+            }
+            case CONST: {
+                nextToken();
+                return parseConst(position);
+            }
+            case CONTINUE: {
+                nextToken();
+                return parseContinue(position);
+            }
+            case DEFAULT: {
+                nextToken();
+                pError(position, "'default' is not allowed outside of switch.");
+            }
+            case DO: {
+                nextToken();
+                return parseDo(position);
+            }
+            case ELSE: {
+                nextToken();
+                pError(position, "'else' is not allowed without if.");
+            }
+            case EOF: {
+                nextToken();
+                pError(position, "missing expected statement.");
+            }
+            case FALLTHROUGH: {
+                nextToken();
+                return parseFallthrough(position);
+            }
+            case FN: {
+                nextToken();
+                return parseFunction(position);
+            }
+            case FOR: {
+                nextToken();
+                return parseFor(position);
+            }
+            case IF: {
+                nextToken();
+                return parseIf(position);
+            }
+            case LBRACE: {
+                nextToken();
+                return parseBlock(position);
+            }
+            case RETURN: {
+                nextToken();
+                return parseReturn(position);
+            }
+            case SEMI: {
+                nextToken();
+                return new Block(position, Collections.emptyList());
+            }
+            case SWITCH: {
+                nextToken();
+                return parseSwitch(position);
+            }
+            case WHILE: {
+                nextToken();
+                return new WhileLoop(position, parseExpression(), parseStatement());
+            }
+            default: return parseUnusedExpression();
         }
-        if (match(CASE)) {
-            pError(position, "'case' is not allowed outside of switch.");
-        }
-        if (match(CONST)) {
-            return parseConst(position);
-        }
-        if (match(CONTINUE)) {
-            return parseContinue(position);
-        }
-        if (match(DEFAULT)) {
-            pError(position, "'default' is not allowed outside of switch.");
-        }
-        if (match(DO)) {
-            return parseDo(position);
-        }
-        if (match(ELSE)) {
-            pError(position, "'else' is not allowed without if.");
-        }
-        if (match(EOF)) {
-            pError(position, "missing expected statement.");
-        }
-        if (match(FALLTHROUGH)) {
-            return parseFallthrough(position);
-        }
-        if (match(FN)) {
-            return parseFunction(position);
-        }
-        if (match(FOR)) {
-            return parseFor(position);
-        }
-        if (match(IF)) {
-            return parseIf(position);
-        }
-        if (match(LBRACE)) {
-            return parseBlock(position);
-        }
-//        if (match(PRINT)) {
-//            return parsePrint(position);
-//        }
-//        if (match(PRINTLN)) {
-//            return parsePrintln(position);
-//        }
-        if (match(RETURN)) {
-            return parseReturn(position);
-        }
-        if (match(SEMI)) {
-            return new Block(position, Collections.emptyList()); // todo: Убрать рекурсию
-        }
-        if (match(SWITCH)) {
-            return parseSwitch(position);
-        }
-        if (match(WHILE)) {
-            return new WhileLoop(position, parseExpression(), parseStatement());
-        }
-        return parseUnusedExpression();
     }
 
     private Statement parseBreak(int position) {
-        expect(SEMI);
+        expectToken(SEMI);
         return new Break(position);
     }
 
@@ -109,67 +138,73 @@ public class JuaParser {
         List<ConstDef.Definition> definitions = new LinkedList<>();
 
         do {
-            Token name = currentToken;
-            expect(IDENTIFIER, EQ);
-            definitions.add(new ConstDef.Definition(new Name(name.value(), name.pos), parseExpression()));
-        } while (match(COMMA));
+            try {
+                Token name = token;
+                expectToken(IDENTIFIER);
+                expectToken(EQ);
+                definitions.add(new ConstDef.Definition(new Name(name.value(), name.pos), parseExpression()));
+            } catch (ParseNodeExit e) {
+                log.error(e.pos, e.msg);
+            }
+        } while (acceptToken(COMMA));
 
-        expect(SEMI);
+        expectToken(SEMI);
         return new ConstDef(position, definitions);
     }
 
     private Statement parseContinue(int position) {
-        expect(SEMI);
+        expectToken(SEMI);
         return new Continue(position);
     }
 
     private Statement parseDo(int position) {
         Statement body = parseStatement();
-        expect(WHILE);
+        expectToken(WHILE);
         Expression cond = parseExpression();
-        expect(SEMI);
+        expectToken(SEMI);
         return new DoLoop(position, body, cond);
     }
 
     private Statement parseFallthrough(int position) {
-        expect(SEMI);
+        expectToken(SEMI);
         return new Fallthrough(position);
     }
 
     private Statement parseFunction(int pos) {
-        Name funcName = new Name(currentToken.value(), currentToken.pos);
-        expect(IDENTIFIER, LPAREN);
+        Name funcName = new Name(token.value(), token.pos);
+        expectToken(IDENTIFIER);
+        expectToken(LPAREN);
         List<FuncDef.Parameter> params = new LinkedList<>();
         boolean comma = false, optionalState = false;
 
-        while (!match(RPAREN)) {
-            if (match(EOF) || comma && !match(COMMA)) {
-                expect(RPAREN);
+        while (!acceptToken(RPAREN)) {
+            if (acceptToken(EOF) || comma && !acceptToken(COMMA)) {
+                expectToken(RPAREN);
             }
-            Token name0 = currentToken;
-            expect(IDENTIFIER);
+            Token name0 = token;
+            expectToken(IDENTIFIER);
             Name name1 = new Name(name0.value(), name0.pos);
             Expression optional = null;
 
-            if (match(EQ)) {
+            if (acceptToken(EQ)) {
                 optional = parseExpression();
                 optionalState = true;
             } else if (optionalState) {
                 pError(name0.pos, "here must be a optional argument.");
             }
             params.add(new FuncDef.Parameter(name1, optional));
-            comma = !match(COMMA);
+            comma = !acceptToken(COMMA);
         }
         Statement body = parseBody();
         return new FuncDef(pos, funcName, params, body);
     }
 
     private Statement parseBody() {
-        int pos = currentToken.pos;
-        if (match(LBRACE)) return parseBlock(pos);
-        if (match(EQ)) {
+        int pos = token.pos;
+        if (acceptToken(LBRACE)) return parseBlock(pos);
+        if (acceptToken(EQ)) {
             Expression expr = parseExpression();
-            expect(SEMI);
+            expectToken(SEMI);
             return expr;
         }
         pError(pos, "Illegal function body");
@@ -177,25 +212,25 @@ public class JuaParser {
     }
 
     private Statement parseFor(int position) {
-        boolean parens = match(LPAREN);
+        boolean parens = acceptToken(LPAREN);
         List<Expression> init = null;
 
-        if (!match(SEMI)) {
+        if (!acceptToken(SEMI)) {
             init = parseExpressions();
-            expect(SEMI);
+            expectToken(SEMI);
         }
         Expression cond = null;
 
-        if (!match(SEMI)) {
+        if (!acceptToken(SEMI)) {
             cond = parseExpression();
-            expect(SEMI);
+            expectToken(SEMI);
         }
         List<Expression> step = null;
 
         if (parens) {
-            if (!match(RPAREN)) {
+            if (!acceptToken(RPAREN)) {
                 step = parseExpressions();
-                expect(RPAREN);
+                expectToken(RPAREN);
             }
         } else {
             step = parseExpressions();
@@ -207,7 +242,7 @@ public class JuaParser {
         Expression cond = parseExpression();
         Statement body = parseStatement();
 
-        if (!match(ELSE)) {
+        if (!acceptToken(ELSE)) {
             return new If(position, cond, body, null);
         }
         return new If(position, cond, body, parseStatement());
@@ -216,52 +251,57 @@ public class JuaParser {
     private Statement parseBlock(int position) {
         List<Statement> statements = new LinkedList<>();
 
-        while (!match(RBRACE)) {
-            if (match(EOF)) {
-                expect(RBRACE);
+        while (!acceptToken(RBRACE)) {
+            if (acceptToken(EOF)) {
+                expectToken(RBRACE);
             }
-            statements.add(parseStatement());
+            try {
+                statements.add(parseStatement());
+            } catch (ParseNodeExit e) {
+                log.error(e.pos, e.msg);
+            }
         }
         return new Block(position, statements);
     }
 
-//    private Statement parsePrint(int position) {
-//        List<Expression> expressions = parseExpressions();
-//        expect(SEMI);
-//        return new PrintStatement(position, expressions);
-//    }
-//
-//    private Statement parsePrintln(int position) {
-//        List<Expression> expressions = parseExpressions();
-//        expect(SEMI);
-//        return new PrintlnStatement(position, expressions);
-//    }
-
     private Statement parseReturn(int position) {
-        if (match(SEMI)) {
+        if (acceptToken(SEMI)) {
             return new Return(position, null);
         }
-        Expression expr = parseExpression();
-        expect(SEMI);
+        Expression expr = null;
+        try {
+            expr = parseExpression();
+        } catch (ParseNodeExit e) {
+            log.error(e.pos, e.msg);
+        }
+        expectToken(SEMI);
         return new Return(position, expr);
     }
 
     private Statement parseSwitch(int position) {
         Expression selector = parseExpression();
         List<Case> cases = new LinkedList<>();
-        expect(LBRACE);
+        expectToken(LBRACE);
 
-        while (!match(RBRACE)) {
-            int position1 = currentToken.pos;
+        while (!acceptToken(RBRACE)) {
+            int position1 = token.pos;
 
-            if (match(CASE)) {
-                cases.add(parseCase(position1, false));
-            } else if (match(DEFAULT)) {
-                cases.add(parseCase(position1, true));
-            } else if (match(EOF)) {
-                expect(RBRACE);
+            if (acceptToken(CASE)) {
+                try {
+                    cases.add(parseCase(position1, false));
+                } catch (ParseNodeExit e) {
+                    log.error(e.pos, e.msg);
+                }
+            } else if (acceptToken(DEFAULT)) {
+                try {
+                    cases.add(parseCase(position1, true));
+                } catch (ParseNodeExit e) {
+                    log.error(e.pos, e.msg);
+                }
+            } else if (acceptToken(EOF)) {
+                expectToken(RBRACE);
             } else {
-                pError(currentToken.pos, currentToken + " is not allowed inside switch.");
+                pError(token.pos, token + " is not allowed inside switch.");
             }
         }
         return new Switch(position, selector, cases);
@@ -273,14 +313,15 @@ public class JuaParser {
         if (!isDefault) {
             expressions = parseExpressions();
         }
-        expect(COL);
-        return new Case(position, expressions, parseStatement());
+        expectToken(COL);
+        Statement body = parseStatement();
+        return new Case(position, expressions, body);
     }
 
     private Statement parseUnusedExpression() {
-        int position = currentToken.pos;
+        int position = token.pos;
         Expression expr = parseExpression();
-        expect(SEMI);
+        expectToken(SEMI);
         return new Discarded(position, expr);
     }
 
@@ -289,7 +330,7 @@ public class JuaParser {
 
         do {
             expressions.add(parseExpression());
-        } while (match(COMMA));
+        } while (acceptToken(COMMA));
 
         return expressions;
     }
@@ -300,54 +341,68 @@ public class JuaParser {
 
     private Expression parseAssignment() {
         Expression expr = parseNullCoalesce();
-        int position = currentToken.pos;
+        int position = token.pos;
 
-        if (match(AMPEQ)) {
-            return new CompoundAssign(position, Tag.ASG_AND, expr, parseAssignment());
+        switch (token.type) {
+            case AMPEQ: {
+                nextToken();
+                return new CompoundAssign(position, Tag.ASG_AND, expr, parseAssignment());
+            }
+            case BAREQ: {
+                nextToken();
+                return new CompoundAssign(position, Tag.ASG_OR, expr, parseAssignment());
+            }
+            case CARETEQ: {
+                nextToken();
+                return new CompoundAssign(position, Tag.XOR, expr, parseAssignment());
+            }
+            case EQ: {
+                nextToken();
+                return new Assign(position, expr, parseAssignment());
+            }
+            case GTGTEQ: {
+                nextToken();
+                return new CompoundAssign(position, Tag.ASG_SL, expr, parseAssignment());
+            }
+            case LTLTEQ: {
+                nextToken();
+                return new CompoundAssign(position, Tag.ASG_SR, expr, parseAssignment());
+            }
+            case MINUSEQ: {
+                nextToken();
+                return new CompoundAssign(position, Tag.ASG_SUB, expr, parseAssignment());
+            }
+            case PERCENTEQ: {
+                nextToken();
+                return new CompoundAssign(position, Tag.ASG_REM, expr, parseAssignment());
+            }
+            case PLUSEQ: {
+                nextToken();
+                return new CompoundAssign(position, Tag.ASG_ADD, expr, parseAssignment());
+            }
+            case QUESQUESEQ: {
+                nextToken();
+                return new CompoundAssign(position, Tag.ASG_NULLCOALESCE, expr, parseAssignment());
+            }
+            case SLASHEQ: {
+                nextToken();
+                return new CompoundAssign(position, Tag.ASG_DIV, expr, parseAssignment());
+            }
+            case STAREQ: {
+                nextToken();
+                return new CompoundAssign(position, Tag.ASG_MUL, expr, parseAssignment());
+            }
+            default: return expr;
         }
-        if (match(BAREQ)) {
-            return new CompoundAssign(position, Tag.ASG_OR, expr, parseAssignment());
-        }
-        if (match(CARETEQ)) {
-            return new CompoundAssign(position, Tag.XOR, expr, parseAssignment());
-        }
-        if (match(EQ)) {
-            return new Assign(position, expr, parseAssignment());
-        }
-        if (match(GTGTEQ)) {
-            return new CompoundAssign(position, Tag.ASG_SL, expr, parseAssignment());
-        }
-        if (match(LTLTEQ)) {
-            return new CompoundAssign(position, Tag.ASG_SR, expr, parseAssignment());
-        }
-        if (match(MINUSEQ)) {
-            return new CompoundAssign(position, Tag.ASG_SUB, expr, parseAssignment());
-        }
-        if (match(PERCENTEQ)) {
-            return new CompoundAssign(position, Tag.ASG_REM, expr, parseAssignment());
-        }
-        if (match(PLUSEQ)) {
-            return new CompoundAssign(position, Tag.ASG_ADD, expr, parseAssignment());
-        }
-        if (match(QUESQUESEQ)) {
-            return new CompoundAssign(position, Tag.ASG_NULLCOALESCE, expr, parseAssignment());
-        }
-        if (match(SLASHEQ)) {
-            return new CompoundAssign(position, Tag.ASG_DIV, expr, parseAssignment());
-        }
-        if (match(STAREQ)) {
-            return new CompoundAssign(position, Tag.ASG_MUL, expr, parseAssignment());
-        }
-        return expr;
     }
 
     private Expression parseNullCoalesce() {
         Expression expr = parseTernary();
 
         while (true) {
-            int position = currentToken.pos;
+            int position = token.pos;
 
-            if (match(QUESQUES)) {
+            if (acceptToken(QUESQUES)) {
                 expr = new BinaryOp(position, Tag.NULLCOALESCE, expr, parseTernary());
             } else {
                 return expr;
@@ -359,9 +414,9 @@ public class JuaParser {
         Expression expr = parseOr();
 
         while (true) {
-            int position = currentToken.pos;
+            int position = token.pos;
 
-            if (match(QUES)) {
+            if (acceptToken(QUES)) {
                 expr = parseTernary0(position, expr);
             } else {
                 return expr;
@@ -371,17 +426,17 @@ public class JuaParser {
 
     private Expression parseTernary0(int position, Expression cond) {
         Expression right = parseExpression();
-        expect(COL);
+        expectToken(COL);
         return new TernaryOp(position, cond, right, parseExpression());
     }
 
     private Expression parseOr() {
         Expression expr = parseAnd();
-        int position = currentToken.pos;
+        int position = token.pos;
 
-        while (match(BARBAR)) {
+        while (acceptToken(BARBAR)) {
             expr = new BinaryOp(position, Tag.FLOW_OR, expr, parseAnd());
-            position = currentToken.pos;
+            position = token.pos;
         }
         return expr;
     }
@@ -390,9 +445,9 @@ public class JuaParser {
         Expression expr = parseBitOr();
 
         while (true) {
-            int position = currentToken.pos;
+            int position = token.pos;
 
-            if (match(AMPAMP)) {
+            if (acceptToken(AMPAMP)) {
                 expr = new BinaryOp(position, Tag.FLOW_AND, expr, parseEquality());
             } else {
                 return expr;
@@ -405,9 +460,9 @@ public class JuaParser {
         Expression expr = parseBitXor();
 
         while (true) {
-            int position = currentToken.pos;
+            int position = token.pos;
 
-            if (match(BAR)) {
+            if (acceptToken(BAR)) {
                 expr = new BinaryOp(position, Tag.OR, expr, parseBitXor());
             } else {
                 return expr;
@@ -419,9 +474,9 @@ public class JuaParser {
         Expression expr = parseBitAnd();
 
         while (true) {
-            int position = currentToken.pos;
+            int position = token.pos;
 
-            if (match(CARET)) {
+            if (acceptToken(CARET)) {
                 expr = new BinaryOp(position, Tag.XOR, expr, parseBitAnd());
             } else {
                 return expr;
@@ -433,9 +488,9 @@ public class JuaParser {
         Expression expr = parseEquality();
 
         while (true) {
-            int position = currentToken.pos;
+            int position = token.pos;
 
-            if (match(AMP)) {
+            if (acceptToken(AMP)) {
                 expr = new BinaryOp(position, Tag.AND, expr, parseEquality());
             } else {
                 return expr;
@@ -447,11 +502,11 @@ public class JuaParser {
         Expression expr = parseConditional();
 
         while (true) {
-            int position = currentToken.pos;
+            int position = token.pos;
 
-            if (match(EQEQ)) {
+            if (acceptToken(EQEQ)) {
                 expr = new BinaryOp(position, Tag.EQ, expr, parseConditional());
-            } else if (match(BANGEQ)) {
+            } else if (acceptToken(BANGEQ)) {
                 expr = new BinaryOp(position, Tag.NE, expr, parseConditional());
             } else {
                 return expr;
@@ -463,15 +518,15 @@ public class JuaParser {
         Expression expr = parseShift();
 
         while (true) {
-            int position = currentToken.pos;
+            int position = token.pos;
 
-            if (match(GT)) {
+            if (acceptToken(GT)) {
                 expr = new BinaryOp(position, Tag.GT, expr, parseShift());
-            } else if (match(GTEQ)) {
+            } else if (acceptToken(GTEQ)) {
                 expr = new BinaryOp(position, Tag.GE, expr, parseShift());
-            } else if (match(LT)) {
+            } else if (acceptToken(LT)) {
                 expr = new BinaryOp(position, Tag.LT, expr, parseShift());
-            } else if (match(LTEQ)) {
+            } else if (acceptToken(LTEQ)) {
                 expr = new BinaryOp(position, Tag.LE, expr, parseShift());
             } else {
                 return expr;
@@ -483,11 +538,11 @@ public class JuaParser {
         Expression expr = parseAdditive();
 
         while (true) {
-            int position = currentToken.pos;
+            int position = token.pos;
 
-            if (match(GTGT)) {
+            if (acceptToken(GTGT)) {
                 expr = new BinaryOp(position, Tag.SR, expr, parseAdditive());
-            } else if (match(LTLT)) {
+            } else if (acceptToken(LTLT)) {
                 expr = new BinaryOp(position, Tag.SL, expr, parseAdditive());
             } else {
                 return expr;
@@ -499,11 +554,11 @@ public class JuaParser {
         Expression expr = parseMultiplicative();
 
         while (true) {
-            int position = currentToken.pos;
+            int position = token.pos;
 
-            if (match(MINUS)) {
+            if (acceptToken(MINUS)) {
                 expr = new BinaryOp(position, Tag.SUB, expr, parseMultiplicative());
-            } else if (match(PLUS)) {
+            } else if (acceptToken(PLUS)) {
                 expr = new BinaryOp(position, Tag.ADD, expr, parseMultiplicative());
             } else {
                 return expr;
@@ -515,13 +570,13 @@ public class JuaParser {
         Expression expr = parseUnary();
 
         while (true) {
-            int position = currentToken.pos;
+            int position = token.pos;
 
-            if (match(PERCENT)) {
+            if (acceptToken(PERCENT)) {
                 expr = new BinaryOp(position, Tag.REM, expr, parseUnary());
-            } else if (match(SLASH)) {
+            } else if (acceptToken(SLASH)) {
                 expr = new BinaryOp(position, Tag.DIV, expr, parseUnary());
-            } else if (match(STAR)) {
+            } else if (acceptToken(STAR)) {
                 expr = new BinaryOp(position, Tag.MUL, expr, parseUnary());
             } else {
                 return expr;
@@ -530,35 +585,35 @@ public class JuaParser {
     }
 
     private Expression parseUnary() {
-        int position = currentToken.pos;
+        int position = token.pos;
 
-        if (match(BANG)) {
+        if (acceptToken(BANG)) {
             return new UnaryOp(position, Tag.NOT, parseUnary());
         }
-        if (match(MINUS)) {
+        if (acceptToken(MINUS)) {
             return new UnaryOp(position, Tag.NEG, parseUnary());
         }
-        if (match(MINUSMINUS)) {
+        if (acceptToken(MINUSMINUS)) {
             return new UnaryOp(position, Tag.PREDEC, parseUnary());
         }
-        if (match(PLUS)) {
+        if (acceptToken(PLUS)) {
             return new UnaryOp(position, Tag.POS, parseUnary());
         }
-        if (match(PLUSPLUS)) {
+        if (acceptToken(PLUSPLUS)) {
             return new UnaryOp(position, Tag.PREINC, parseUnary());
         }
-        if (match(TILDE)) {
+        if (acceptToken(TILDE)) {
             return new UnaryOp(position, Tag.INVERSE, parseUnary());
         }
         return parseClone();
     }
 
     private Expression parseClone() {
-        int position = currentToken.pos;
+        int position = token.pos;
 
         // HACK todo
-        if (currentToken.type == IDENTIFIER && currentToken.value().equals("clone")) {
-            next();
+        if (token.type == IDENTIFIER && token.value().equals("clone")) {
+            nextToken();
             return new UnaryOp(position, Tag.CLONE, parsePost());
         }
         return parsePost();
@@ -568,11 +623,11 @@ public class JuaParser {
         Expression expr = parseAccess();
 
         while (true) {
-            int position = currentToken.pos;
+            int position = token.pos;
 
-            if (match(MINUSMINUS)) {
+            if (acceptToken(MINUSMINUS)) {
                 expr = new UnaryOp(position, Tag.POSTDEC, expr);
-            } else if (match(PLUSPLUS)) {
+            } else if (acceptToken(PLUSPLUS)) {
                 expr = new UnaryOp(position, Tag.POSTINC, expr);
             } else {
                 return expr;
@@ -589,16 +644,16 @@ public class JuaParser {
         Expression expression = parsePrimary();
 
         while (true) {
-            int position = currentToken.pos;
+            int position = token.pos;
 
-            if (match(DOT)) {
-                Token token = currentToken;
-                expect(IDENTIFIER);
+            if (acceptToken(DOT)) {
+                Token token = this.token;
+                expectToken(IDENTIFIER);
                 expression = new FieldAccess(position, expression,
                         new Name(token.value(), token.pos));
-            } else if (match(LBRACKET)) {
+            } else if (acceptToken(LBRACKET)) {
                 expression = new ArrayAccess(position, expression, parseExpression());
-                expect(RBRACKET);
+                expectToken(RBRACKET);
             } else {
                 break;
             }
@@ -627,43 +682,47 @@ public class JuaParser {
 //    }
 
     private Expression parsePrimary() {
-        Token token = currentToken;
+        Token token = this.token;
+        nextToken();
 
-        if (match(EOF)) {
-            pError(token.pos, "missing expected expression.");
+        switch (token.type) {
+            case EOF: {
+                pError(token.pos, "missing expected expression.");
+            }
+            case FALSE: {
+                return new Literal(token.pos, types.asBoolean(false));
+            }
+            case FLOATLITERAL: {
+                return parseFloat(token);
+            }
+            case IDENTIFIER: {
+                return parseIdentifier(token);
+            }
+            case INTLITERAL: {
+                return parseInt(token);
+            }
+            case LBRACE: {
+                return parseArray(token.pos, RBRACE);
+            }
+            case LBRACKET: {
+                return parseArray(token.pos, RBRACKET);
+            }
+            case LPAREN: {
+                return parseParens(token.pos);
+            }
+            case NULL: {
+                return new Literal(token.pos, types.asNull());
+            }
+            case STRINGLITERAL: {
+                return new Literal(token.pos, types.asString(token.value()));
+            }
+            case TRUE: {
+                return new Literal(token.pos, types.asBoolean(true));
+            }
+            default:
+                unexpected(token);
+                return null; // UNREACHABLE
         }
-        if (match(FALSE)) {
-            return new Literal(token.pos, types.asBoolean(false));
-        }
-        if (match(FLOATLITERAL)) {
-            return parseFloat(token);
-        }
-        if (match(IDENTIFIER)) {
-            return parseIdentifier(token);
-        }
-        if (match(INTLITERAL)) {
-            return parseInt(token);
-        }
-        if (match(LBRACE)) {
-            return parseArray(token.pos, RBRACE);
-        }
-        if (match(LBRACKET)) {
-            return parseArray(token.pos, RBRACKET);
-        }
-        if (match(LPAREN)) {
-            return parseParens(token.pos);
-        }
-        if (match(NULL)) {
-            return new Literal(token.pos, types.asNull());
-        }
-        if (match(STRINGLITERAL)) {
-            return new Literal(token.pos, types.asString(token.value()));
-        }
-        if (match(TRUE)) {
-            return new Literal(token.pos, types.asBoolean(true));
-        }
-        unexpected(currentToken);
-        return null;
     }
 
     private Expression parseFloat(Token token) {
@@ -679,7 +738,7 @@ public class JuaParser {
     }
 
     private Expression parseIdentifier(Token token) {
-        if (match(LPAREN)) {
+        if (acceptToken(LPAREN)) {
             return parseInvocation(token);
         }
         return new Var(token.pos, new Name(token.value(), token.pos));
@@ -689,16 +748,16 @@ public class JuaParser {
         List<Invocation.Argument> args = new LinkedList<>();
         boolean comma = false;
 
-        while (!match(RPAREN)) {
-            if (match(EOF) || comma && !match(COMMA)) {
-                expect(RPAREN);
+        while (!acceptToken(RPAREN)) {
+            if (acceptToken(EOF) || comma && !acceptToken(COMMA)) {
+                expectToken(RPAREN);
             }
             // todo: именные аргументы
             // Название аргумента равно null по умолчанию.
             args.add(new Invocation.Argument(null, parseExpression()));
-            comma = !match(COMMA);
+            comma = !acceptToken(COMMA);
         }
-        return new Invocation(token.pos, new Name(token.value(), currentToken.pos), args);
+        return new Invocation(token.pos, new Name(token.value(), this.token.pos), args);
     }
 
     private Expression parseInt(Token token) {
@@ -714,69 +773,102 @@ public class JuaParser {
         List<ArrayLiteral.Entry> entries = new LinkedList<>();
         boolean comma = false;
 
-        while (!match(enclosing)) {
-            if (match(EOF) || comma && !match(COMMA)) {
-                expect(enclosing);
+        while (!acceptToken(enclosing)) {
+            if (acceptToken(EOF) || comma && !acceptToken(COMMA)) {
+                expectToken(enclosing);
             }
-            Expression key = null;
-            Expression value = parseExpression();
+            try {
+                Expression key = null;
+                Expression value = parseExpression();
 
-            if (match(COL)) {
-                key = value;
-                value = parseExpression();
+                if (acceptToken(COL)) {
+                    key = value;
+                    value = parseExpression();
+                }
+                entries.add(new ArrayLiteral.Entry(key, value));
+            } catch (ParseNodeExit e) {
+                log.error(e.pos, e.msg);
             }
-            entries.add(new ArrayLiteral.Entry(key, value));
-            comma = !match(COMMA);
+            comma = !acceptToken(COMMA);
         }
         return new ArrayLiteral(position, entries);
     }
 
     private Expression parseParens(int position) {
         Expression expr = parseExpression();
-        expect(RPAREN);
+        expectToken(RPAREN);
         return new Parens(position, expr);
     }
 
-    private void next() {
-        currentToken = tokenizer.nextToken();
+    private void nextToken() {
+        token = tokenizer.nextToken();
     }
 
-    private boolean match(TokenType type) {
-        if (currentToken.type == type) {
-            next();
+    private boolean matchesToken(TokenType type) {
+        return token.type == type;
+    }
+    
+    private boolean acceptToken(TokenType type) {
+        if (matchesToken(type)) {
+            nextToken();
             return true;
         }
         return false;
     }
 
-    private void expect(TokenType... types) {
-        for (TokenType type : types) {
-            if (match(type)) {
-                continue;
-            }
-            //next();
+    private void expectToken(TokenType type) {
+        try {
+            if (matchesToken(type)) return;
+            // Compile error: X expected, Y found.
+            // Compile error: X expected.
+            // Compile error: unexpected Y.
+            String expected = type2string(type);
+            String found = type2string(token.type);
 
-            if (type.value == null) {
-                if (type == IDENTIFIER) {
-                    pError(currentToken.pos, "identifier expected.");
-                } else {
-                    unexpected(currentToken);
-                }
+            if (expected != null && found != null) {
+                log.error(token.pos, expected + " expected, " + found + " found.");
                 return;
             }
-            if (currentToken.getClass() == Token.class) {
-                pError(currentToken.pos, type + " expected.");
+
+            if (expected != null) {
+                log.error(token.pos, expected + " expected.");
                 return;
             }
-            pError(currentToken.pos, type + " expected, " + currentToken + " found.");
+
+            if (found != null) {
+                log.error(token.pos, "unexpected " + found + ".");
+                return;
+            }
+
+            log.error(token.pos, "invalid syntax.");
+        } finally {
+            nextToken();
+        }
+    }
+
+    static String type2string(TokenType type) {
+        switch (type) {
+            case IDENTIFIER: return "name";
+            case STRINGLITERAL: return "string";
+            case INTLITERAL: return "integer number";
+            case FLOATLITERAL: return "floating-point number";
+            default: return type.value == null ? null : '\'' + type.value + '\'';
         }
     }
 
     private void unexpected(Token token) {
-        pError(token.pos, "unexpected " + token + '.');
+        pError(token.pos, "unexpected " + type2string(token.type) + '.');
     }
 
     private void pError(int position, String message) {
-        log.error(position, message);
+        // При возникновении ошибок, в AST попадают нулевые значения.
+        // Это порождает множество потенциальных ошибок, в том числе NPE
+        // для последующих стадий компиляции.
+        // Решение прерывать парсинг узла с ошибкой
+        // позволяет избежать нулевых значений в дереве, но
+        // портит лексическую последовательность и, впоследствии,
+        // семантическую последовательность ошибок. Качественных
+        // решений последней проблемы пока что не вижу.
+        throw new ParseNodeExit(position, message);
     }
 }

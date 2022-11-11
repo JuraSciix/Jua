@@ -35,8 +35,6 @@ fn bubble_sort(a) {
     }
 }
 
-test_bubble_sort();
-
 fn test_bubble_sort() {
     x = [5, 2, 7, 2, 9, 0, 1];
     y = [0, 1, 2, 2, 5, 7, 9];
