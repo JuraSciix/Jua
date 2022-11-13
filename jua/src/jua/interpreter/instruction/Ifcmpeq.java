@@ -3,7 +3,7 @@ package jua.interpreter.instruction;
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
-public final class Ifcmpeq extends ChainInstruction {
+public final class Ifcmpeq extends JumpInstruction {
 
     public Ifcmpeq(int destIp) {
         super(destIp);

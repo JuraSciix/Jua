@@ -3,7 +3,7 @@ package jua.interpreter.instruction;
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
-public final class Ifnonnull extends ChainInstruction {
+public final class Ifnonnull extends JumpInstruction {
 
     public Ifnonnull(int destIp) {
         super(destIp);

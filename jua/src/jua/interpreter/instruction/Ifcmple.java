@@ -1,11 +1,9 @@
 package jua.interpreter.instruction;
 
-import jua.interpreter.InterpreterError;
 import jua.interpreter.InterpreterState;
-import jua.runtime.heap.Operand;
 import jua.compiler.CodePrinter;
 
-public final class Ifcmple extends ChainInstruction {
+public final class Ifcmple extends JumpInstruction {
 
     public Ifcmple(int destIp) {
         super(destIp);

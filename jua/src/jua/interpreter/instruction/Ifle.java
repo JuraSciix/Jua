@@ -3,7 +3,7 @@ package jua.interpreter.instruction;
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
-public final class Ifle extends ChainInstruction {
+public final class Ifle extends JumpInstruction {
 
     private final int value;
 

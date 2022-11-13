@@ -1,11 +1,9 @@
 package jua.interpreter.instruction;
 
-import jua.interpreter.InterpreterError;
 import jua.interpreter.InterpreterState;
-import jua.runtime.heap.Operand;
 import jua.compiler.CodePrinter;
 
-public final class Ifcmpgt extends ChainInstruction {
+public final class Ifcmpgt extends JumpInstruction {
 
     public Ifcmpgt(int destIp) {
         super(destIp);

@@ -2,11 +2,11 @@ package jua.interpreter.instruction;
 
 import jua.compiler.CodePrinter;
 
-public abstract class ChainInstruction implements Instruction {
+public abstract class JumpInstruction implements Instruction {
 
     protected final int destIp;
 
-    protected ChainInstruction(int destIp) {
+    protected JumpInstruction(int destIp) {
         this.destIp = destIp;
     }
 

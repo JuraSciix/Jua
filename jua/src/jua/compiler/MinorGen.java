@@ -705,7 +705,7 @@ public final class MinorGen extends Gen {
         beginCondition();
         Expression lhs = expression.lhs;
         Expression rhs = expression.rhs;
-        Code.ChainInstructionFactory resultState;
+        Code.JumpInstructionConstructor resultState;
         // todo: Отрефакторить
         int resultStackAdjustment;
         int shortVal;

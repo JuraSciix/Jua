@@ -1,6 +1,5 @@
 package jua.compiler;
 
-import jua.compiler.Code.ChainInstructionFactory;
 import jua.compiler.Tree.Tag;
 import jua.interpreter.instruction.*;
 

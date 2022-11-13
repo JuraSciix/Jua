@@ -8,7 +8,7 @@ import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.shorts.*;
 import jua.runtime.code.CodeSegment;
-import jua.interpreter.instruction.ChainInstruction;
+import jua.interpreter.instruction.JumpInstruction;
 import jua.interpreter.instruction.Instruction;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.LocalNameTable;
@@ -20,15 +20,15 @@ import java.util.List;
 
 public final class Code {
 
-    interface ChainInstructionFactory {
+    interface JumpInstructionConstructor {
 
-        ChainInstruction create(int dest_ip);
+        JumpInstruction create(int dest_ip);
     }
 
     private static class Chain {
 
         // Map<IP, ChainInstructionFactory>
-        final Int2ObjectMap<ChainInstructionFactory> factories
+        final Int2ObjectMap<JumpInstructionConstructor> constructors
                 = new Int2ObjectOpenHashMap<>();
 
         int resultIP = -1;
@@ -110,17 +110,17 @@ public final class Code {
         addInstruction0(instr, stackAdjustment);
     }
 
-    public void addChainedInstruction(ChainInstructionFactory factory, int chainId) {
+    public void addChainedInstruction(JumpInstructionConstructor factory, int chainId) {
         addChainedInstruction0(factory, chainId, 0);
     }
 
-    public void addChainedInstruction(ChainInstructionFactory factory, int chainId, int stackAdjustment) {
+    public void addChainedInstruction(JumpInstructionConstructor factory, int chainId, int stackAdjustment) {
         addChainedInstruction0(factory, chainId, stackAdjustment);
     }
 
-    private void addChainedInstruction0(ChainInstructionFactory factory, int chainId, int stackAdjustment) {
+    private void addChainedInstruction0(JumpInstructionConstructor factory, int chainId, int stackAdjustment) {
         if (!isAlive()) return;
-        context.chains.get(chainId).factories.put(currentIP(), factory);
+        context.chains.get(chainId).constructors.put(currentIP(), factory);
         context.instructions.add(null); // will be installed later
         adjustStack(stackAdjustment);
     }
@@ -217,7 +217,7 @@ public final class Code {
     private Instruction[] buildCode() {
         Instruction[] instructions = context.instructions.toArray(EMPTY_INSTRUCTIONS);
         for (Chain chain : context.chains.values()) {
-            for (Int2ObjectMap.Entry<ChainInstructionFactory> entry : chain.factories.int2ObjectEntrySet()) {
+            for (Int2ObjectMap.Entry<JumpInstructionConstructor> entry : chain.constructors.int2ObjectEntrySet()) {
                 int ip = entry.getIntKey();
                 instructions[ip] = entry.getValue().create(chain.resultIP - ip);
             }

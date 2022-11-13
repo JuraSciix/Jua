@@ -3,7 +3,7 @@ package jua.interpreter.instruction;
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
-public final class Ifcmpne extends ChainInstruction {
+public final class Ifcmpne extends JumpInstruction {
 
     public Ifcmpne(int destIp) {
         super(destIp);

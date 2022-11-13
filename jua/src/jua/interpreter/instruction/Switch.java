@@ -4,7 +4,7 @@ import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 import jua.runtime.heap.Operand;
 
-public final class Switch extends ChainInstruction {
+public final class Switch extends JumpInstruction {
 
     private final int[] literals;
 

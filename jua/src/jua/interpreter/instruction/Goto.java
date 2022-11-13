@@ -3,7 +3,7 @@ package jua.interpreter.instruction;
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
-public final class Goto extends ChainInstruction {
+public final class Goto extends JumpInstruction {
 
     public Goto(int destIp) {
         super(destIp);

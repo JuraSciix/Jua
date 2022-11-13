@@ -14,7 +14,7 @@ Should be optimized to:
 1: pop
 
  */
-public final class Iffalse extends ChainInstruction {
+public final class Iffalse extends JumpInstruction {
 
     public Iffalse(int destIp) {
         super(destIp);
