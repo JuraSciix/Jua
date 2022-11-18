@@ -83,17 +83,12 @@ public final class MinorGen extends Gen {
     // todo: исправить этот low-cohesion
 
     public CompilerResult getResult() {
-        return new CompilerResult(codeLayout, code.buildCodeSegment(), codeLayout.source.filename());
+        return new CompilerResult(codeLayout, code.buildCodeSegment(), codeLayout.source.name);
     }
 
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
-        try {
-            code = codeLayout.getCode();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return;//todo
-        }
+        code = codeLayout.getCode();
         code.pushContext(0);
         code.pushScope();
         int prev_state = state;
@@ -547,7 +542,7 @@ public final class MinorGen extends Gen {
                     tree.params.size() - nOptionals,
                     tree.params.size(),
                     code.buildCodeSegment(),
-                    codeLayout.source.filename()
+                    codeLayout.source.name
             ));
         }
 

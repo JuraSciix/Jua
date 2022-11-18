@@ -48,7 +48,7 @@ fn test_bubble_sort() {
 }
 
 fn print_list(l, keys = true) {
-    s = "[";
+    s = "";
     b = false;
     for i = 0; i < length(l); i++ {
         if b {
@@ -61,5 +61,9 @@ fn print_list(l, keys = true) {
         s += l[i];
         b = true;
     }
-    return s + "]";
+    return "[" + s + "]";
+}
+
+fn test(a, b, c) {
+    return !a && (b || c);
 }

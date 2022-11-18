@@ -63,7 +63,7 @@ public final class Code {
 
     private Context context;
 
-    public Code(Source source) throws IOException {
+    public Code(Source source) {
         this.lineMap = source.getLineMap();
     }
 

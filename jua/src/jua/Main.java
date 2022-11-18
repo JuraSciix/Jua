@@ -28,10 +28,7 @@ public class Main {
         // todo: Работа с несколькими файлами одновременно
 
         File file = testTargetFile();
-        Source targetSource = new Source(file.getName());
-        targetSource.read();
-        JuaCompiler compiler = new JuaCompiler(Collections.singletonList(targetSource));
-        CompilerResult result = compiler.next();
+        CompilerResult result = JuaCompiler.compileFile(file);
 
         if (result == null) return;
         if (Options.disassembler()) {

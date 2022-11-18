@@ -9,12 +9,12 @@ public final class LineMap {
 
     private final int[] lineStartPoints;
 
-    public LineMap(Source source) throws IOException {
-        lineStartPoints = buildLineMap(source);
+    LineMap(String content) {
+        lineStartPoints = buildLineMap(content);
     }
 
-    private int[] buildLineMap(Source source) throws IOException {
-        try (SourceReader reader = source.createReader()) {
+    private int[] buildLineMap(String content) {
+        try (SourceReader reader = SourceReader.of(content)) {
             IntList lineStartPoints = new IntArrayList(reader.length() - reader.cursor());
 
             // Первая линия
@@ -29,8 +29,6 @@ public final class LineMap {
             lineStartPoints.add(reader.length() - 1);
 
             return lineStartPoints.toIntArray();
-        } catch (Exception e) {
-            throw new IOException(e);
         }
     }
 
@@ -42,6 +40,14 @@ public final class LineMap {
     public int getColumnNumber(int pos) {
         int index = findLineIndex(pos);
         return pos - lineStartPoints[index];
+    }
+
+    public int getLineStart(int pos) {
+        return lineStartPoints[findLineIndex(pos)];
+    }
+
+    public int getLineEnd(int pos) {
+        return lineStartPoints[findLineIndex(pos) + 1];
     }
 
     private int findLineIndex(int pos) {

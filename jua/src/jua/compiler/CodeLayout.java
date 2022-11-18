@@ -26,7 +26,7 @@ public class CodeLayout {
 
     private Code code;
 
-    public Code getCode() throws IOException {
+    public Code getCode() {
         if (code == null) code = new Code(source);
         return code;
     }

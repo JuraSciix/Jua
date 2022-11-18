@@ -34,10 +34,10 @@ public class JuaParser {
 
     private final Log log;
 
-    public JuaParser(Tokenizer tokenizer, Types types, Log log) {
-        this.tokenizer = Objects.requireNonNull(tokenizer, "Tokenizer is null");
+    public JuaParser(Source source, Types types) {
+        this.tokenizer = new Tokenizer(source);
         this.types = Objects.requireNonNull(types, "Types is null");
-        this.log = log;
+        this.log = source.getLog();
     }
 
      public Tree parse() {
@@ -762,7 +762,7 @@ public class JuaParser {
 
     private Expression parseInt(Token token) {
         try {
-            return new Literal(token.pos, types.asLong(Long.parseLong(token.value())));
+            return new Literal(token.pos, types.asLong(Long.parseLong(token.value(), token.radix())));
         } catch (NumberFormatException e) {
             pError(token.pos, "number too large.");
             return null;

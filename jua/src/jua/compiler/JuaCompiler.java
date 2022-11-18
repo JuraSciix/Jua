@@ -1,61 +1,37 @@
 package jua.compiler;
 
+import jua.util.IOUtils;
+
+import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.Objects;
 
 public final class JuaCompiler {
 
-    private Log log;
-    private final Iterator<Source> sources;
-
-    public JuaCompiler(Iterable<Source> sources) {
-        Objects.requireNonNull(sources, "Sources is null");
-        this.sources = sources.iterator();
-    }
-
-    public CompilerResult next() throws IOException {
-        Source source = sources.next();
-
-        // todo: CodeLayout должен уметь работать с несколькими сурсами одновременно.
-        CodeLayout layout = new CodeLayout(source);
-
-        log = source.createLog();
-
-        Code code = layout.getCode();
-        Types types = code.getTypes();
-
-        try (Tokenizer tokenizer = new Tokenizer(source)) {
-            JuaParser parser = new JuaParser(tokenizer, types, log);
-            Tree tree = parser.parse();
-
-            tree.accept(new Enter(layout, log));
-            tree.accept(new Lower(types));
-            Gen gen = new MinorGen(layout, log);
-            tree.accept(gen);
-
-            if (log.hasErrors()) {
-                log.flush();
-                return null;
-            }
-
-            return gen.getResult();
-//        }
-//        } catch (ParseException e) {
-//            error("Compile error", layout, e.getMessage(), e.position, true);
-        } catch (CompileError e) {
-            log.error(e.position, e.getMessage());
-        } catch (CompileInterrupter interrupter) {
-            log.flush();
-        } catch (Exception e) {
-            e.printStackTrace(); // todo
-        } finally {
-            if (log.hasErrors()) log.flush();
+    public static CompilerResult compileFile(File file) {
+        String filecontents;
+        try {
+            filecontents = new String(IOUtils.readCharsFromFile(file));
+        } catch (IOException e) {
+            System.err.println("Unable access to file.");
+            System.exit(1);
+            return null;
         }
-        throw new ThreadDeath();
-    }
+        Source source = new Source(file.getName(), filecontents);
 
-    public Log getLog() {
-        return log;
+        CodeLayout codeLayout = new CodeLayout(source);
+        Code code = codeLayout.getCode();
+        MinorGen codegen = new MinorGen(codeLayout, source.getLog());
+        JuaParser parser = new JuaParser(source, code.getTypes());
+        Tree tree = parser.parse();
+        tree.accept(new Enter(codeLayout, source.getLog()));
+        tree.accept(new Lower(code.getTypes()));
+        tree.accept(codegen);
+        if (source.getLog().hasMessages()) {
+            source.getLog().flush(System.err);
+        }
+        if (source.getLog().hasErrors()) {
+            return null;
+        }
+        return codegen.getResult();
     }
 }

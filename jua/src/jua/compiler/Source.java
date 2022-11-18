@@ -1,65 +1,27 @@
 package jua.compiler;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 public final class Source {
 
-    private final Path path;
+    public final String name, content;
 
-    private char[] content;
+    private LineMap _linemap;
 
-    private LineMap lineMap;
+    private Log _log;
 
-    public Source(String path) {
-        this.path = Paths.get(path);
+    public Source(String name, String content) {
+        this.name = name;
+        this.content = content;
     }
 
-    public Log createLog() {
-        return new Log(System.err, this); // todo
+    public LineMap getLineMap() {
+        if (_linemap == null)
+            _linemap = new LineMap(content);
+        return _linemap;
     }
 
-    public Target target() {
-        return new Target(Version.JUA_1_3); // todo
-    }
-
-    public String filename() {
-        return path.toString();
-    }
-
-    public char[] buffer() {
-        return content.clone();
-    }
-
-    public void read() throws IOException {
-        byte[] fileContentBytes = Files.readAllBytes(path);
-        ByteBuffer fileContentByteBuffer = ByteBuffer.wrap(fileContentBytes);
-        content = StandardCharsets.UTF_8.decode(fileContentByteBuffer).array();
-    }
-
-    public SourceReader createReader() {
-        ensureContent();
-        return SourceReader.wrap(content);
-    }
-
-    private void ensureContent() {
-        if (content == null) {
-            throw new IllegalStateException("Content was not loaded. Call read() before it");
-        }
-    }
-
-    public LineMap getLineMap() throws IOException {
-        ensureLineMapInitiated();
-        return lineMap;
-    }
-
-    private void ensureLineMapInitiated() throws IOException {
-        if (lineMap == null) {
-            lineMap = new LineMap(this);
-        }
+    public Log getLog() {
+        if (_log == null)
+            _log = new Log(this);
+        return _log;
     }
 }

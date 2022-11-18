@@ -59,8 +59,8 @@ public class Tokenizer implements AutoCloseable {
 
     public Tokenizer(Source source) {
         this.source = source;
-        reader = source.createReader();
-        log = source.createLog();
+        reader = SourceReader.of(source.content);
+        log = source.getLog();
     }
 
     public Source getSource() {
