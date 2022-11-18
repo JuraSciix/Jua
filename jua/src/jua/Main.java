@@ -1,13 +1,11 @@
 package jua;
 
-import jua.compiler.CompilerResult;
+import jua.compiler.Program;
 import jua.compiler.JuaCompiler;
 import jua.runtime.RuntimeErrorException;
-import jua.compiler.Source;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 
 public class Main {
 
@@ -28,7 +26,7 @@ public class Main {
         // todo: Работа с несколькими файлами одновременно
 
         File file = testTargetFile();
-        CompilerResult result = JuaCompiler.compileFile(file);
+        Program result = JuaCompiler.compileFile(file);
 
         if (result == null) return;
         if (Options.disassembler()) {

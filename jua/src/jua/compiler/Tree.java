@@ -580,6 +580,8 @@ public interface Tree {
 
         public List<Statement> stats;
 
+        Code code;
+
         public CompilationUnit(Source source, List<Statement> stats) {
             this.source = source;
             this.stats = stats;
@@ -648,6 +650,8 @@ public interface Tree {
         public List<Parameter> params;
 
         public Statement body;
+
+        Code code;
 
         public FuncDef(int pos, Name name, List<Parameter> params, Statement body) {
             super(pos);

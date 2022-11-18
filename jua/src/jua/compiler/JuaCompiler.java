@@ -7,7 +7,7 @@ import java.io.IOException;
 
 public final class JuaCompiler {
 
-    public static CompilerResult compileFile(File file) {
+    public static Program compileFile(File file) {
         String filecontents;
         try {
             filecontents = new String(IOUtils.readCharsFromFile(file));
@@ -17,21 +17,26 @@ public final class JuaCompiler {
             return null;
         }
         Source source = new Source(file.getName(), filecontents);
+        try {
+            ProgramLayout programLayout = new ProgramLayout();
+            programLayout.mainSource = source;
+            programLayout.mainCode = new Code(source);
 
-        CodeLayout codeLayout = new CodeLayout(source);
-        Code code = codeLayout.getCode();
-        MinorGen codegen = new MinorGen(codeLayout, source.getLog());
-        JuaParser parser = new JuaParser(source, code.getTypes());
-        Tree tree = parser.parse();
-        tree.accept(new Enter(codeLayout, source.getLog()));
-        tree.accept(new Lower(code.getTypes()));
-        tree.accept(codegen);
-        if (source.getLog().hasMessages()) {
-            source.getLog().flush(System.err);
+            JuaParser parser = new JuaParser(source, programLayout.mainCode.getTypes());
+            programLayout.mainTree = parser.parse();
+
+            Program program = programLayout.buildProgram();
+            if (!source.getLog().hasErrors()) {
+                return program;
+            }
+        } catch (CompileInterrupter ignore) {
+        } finally {
+            if (source.getLog().hasMessages()) {
+                source.getLog().flush(System.err);
+            }
         }
-        if (source.getLog().hasErrors()) {
-            return null;
-        }
-        return codegen.getResult();
+
+        source.getLog().flush(System.err);
+        return null;
     }
 }

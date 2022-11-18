@@ -5,7 +5,7 @@ fn slow_fib(n) {
         }
         return 1;
     }
-    return fib(n - 1) + fib(n - 2);
+    return slow_fib(n - 1) + slow_fib(n - 2);
 }
 
 fn fast_fib(n) {
@@ -64,6 +64,6 @@ fn print_list(l, keys = true) {
     return "[" + s + "]";
 }
 
-fn test(a, b, c) {
-    return !a && (b || c);
-}
+println("Hello, world!");
+
+test_bubble_sort();

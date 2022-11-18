@@ -34,46 +34,41 @@ public final class Code {
         int resultIP = -1;
     }
 
-    private static class Context {
+    final List<Instruction> instructions = new ArrayList<>();
 
-        final Context prev;
+    final Short2IntSortedMap lineTable = new Short2IntRBTreeMap();
 
-        final List<Instruction> instructions = new ArrayList<>();
+    final Int2ObjectMap<Chain> chains = new Int2ObjectOpenHashMap<>();
 
-        final Short2IntSortedMap lineTable = new Short2IntRBTreeMap();
+    final Object2IntMap<String> localNames = new Object2IntLinkedOpenHashMap<>();
 
-        final Int2ObjectMap<Chain> chains = new Int2ObjectOpenHashMap<>();
+    final BooleanStack scopes = new BooleanArrayList();
 
-        final Object2IntMap<String> localNames = new Object2IntLinkedOpenHashMap<>();
+    final ConstantPool.Builder constant_pool_b = new ConstantPool.Builder();
 
-        final BooleanStack scopes = new BooleanArrayList();
+    int nstack = 0;
 
-        final ConstantPool.Builder constant_pool_b = new ConstantPool.Builder();
+    int nlocals = 0;
 
-        int nstack = 0;
+    int current_nstack = 0;
 
-        int nlocals = 0;
+    int current_lineNumber = 0;
 
-        int current_nstack = 0;
-
-        int current_lineNumber = 0;
-
-        Context(Context prev) { this.prev = prev; }
-    }
-
-    private Context context;
+    @Deprecated
+    private Code context = this;
 
     public Code(Source source) {
         this.lineMap = source.getLineMap();
     }
 
+    @Deprecated
     public void pushContext(int startPos) {
-        context = new Context(context);
         putPos(startPos);
     }
 
+    @Deprecated
     public void popContext() {
-        context = context.prev;
+
     }
 
     public int makeChain() {

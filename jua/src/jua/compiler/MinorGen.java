@@ -3,14 +3,12 @@ package jua.compiler;
 import it.unimi.dsi.fastutil.ints.Int2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntStack;
 import jua.interpreter.instruction.*;
 import jua.interpreter.instruction.Switch;
 import jua.runtime.JuaFunction;
 import jua.runtime.heap.*;
 import jua.compiler.Tree.*;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
@@ -51,44 +49,31 @@ public final class MinorGen extends Gen {
      */
     static final int STATE_ALIVE_SWITCH = (1 << 6);
 
-    private final CodeLayout codeLayout;
-
-    private Code code;
-
-    private final IntStack breakChains;
-
-    private final IntStack continueChains;
-
-    private final IntStack fallthroughChains;
-
-    private final IntStack conditionalChains;
+    private final IntArrayList breakChains = new IntArrayList();
+    private final IntArrayList continueChains = new IntArrayList();
+    private final IntArrayList fallthroughChains = new IntArrayList();
+    private final IntArrayList conditionalChains = new IntArrayList();
 
     /**
      * Состояние кода.
      */
     private int state = 0; // unassigned state
 
+    Code code;
+    private Log log;
 
-    private final Log log;
+    private final ProgramLayout programLayout;
 
-    public MinorGen(CodeLayout codeLayout, Log log) {
-        this.codeLayout = codeLayout;
-        this.log = log;
-
-        breakChains = new IntArrayList();
-        continueChains = new IntArrayList();
-        fallthroughChains = new IntArrayList();
-        conditionalChains = new IntArrayList();
+    MinorGen(ProgramLayout programLayout) {
+        this.programLayout = programLayout;
     }
+
     // todo: исправить этот low-cohesion
-
-    public CompilerResult getResult() {
-        return new CompilerResult(codeLayout, code.buildCodeSegment(), codeLayout.source.name);
-    }
 
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
-        code = codeLayout.getCode();
+        code = tree.code;
+        log = tree.source.getLog();
         code.pushContext(0);
         code.pushScope();
         int prev_state = state;
@@ -220,7 +205,7 @@ public final class MinorGen extends Gen {
         generateArrayCreation(tree.entries);
     }
 
-    private void generateArrayCreation(List<ArrayLiteral.Entry> entries) {
+    void generateArrayCreation(List<ArrayLiteral.Entry> entries) {
         long implicitIndex = 0;
         Iterator<ArrayLiteral.Entry> iterator = entries.iterator();
         while (iterator.hasNext()) {
@@ -347,29 +332,10 @@ public final class MinorGen extends Gen {
 
     @Override
     public void visitConstDef(ConstDef tree) {
-        if (declarationsUnallowedHere()) {
-            cError(tree.pos, "constants declaration is not allowed here.");
-        }
-
-        for (ConstDef.Definition def : tree.defs) {
-            Name name = def.name;
-            Expression expr = def.expr;
-            if (expr.getTag() == Tag.ARRAYLITERAL) {
-                ArrayLiteral arrayLiteral = (ArrayLiteral) expr;
-                codeLayout.setConstant(name.value, new ArrayOperand());
-                if (!arrayLiteral.entries.isEmpty())
-                    generateArrayCreation(arrayLiteral.entries);
-            } else if (expr.getTag() == Tag.LITERAL) {
-                Literal literal = (Literal) expr;
-                codeLayout.setConstant(name.value, resolveOperand(literal));
-            } else {
-                // todo: Более детальное сообщение
-                cError(expr.pos, "Literal expected.");
-            }
-        }
+        cError(tree.pos, "constants declaration is not allowed here.");
     }
 
-    private Operand resolveOperand(Literal literal) {
+    Operand resolveOperand(Literal literal) {
         // todo: Довести до literal.type.toOperand()
         Types.Type value = literal.type;
         if (value.isLong()) return LongOperand.valueOf(value.longValue());
@@ -480,7 +446,7 @@ public final class MinorGen extends Gen {
                     cError(tree.pos, "too many parameters.");
                 }
                 visitInvocationArgs(tree.args);
-                instruction = new Call(codeLayout.functionIndex(tree.name.value), (byte) tree.args.size(), tree.name);
+                instruction = new Call(programLayout.tryFindFunc(tree.name), (byte) tree.args.size(), tree.name);
                 stack = -tree.args.size() + 1;
                 break;
         }
@@ -496,11 +462,18 @@ public final class MinorGen extends Gen {
         }
     }
 
+    Source funcSource;
+
+    JuaFunction resultFunc;
+
     @Override
     public void visitFuncDef(FuncDef tree) {
-        if (declarationsUnallowedHere()) {
+        if (code != null) {
             cError(tree.pos, "Function declaration is not allowed here");
+            return;
         }
+        code = tree.code;
+        log = funcSource.getLog();
 
         code.pushContext(tree.pos);
         code.pushScope();
@@ -537,13 +510,13 @@ public final class MinorGen extends Gen {
                 emitReturn();
             }
 
-            codeLayout.setFunction(tree.name.value, JuaFunction.fromCode(
+            resultFunc = JuaFunction.fromCode(
                     tree.name.value,
                     tree.params.size() - nOptionals,
                     tree.params.size(),
                     code.buildCodeSegment(),
-                    codeLayout.source.name
-            ));
+                    funcSource.name
+            );
         }
 
         code.popScope();
@@ -958,8 +931,8 @@ public final class MinorGen extends Gen {
     public void visitVariable(Var tree) {
         Name name = tree.name;
         code.putPos(tree.pos);
-        if (codeLayout.testConstant(name.value)) {
-            code.addInstruction(new Getconst(codeLayout.constantIndex(name.value), name), 1);
+        if (programLayout.hasConstant(name)) {
+            code.addInstruction(new Getconst(programLayout.tryFindConst(name), name), 1);
         } else {
             emitVLoad(tree.name.value);
         }
