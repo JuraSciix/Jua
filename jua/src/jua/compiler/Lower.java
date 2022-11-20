@@ -43,12 +43,12 @@ public final class Lower extends Translator {
     }
 
     @Override
-    public void visitFieldAccess(FieldAccess tree) {
+    public void visitMemberAccess(MemberAccess tree) {
         // todo: Gen пока плохо умеет работать с FieldAccess --
         //  1. Исправить это
         //  2. Удалить это преобразование
         result = new ArrayAccess(tree.pos, translate(tree.expr),
-                new Literal(tree.field.pos, types.asString(tree.field.value)));
+                new Literal(tree.member.pos, types.asString(tree.member.value)));
     }
 
     @Override

@@ -142,7 +142,7 @@ public class JuaParser {
                 Token name = token;
                 expectToken(IDENTIFIER);
                 expectToken(EQ);
-                definitions.add(new ConstDef.Definition(new Name(name.value(), name.pos), parseExpression()));
+                definitions.add(new ConstDef.Definition(name.toName(), parseExpression()));
             } catch (ParseNodeExit e) {
                 log.error(e.pos, e.msg);
             }
@@ -171,7 +171,7 @@ public class JuaParser {
     }
 
     private Statement parseFunction(int pos) {
-        Name funcName = new Name(token.value(), token.pos);
+        Name funcName = token.toName();
         expectToken(IDENTIFIER);
         expectToken(LPAREN);
         List<FuncDef.Parameter> params = new LinkedList<>();
@@ -183,7 +183,7 @@ public class JuaParser {
             }
             Token name0 = token;
             expectToken(IDENTIFIER);
-            Name name1 = new Name(name0.value(), name0.pos);
+            Name name1 = name0.toName();
             Expression optional = null;
 
             if (acceptToken(EQ)) {
@@ -612,7 +612,7 @@ public class JuaParser {
         int position = token.pos;
 
         // HACK todo
-        if (token.type == IDENTIFIER && token.value().equals("clone")) {
+        if (token.type == IDENTIFIER && token.name().equals("clone")) {
             nextToken();
             return new UnaryOp(position, Tag.CLONE, parsePost());
         }
@@ -620,7 +620,7 @@ public class JuaParser {
     }
 
     private Expression parsePost() {
-        Expression expr = parseAccess();
+        Expression expr = parseCall();
 
         while (true) {
             int position = token.pos;
@@ -633,6 +633,19 @@ public class JuaParser {
                 return expr;
             }
         }
+    }
+
+    private Expression parseCall() {
+        int pos = token.pos;
+        Expression expr = parseAccess();
+
+        if (acceptToken(LPAREN)) {
+            List<Invocation.Argument> args = parseInvocationArgs();
+            expectToken(RPAREN);
+            return new Invocation(pos, expr, args);
+        }
+
+        return expr;
     }
 
     private Expression parseAccess() {
@@ -649,8 +662,8 @@ public class JuaParser {
             if (acceptToken(DOT)) {
                 Token token = this.token;
                 expectToken(IDENTIFIER);
-                expression = new FieldAccess(position, expression,
-                        new Name(token.value(), token.pos));
+                expression = new MemberAccess(position, expression,
+                        token.toName());
             } else if (acceptToken(LBRACKET)) {
                 expression = new ArrayAccess(position, expression, parseExpression());
                 expectToken(RBRACKET);
@@ -741,23 +754,40 @@ public class JuaParser {
         if (acceptToken(LPAREN)) {
             return parseInvocation(token);
         }
-        return new Var(token.pos, new Name(token.value(), token.pos));
+        return new Var(token.pos, token.toName());
     }
 
-    private Expression parseInvocation(Token token) {
+    private List<Invocation.Argument> parseInvocationArgs() {
         List<Invocation.Argument> args = new LinkedList<>();
         boolean comma = false;
 
-        while (!acceptToken(RPAREN)) {
+        while (!matchesToken(RPAREN)) {
             if (acceptToken(EOF) || comma && !acceptToken(COMMA)) {
                 expectToken(RPAREN);
             }
-            // todo: именные аргументы
-            // Название аргумента равно null по умолчанию.
-            args.add(new Invocation.Argument(null, parseExpression()));
+            Name name = null;
+            Expression expr;
+            if (matchesToken(IDENTIFIER)) {
+                Token t = token;
+                expr = parseExpression();
+                if (expr.hasTag(Tag.VARIABLE) && acceptToken(COL)) {
+                    name = t.toName();
+                    expr = parseExpression();
+                }
+            } else {
+                expr = parseExpression();
+            }
+            args.add(new Invocation.Argument(name, expr));
             comma = !acceptToken(COMMA);
         }
-        return new Invocation(token.pos, new Name(token.value(), this.token.pos), args);
+
+        return args;
+    }
+
+    private Expression parseInvocation(Token token) {
+        List<Invocation.Argument> args = parseInvocationArgs();
+        expectToken(RPAREN);
+        return new Invocation(token.pos, new MemberAccess(token.pos, null, token.toName()), args);
     }
 
     private Expression parseInt(Token token) {

@@ -31,7 +31,7 @@ public class Tokenizer implements AutoCloseable {
             String s = buffer.toString();
             TokenType k = TokenType.lookupIdentifier(s);
             // identifier requires saving the name, StringToken allows this
-            return new StringToken(k, pos, s);
+            return new NamedToken(k, pos, s);
         }
 
         public Token buildString() {

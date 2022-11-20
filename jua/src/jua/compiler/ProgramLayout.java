@@ -31,6 +31,9 @@ public final class ProgramLayout {
 
     public int tryFindFunc(Name name) {
 //        System.out.println(functionMap); // DEBUG
+        if (name == null) {
+            return -1;
+        }
         return functionMap.computeIfAbsent(name.value, _name -> {
             mainSource.getLog().error(name.pos, "Trying to call an undefined function");
             return -1;

@@ -27,7 +27,7 @@ public interface Tree {
         LITERAL,
         ARRAYLITERAL,
         VARIABLE,
-        FIELDACCESS,
+        MEMACCESS,
         ARRAYACCESS,
         INVOCATION,
         PARENS,
@@ -93,7 +93,7 @@ public interface Tree {
         void visitLiteral(Literal tree);
         void visitArrayLiteral(ArrayLiteral tree);
         void visitVariable(Var tree);
-        void visitFieldAccess(FieldAccess tree);
+        void visitMemberAccess(MemberAccess tree);
         void visitArrayAccess(ArrayAccess tree);
         void visitInvocation(Invocation tree);
         void visitParens(Parens tree);
@@ -160,7 +160,7 @@ public interface Tree {
         public void visitVariable(Var tree) { visitTree(tree); }
 
         @Override
-        public void visitFieldAccess(FieldAccess tree) { visitTree(tree); }
+        public void visitMemberAccess(MemberAccess tree) { visitTree(tree); }
 
         @Override
         public void visitArrayAccess(ArrayAccess tree) { visitTree(tree); }
@@ -302,7 +302,7 @@ public interface Tree {
         public void visitVariable(Var tree) {  }
 
         @Override
-        public void visitFieldAccess(FieldAccess tree) {
+        public void visitMemberAccess(MemberAccess tree) {
             scan(tree.expr);
         }
 
@@ -494,7 +494,7 @@ public interface Tree {
         public void visitVariable(Var tree) { result = tree; }
 
         @Override
-        public void visitFieldAccess(FieldAccess tree) {
+        public void visitMemberAccess(MemberAccess tree) {
             tree.expr = translate(tree.expr);
             result = tree;
         }
@@ -955,23 +955,23 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitVariable(this); }
     }
 
-    final class FieldAccess extends Expression {
+    final class MemberAccess extends Expression {
 
         public Expression expr;
 
-        public Name field;
+        public Name member;
 
-        public FieldAccess(int pos, Expression expr, Name field) {
+        public MemberAccess(int pos, Expression expr, Name member) {
             super(pos);
             this.expr = expr;
-            this.field = field;
+            this.member = member;
         }
 
         @Override
-        public Tag getTag() { return Tag.FIELDACCESS; }
+        public Tag getTag() { return Tag.MEMACCESS; }
 
         @Override
-        public void accept(Visitor visitor) { visitor.visitFieldAccess(this); }
+        public void accept(Visitor visitor) { visitor.visitMemberAccess(this); }
     }
 
     final class ArrayAccess extends Expression {
@@ -1005,13 +1005,13 @@ public interface Tree {
             }
         }
         
-        public final Name name;
+        public final Expression callee;
 
         public List<Argument> args;
 
-        public Invocation(int pos, Name name, List<Argument> args) {
+        public Invocation(int pos, Expression callee, List<Argument> args) {
             super(pos);
-            this.name = name;
+            this.callee = callee;
             this.args = args;
         }
 

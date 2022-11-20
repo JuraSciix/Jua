@@ -399,7 +399,15 @@ public final class MinorGen extends Gen {
         Instruction instruction;
         int stack = 0;
         boolean noReturnValue = false;
-        switch (tree.name.value) {
+        Name callee = unpackCallee(tree.callee);
+        if (!tree.args.isEmpty()) {
+            for (Invocation.Argument a : tree.args) {
+                if (a.name != null) {
+                    cError(a.name.pos, "Named arguments not allowed yet");
+                }
+            }
+        }
+        switch (callee.value) {
             case "bool":
                 if (tree.args.size() != 1) {
                     cError(tree.pos, "mismatch call parameters: 1 expected, " + tree.args.size() + " got.");
@@ -446,7 +454,7 @@ public final class MinorGen extends Gen {
                     cError(tree.pos, "too many parameters.");
                 }
                 visitInvocationArgs(tree.args);
-                instruction = new Call(programLayout.tryFindFunc(tree.name), (byte) tree.args.size(), tree.name);
+                instruction = new Call(programLayout.tryFindFunc(callee), (byte) tree.args.size(), callee);
                 stack = -tree.args.size() + 1;
                 break;
         }
@@ -454,6 +462,15 @@ public final class MinorGen extends Gen {
         code.addInstruction(instruction, stack);
         if (noReturnValue)
             code.addInstruction(ConstNull.INSTANCE, 1);
+    }
+
+    private Name unpackCallee(Expression expr) {
+        Tree tree = TreeInfo.removeParens(expr);
+        if (!tree.hasTag(Tag.MEMACCESS)) {
+            cError(expr.pos, "Only a function calling allowed");
+            return null;
+        }
+        return ((MemberAccess) tree).member;
     }
 
     private void visitInvocationArgs(List<Invocation.Argument> args) {
@@ -939,9 +956,9 @@ public final class MinorGen extends Gen {
     }
 
     @Override
-    public void visitFieldAccess(FieldAccess tree) {
+    public void visitMemberAccess(MemberAccess tree) {
         visitExpression(tree.expr);
-        emitPushString(tree.field.value);
+        emitPushString(tree.member.value);
         code.putPos(tree.pos);
         emitALoad();
     }

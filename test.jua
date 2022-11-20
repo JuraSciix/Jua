@@ -64,6 +64,4 @@ fn print_list(l, keys = true) {
     return "[" + s + "]";
 }
 
-println("Hello, world!");
-
 test_bubble_sort();
