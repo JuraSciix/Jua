@@ -1,10 +1,16 @@
 package jua.compiler;
 
+import jua.compiler.Tree.Expression;
 import jua.compiler.Tree.Name;
 import jua.compiler.Tree.Parens;
 import jua.compiler.Tree.Tag;
 
+
 public final class TreeInfo {
+
+    public static Expression removeParens(Expression tree) {
+        return (Expression) removeParens((Tree) tree);
+    }
 
     public static Tree removeParens(Tree tree) {
         Tree result = tree;
@@ -19,17 +25,28 @@ public final class TreeInfo {
 
     public static Tag tagWithoutAsg(Tag tag) {
         switch (tag) {
-            case ASG_ADD: return Tag.ADD;
-            case ASG_SUB: return Tag.SUB;
-            case ASG_MUL: return Tag.MUL;
-            case ASG_DIV: return Tag.DIV;
-            case ASG_REM: return Tag.REM;
-            case ASG_SL: return Tag.SL;
-            case ASG_SR: return Tag.SR;
-            case ASG_AND: return Tag.AND;
-            case ASG_OR: return Tag.OR;
-            case ASG_XOR: return Tag.XOR;
-            default: throw new IllegalArgumentException(tag.name());
+            case ASG_ADD:
+                return Tag.ADD;
+            case ASG_SUB:
+                return Tag.SUB;
+            case ASG_MUL:
+                return Tag.MUL;
+            case ASG_DIV:
+                return Tag.DIV;
+            case ASG_REM:
+                return Tag.REM;
+            case ASG_SL:
+                return Tag.SL;
+            case ASG_SR:
+                return Tag.SR;
+            case ASG_AND:
+                return Tag.AND;
+            case ASG_OR:
+                return Tag.OR;
+            case ASG_XOR:
+                return Tag.XOR;
+            default:
+                throw new IllegalArgumentException(tag.name());
         }
     }
 
@@ -51,5 +68,26 @@ public final class TreeInfo {
         return isNameEquals(name1, name2);
     }
 
-    private TreeInfo() { throw new UnsupportedOperationException(); }
+    public static Tag negateComparisonTag(Tag tag) {
+        switch (tag) {
+            case EQ:
+                return Tag.NE;
+            case NE:
+                return Tag.EQ;
+            case GT:
+                return Tag.LE;
+            case GE:
+                return Tag.LT;
+            case LT:
+                return Tag.GE;
+            case LE:
+                return Tag.GT;
+            default:
+                throw new AssertionError(tag);
+        }
+    }
+
+    private TreeInfo() {
+        throw new UnsupportedOperationException();
+    }
 }

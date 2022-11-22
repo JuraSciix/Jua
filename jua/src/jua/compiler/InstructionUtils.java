@@ -30,5 +30,35 @@ public class InstructionUtils {
         }
     }
 
+    public static JumpInstruction fromConstComparisonOpTag(Tag tag, int comparing, boolean negate) {
+        if (negate) {
+            tag = TreeInfo.negateComparisonTag(tag);
+        }
+        switch (tag) {
+            case EQ: return new Ifeq(comparing);
+            case NE: return new Ifne(comparing);
+            case GT: return new Ifgt(comparing);
+            case GE: return new Ifge(comparing);
+            case LT: return new Iflt(comparing);
+            case LE: return new Ifle(comparing);
+            default: throw new AssertionError(tag);
+        }
+    }
+
+    public static JumpInstruction fromComparisonOpTag(Tag tag, boolean negate) {
+        if (negate) {
+            tag = TreeInfo.negateComparisonTag(tag);
+        }
+        switch (tag) {
+            case EQ: return new Ifcmpeq();
+            case NE: return new Ifcmpne();
+            case GT: return new Ifcmpgt();
+            case GE: return new Ifcmpge();
+            case LT: return new Ifcmplt();
+            case LE: return new Ifcmple();
+            default: throw new AssertionError(tag);
+        }
+    }
+
     private InstructionUtils() {} // A utility class
 }

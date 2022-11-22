@@ -3,6 +3,7 @@ package jua.compiler;
 import it.unimi.dsi.fastutil.ints.Int2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import jua.compiler.Code.JumpInstructionConstructor;
 import jua.interpreter.instruction.*;
 import jua.interpreter.instruction.Switch;
 import jua.runtime.JuaFunction;
@@ -11,6 +12,8 @@ import jua.compiler.Tree.*;
 
 import java.util.Iterator;
 import java.util.List;
+
+import static jua.compiler.InstructionUtils.*;
 
 public final class MinorGen extends Gen {
 
@@ -245,7 +248,7 @@ public final class MinorGen extends Gen {
         }
         tree.rhs.accept(this);
         code.putPos(tree.pos);
-        code.addInstruction(InstructionUtils.fromBinaryOpTag(tree.getTag()));
+        code.addInstruction(fromBinaryOpTag(tree.getTag()));
     }
 
     @Override
@@ -679,6 +682,7 @@ public final class MinorGen extends Gen {
 
     static boolean isShortIntegerLiteral(Expression tree) {
         if (tree == null) return false;
+        if (tree.hasTag(Tag.PARENS)) tree = TreeInfo.removeParens(tree);
         if (!tree.hasTag(Tag.LITERAL)) return false;
         Literal literal = (Literal) tree;
         if (!literal.type.isLong()) return false;
@@ -686,113 +690,54 @@ public final class MinorGen extends Gen {
         return (value >= Short.MIN_VALUE && value <= Short.MAX_VALUE);
     }
 
+    static int unpackShortIntegerLiteral(Expression tree) {
+        tree = TreeInfo.removeParens(tree);
+        return (int) ((Literal) tree).type.longValue();
+    }
 
-    private void generateComparison(BinaryOp expression) {
+    static boolean isNullLiteral(Expression tree) {
+        if (tree == null) return true;
+        if (tree.hasTag(Tag.PARENS)) tree = TreeInfo.removeParens(tree);
+        if (!tree.hasTag(Tag.LITERAL)) return false;
+        return ((Literal) tree).type.isNull();
+    }
+
+
+    private void generateComparison(BinaryOp tree) {
         beginCondition();
-        Expression lhs = expression.lhs;
-        Expression rhs = expression.rhs;
-        Code.JumpInstructionConstructor resultState;
-        // todo: Отрефакторить
-        int resultStackAdjustment;
-        int shortVal;
-        boolean lhsNull = lhs instanceof Literal && ((Literal) lhs).type.isNull();
-        boolean rhsNull = rhs instanceof Literal && ((Literal) rhs).type.isNull();
-        boolean lhsShort = isShortIntegerLiteral(lhs);
-        boolean rhsShort = isShortIntegerLiteral(rhs);
-        if (lhsShort || rhsShort) {
-            shortVal = (int) ((Literal) (lhsShort ? lhs : rhs)).type.longValue();
-            visitExpression(lhsShort ? rhs : lhs);
+        JumpInstructionConstructor opcode;
+        boolean negated = isState(STATE_COND_INVERT);
+        if (isShortIntegerLiteral(tree.lhs)) {
+            visitExpression(tree.rhs);
+            opcode = offset -> {
+                JumpInstruction o = fromConstComparisonOpTag(tree.tag, unpackShortIntegerLiteral(tree.lhs), negated);
+                o.offset = offset;
+                return o;
+            };
+        } else if (isShortIntegerLiteral(tree.rhs)) {
+            visitExpression(tree.lhs);
+            opcode = offset -> {
+                JumpInstruction o = fromConstComparisonOpTag(tree.tag, unpackShortIntegerLiteral(tree.rhs), negated);
+                o.offset = offset;
+                return o;
+            };
+        } else if (isNullLiteral(tree.lhs)) {
+            visitExpression(tree.rhs);
+            opcode = offset -> negated ? new Ifnull(offset) : new Ifnonnull(offset);
+        } else if (isNullLiteral(tree.rhs)) {
+            visitExpression(tree.lhs);
+            opcode = offset -> negated ? new Ifnull(offset) : new Ifnonnull(offset);
         } else {
-            shortVal = Integer.MIN_VALUE;
+            visitExpression(tree.lhs);
+            visitExpression(tree.rhs);
+            opcode = offset -> {
+                JumpInstruction o = fromComparisonOpTag(tree.tag, negated);
+                o.offset = offset;
+                return o;
+            };
         }
-        boolean invert = isState(STATE_COND_INVERT);
-        switch (expression.getTag()) {
-            case EQ:
-                if (lhsNull || rhsNull) {
-                    visitExpression(lhsNull ? rhs : lhs);
-                    resultState = (invert ? Ifnull::new : Ifnonnull::new);
-                    resultStackAdjustment = -1;
-                } else if (lhsShort || rhsShort) {
-                    resultState = (dest_ip -> invert ? new Ifeq(dest_ip, shortVal) : new Ifne(dest_ip, shortVal));
-                    resultStackAdjustment = -1;
-                } else {
-                    visitExpression(lhs);
-                    visitExpression(rhs);
-                    resultState = (invert ? Ifcmpeq::new : Ifcmpne::new);
-                    resultStackAdjustment = -2;
-                }
-                break;
-            case NE:
-                if (lhsNull || rhsNull) {
-                    visitExpression(lhsNull ? rhs : lhs);
-                    resultState = (invert ? Ifnonnull::new : Ifnull::new);
-                    resultStackAdjustment = -1;
-                } else if (lhsShort || rhsShort) {
-                    resultState = (dest_ip -> invert ? new Ifne(dest_ip, shortVal) : new Ifeq(dest_ip, shortVal));
-                    resultStackAdjustment = -1;
-                } else {
-                    visitExpression(lhs);
-                    visitExpression(rhs);
-                    resultState = (invert ? Ifcmpne::new : Ifcmpeq::new);
-                    resultStackAdjustment = -2;
-                }
-                break;
-            case LT:
-                if (lhsShort || rhsShort) {
-                    resultState = lhsShort ?
-                            (dest_ip -> invert ? new Ifgt(dest_ip, shortVal) : new Iflt(dest_ip, shortVal)) :
-                            (dest_ip -> invert ? new Iflt(dest_ip, shortVal) : new Ifge(dest_ip, shortVal));
-                    resultStackAdjustment = -1;
-                } else {
-                    visitExpression(lhs);
-                    visitExpression(rhs);
-                    resultState = (invert ? Ifcmplt::new : Ifcmpge::new);
-                    resultStackAdjustment = -2;
-                }
-                break;
-            case LE:
-                if (lhsShort || rhsShort) {
-                    resultState = lhsShort ?
-                            (dest_ip -> invert ? new Ifge(dest_ip, shortVal) : new Ifle(dest_ip, shortVal)) :
-                            (dest_ip -> invert ? new Ifle(dest_ip, shortVal) : new Ifgt(dest_ip, shortVal));
-                    resultStackAdjustment = -1;
-                } else {
-                    visitExpression(lhs);
-                    visitExpression(rhs);
-                    resultState = (invert ? Ifcmple::new : Ifcmpgt::new);
-                    resultStackAdjustment = -2;
-                }
-                break;
-            case GT:
-                if (lhsShort || rhsShort) {
-                    resultState = lhsShort ?
-                            (dest_ip -> invert ? new Iflt(dest_ip, shortVal) : new Ifgt(dest_ip, shortVal)) :
-                            (dest_ip -> invert ? new Ifgt(dest_ip, shortVal) : new Ifle(dest_ip, shortVal));
-                    resultStackAdjustment = -1;
-                } else {
-                    visitExpression(lhs);
-                    visitExpression(rhs);
-                    resultState = (invert ? Ifcmpgt::new : Ifcmple::new);
-                    resultStackAdjustment = -2;
-                }
-                break;
-            case GE:
-                if (lhsShort || rhsShort) {
-                    resultState = lhsShort ?
-                            (dest_ip -> invert ? new Ifle(dest_ip, shortVal) : new Ifge(dest_ip, shortVal)) :
-                            (dest_ip -> invert ? new Ifge(dest_ip, shortVal) : new Iflt(dest_ip, shortVal));
-                    resultStackAdjustment = -1;
-                } else {
-                    visitExpression(lhs);
-                    visitExpression(rhs);
-                    resultState = (invert ? Ifcmpge::new : Ifcmplt::new);
-                    resultStackAdjustment = -2;
-                }
-                break;
-            default: throw new AssertionError();
-        }
-        code.putPos(expression.pos);
-        code.addChainedInstruction(resultState, peekConditionChain());
+        code.putPos(tree.pos);
+        code.addChainedInstruction(opcode, peekConditionChain());
         endCondition();
     }
 
@@ -900,7 +845,7 @@ public final class MinorGen extends Gen {
         }
         tree.expr.accept(this);
         code.putPos(tree.pos);
-        code.addInstruction(InstructionUtils.fromUnaryOpTag(tree.getTag()));
+        code.addInstruction(fromUnaryOpTag(tree.getTag()));
     }
 
     @Override
@@ -1228,7 +1173,7 @@ public final class MinorGen extends Gen {
     }
 
     public static Instruction asg2state(Tag tag) {
-        return InstructionUtils.fromBinaryOpTag(TreeInfo.tagWithoutAsg(tag));
+        return fromBinaryOpTag(TreeInfo.tagWithoutAsg(tag));
     }
 
     // todo: В будущем планируется заменить поле expressionDepth на более удобный механизм.
