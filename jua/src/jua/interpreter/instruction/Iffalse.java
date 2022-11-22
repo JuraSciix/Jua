@@ -1,5 +1,6 @@
 package jua.interpreter.instruction;
 
+import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
 
@@ -18,6 +19,12 @@ public final class Iffalse extends JumpInstruction {
 
     public Iffalse(int destIp) {
         super(destIp);
+    }
+
+    @Override
+    public void print(CodePrinter printer) {
+        printer.printName("iffalse");
+        super.print(printer);
     }
 
     @Override
