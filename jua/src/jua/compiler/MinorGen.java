@@ -1022,7 +1022,7 @@ public final class MinorGen extends Gen {
         setState(STATE_COND);
         visitExpression(tree);
         state = prev_state;
-        if (TreeInfo.isConditionalTag(tree.getTag())) {
+        if (TreeInfo.isConditionalTag(TreeInfo.removeParens(tree).getTag())) {
             return;
         }
         // todo: Здешний код отвратителен. Следует переписать всё с нуля...

@@ -1,3 +1,5 @@
+/*
+
 fn slow_fib(n) {
     if n <= 2 {
         if n <= 0 {
@@ -64,4 +66,6 @@ fn print_list(l, keys = true) {
     return "[" + s + "]";
 }
 
-test_bubble_sort();
+*/
+
+return !(a && b);
