@@ -854,7 +854,7 @@ public class JuaParser {
             // Compile error: X expected.
             // Compile error: unexpected Y.
             String expected = type2string(type);
-            String found = type2string(token.type);
+            String found = token2string(token);
 
             if (expected != null && found != null) {
                 log.error(token.pos, expected + " expected, " + found + " found.");
@@ -877,6 +877,11 @@ public class JuaParser {
         }
     }
 
+    static String token2string(Token token) {
+        if (token.type == EOF) return "end of file";
+        return type2string(token.type);
+    }
+
     static String type2string(TokenType type) {
         switch (type) {
             case IDENTIFIER: return "name";
@@ -888,7 +893,7 @@ public class JuaParser {
     }
 
     private void unexpected(Token token) {
-        pError(token.pos, "unexpected " + type2string(token.type) + '.');
+        pError(token.pos, "unexpected " + token2string(token) + '.');
     }
 
     private void pError(int position, String message) {
