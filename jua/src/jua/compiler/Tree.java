@@ -917,9 +917,12 @@ public interface Tree {
 
         public static final class Entry {
 
+            public final int pos;
+
             public Expression key, value;
 
-            public Entry(Expression key, Expression value) {
+            public Entry(int pos, Expression key, Expression value) {
+                this.pos = pos;
                 this.key = key;
                 this.value = value;
             }

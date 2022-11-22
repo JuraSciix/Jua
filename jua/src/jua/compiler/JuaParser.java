@@ -808,6 +808,7 @@ public class JuaParser {
                 expectToken(enclosing);
             }
             try {
+                int pos = token.pos;
                 Expression key = null;
                 Expression value = parseExpression();
 
@@ -815,7 +816,7 @@ public class JuaParser {
                     key = value;
                     value = parseExpression();
                 }
-                entries.add(new ArrayLiteral.Entry(key, value));
+                entries.add(new ArrayLiteral.Entry(pos, key, value));
             } catch (ParseNodeExit e) {
                 log.error(e.pos, e.msg);
             }

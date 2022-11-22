@@ -212,12 +212,13 @@ public final class MinorGen extends Gen {
             ArrayLiteral.Entry entry = iterator.next();
             if (iterator.hasNext() || isUsed()) emitDup();
             if (entry.key == null) {
-                code.putPos(entry.value.pos);
+                code.putPos(entry.pos);
                 emitPushLong(implicitIndex++);
             } else {
                 visitExpression(entry.key);
             }
             visitExpression(entry.value);
+            code.putPos(entry.pos);
             emitAStore();
         }
     }
