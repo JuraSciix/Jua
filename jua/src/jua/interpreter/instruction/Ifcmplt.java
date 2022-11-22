@@ -5,9 +5,19 @@ import jua.compiler.CodePrinter;
 
 public final class Ifcmplt extends JumpInstruction {
 
-    public Ifcmplt(int destIp) {
-        super(destIp);
+    public Ifcmplt() {
+        super();
     }
+
+    public Ifcmplt(int offset) {
+        super(offset);
+    }
+
+    @Override
+    public int stackAdjustment() { return -1 + -1; }
+
+    @Override
+    public JumpInstruction negate() { return new Ifcmpge(offset); }
 
     @Override
     public void print(CodePrinter printer) {
@@ -20,7 +30,7 @@ public final class Ifcmplt extends JumpInstruction {
         if (!state.stackCmplt()) {
             return NEXT;
         } else {
-            return destIp;
+            return offset;
         }
     }
 }

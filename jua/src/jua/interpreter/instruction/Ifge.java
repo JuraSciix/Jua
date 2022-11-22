@@ -7,10 +7,20 @@ public final class Ifge extends JumpInstruction {
 
     private final int value;
 
-    public Ifge(int destIp, int value) {
-        super(destIp);
+    public Ifge(int value) {
         this.value = value;
     }
+
+    public Ifge(int offset, int value) {
+        super(offset);
+        this.value = value;
+    }
+
+    @Override
+    public int stackAdjustment() { return -1; }
+
+    @Override
+    public JumpInstruction negate() { return new Iflt(offset, value); }
 
     @Override
     public void print(CodePrinter printer) {
@@ -22,7 +32,7 @@ public final class Ifge extends JumpInstruction {
     @Override
     public int run(InterpreterState state) {
         if (state.popInt() >= value) {
-            return destIp;
+            return offset;
         } else {
             return NEXT;
         }

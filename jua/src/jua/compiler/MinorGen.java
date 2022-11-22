@@ -224,7 +224,7 @@ public final class MinorGen extends Gen {
     }
 
     private void emitNewArray() {
-        code.addInstruction(Newarray.INSTANCE, 1);
+        code.addInstruction(Newarray.INSTANCE);
     }
 
     private void generateBinary(BinaryOp tree) {
@@ -237,8 +237,8 @@ public final class MinorGen extends Gen {
             emitDup();
             int el = code.makeChain();
             code.putPos(tree.pos);
-            code.addChainedInstruction(Ifnonnull::new, el, -1);
-            code.addInstruction(Pop.INSTANCE, -1);
+            code.addChainedInstruction(Ifnonnull::new, el);
+            code.addInstruction(Pop.INSTANCE);
             visitExpression(tree.rhs);
             code.resolveChain(el);
             return;
@@ -460,9 +460,9 @@ public final class MinorGen extends Gen {
                 break;
         }
         code.putPos(tree.pos);
-        code.addInstruction(instruction, stack);
+        code.addInstruction(instruction);
         if (noReturnValue)
-            code.addInstruction(ConstNull.INSTANCE, 1);
+            code.addInstruction(ConstNull.INSTANCE);
     }
 
     private Name unpackCallee(Expression expr) {
@@ -792,7 +792,7 @@ public final class MinorGen extends Gen {
             default: throw new AssertionError();
         }
         code.putPos(expression.pos);
-        code.addChainedInstruction(resultState, peekConditionChain(), resultStackAdjustment);
+        code.addChainedInstruction(resultState, peekConditionChain());
         endCondition();
     }
 
@@ -950,7 +950,7 @@ public final class MinorGen extends Gen {
         Name name = tree.name;
         code.putPos(tree.pos);
         if (programLayout.hasConstant(name)) {
-            code.addInstruction(new Getconst(programLayout.tryFindConst(name), name), 1);
+            code.addInstruction(new Getconst(programLayout.tryFindConst(name), name));
         } else {
             emitVLoad(tree.name.value);
         }
@@ -1057,7 +1057,7 @@ public final class MinorGen extends Gen {
         } else if (tree.type.isString()) {
             emitPushString(tree.type.stringValue());
         } else if (tree.type.isNull()) {
-            code.addInstruction(ConstNull.INSTANCE, 1);
+            code.addInstruction(ConstNull.INSTANCE);
         } else {
             throw new AssertionError();
         }
@@ -1084,7 +1084,7 @@ public final class MinorGen extends Gen {
 //        code.addInstruction(Bool.INSTANCE);
         code.putPos(tree.pos);
         code.addChainedInstruction(isState(STATE_COND_INVERT) ? Iftrue::new : Iffalse::new,
-                peekConditionChain(), -1);
+                peekConditionChain());
     }
 
     @Override
@@ -1097,7 +1097,7 @@ public final class MinorGen extends Gen {
             case PREINC: case PREDEC: case POSTINC: case POSTDEC:
                 break;
             default:
-                code.addInstruction(Pop.INSTANCE, -1);
+                code.addInstruction(Pop.INSTANCE);
         }
     }
 
@@ -1146,7 +1146,7 @@ public final class MinorGen extends Gen {
                     int ex = code.makeChain();
                     emitDup2();
                     emitALoad();
-                    code.addChainedInstruction(Ifnonnull::new, el, -1);
+                    code.addChainedInstruction(Ifnonnull::new, el);
                     int sp_cache = code.getSp();
                     visitExpression(rhs);
                     if (isUsed()) {
@@ -1162,7 +1162,7 @@ public final class MinorGen extends Gen {
                         code.putPos(arrayAccess.pos);
                         emitALoad();
                     } else {
-                        code.addInstruction(Pop2.INSTANCE, -2);
+                        code.addInstruction(Pop2.INSTANCE);
                     }
                     code.resolveChain(ex);
                     assert code.getSp() == sp_cache2;
@@ -1173,7 +1173,7 @@ public final class MinorGen extends Gen {
                         emitALoad();
                         visitExpression(rhs);
                         code.putPos(pos);
-                        code.addInstruction(asg2state(tag), -1);
+                        code.addInstruction(asg2state(tag));
                     } else {
                         visitExpression(rhs);
                     }
@@ -1190,7 +1190,7 @@ public final class MinorGen extends Gen {
                 if (tag == Tag.ASG_NULLCOALESCE) {
                     int ex = code.makeChain();
                     visitExpression(lhs);
-                    code.addChainedInstruction(Ifnonnull::new, ex, -1);
+                    code.addChainedInstruction(Ifnonnull::new, ex);
                     visitExpression(rhs);
                     if (isUsed()) {
                         emitDup();
@@ -1211,7 +1211,7 @@ public final class MinorGen extends Gen {
                         visitExpression(lhs);
                         visitExpression(rhs);
                         code.putPos(pos);
-                        code.addInstruction(asg2state(tag), -1);
+                        code.addInstruction(asg2state(tag));
                     } else {
                         visitExpression(rhs);
                     }
@@ -1362,9 +1362,9 @@ public final class MinorGen extends Gen {
 
     private void emitPushLong(long value) {
         if (isShort(value)) {
-            code.addInstruction(new Push((short) value), 1);
+            code.addInstruction(new Push((short) value));
         } else {
-            code.addInstruction(new Ldc(code.resolveLong(value)), 1);
+            code.addInstruction(new Ldc(code.resolveLong(value)));
         }
     }
 
@@ -1373,12 +1373,12 @@ public final class MinorGen extends Gen {
         if (false && lv == value && isShort(lv)) {
 //            code.addInstruction(new Push(Operand.Type.LONG, (short) lv), 1);
         } else {
-            code.addInstruction(new Ldc(code.resolveDouble(value)), 1);
+            code.addInstruction(new Ldc(code.resolveDouble(value)));
         }
     }
 
     private void emitPushString(String value) {
-        code.addInstruction(new Ldc(code.resolveString(value)), 1);
+        code.addInstruction(new Ldc(code.resolveString(value)));
     }
 
     private static boolean isShort(long value) {
@@ -1387,29 +1387,29 @@ public final class MinorGen extends Gen {
 
     // emit methods
 
-    private void emitPushTrue() { code.addInstruction(ConstTrue.CONST_TRUE, 1); }
-    private void emitPushFalse() { code.addInstruction(ConstFalse.CONST_FALSE, 1); }
+    private void emitPushTrue() { code.addInstruction(ConstTrue.CONST_TRUE); }
+    private void emitPushFalse() { code.addInstruction(ConstFalse.CONST_FALSE); }
     private void emitGoto(int chainId) { code.addChainedInstruction(Goto::new, chainId); }
-    private void emitDup() { code.addInstruction(Dup.INSTANCE, 1); }
-    private void emitDupX1() { code.addInstruction(Dup_x1.INSTANCE, 1); }
-    private void emitDupX2() { code.addInstruction(Dup_x2.INSTANCE, 1); }
-    private void emitDup2() { code.addInstruction(Dup2.INSTANCE, 2); }
-    private void emitDup2X1() { code.addInstruction(Dup2_x1.INSTANCE, 2); }
-    private void emitDup2X2() { code.addInstruction(Dup2_x2.INSTANCE, 2); }
-    private void emitAdd() { code.addInstruction(Add.INSTANCE, -1); }
-    private void emitAnd() { code.addInstruction(And.INSTANCE, -1); }
-    private void emitOr() { code.addInstruction(Or.INSTANCE, -1); }
-    private void emitXor() { code.addInstruction(Xor.INSTANCE, -1); }
-    private void emitDiv() { code.addInstruction(Div.INSTANCE, -1); }
-    private void emitLhs() { code.addInstruction(Shl.INSTANCE, -1); }
-    private void emitMul() { code.addInstruction(Mul.INSTANCE, -1); }
-    private void emitRem() { code.addInstruction(Rem.INSTANCE, -1); }
-    private void emitRhs() { code.addInstruction(Shr.INSTANCE, -1); }
-    private void emitSub() { code.addInstruction(Sub.INSTANCE, -1); }
-    private void emitALoad() { code.addInstruction(Aload.INSTANCE, -1); }
-    private void emitVLoad(String name) { code.addInstruction(new Vload(code.resolveLocal(name)), 1); }
-    private void emitAStore() { code.addInstruction(Astore.INSTANCE, -3); } // todo: Тут тоже было sp<0, вроде при generateArrayCreation.
-    private void emitVStore(String name) { code.addInstruction(new Vstore(code.resolveLocal(name)), -1); }
+    private void emitDup() { code.addInstruction(Dup.INSTANCE); }
+    private void emitDupX1() { code.addInstruction(Dup_x1.INSTANCE); }
+    private void emitDupX2() { code.addInstruction(Dup_x2.INSTANCE); }
+    private void emitDup2() { code.addInstruction(Dup2.INSTANCE); }
+    private void emitDup2X1() { code.addInstruction(Dup2_x1.INSTANCE); }
+    private void emitDup2X2() { code.addInstruction(Dup2_x2.INSTANCE); }
+    private void emitAdd() { code.addInstruction(Add.INSTANCE); }
+    private void emitAnd() { code.addInstruction(And.INSTANCE); }
+    private void emitOr() { code.addInstruction(Or.INSTANCE); }
+    private void emitXor() { code.addInstruction(Xor.INSTANCE); }
+    private void emitDiv() { code.addInstruction(Div.INSTANCE); }
+    private void emitLhs() { code.addInstruction(Shl.INSTANCE); }
+    private void emitMul() { code.addInstruction(Mul.INSTANCE); }
+    private void emitRem() { code.addInstruction(Rem.INSTANCE); }
+    private void emitRhs() { code.addInstruction(Shr.INSTANCE); }
+    private void emitSub() { code.addInstruction(Sub.INSTANCE); }
+    private void emitALoad() { code.addInstruction(Aload.INSTANCE); }
+    private void emitVLoad(String name) { code.addInstruction(new Vload(code.resolveLocal(name))); }
+    private void emitAStore() { code.addInstruction(Astore.INSTANCE); } // todo: Тут тоже было sp<0, вроде при generateArrayCreation.
+    private void emitVStore(String name) { code.addInstruction(new Vstore(code.resolveLocal(name))); }
     private void emitCaseBody(Statement body) {
         code.resolveChain(fallthroughChains.popInt());
         fallthroughChains.push(code.makeChain());
@@ -1420,7 +1420,7 @@ public final class MinorGen extends Gen {
         state = prev_state;
     }
     private void emitReturn() {
-        code.addInstruction(jua.interpreter.instruction.Return.RETURN, -1);
+        code.addInstruction(jua.interpreter.instruction.Return.RETURN);
         code.dead();
     }
 

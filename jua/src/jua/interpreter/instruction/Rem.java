@@ -4,9 +4,12 @@ import jua.interpreter.InterpreterState;
 import jua.runtime.heap.Operand;
 import jua.compiler.CodePrinter;
 
-public enum Rem implements Instruction {
+public final class Rem implements Instruction {
 
-    INSTANCE;
+    public static final Rem INSTANCE = new Rem();
+
+    @Override
+    public int stackAdjustment() { return -1 + -1 + 1; }
 
     @Override
     public void print(CodePrinter printer) {

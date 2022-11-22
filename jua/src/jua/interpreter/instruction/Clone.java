@@ -3,9 +3,13 @@ package jua.interpreter.instruction;
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
-public enum Clone implements Instruction {
+@Deprecated
+public final class Clone implements Instruction {
 
-    INSTANCE;
+    public static final Clone INSTANCE = new Clone();
+
+    @Override
+    public int stackAdjustment() { return -1 + 1; }
 
     @Override
     public void print(CodePrinter printer) {

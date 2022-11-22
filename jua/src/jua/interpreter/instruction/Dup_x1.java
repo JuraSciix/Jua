@@ -3,10 +3,14 @@ package jua.interpreter.instruction;
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
-public enum Dup_x1 implements Instruction {
+public final class Dup_x1 implements Instruction {
 
-    INSTANCE;
+    public static final Dup_x1 INSTANCE = new Dup_x1();
 
+    @Override
+    public int stackAdjustment() {
+        return 1;
+    }
 
     @Override
     public void print(CodePrinter printer) {

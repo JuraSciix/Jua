@@ -7,10 +7,20 @@ public final class Ifgt extends JumpInstruction {
 
     private final int value;
 
-    public Ifgt(int destIp, int value) {
-        super(destIp);
+    public Ifgt(int value) {
+    this.value = value;
+    }
+
+    public Ifgt(int offset, int value) {
+        super(offset);
         this.value = value;
     }
+
+    @Override
+    public int stackAdjustment() { return -1; }
+
+    @Override
+    public JumpInstruction negate() { return new Ifle(offset, value); }
 
     @Override
     public void print(CodePrinter printer) {
@@ -22,7 +32,7 @@ public final class Ifgt extends JumpInstruction {
     @Override
     public int run(InterpreterState state) {
         if (state.popInt() > value) {
-            return destIp;
+            return offset;
         } else {
             return NEXT;
         }

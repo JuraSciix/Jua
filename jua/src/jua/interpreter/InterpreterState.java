@@ -137,6 +137,15 @@ public final class InterpreterState {
         state.pushStack(state.peekStack());
     }
 
+    public void dup2() {
+        Operand a = state.popStack();
+        Operand b = state.popStack();
+        state.pushStack(b);
+        state.pushStack(a);
+        state.pushStack(b);
+        state.pushStack(a);
+    }
+
     public void dup1_x1() {
         stack[sp] = stack[sp - 1];
         stack[sp - 1] = stack[sp - 2];
@@ -381,6 +390,10 @@ public final class InterpreterState {
         Operand lhs = state.popStack();
 
         state.pushStack(lhs.xor(rhs));
+    }
+
+    public void stackGettype() {
+        state.pushStack(new StringOperand(state.popStack().type().name));
     }
 
     public void cleanupStack() {

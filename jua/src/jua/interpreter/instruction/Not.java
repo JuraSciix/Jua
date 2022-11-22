@@ -4,9 +4,12 @@ import jua.interpreter.InterpreterState;
 import jua.runtime.heap.Operand;
 import jua.compiler.CodePrinter;
 
-public enum Not implements Instruction {
+public final class Not implements Instruction {
 
-    INSTANCE;
+    public static final Not INSTANCE = new Not();
+
+    @Override
+    public int stackAdjustment() { return -1 + 1; }
 
     @Override
     public void print(CodePrinter printer) {

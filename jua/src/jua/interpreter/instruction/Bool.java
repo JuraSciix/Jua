@@ -24,9 +24,12 @@ import jua.interpreter.InterpreterState;
  */
 // todo: Эта инструкция в качестве пролога для инструкций ifeq/ifne не нужна.
 //  Вернуть инструкции iftrue и iffalse.
-public enum Bool implements Instruction {
+public final class Bool implements Instruction {
 
-    INSTANCE;
+    public static final Bool INSTANCE = new Bool();
+
+    @Override
+    public int stackAdjustment() { return -1 + 1; }
 
     @Override
     public void print(CodePrinter printer) {

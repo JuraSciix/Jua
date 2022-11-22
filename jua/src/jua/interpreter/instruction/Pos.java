@@ -1,13 +1,14 @@
 package jua.interpreter.instruction;
 
-import jua.interpreter.InterpreterError;
-import jua.interpreter.InterpreterState;
-import jua.runtime.heap.Operand;
 import jua.compiler.CodePrinter;
+import jua.interpreter.InterpreterState;
 
-public enum Pos implements Instruction {
+public final class Pos implements Instruction {
 
-    INSTANCE;
+    public static final Pos INSTANCE = new Pos();
+
+    @Override
+    public int stackAdjustment() { return -1 + 1; }
 
     @Override
     public void print(CodePrinter printer) {

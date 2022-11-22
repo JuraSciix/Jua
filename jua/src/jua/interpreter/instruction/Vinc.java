@@ -8,9 +8,10 @@ public class Vinc implements Instruction {
 
     private final int id;
 
-    public Vinc(int id) {
-        this.id = id;
-    }
+    public Vinc(int id) { this.id = id; }
+
+    @Override
+    public int stackAdjustment() { return 0; }
 
     @Override
     public void print(CodePrinter printer) {

@@ -4,10 +4,12 @@ import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 import jua.runtime.heap.LongOperand;
 
-public enum Length implements Instruction {
+public final class Length implements Instruction {
 
-    INSTANCE;
+    public static final Length INSTANCE = new Length();
 
+    @Override
+    public int stackAdjustment() { return -1 + 1; }
 
     @Override
     public void print(CodePrinter printer) {

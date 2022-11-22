@@ -14,6 +14,8 @@ public interface Instruction {
 
     int UNREACHABLE = Integer.MIN_VALUE;
 
+    int stackAdjustment();
+
     void print(CodePrinter printer);
 
     int run(InterpreterState state);

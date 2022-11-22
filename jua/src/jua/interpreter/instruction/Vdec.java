@@ -12,6 +12,9 @@ public final class Vdec implements Instruction {
     }
 
     @Override
+    public int stackAdjustment() { return 0; }
+
+    @Override
     public void print(CodePrinter printer) {
         printer.printName("vdec");
         printer.printLocal(id);

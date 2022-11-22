@@ -7,10 +7,20 @@ public final class Ifeq extends JumpInstruction {
 
     private final int value;
 
-    public Ifeq(int dest_ip, int value) {
-        super(dest_ip);
+    public Ifeq(int value) {
         this.value = value;
     }
+
+    public Ifeq(int offset, int value) {
+        super(offset);
+        this.value = value;
+    }
+
+    @Override
+    public int stackAdjustment() { return -1; }
+
+    @Override
+    public JumpInstruction negate() { return new Ifne(offset, value); }
 
     @Override
     public void print(CodePrinter printer) {
@@ -22,7 +32,7 @@ public final class Ifeq extends JumpInstruction {
     @Override
     public int run(InterpreterState state) {
         if (state.popInt() == value) {
-            return destIp;
+            return offset;
         } else {
             return NEXT;
         }

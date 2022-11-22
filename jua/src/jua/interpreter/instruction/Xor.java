@@ -4,9 +4,12 @@ import jua.interpreter.InterpreterState;
 import jua.runtime.heap.Operand;
 import jua.compiler.CodePrinter;
 
-public enum Xor implements Instruction {
+public final class Xor implements Instruction {
 
-    INSTANCE;
+    public static final Xor INSTANCE = new Xor();
+
+    @Override
+    public int stackAdjustment() { return -1 + -1 + 1; }
 
     @Override
     public void print(CodePrinter printer) {

@@ -98,32 +98,24 @@ public final class Code {
     }
 
     public void addInstruction(Instruction instr) {
-        addInstruction0(instr, 0);
-    }
-
-    public void addInstruction(Instruction instr, int stackAdjustment) {
-        addInstruction0(instr, stackAdjustment);
+        addInstruction0(instr);
     }
 
     public void addChainedInstruction(JumpInstructionConstructor factory, int chainId) {
-        addChainedInstruction0(factory, chainId, 0);
+        addChainedInstruction0(factory, chainId);
     }
 
-    public void addChainedInstruction(JumpInstructionConstructor factory, int chainId, int stackAdjustment) {
-        addChainedInstruction0(factory, chainId, stackAdjustment);
-    }
-
-    private void addChainedInstruction0(JumpInstructionConstructor factory, int chainId, int stackAdjustment) {
+    private void addChainedInstruction0(JumpInstructionConstructor factory, int chainId) {
         if (!isAlive()) return;
         context.chains.get(chainId).constructors.put(currentIP(), factory);
         context.instructions.add(null); // will be installed later
-        adjustStack(stackAdjustment);
+        adjustStack(factory.create(0).stackAdjustment());
     }
 
-    private void addInstruction0(Instruction instruction, int stackAdjustment) {
+    private void addInstruction0(Instruction instruction) {
         if (!isAlive()) return;
         context.instructions.add(instruction);
-        adjustStack(stackAdjustment);
+        adjustStack(instruction.stackAdjustment());
     }
 
     private LineMap lineMap;

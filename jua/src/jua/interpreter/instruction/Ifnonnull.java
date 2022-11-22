@@ -5,9 +5,19 @@ import jua.interpreter.InterpreterState;
 
 public final class Ifnonnull extends JumpInstruction {
 
-    public Ifnonnull(int destIp) {
-        super(destIp);
+    public Ifnonnull() {
+        super();
     }
+
+    public Ifnonnull(int offset) {
+        super(offset);
+    }
+
+    @Override
+    public int stackAdjustment() { return -1; }
+
+    @Override
+    public JumpInstruction negate() { return new Ifnull(offset); }
 
     @Override
     public void print(CodePrinter printer) {
@@ -18,7 +28,7 @@ public final class Ifnonnull extends JumpInstruction {
     @Override
     public int run(InterpreterState state) {
         if (!state.popStack().isNull()) {
-            return destIp;
+            return offset;
         } else {
             return NEXT;
         }

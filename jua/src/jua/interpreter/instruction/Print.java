@@ -12,6 +12,9 @@ public class Print implements Instruction {
     }
 
     @Override
+    public int stackAdjustment() { return -count; }
+
+    @Override
     public void print(CodePrinter printer) {
         printer.printName("print");
         printer.print(count);

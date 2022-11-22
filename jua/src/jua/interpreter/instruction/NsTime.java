@@ -9,9 +9,12 @@ import jua.runtime.heap.LongOperand;
  *
  * <strong>ВНИМАНИЕ: ЭТА ИНСТРУКЦИЯ ВРЕМЕННАЯ</strong>
  */
-public enum NsTime implements Instruction {
+public final class NsTime implements Instruction {
 
-    INSTANCE;
+    public static final NsTime INSTANCE = new NsTime();
+
+    @Override
+    public int stackAdjustment() { return 1; }
 
     @Override
     public void print(CodePrinter printer) {

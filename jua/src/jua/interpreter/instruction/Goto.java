@@ -5,8 +5,22 @@ import jua.interpreter.InterpreterState;
 
 public final class Goto extends JumpInstruction {
 
-    public Goto(int destIp) {
-        super(destIp);
+    public Goto() {
+        super();
+    }
+
+    public Goto(int offset) {
+        super(offset);
+    }
+
+    @Override
+    public int stackAdjustment() {
+        return 0;
+    }
+
+    @Override
+    public JumpInstruction negate() {
+        return this; // todo
     }
 
     @Override
@@ -17,6 +31,6 @@ public final class Goto extends JumpInstruction {
 
     @Override
     public int run(InterpreterState state) {
-        return destIp;
+        return offset;
     }
 }

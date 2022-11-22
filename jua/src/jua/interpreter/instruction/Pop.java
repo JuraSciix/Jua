@@ -3,9 +3,12 @@ package jua.interpreter.instruction;
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
-public enum Pop implements Instruction {
+public final class Pop implements Instruction {
 
-    INSTANCE;
+    public static final Pop INSTANCE = new Pop();
+
+    @Override
+    public int stackAdjustment() { return -1; }
 
     @Override
     public void print(CodePrinter printer) {

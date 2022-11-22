@@ -4,10 +4,14 @@ import jua.interpreter.InterpreterState;
 import jua.runtime.heap.Operand;
 import jua.compiler.CodePrinter;
 
-public enum Dup2 implements Instruction {
+public final class Dup2 implements Instruction {
 
-    INSTANCE;
+    public static final Dup2 INSTANCE = new Dup2();
 
+    @Override
+    public int stackAdjustment() {
+        return -1 + -1 + 1 + 1 + 1 + 1;
+    }
 
     @Override
     public void print(CodePrinter printer) {
@@ -16,12 +20,7 @@ public enum Dup2 implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        Operand a = state.popStack();
-        Operand b = state.popStack();
-        state.pushStack(b);
-        state.pushStack(a);
-        state.pushStack(b);
-        state.pushStack(a);
+        state.dup2();
         return NEXT;
     }
 }

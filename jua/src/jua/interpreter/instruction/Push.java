@@ -14,6 +14,9 @@ public final class Push implements Instruction {
     }
 
     @Override
+    public int stackAdjustment() { return 1; }
+
+    @Override
     public void print(CodePrinter printer) {
         printer.printName("push");
         printer.print(value);

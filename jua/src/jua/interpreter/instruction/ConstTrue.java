@@ -7,9 +7,8 @@ public final class ConstTrue implements Instruction {
 
     public static final ConstTrue CONST_TRUE = new ConstTrue();
 
-    private ConstTrue() {
-        super();
-    }
+    @Override
+    public int stackAdjustment() { return 1; }
 
     @Override
     public void print(CodePrinter printer) {

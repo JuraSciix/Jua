@@ -33,7 +33,12 @@ public final class Switch extends JumpInstruction {
             }
             printer.printCase(java.util.Arrays.copyOfRange(literals, last_index, literals.length), destIps[last_index]);
         }
-        printer.printCase(null, destIp /* default ip */);
+        printer.printCase(null, offset /* default ip */);
+    }
+
+    @Override
+    public JumpInstruction negate() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -47,6 +52,11 @@ public final class Switch extends JumpInstruction {
                 return destIps[i];
             }
         }
-        return destIp; /* default ip */
+        return offset; /* default ip */
+    }
+
+    @Override
+    public int stackAdjustment() {
+        return -1;
     }
 }

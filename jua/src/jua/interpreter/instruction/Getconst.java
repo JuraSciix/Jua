@@ -4,7 +4,7 @@ import jua.compiler.CodePrinter;
 import jua.compiler.Tree;
 import jua.interpreter.InterpreterState;
 
-public class Getconst implements Instruction {
+public final class Getconst implements Instruction {
 
     private final int id;
 
@@ -13,6 +13,11 @@ public class Getconst implements Instruction {
     public Getconst(int id, Tree.Name name) {
         this.id = id;
         this.name = name;
+    }
+
+    @Override
+    public int stackAdjustment() {
+        return 1;
     }
 
     @Override

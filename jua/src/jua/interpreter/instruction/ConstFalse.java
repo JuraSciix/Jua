@@ -8,9 +8,8 @@ public final class ConstFalse implements Instruction {
 
     public static final ConstFalse CONST_FALSE = new ConstFalse();
 
-    private ConstFalse() {
-        super();
-    }
+    @Override
+    public int stackAdjustment() { return 1; }
 
     @Override
     public void print(CodePrinter printer) {

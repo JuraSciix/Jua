@@ -15,11 +15,22 @@ Should be optimized to:
 1: pop
 
  */
+// todo: Переименовать в ifz
 public final class Iffalse extends JumpInstruction {
 
-    public Iffalse(int destIp) {
-        super(destIp);
+    public Iffalse() {
+        super();
     }
+
+    public Iffalse(int offset) {
+        super(offset);
+    }
+
+    @Override
+    public int stackAdjustment() { return -1; }
+
+    @Override
+    public JumpInstruction negate() { return new Iftrue(offset); }
 
     @Override
     public void print(CodePrinter printer) {
@@ -29,6 +40,6 @@ public final class Iffalse extends JumpInstruction {
 
     @Override
     public int run(InterpreterState state) {
-        return state.popStack().booleanValue() ? NEXT : destIp;
+        return state.popStack().booleanValue() ? NEXT : offset;
     }
 }

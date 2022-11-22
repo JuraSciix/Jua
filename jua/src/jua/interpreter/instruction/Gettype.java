@@ -2,17 +2,21 @@ package jua.interpreter.instruction;
 
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
-import jua.runtime.heap.StringOperand;
 
 /**
  * Снимает операнд со стека и возвращает его тип.
  *
  * <strong>ВНИМАНИЕ: ЭТА ИНСТРУКЦИЯ ВРЕМЕННАЯ</strong>
  */
-public enum Gettype implements Instruction {
+// todo: Переименовать в Typeof
+public final class Gettype implements Instruction {
 
-    INSTANCE;
+    public static final Gettype INSTANCE = new Gettype();
 
+    @Override
+    public int stackAdjustment() {
+        return -1 + 1;
+    }
 
     @Override
     public void print(CodePrinter printer) {
@@ -21,7 +25,7 @@ public enum Gettype implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        state.pushStack(new StringOperand(state.popStack().type().name));
+        state.stackGettype();
         return NEXT;
     }
 }

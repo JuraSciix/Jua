@@ -8,7 +8,8 @@ public final class ConstNull implements Instruction {
 
     public static final ConstNull INSTANCE = new ConstNull();
 
-    private ConstNull() { super(); }
+    @Override
+    public int stackAdjustment() { return 1; }
 
     @Override
     public void print(CodePrinter printer) {

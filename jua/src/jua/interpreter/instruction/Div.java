@@ -3,9 +3,12 @@ package jua.interpreter.instruction;
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
-public enum Div implements Instruction {
+public final class Div implements Instruction {
 
-    INSTANCE;
+    public static final Div INSTANCE = new Div();
+
+    @Override
+    public int stackAdjustment() { return -1 + -1 + 1; }
 
     @Override
     public void print(CodePrinter printer) {

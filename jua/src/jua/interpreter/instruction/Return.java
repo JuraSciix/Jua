@@ -7,9 +7,8 @@ public final class Return implements Instruction {
 
     public static final Return RETURN = new Return();
 
-    private Return() {
-        super();
-    }
+    @Override
+    public int stackAdjustment() { return -1; }
 
     @Override
     public void print(CodePrinter printer) {
