@@ -48,6 +48,7 @@ public final class ProgramLayout {
     }
 
     public Program buildProgram() {
+        mainTree.accept(new Lower(mainCode.getTypes()));
         MinorGen mainCodegen = new MinorGen(this);
 
         List<Statement> toRemove = new ArrayList<>();
