@@ -5,7 +5,7 @@ import jua.interpreter.InterpreterState;
 
 /**
  * Эта инструкция используется в качестве пролога для инструкций
- * {@link Ifeq} и {@link Ifne} чтобы работать с нелогическими значениями.
+ * {@link ifconsteq} и {@link ifconstne} чтобы работать с нелогическими значениями.
  * <p>
  * Пример:
  *

@@ -1,40 +1,36 @@
 package jua.interpreter.instruction;
 
-import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
+import jua.compiler.CodePrinter;
 
 public final class Ifge extends JumpInstruction {
 
-    private final int value;
-
-    public Ifge(int value) {
-        this.value = value;
+    public Ifge() {
+        super();
     }
 
-    public Ifge(int offset, int value) {
+    public Ifge(int offset) {
         super(offset);
-        this.value = value;
     }
 
     @Override
-    public int stackAdjustment() { return -1; }
+    public int stackAdjustment() { return -1 + -1; }
 
     @Override
-    public JumpInstruction negate() { return new Iflt(offset, value); }
+    public JumpInstruction negate() { return new Iflt(offset); }
 
     @Override
     public void print(CodePrinter printer) {
         printer.printName("ifge");
-        printer.print(value);
         super.print(printer);
     }
 
     @Override
     public int run(InterpreterState state) {
-        if (state.popInt() >= value) {
-            return offset;
-        } else {
+        if (!state.stackCmpge()) {
             return NEXT;
+        } else {
+            return offset;
         }
     }
 }

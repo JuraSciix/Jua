@@ -16,13 +16,13 @@ Should be optimized to:
 
  */
 // todo: Переименовать в ifz
-public final class Iffalse extends JumpInstruction {
+public final class ifz extends JumpInstruction {
 
-    public Iffalse() {
+    public ifz() {
         super();
     }
 
-    public Iffalse(int offset) {
+    public ifz(int offset) {
         super(offset);
     }
 
@@ -30,11 +30,11 @@ public final class Iffalse extends JumpInstruction {
     public int stackAdjustment() { return -1; }
 
     @Override
-    public JumpInstruction negate() { return new Iftrue(offset); }
+    public JumpInstruction negate() { return new ifnz(offset); }
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName("iffalse");
+        printer.printName("ifz");
         super.print(printer);
     }
 

@@ -4,13 +4,13 @@ import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
 // todo: Переименовать в ifnz
-public final class Iftrue extends JumpInstruction {
+public final class ifnz extends JumpInstruction {
 
-    public Iftrue() {
+    public ifnz() {
         super();
     }
 
-    public Iftrue(int offset) {
+    public ifnz(int offset) {
         super(offset);
     }
 
@@ -18,11 +18,11 @@ public final class Iftrue extends JumpInstruction {
     public int stackAdjustment() { return -1; }
 
     @Override
-    public JumpInstruction negate() { return new Iffalse(offset); }
+    public JumpInstruction negate() { return new ifz(offset); }
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName("iftrue");
+        printer.printName("ifnz");
         super.print(printer);
     }
 

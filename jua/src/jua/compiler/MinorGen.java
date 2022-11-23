@@ -1028,7 +1028,7 @@ public final class MinorGen extends Gen {
         // todo: Здешний код отвратителен. Следует переписать всё с нуля...
 //        code.addInstruction(Bool.INSTANCE);
         code.putPos(tree.pos);
-        code.addChainedInstruction(isState(STATE_COND_INVERT) ? Iftrue::new : Iffalse::new,
+        code.addChainedInstruction(isState(STATE_COND_INVERT) ? ifnz::new : ifz::new,
                 peekConditionChain());
     }
 

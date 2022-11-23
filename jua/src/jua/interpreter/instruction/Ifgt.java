@@ -1,40 +1,36 @@
 package jua.interpreter.instruction;
 
-import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
+import jua.compiler.CodePrinter;
 
 public final class Ifgt extends JumpInstruction {
 
-    private final int value;
-
-    public Ifgt(int value) {
-    this.value = value;
+    public Ifgt() {
+        super();
     }
 
-    public Ifgt(int offset, int value) {
+    public Ifgt(int offset) {
         super(offset);
-        this.value = value;
     }
 
     @Override
-    public int stackAdjustment() { return -1; }
+    public int stackAdjustment() { return -1 + -1; }
 
     @Override
-    public JumpInstruction negate() { return new Ifle(offset, value); }
+    public JumpInstruction negate() { return new Ifle(offset); }
 
     @Override
     public void print(CodePrinter printer) {
         printer.printName("ifgt");
-        printer.print(value);
         super.print(printer);
     }
 
     @Override
     public int run(InterpreterState state) {
-        if (state.popInt() > value) {
-            return offset;
-        } else {
+        if (!state.stackCmpgt()) {
             return NEXT;
+        } else {
+            return offset;
         }
     }
 }

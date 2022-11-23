@@ -5,33 +5,29 @@ import jua.interpreter.InterpreterState;
 
 public final class Ifne extends JumpInstruction {
 
-    private final int value;
-
-    public Ifne(int value) {
-        this.value = value;
+    public Ifne() {
+        super();
     }
 
-    public Ifne(int offset, int value) {
+    public Ifne(int offset) {
         super(offset);
-        this.value = value;
     }
 
     @Override
-    public int stackAdjustment() { return -1; }
+    public int stackAdjustment() { return -1 + -1; }
 
     @Override
-    public JumpInstruction negate() { return new Ifeq(offset, value); }
+    public JumpInstruction negate() { return new Ifeq(offset); }
 
     @Override
     public void print(CodePrinter printer) {
         printer.printName("ifne");
-        printer.print(value);
         super.print(printer);
     }
 
     @Override
     public int run(InterpreterState state) {
-        if (state.popInt() != value) {
+        if (!state.stackCmpeq()) {
             return offset;
         } else {
             return NEXT;

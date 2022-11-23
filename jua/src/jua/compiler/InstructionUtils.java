@@ -31,31 +31,31 @@ public class InstructionUtils {
     }
 
     public static JumpInstruction fromConstComparisonOpTag(Tag tag, int comparing, boolean negate) {
-        if (negate) {
+        if (!negate) {
             tag = TreeInfo.negateComparisonTag(tag);
         }
         switch (tag) {
-            case EQ: return new Ifeq(comparing);
-            case NE: return new Ifne(comparing);
-            case GT: return new Ifgt(comparing);
-            case GE: return new Ifge(comparing);
-            case LT: return new Iflt(comparing);
-            case LE: return new Ifle(comparing);
+            case EQ: return new ifconsteq(comparing);
+            case NE: return new ifconstne(comparing);
+            case GT: return new ifconstgt(comparing);
+            case GE: return new ifconstge(comparing);
+            case LT: return new ifconstlt(comparing);
+            case LE: return new ifconstle(comparing);
             default: throw new AssertionError(tag);
         }
     }
 
     public static JumpInstruction fromComparisonOpTag(Tag tag, boolean negate) {
-        if (negate) {
+        if (!negate) {
             tag = TreeInfo.negateComparisonTag(tag);
         }
         switch (tag) {
-            case EQ: return new Ifcmpeq();
-            case NE: return new Ifcmpne();
-            case GT: return new Ifcmpgt();
-            case GE: return new Ifcmpge();
-            case LT: return new Ifcmplt();
-            case LE: return new Ifcmple();
+            case EQ: return new Ifeq();
+            case NE: return new Ifne();
+            case GT: return new Ifgt();
+            case GE: return new Ifge();
+            case LT: return new Iflt();
+            case LE: return new Ifle();
             default: throw new AssertionError(tag);
         }
     }
