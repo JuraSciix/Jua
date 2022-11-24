@@ -199,7 +199,7 @@ public class CodePrinter {
 
     public void printLiteral(int index) {
         Operand constant = program.constantPool().at(index);
-        preparePrint().operands.add(constant.type().name + " " + constant.toString());
+        preparePrint().operands.add("#" + index + " (" + constant.type().name + " " + constant + ")");
     }
 
     private PrintState preparePrint() {
