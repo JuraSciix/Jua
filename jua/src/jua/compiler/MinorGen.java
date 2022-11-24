@@ -630,6 +630,12 @@ public final class MinorGen extends Gen {
             genExpr(tree.lhs).load();
             opcode = InstructionUtils.fromConstComparisonOpTag(tree.tag,
                     unpackShortIntegerLiteral(tree.rhs), false);
+        } else if (isNull(tree.lhs)) {
+            genExpr(tree.rhs).load();
+            opcode = new Ifnonnull();
+        } else if (isNull(tree.rhs)) {
+            genExpr(tree.lhs).load();
+            opcode = new Ifnonnull();
         } else {
             genExpr(tree.lhs).load();
             genExpr(tree.rhs).load();
