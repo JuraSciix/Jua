@@ -76,6 +76,19 @@ public final class Address {
         return (StringHeap) a;
     }
 
+    public StringHeap toStr() {
+        switch (typeCode()) {
+            case LONG: return new StringHeap().append(longVal());
+            case DOUBLE: return new StringHeap().append(doubleVal());
+            case BOOLEAN: return new StringHeap().append(booleanVal());
+            case STRING: return stringVal();
+            case NULL: return new StringHeap().appendNull();
+            default:
+                currentThread().error("Non-stringable");
+                return new StringHeap();
+        }
+    }
+
     public MapHeap mapValue() {
         return (MapHeap) a;
     }

@@ -24,7 +24,7 @@ public class Print implements Instruction {
     public int run(InterpreterState state) {
         String[] pieces = new String[count];
         for (int i = 1; i <= count; i++) {
-            pieces[count - i] = state.popStack().toString();
+            pieces[count - i] = state.popStack().toStr().toString();
         }
         for (int i = 0; i < count; i++) {
             System.out.print(pieces[i]);

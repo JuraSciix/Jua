@@ -213,18 +213,15 @@ public final class InterpreterState {
     }
 
     public void constFalse() {
-        peekStack().set(false);
-        sp++;
+        top().set(false);
     }
 
     public void constNull() {
-        peekStack().setNull();
-        sp++;
+        top().setNull();
     }
 
     public void constTrue() {
-        peekStack().set(true);
-        sp++;
+        top().set(true);
     }
 
     public void stackInc() {
@@ -271,7 +268,16 @@ public final class InterpreterState {
     }
 
     public void stackLength() {
-        // todo
+        switch (peekStack().typeCode()) {
+            case ValueType.STRING:
+                pushStack(popStack().stringVal().length());
+                break;
+            case ValueType.MAP:
+                pushStack(popStack().mapValue().size());
+                break;
+            default:
+                thread.error("Invalid length");
+        }
     }
 
     public void stackMul() {
@@ -284,8 +290,7 @@ public final class InterpreterState {
     }
 
     public void stackNewArray() {
-       peekStack().set(new MapHeap());
-       sp--;
+       top().set(new MapHeap());
     }
 
     public void stackNot() {

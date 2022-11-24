@@ -179,6 +179,7 @@ public final class InterpreterThread {
         msg = MSG_RUNNING; // Переходим в состояние выполнения.
     }
 
+
     @Deprecated
     public void enterCall(InterpreterFrame p) {
 

@@ -1,5 +1,6 @@
 package jua.runtime.heap;
 
+import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 
 public final class StringHeap implements CharSequence, Heap {
@@ -9,7 +10,7 @@ public final class StringHeap implements CharSequence, Heap {
     // Кеш-содержащие поля
     private volatile transient int hashCode;
     private volatile transient boolean hashCodeCalculated = false;
-    private volatile transient WeakReference<String> stringCache = null;
+    private volatile transient SoftReference<String> stringCache = null;
 
     public StringHeap() {
         buffer = new StringBuffer(0);
@@ -119,7 +120,7 @@ public final class StringHeap implements CharSequence, Heap {
     @Override
     public String toString() {
         if (stringCache == null || stringCache.isEnqueued()) {
-            stringCache = new WeakReference<>('"' + buffer.toString() + '"');
+            stringCache = new SoftReference<>(buffer.toString());
         }
         String value = stringCache.get();
         assert value != null;
