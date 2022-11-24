@@ -106,12 +106,12 @@ public final class ProgramLayout {
                         ArrayLiteral arrayLiteral = (ArrayLiteral) expr;
 
                         if (!arrayLiteral.entries.isEmpty())
-                            mainCodegen.generateArrayCreation(arrayLiteral.entries);
+                            mainCodegen.genArrayInitializr(arrayLiteral.entries);
 
                         return new ArrayOperand();
                     } else if (expr.getTag() == Tag.LITERAL) {
                         Literal literal = (Literal) expr;
-                        return mainCodegen.resolveOperand(literal);
+                        return literal.type.toOperand();
                     } else {
                         mainSource.getLog().error(expr.pos, "Literal expected");
                         return null;

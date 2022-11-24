@@ -1,6 +1,9 @@
 package jua.compiler;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -20,9 +23,23 @@ public class Log {
         this.source = source;
     }
 
-    public boolean hasMessages() { return !messages.isEmpty(); }
+    public boolean hasMessages() {
+        return !messages.isEmpty();
+    }
 
-    public boolean hasErrors() { return nerrs > 0;}
+    public boolean hasErrors() {
+        return nerrs > 0;
+    }
+
+    public void error(String msg) {
+        nerrs++;
+
+        //Compile error: %message%
+        messages.add("Compile error: " + msg + "\n");
+
+        if (nerrs >= maxErrors)
+            throw new CompileInterrupter();
+    }
 
     public void error(int pos, String msg) {
         nerrs++;
@@ -32,7 +49,7 @@ public class Log {
         //%source%
         //%pointer%
         LineMap lineMap = source.getLineMap();
-        StringBuilder buffer  =new StringBuilder();
+        StringBuilder buffer = new StringBuilder();
         buffer.append("Compile error: ").append(msg).append("\n");
         printPosition(buffer,
                 lineMap.getLineNumber(pos),

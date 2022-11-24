@@ -3,6 +3,9 @@ package jua.compiler;
 import jua.compiler.Tree.Tag;
 import jua.interpreter.instruction.*;
 
+import static jua.compiler.TreeInfo.negateComparisonTag;
+import static jua.compiler.TreeInfo.tagWithoutAsg;
+
 public class InstructionUtils {
 
     public static Instruction fromBinaryOpTag(Tag tag) {
@@ -26,13 +29,19 @@ public class InstructionUtils {
             case NEG: return Neg.INSTANCE;
             case POS: return Pos.INSTANCE;
             case INVERSE: return Not.INSTANCE;
+            case POSTINC: case PREINC: return Inc.INSTANCE;
+            case POSTDEC: case PREDEC: return Dec.INSTANCE;
             default: throw new IllegalArgumentException(tag.name());
         }
     }
 
+    public static Instruction fromBinaryAsgOpTag(Tag tag) {
+        return InstructionUtils.fromBinaryOpTag(tagWithoutAsg(tag));
+    }
+
     public static JumpInstruction fromConstComparisonOpTag(Tag tag, int comparing, boolean negate) {
         if (!negate) {
-            tag = TreeInfo.negateComparisonTag(tag);
+            tag = negateComparisonTag(tag);
         }
         switch (tag) {
             case EQ: return new ifconsteq(comparing);
@@ -47,7 +56,7 @@ public class InstructionUtils {
 
     public static JumpInstruction fromComparisonOpTag(Tag tag, boolean negate) {
         if (!negate) {
-            tag = TreeInfo.negateComparisonTag(tag);
+            tag = negateComparisonTag(tag);
         }
         switch (tag) {
             case EQ: return new Ifeq();

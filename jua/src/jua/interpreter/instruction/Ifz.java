@@ -16,13 +16,13 @@ Should be optimized to:
 
  */
 // todo: Переименовать в ifz
-public final class ifz extends JumpInstruction {
+public final class Ifz extends JumpInstruction {
 
-    public ifz() {
+    public Ifz() {
         super();
     }
 
-    public ifz(int offset) {
+    public Ifz(int offset) {
         super(offset);
     }
 

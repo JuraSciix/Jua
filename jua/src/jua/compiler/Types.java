@@ -1,5 +1,6 @@
 package jua.compiler;
 
+import jua.runtime.heap.*;
 import jua.util.Conversions;
 
 import java.util.Objects;
@@ -37,6 +38,8 @@ public final class Types {
         public String stringValue() { throw new UnsupportedOperationException(); }
 
         public abstract int getConstantIndex();
+
+        public abstract Operand toOperand();
     }
 
     public static abstract class ScalarType extends Type {
@@ -84,6 +87,9 @@ public final class Types {
             LongType longType = (LongType) o;
             return value == longType.value;
         }
+
+        @Override
+        public Operand toOperand() { return LongOperand.valueOf(value); }
     }
 
     public final class DoubleType extends NumberType {
@@ -121,6 +127,9 @@ public final class Types {
             DoubleType that = (DoubleType) o;
             return Double.compare(that.value, value) == 0;
         }
+
+        @Override
+        public Operand toOperand() { return DoubleOperand.valueOf(value); }
     }
 
     public static abstract class BooleanType extends ScalarType {
@@ -157,6 +166,9 @@ public final class Types {
 
         @Override
         public int getConstantIndex() { return code.get_cpb().putTrueEntry(); }
+
+        @Override
+        public Operand toOperand() { return TrueOperand.TRUE; }
     }
 
     public final class FalseType extends BooleanType {
@@ -179,6 +191,9 @@ public final class Types {
 
         @Override
         public int getConstantIndex() { return code.get_cpb().putFalseEntry(); }
+
+        @Override
+        public Operand toOperand() { return FalseOperand.FALSE; }
     }
 
     public final class StringType extends ScalarType {
@@ -208,6 +223,9 @@ public final class Types {
             StringType that = (StringType) o;
             return Objects.equals(value, that.value);
         }
+
+        @Override
+        public Operand toOperand() { return new StringOperand(value); }
     }
 
     public final class NullType extends Type {
@@ -240,6 +258,9 @@ public final class Types {
             if (o == null || getClass() != o.getClass()) return false;
             return true;
         }
+
+        @Override
+        public Operand toOperand() { return NullOperand.NULL; }
     }
 
     public final TrueType True = new TrueType();
