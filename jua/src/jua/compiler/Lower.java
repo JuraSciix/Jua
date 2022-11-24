@@ -67,7 +67,7 @@ public final class Lower extends Translator {
         // В следующий вид:
         //  a[sqrt(x*x+y*y)] = a[sqrt(x*x+y*y)] ?? z;
         // Сулит, как видно, сложными дублированиями.
-        if (tree.hasTag(Tag.NULLCOALESCE) || !dst.hasTag(Tag.VARIABLE)) {
+        if (tree.hasTag(Tag.ASG_NULLCOALESCE) || !dst.hasTag(Tag.VARIABLE)) {
             tree.dst = dst;
             tree.src = translate(src);
             result = tree;
