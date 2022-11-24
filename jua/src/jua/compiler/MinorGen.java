@@ -2,7 +2,6 @@ package jua.compiler;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
-import jua.compiler.Tree.Switch;
 import jua.compiler.Tree.*;
 import jua.compiler.Types.Type;
 import jua.interpreter.instruction.*;
@@ -14,6 +13,7 @@ import java.util.List;
 import static jua.compiler.InstructionUtils.*;
 import static jua.compiler.TreeInfo.removeParens;
 
+// todo: Все позиции из AST должны обрабатываться в стадии Enter
 public final class MinorGen extends Gen {
 
     /**
@@ -157,7 +157,7 @@ public final class MinorGen extends Gen {
         for (ArrayLiteral.Entry entry : entries) {
             item.duplicate();
             if (entry.key == null) {
-                code.putPos(entry.value.pos);
+                code.putPos(entry.pos);
                 emitPushLong(implicitIndex++);
             } else {
                 genExpr(entry.key).load();
@@ -198,7 +198,7 @@ public final class MinorGen extends Gen {
     }
 
     @Override
-    public void visitSwitch(Switch tree) {
+    public void visitSwitch(Tree.Switch tree) {
         genExpr(tree.expr).load();
         flow = new FlowEnv(flow, true);
         flow.switchStartPC = code.currentIP();
@@ -328,7 +328,7 @@ public final class MinorGen extends Gen {
 
     @Override
     public void visitInvocation(Invocation tree) {
-        if (!tree.callee.hasTag(Tag.MEMACCESS)) {
+        if (!tree.callee.hasTag(Tag.MEMACCESS) || ((MemberAccess) tree.callee).expr != null) {
             log.error(tree.pos, "Only a function calling allowed");
             return;
         }
@@ -346,12 +346,14 @@ public final class MinorGen extends Gen {
         switch (callee.value) {
             case "print":
                 visitInvocationArgs(tree.args);
+                code.putPos(tree.pos);
                 code.addInstruction(new Print(nargs));
                 result = emptyItem;
                 break;
 
             case "println":
                 visitInvocationArgs(tree.args);
+                code.putPos(tree.pos);
                 code.addInstruction(new Println(nargs));
                 result = emptyItem;
                 break;
@@ -360,6 +362,7 @@ public final class MinorGen extends Gen {
             case "sizeof":
                 require_nargs(tree, 1);
                 genExpr(tree.args.get(0).expr).load();
+                code.putPos(tree.pos);
                 code.addInstruction(Length.INSTANCE);
                 result = stackItem;
                 break;
@@ -368,12 +371,14 @@ public final class MinorGen extends Gen {
             case "typeof":
                 require_nargs(tree, 1);
                 genExpr(tree.args.get(0).expr).load();
+                code.putPos(tree.pos);
                 code.addInstruction(Gettype.INSTANCE);
                 result = stackItem;
                 break;
 
             case "ns_time":
                 require_nargs(tree, 0);
+                code.putPos(tree.pos);
                 code.addInstruction(NsTime.INSTANCE);
                 result = stackItem;
                 break;
@@ -381,6 +386,7 @@ public final class MinorGen extends Gen {
             default:
                 int fn_idx = programLayout.tryFindFunc(callee);
                 visitInvocationArgs(tree.args);
+                code.putPos(tree.pos);
                 code.addInstruction(new Call(fn_idx, nargs, callee));
                 result = stackItem;
         }
@@ -629,6 +635,7 @@ public final class MinorGen extends Gen {
             genExpr(tree.rhs).load();
             opcode = InstructionUtils.fromComparisonOpTag(tree.tag, false);
         }
+        code.putPos(tree.pos);
         result = new CondItem(code.addInstruction(opcode));
     }
 
@@ -676,6 +683,7 @@ public final class MinorGen extends Gen {
         emitDup();
         code.putPos(tree.pos);
         Ifnonnull cond = new Ifnonnull();
+        code.putPos(tree.pos);
         int condPC = code.addInstruction(cond);
         code.addInstruction(Pop.INSTANCE);
         genExpr(tree.rhs).load();
@@ -685,6 +693,7 @@ public final class MinorGen extends Gen {
 
     @Override
     public void visitParens(Parens tree) {
+        code.putPos(tree.pos);
         tree.expr.accept(this);
     }
 
@@ -697,7 +706,7 @@ public final class MinorGen extends Gen {
             case VARIABLE:
                 Item varitem = genExpr(tree.var);
                 genExpr(tree.expr).load();
-                result = new AssignItem(varitem);
+                result = new AssignItem(tree.pos, varitem);
                 break;
 
             default:
@@ -724,6 +733,7 @@ public final class MinorGen extends Gen {
 
     @Override
     public void visitReturn(Tree.Return tree) {
+        code.putPos(tree.pos);
         if (isNull(tree.expr)) {
             emitRetnull();
         } else {
@@ -791,6 +801,7 @@ public final class MinorGen extends Gen {
         boolean truecond = isCondTrue(cond);
         int loopstartPC, limitstacktop;
         if (testFirst && !truecond) {
+            code.putPos(loop.pos);
             int skipBodyPC = emitGoto();
             loopstartPC = code.currentIP();
             limitstacktop = code.curStackTop();
@@ -887,8 +898,8 @@ public final class MinorGen extends Gen {
             String tmp = code.acquireSyntheticName(); // synthetic0
             emitVStore(tmp);
             Ifnonnull cond = new Ifnonnull();
-            int cPC = code.currentIP();
-            code.addInstruction(cond);
+            code.putPos(tree.pos);
+            int cPC = code.addInstruction(cond);
             int sp1 = code.current_nstack;
             genExpr(tree.src).load().duplicate();
             emitVStore(tmp);
@@ -921,7 +932,7 @@ public final class MinorGen extends Gen {
             varitem.load();
             genExpr(tree.src).load();
             code.addInstruction(fromBinaryAsgOpTag(tree.tag));
-            result = new AssignItem(varitem);
+            result = new AssignItem(tree.pos, varitem);
         }
     }
 
@@ -1142,8 +1153,10 @@ public final class MinorGen extends Gen {
                         @Override
                         void drop() {
                             if (inc) {
+                                code.putPos(tree.pos);
                                 localitem.inc();
                             } else {
+                                code.putPos(tree.pos);
                                 localitem.dec();
                             }
                         }
@@ -1158,16 +1171,18 @@ public final class MinorGen extends Gen {
                                 varitem.stash();
                                 drop();
                             } else {
+                                code.putPos(tree.pos);
                                 code.addInstruction(fromUnaryOpTag(tree.tag));
-                                new AssignItem(varitem).load();
+                                new AssignItem(tree.pos, varitem).load();
                             }
                             return stackItem;
                         }
 
                         @Override
                         void drop() {
+                            code.putPos(tree.pos);
                             code.addInstruction(fromUnaryOpTag(tree.tag));
-                            new AssignItem(varitem).drop();
+                            new AssignItem(tree.pos, varitem).drop();
                         }
                     };
                 }
@@ -1407,6 +1422,7 @@ public final class MinorGen extends Gen {
 
         @Override
         Item load() {
+            code.putPos(pos);
             emitVLoad(name.value);
             return stackItem;
         }
@@ -1457,7 +1473,6 @@ public final class MinorGen extends Gen {
 
         @Override
         void store() {
-            code.putPos(pos);
             emitAStore();
         }
 
@@ -1499,21 +1514,25 @@ public final class MinorGen extends Gen {
     /** Присвоение. */
     class AssignItem extends Item {
 
+        final int pos;
         final Item var;
 
-        AssignItem(Item var) {
+        AssignItem(int pos, Item var) {
+            this.pos = pos;
             this.var = var;
         }
 
         @Override
         Item load() {
             var.stash();
+            code.putPos(pos);
             var.store();
             return stackItem;
         }
 
         @Override
         void drop() {
+            code.putPos(pos);
             var.store();
         }
 
