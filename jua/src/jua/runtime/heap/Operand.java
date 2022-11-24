@@ -1,5 +1,6 @@
 package jua.runtime.heap;
 
+import jua.interpreter.Address;
 import jua.interpreter.InterpreterError;
 
 import java.util.Map;
@@ -212,4 +213,7 @@ public abstract class Operand {
     public int length() {
         throw new InterpreterError("cannot calculate length for " + type().name + " type");
     }
+
+
+    public abstract void writeToAddress(Address address);
 }

@@ -2,7 +2,6 @@ package jua.interpreter.instruction;
 
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
-import jua.runtime.heap.LongOperand;
 
 /**
  * Вставляет в стек текущее время UNIX.
@@ -23,7 +22,7 @@ public final class NsTime implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        state.stackNsTime();
+        state.stackNanosTime();
         return NEXT;
     }
 }

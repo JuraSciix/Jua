@@ -80,6 +80,18 @@ public final class Address {
         return (MapHeap) a;
     }
 
+    public boolean testType(byte type) {
+        if (type == this.type) {
+            return true;
+        }
+        currentThread().error(nameOf(type) + " expected, " + typeName()+ " got");
+        return false;
+    }
+
+    public boolean isNull() {
+        return type == NULL;
+    }
+
     public void set(long _l) {
         type = ValueType.LONG;
         l = _l;
@@ -462,6 +474,32 @@ public final class Address {
         }
 
         unaryOperatorError("~");
+    }
+
+    public void inc(Address result) { // -x
+        if (type == LONG) {
+            result.set(l + 1L);
+            return;
+        }
+        if (type == DOUBLE) {
+            result.set(d + 1.0);
+            return;
+        }
+
+        unaryOperatorError("++");
+    }
+
+    public void dec(Address result) { // -x
+        if (type == LONG) {
+            result.set(l - 1L);
+            return;
+        }
+        if (type == DOUBLE) {
+            result.set(d - 1.0);
+            return;
+        }
+
+        unaryOperatorError("--");
     }
 
     private void unaryOperatorError(String operator) {

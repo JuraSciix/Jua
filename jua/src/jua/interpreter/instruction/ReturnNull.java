@@ -19,7 +19,7 @@ public final class ReturnNull implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        state.thread().set_returnee(NullOperand.NULL);
+        state.thread().getReturnAddress().setNull();
         return UNREACHABLE;
     }
 }

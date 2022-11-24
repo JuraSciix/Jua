@@ -615,9 +615,9 @@ public final class MinorGen extends Gen {
         return (value >= Short.MIN_VALUE && value <= Short.MAX_VALUE);
     }
 
-    private int unpackShortIntegerLiteral(Expression tree) {
+    private short unpackShortIntegerLiteral(Expression tree) {
         tree = removeParens(tree);
-        return (int) ((Literal) tree).type.longValue();
+        return (short) ((Literal) tree).type.longValue();
     }
 
     private void genCmp(BinaryOp tree) {

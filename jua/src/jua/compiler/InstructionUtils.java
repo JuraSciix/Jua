@@ -39,7 +39,7 @@ public class InstructionUtils {
         return InstructionUtils.fromBinaryOpTag(tagWithoutAsg(tag));
     }
 
-    public static JumpInstruction fromConstComparisonOpTag(Tag tag, int comparing, boolean negate) {
+    public static JumpInstruction fromConstComparisonOpTag(Tag tag, short comparing, boolean negate) {
         if (!negate) {
             tag = negateComparisonTag(tag);
         }

@@ -22,7 +22,7 @@ public final class Ldc implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        state.pushStack(state.constant_pool().at(operand));
+        state.stackLDC(operand);
         return NEXT;
     }
 }

@@ -1,5 +1,7 @@
 package jua.runtime.heap;
 
+import jua.interpreter.Address;
+
 /**
  * @deprecated Планируется переход на {@link jua.interpreter.Address} с {@link Heap}.
  */
@@ -60,6 +62,11 @@ public final class NullOperand extends Operand {
     @Override
     public String stringValue() {
         return "null";
+    }
+
+    @Override
+    public void writeToAddress(Address address) {
+        address.setNull();
     }
 
     @Override

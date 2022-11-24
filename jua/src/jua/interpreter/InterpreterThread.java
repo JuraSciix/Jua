@@ -94,7 +94,7 @@ public final class InterpreterThread {
 
     private byte msg = MSG_CREATED;
 
-    private Operand returnee;
+    private final Address returnAddress = new Address();
 
     public InterpreterFrame currentFrame() {
         return current_frame;
@@ -166,8 +166,6 @@ public final class InterpreterThread {
 
     public void returnFrame() {
         InterpreterFrame uf = current_frame;
-        Operand returnVal = returnee;
-        if (returnVal == null) throw new IllegalStateException("null return value");
         InterpreterFrame uf1 = uf.callingFrame();
         if (uf1 == null) {
             msg = MSG_HALTED; // Выполнять больше нечего.
@@ -175,7 +173,7 @@ public final class InterpreterThread {
             return;
         }
         // todo: Нативных функций пока нет
-        uf1.state().pushStack(returnVal);
+        uf1.state().pushStack(returnAddress);
         uf1.state().advance();
         current_frame = uf1;
         msg = MSG_RUNNING; // Переходим в состояние выполнения.
@@ -201,8 +199,11 @@ public final class InterpreterThread {
         msg = MSG_CALLING;
     }
 
-    public void set_returnee(Operand returnee) {
-        this.returnee = returnee;
+    public Address getReturnAddress() {
+        return returnAddress;
+    }
+
+    public void set_returnee() {
         this.msg = MSG_POPPING;
     }
 
@@ -249,6 +250,7 @@ public final class InterpreterThread {
                         code_point += code[code_point].run(state);
                     }
                 } catch (Throwable t) {
+                    t.printStackTrace();
                     aError("FATAL ERROR. DETAILS:\n\t" +
                             "FILE: " + current_location() + "\n\t" +
                             "LINE: " + current_line_number() + "\n\t" +
@@ -300,162 +302,6 @@ public final class InterpreterThread {
 
     public int current_line_number() {
         return current_frame.owningFunction().codeSegment().lineNumberTable().getLineNumber(current_frame.state().cp());
-    }
-
-    @Deprecated
-    public Array getArray(Operand operand) {
-        if (operand.canBeMap()) {
-            return operand.arrayValue();
-        }
-        throw InterpreterError.inconvertibleTypes(operand.type(), Operand.Type.MAP);
-    }
-
-    public boolean getBoolean(Operand operand) {
-        if (operand.canBeBoolean()) {
-            return operand.booleanValue();
-        }
-        throw InterpreterError.inconvertibleTypes(operand.type(), Operand.Type.BOOLEAN);
-    }
-
-    public double getFloat(Operand operand) {
-        if (operand.canBeFloat()) {
-            return operand.doubleValue();
-        }
-        throw InterpreterError.inconvertibleTypes(operand.type(), Operand.Type.DOUBLE);
-    }
-
-    public long getInt(Operand operand) {
-        if (operand.canBeInt()) {
-            return operand.longValue();
-        }
-        throw InterpreterError.inconvertibleTypes(operand.type(), Operand.Type.LONG);
-    }
-
-    public String getString(Operand operand) {
-        if (operand.canBeString()) {
-            return operand.stringValue();
-        }
-        throw InterpreterError.inconvertibleTypes(operand.type(), Operand.Type.STRING);
-    }
-
-    @Deprecated
-    public Operand getOperand(Array value) {
-        return new ArrayOperand(value);
-    }
-
-    public Operand getOperand(boolean value) {
-        return BooleanOperand.valueOf(value);
-    }
-
-    public Operand getOperand(double value) {
-        return DoubleOperand.valueOf(value);
-    }
-
-    public Operand getOperand(long value) {
-        return LongOperand.valueOf(value);
-    }
-
-    public Operand getOperand(String value) {
-        return StringOperand.valueOf(value);
-    }
-
-    public void pushStackNull() {
-        pushStack(NullOperand.NULL);
-    }
-
-    @Deprecated
-    public void pushStack(Array operand) {
-        pushStack(getOperand(operand));
-    }
-
-    public void pushStack(boolean operand) {
-        pushStack(getOperand(operand));
-    }
-
-    public void pushStack(double operand) {
-        pushStack(getOperand(operand));
-    }
-
-    public void pushStack(long operand) {
-        pushStack(getOperand(operand));
-    }
-
-    public void pushStack(String operand) {
-        pushStack(getOperand(operand));
-    }
-
-    public void pushStack(Operand operand) {
-        current_frame.state().pushStack(operand);
-    }
-
-    public Operand popStack() {
-        return currentFrame().state().popStack();
-    }
-
-    @Deprecated
-    public Array popArray() {
-        return getArray(popStack());
-    }
-
-    public boolean popBoolean() {
-        return getBoolean(popStack());
-    }
-
-    public double popFloat() {
-        return getFloat(popStack());
-    }
-
-    public long popInt() {
-        return getInt(popStack());
-    }
-
-    public String popString() {
-        return getString(popStack());
-    }
-
-    public Operand peekStack() {
-        return current_frame.state().peekStack();
-    }
-
-    @Deprecated
-    public Array peekArray() {
-        return getArray(peekStack());
-    }
-
-    public boolean peekBoolean() {
-        return getBoolean(peekStack());
-    }
-
-    public double peekFloat() {
-        return getFloat(peekStack());
-    }
-
-    public long peekInt() {
-        return getInt(peekStack());
-    }
-
-    public String peekString() {
-        return getString(peekStack());
-    }
-
-    @Deprecated
-    public void duplicateStack(int count, int x) {
-        // does noting
-    }
-
-    @Deprecated
-    public void moveStack(int x) {
-        // does noting
-    }
-
-    @Deprecated
-    public Operand getLocal(int id) {
-        return current_frame.state().load(id);
-    }
-
-    @Deprecated
-    public void setLocal(int id, Operand value) {
-        current_frame.state().store(id, value);
     }
 
     public void error(String msg) {

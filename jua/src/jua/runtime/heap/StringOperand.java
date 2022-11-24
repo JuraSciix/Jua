@@ -1,5 +1,7 @@
 package jua.runtime.heap;
 
+import jua.interpreter.Address;
+
 /**
  * @deprecated Планируется переход на {@link jua.interpreter.Address} с {@link Heap}.
  */
@@ -65,6 +67,11 @@ public class StringOperand extends Operand {
     @Override
     public int length() {
         return value.length();
+    }
+
+    @Override
+    public void writeToAddress(Address address) {
+        address.set(new StringHeap(value));
     }
 
     @Override

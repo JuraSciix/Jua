@@ -1,14 +1,17 @@
 package jua.interpreter;
 
 import jua.interpreter.instruction.Instruction;
+import jua.runtime.ValueType;
 import jua.runtime.code.ConstantPool;
-import jua.runtime.heap.*;
+import jua.runtime.heap.MapHeap;
+import jua.runtime.heap.Operand;
+import jua.runtime.heap.StringHeap;
 
 public final class InterpreterState {
 
     private final Instruction[] code;
 
-    public final Operand[] stack, locals;
+    public final Address[] stack, locals;
 
     private final ConstantPool constantPool;
 
@@ -24,8 +27,8 @@ public final class InterpreterState {
                             ConstantPool constantPool,
                             InterpreterThread thread) {
         this.code = code;
-        this.stack = new Operand[maxStack];
-        this.locals = new Operand[maxLocals];
+        this.stack = Address.allocateMemory(0, maxStack);
+        this.locals = Address.allocateMemory(0, maxLocals);
         this.constantPool = constantPool;
         this.thread = thread;
     }
@@ -38,16 +41,14 @@ public final class InterpreterState {
         return code;
     }
 
-    public Operand[] stack() {
-        return stack;
+    public void getconst(int id) {
+        thread.environment().getConstant(id).writeToAddress(peekStack());
+        sp++;
     }
 
-    public Operand[] locals() {
-        return locals;
-    }
-
-    public Operand getConstantById(int id) {
-        return thread.environment().getConstant(id);
+    @Deprecated
+    public Address getConstantById(int id) {
+        throw new UnsupportedOperationException();
     }
 
     public int cp() {
@@ -75,14 +76,19 @@ public final class InterpreterState {
     }
 
     public void pushStack(long value) {
-        pushStack(LongOperand.valueOf(value));
+        top().set(value);
     }
 
-    public void pushStack(Operand operand) {
-        stack[sp++] = operand;
+    @Deprecated
+    public void pushStack(Operand value) {
+        value.writeToAddress(top());
     }
 
-    public Operand popStack() {
+    public void pushStack(Address address) {
+        stack[sp++].set(address);
+    }
+
+    public Address popStack() {
         return stack[--sp];
     }
 
@@ -90,27 +96,30 @@ public final class InterpreterState {
         return getInt(popStack());
     }
 
-    public Operand peekStack() {
+    public Address peekStack() {
         return stack[sp - 1];
     }
 
-    public long getInt(Operand operand) {
-        if (operand.canBeInt()) {
-            return operand.longValue();
-        }
-        throw InterpreterError.inconvertibleTypes(operand.type(), Operand.Type.LONG);
+    public long getInt(Address a) {
+        return a.longVal();
     }
 
+    @Deprecated
     public void store(int index, Operand value) {
-        locals[index] = value;
+        value.writeToAddress(locals[index]);
     }
 
-    public Operand load(int index) {
+    public void store(int index, Address value) {
+        locals[index].set(value);
+    }
+
+    public void load(int index) {
         if (locals[index] == null) {
             thread.error("accessing an undefined variable '" +
                     thread.currentFrame().owningFunction().codeSegment().localNameTable().nameOf(index) + "'.");
         }
-        return locals[index];
+        peekStack().set(locals[index]);
+        sp++;
     }
 
     @Deprecated
@@ -134,286 +143,241 @@ public final class InterpreterState {
     /* ОПЕРАЦИИ НА СТЕКЕ */
 
     public void dup() {
-        state.pushStack(state.peekStack());
+        Address peek = peekStack();
+        top().set(peek);
+    }
+
+    public Address top() {
+        return stack[sp++];
     }
 
     public void dup2() {
-        Operand a = state.popStack();
-        Operand b = state.popStack();
-        state.pushStack(b);
-        state.pushStack(a);
-        state.pushStack(b);
-        state.pushStack(a);
+        Address a = popStack();
+        Address b = popStack();
+        pushStack(b);
+        pushStack(a);
+        pushStack(b);
+        pushStack(a);
     }
 
     public void dup1_x1() {
-        stack[sp] = stack[sp - 1];
-        stack[sp - 1] = stack[sp - 2];
-        stack[sp - 2] = stack[sp];
+        stack[sp].set(stack[sp - 1]);
+        stack[sp - 1].set(stack[sp - 2]);
+        stack[sp - 2].set(stack[sp]);
         sp++;
     }
 
     public void dup1_x2() {
-        stack[sp] = stack[sp - 1];
-        stack[sp - 1] = stack[sp - 2];
-        stack[sp - 2] = stack[sp - 3];
-        stack[sp - 3] = stack[sp];
+        stack[sp].set(stack[sp - 1]);
+        stack[sp - 1].set(stack[sp - 2]);
+        stack[sp - 2].set(stack[sp - 3]);
+        stack[sp - 3].set(stack[sp]);
         sp++;
     }
 
     public void dup2_x1() {
-        stack[sp + 1] = stack[sp - 1];
-        stack[sp] = stack[sp - 2];
-        stack[sp - 2] = stack[sp - 3];
-        stack[sp - 3] = stack[sp + 1];
-        stack[sp - 4] = stack[sp];
+        stack[sp + 1].set(stack[sp - 1]);
+        stack[sp].set(stack[sp - 2]);
+        stack[sp - 2].set(stack[sp - 3]);
+        stack[sp - 3].set(stack[sp + 1]);
+        stack[sp - 4].set(stack[sp]);
         sp += 2;
     }
 
     public void dup2_x2() {
-        stack[sp + 1] = stack[sp - 1];
-        stack[sp] = stack[sp - 2];
-        stack[sp - 1] = stack[sp - 3];
-        stack[sp - 2] = stack[sp - 4];
-        stack[sp - 4] = stack[sp + 1];
-        stack[sp - 5] = stack[sp];
+        stack[sp + 1].set(stack[sp - 1]);
+        stack[sp].set(stack[sp - 2]);
+        stack[sp - 1].set(stack[sp - 3]);
+        stack[sp - 2].set(stack[sp - 4]);
+        stack[sp - 4].set(stack[sp + 1]);
+        stack[sp - 5].set(stack[sp]);
         sp += 2;
     }
 
     public void stackAdd() {
-        Operand rhs = popStack();
-        Operand lhs = popStack();
-
-        pushStack(lhs.add(rhs));
+        lhs().add(rhs(), lhs());
+        sp--;
     }
 
-    private final InterpreterState state = this;
+    private Address lhs() { return stack[sp - 2]; }
+    private Address rhs() { return stack[sp - 1]; }
 
     public void stackAnd() {
-        Operand rhs = state.popStack();
-        Operand lhs = state.popStack();
-
-        state.pushStack(lhs.and(rhs));
+        lhs().and(rhs(), lhs());
+        sp--;
     }
 
+    @Deprecated
     public void stackClone() {
-        state.pushStack(state.popStack().doClone());
+        
     }
 
     public void constFalse() {
-        state.pushStack(FalseOperand.FALSE);
+        peekStack().set(false);
+        sp++;
     }
 
     public void constNull() {
-        state.pushStack(NullOperand.NULL);
+        peekStack().setNull();
+        sp++;
     }
 
     public void constTrue() {
-        state.pushStack(TrueOperand.TRUE);
+        peekStack().set(true);
+        sp++;
+    }
+
+    public void stackInc() {
+        peekStack().inc(peekStack());
     }
 
     public void stackDec() {
-        state.pushStack(state.popStack().decrement());
+        peekStack().dec(peekStack());
     }
 
     public void stackDiv() {
-        Operand rhs = state.popStack();
-        Operand lhs = state.popStack();
-
-        state.pushStack(lhs.div(rhs));
+        lhs().div(rhs(), lhs());
+        sp--;
     }
 
     public boolean stackCmpeq() {
-        return popStack().equals(popStack());
+        int cmp = lhs().compare(rhs(), 1);
+        sp -= 2;
+        return cmp == 0;
     }
 
     public boolean stackCmpge() {
-        Operand rhs = state.popStack();
-        Operand lhs = state.popStack();
-
-        if (!lhs.isNumber() || !rhs.isNumber()) {
-            // op inverted due to VM mechanics
-            throw InterpreterError.binaryApplication("<", lhs.type(), rhs.type());
-        }
-        if ((lhs.isDouble() || rhs.isDouble())
-                ? lhs.doubleValue() < rhs.doubleValue()
-                : lhs.longValue() < rhs.longValue()) {
-            return false;
-        } else {
-            return true;
-        }
+        int cmp = lhs().compare(rhs(), -1);
+        sp -= 2;
+        return cmp >= 0;
     }
 
     public boolean stackCmpgt() {
-        Operand rhs = state.popStack();
-        Operand lhs = state.popStack();
-
-        if (!lhs.isNumber() || !rhs.isNumber()) {
-            // op inverted due to VM mechanics
-            throw InterpreterError.binaryApplication("<=", lhs.type(), rhs.type());
-        }
-        if ((lhs.isDouble() || rhs.isDouble())
-                ? lhs.doubleValue() <= rhs.doubleValue()
-                : lhs.longValue() <= rhs.longValue()) {
-            return false;
-        } else {
-            return true;
-        }
+        int cmp = lhs().compare(rhs(), -1);
+        sp -= 2;
+        return cmp > 0;
     }
 
     public boolean stackCmple() {
-        Operand rhs = state.popStack();
-        Operand lhs = state.popStack();
-
-        if (!lhs.isNumber() || !rhs.isNumber()) {
-            // op inverted due to VM mechanics
-            throw InterpreterError.binaryApplication(">", lhs.type(), rhs.type());
-        }
-        if ((lhs.isDouble() || rhs.isDouble())
-                ? lhs.doubleValue() > rhs.doubleValue()
-                : lhs.longValue() > rhs.longValue()) {
-            return false;
-        } else {
-            return true;
-        }
+        int cmp = lhs().compare(rhs(), 1);
+        sp -= 2;
+        return cmp <= 0;
     }
 
     public boolean stackCmplt() {
-        Operand rhs = state.popStack();
-        Operand lhs = state.popStack();
-
-        if (!lhs.isNumber() || !rhs.isNumber()) {
-            // op inverted due to VM mechanics
-            throw InterpreterError.binaryApplication(">=", lhs.type(), rhs.type());
-        }
-        if ((lhs.isDouble() || rhs.isDouble())
-                ? lhs.doubleValue() >= rhs.doubleValue()
-                : lhs.longValue() >= rhs.longValue()) {
-            return false;
-        } else {
-            return true;
-        }
+        int cmp = lhs().compare(rhs(), 1);
+        sp -= 2;
+        return cmp < 0;
     }
 
     public void stackLength() {
-        state.pushStack(new LongOperand(state.popStack().length()));
+        // todo
     }
 
     public void stackMul() {
-        Operand rhs = state.popStack();
-        Operand lhs = state.popStack();
-
-        state.pushStack(lhs.mul(rhs));
+       lhs().mul(rhs(), lhs());
+       sp--;
     }
 
     public void stackNeg() {
-        Operand val = state.popStack();
-        state.pushStack(val.neg());
+        peekStack().neg(peekStack());
     }
 
     public void stackNewArray() {
-        state.pushStack(new ArrayOperand());
+       peekStack().set(new MapHeap());
+       sp--;
     }
 
     public void stackNot() {
-        Operand val = state.popStack();
-        state.pushStack(val.not());
+       peekStack().not(peekStack());
     }
 
-    public void stackNsTime() {
-        state.pushStack(new LongOperand(System.nanoTime()));
+    public void stackNanosTime() {
+        pushStack(System.nanoTime());
     }
 
     public void stackOr() {
-        Operand rhs = state.popStack();
-        Operand lhs = state.popStack();
-
-        state.pushStack(lhs.or(rhs));
+        lhs().or(rhs(), lhs());
+        sp--;
     }
 
     public void stackPos() {
-        Operand val = state.peekStack();
-
-        if (!val.isNumber())
-            throw InterpreterError.unaryApplication("+", val.type());
+       peekStack().pos(peekStack());
     }
 
     public void stackRem() {
-        Operand rhs = state.popStack();
-        Operand lhs = state.popStack();
-
-        state.pushStack(lhs.rem(rhs));
+        lhs().rem(rhs(), lhs());
+        sp--;
     }
 
     public void stackShl() {
-        Operand rhs = state.popStack();
-        Operand lhs = state.popStack();
-
-        state.pushStack(lhs.shl(rhs));
+        lhs().shl(rhs(), lhs());
+        sp--;
     }
 
     public void stackShr() {
-        Operand rhs = state.popStack();
-        Operand lhs = state.popStack();
-
-        state.pushStack(lhs.shr(rhs));
+        lhs().shr(rhs(), lhs());
+        sp--;
     }
 
     public void stackSub() {
-        Operand rhs = state.popStack();
-        Operand lhs = state.popStack();
-
-        state.pushStack(lhs.sub(rhs));
+        lhs().sub(rhs(), lhs());
+        sp--;
     }
 
     public void stackVDec(int id) {
-        Operand local = state.load(id);
-        state.store(id, local.decrement());
+        testLocal(id);
+        locals[id].dec(locals[id]);
     }
 
     public void stackVInc(int id) {
-        Operand local = state.load(id);
-        state.store(id, local.increment());
+        testLocal(id);
+        locals[id].inc(locals[id]);
     }
 
     public void stackVLoad(int id) {
-        Operand operand = state.load(id);
-        state.pushStack(operand);
+        testLocal(id);
+        pushStack(locals[id]);
     }
 
     public void stackVStore(int id) {
-        state.store(id, state.popStack());
+        locals[id].set(popStack());
+    }
+
+    private void testLocal(int id) {
+        if (locals[id].typeCode() == ValueType.UNDEFINED) {
+            thread.error("Access to undefined variable");
+        }
     }
 
     public void stackXor() {
-        Operand rhs = state.popStack();
-        Operand lhs = state.popStack();
-
-        state.pushStack(lhs.xor(rhs));
+       lhs().xor(rhs(), lhs());
+       sp--;
     }
 
     public void stackGettype() {
-        state.pushStack(new StringOperand(state.popStack().type().name));
+        stack[sp - 1].set(new StringHeap(stack[sp - 1].typeName()));
     }
 
     public void cleanupStack() {
         for (int i = stack.length - 1; i >= sp; i--)
-            // todo: stack[i].reset();
-            stack[i] = null;
+            stack[i].reset();
     }
 
     public void stackAload() {
-        Operand key = state.popStack();
-        Operand map = state.popStack();
-        Operand result = map.get(key);
-        // todo: В новой версии языка вместо подмены должна происходит ошибка.
-        state.pushStack(result == null ? NullOperand.NULL : result);
+        stack[sp - 2].testType(ValueType.MAP);
+        Address val = stack[sp - 2].mapValue().get(stack[sp - 1]);
+        stack[sp - 2].set(val);
+        sp--;
     }
 
     public void stackAstore() {
-        Operand val = state.popStack();
-        Operand key = state.popStack();
-        Operand map = state.popStack();
-        map.put(key, val);
+        stack[sp - 3].testType(ValueType.MAP);
+        stack[sp - 3].mapValue().put(stack[sp - 2], stack[sp - 1]);
+        sp -= 3;
+    }
+    
+    public void stackLDC(int constantIndex) {
+        constant_pool().at(constantIndex).writeToAddress(top());
     }
 }

@@ -5,13 +5,13 @@ import jua.interpreter.InterpreterState;
 
 public final class ifconstne extends JumpInstruction {
 
-    private final int value;
+    private final short value;
 
-    public ifconstne(int value) {
+    public ifconstne(short value) {
         this.value = value;
     }
 
-    public ifconstne(int offset, int value) {
+    public ifconstne(int offset, short value) {
         super(offset);
         this.value = value;
     }
@@ -31,7 +31,7 @@ public final class ifconstne extends JumpInstruction {
 
     @Override
     public int run(InterpreterState state) {
-        if (state.popInt() != value) {
+        if (state.popStack().compareShort(value, 0) != 0) {
             return offset;
         } else {
             return NEXT;

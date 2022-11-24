@@ -40,6 +40,6 @@ public final class Ifz extends JumpInstruction {
 
     @Override
     public int run(InterpreterState state) {
-        return state.popStack().booleanValue() ? NEXT : offset;
+        return state.popStack().booleanVal() ? NEXT : offset;
     }
 }

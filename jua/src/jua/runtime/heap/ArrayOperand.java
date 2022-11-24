@@ -1,5 +1,6 @@
 package jua.runtime.heap;
 
+import jua.interpreter.Address;
 import jua.interpreter.InterpreterError;
 import jua.interpreter.InterpreterThread;
 
@@ -122,5 +123,18 @@ public final class ArrayOperand extends Operand {
     @Override
     public int length() {
         return map.size();
+    }
+
+    @Override
+    public void writeToAddress(Address address) {
+        MapHeap map = new MapHeap();
+        this.map.forEach((key, val) -> {
+            Address keyAddr = new Address();
+            Address valAddr = new Address();
+            key.writeToAddress(keyAddr);
+            val.writeToAddress(valAddr);
+            map.put(keyAddr, valAddr);
+        });
+        address.set(map);
     }
 }

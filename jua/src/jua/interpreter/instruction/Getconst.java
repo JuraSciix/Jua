@@ -32,7 +32,7 @@ public final class Getconst implements Instruction {
             state.thread().error("Constant named '%s' does not exists", name.value);
             return ERROR;
         }
-        state.pushStack(state.getConstantById(id));
+        state.getconst(id);
         return NEXT;
     }
 }

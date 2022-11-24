@@ -1,5 +1,7 @@
 package jua.runtime.heap;
 
+import jua.interpreter.Address;
+
 /**
  * @deprecated Планируется переход на {@link jua.interpreter.Address} с {@link Heap}.
  */
@@ -57,5 +59,10 @@ public class TrueOperand extends BooleanOperand {
     @Override
     public Operand xor(Operand operand) {
         return not();
+    }
+
+    @Override
+    public void writeToAddress(Address address) {
+        address.set(true);
     }
 }

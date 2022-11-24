@@ -1,5 +1,6 @@
 package jua.runtime.heap;
 
+import jua.interpreter.Address;
 import jua.interpreter.InterpreterError;
 
 /**
@@ -136,4 +137,9 @@ public final class LongOperand extends NumberOperand {
 
     @Override
     public Operand decrement() { return valueOf(value - 1L); }
+
+    @Override
+    public void writeToAddress(Address address) {
+        address.set(value);
+    }
 }

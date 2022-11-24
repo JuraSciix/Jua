@@ -1,6 +1,7 @@
 package jua.interpreter.instruction;
 
 import jua.compiler.CodePrinter;
+import jua.interpreter.Address;
 import jua.interpreter.InterpreterState;
 import jua.runtime.heap.Operand;
 
@@ -15,6 +16,14 @@ public final class Switch extends JumpInstruction {
         assert literals.length == destIps.length;
         this.literals = literals;
         this.destIps = destIps;
+    }
+
+    @Override
+    public int stackAdjustment() { return -1; }
+
+    @Override
+    public JumpInstruction negate() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -37,26 +46,18 @@ public final class Switch extends JumpInstruction {
     }
 
     @Override
-    public JumpInstruction negate() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public int run(InterpreterState state) {
         int[] l = literals;
 
-        Operand selector = state.popStack();
+        Address selector = state.popStack();
 
+        Address tmp = new Address();
         for (int i = 0; i < l.length; i++) {
-            if (selector.equals(state.constant_pool().at(l[i]))) {
+            state.constant_pool().at(l[i]).writeToAddress(tmp);
+            if (selector.compare(tmp, 1) == 0) {
                 return destIps[i];
             }
         }
         return offset; /* default ip */
-    }
-
-    @Override
-    public int stackAdjustment() {
-        return -1;
     }
 }
