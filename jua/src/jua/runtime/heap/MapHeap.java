@@ -21,19 +21,12 @@ public final class MapHeap implements Heap {
         map = new HashMap<>(original.map);
     }
 
-    @Override
     public int size() { return map.size(); }
 
-    @Override
-    public boolean isSame(Heap that) {
-        assert that.getClass() == MapHeap.class;
-        return map.equals(((MapHeap) that).map);
-    }
+    public boolean isSame(MapHeap that) { return map.equals(that.map); }
 
-    @Override
     public Heap copy() { return this; }
 
-    @Override
     public Heap deepCopy() { return new MapHeap(this); }
 
     public void put(Address key, Address value) {
@@ -62,7 +55,9 @@ public final class MapHeap implements Heap {
 
     @Override
     public boolean equals(Object o) {
-        return (this == o) || (o != null && o.getClass() == MapHeap.class && isSame((MapHeap) o));
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        return isSame((MapHeap) o);
     }
 
     @Override

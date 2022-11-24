@@ -27,7 +27,7 @@ public final class StringHeap implements CharSequence, Heap {
     }
 
     public StringHeap(StringHeap original) {
-        buffer = original.buffer;
+        buffer = new StringBuffer(original.buffer);
         hashCode = original.hashCode;
         hashCodeCalculated = original.hashCodeCalculated;
         stringCache = original.stringCache;
@@ -35,7 +35,7 @@ public final class StringHeap implements CharSequence, Heap {
 
     public StringHeap(StringHeap original, int offset, int count) {
         buffer = new StringBuffer(count);
-        buffer.append(buffer, offset, offset + count);
+        buffer.append(original.buffer, offset, offset + count);
     }
 
     @Override
@@ -47,24 +47,19 @@ public final class StringHeap implements CharSequence, Heap {
     @Override
     public CharSequence subSequence(int start, int end) { return new StringHeap(this, start, end - start); }
 
-    @Override
     public int size() { return buffer.length(); }
 
-    @Override
-    public boolean isSame(Heap that) {
-        assert that.getClass() == StringHeap.class;
+    public boolean isSame(StringHeap that) {
         StringBuffer b1 = buffer;
-        StringBuffer b2 = ((StringHeap) that).buffer;
+        StringBuffer b2 = that.buffer;
         if (b1.length() != b2.length()) return false;
         for (int i = 0; i < b1.length(); i++)
             if (b1.charAt(i) != b2.charAt(i)) return false;
         return true;
     }
 
-    @Override
     public Heap copy() { return new StringHeap(this); }
 
-    @Override
     public Heap deepCopy() { return new StringHeap(this); }
 
     public StringHeap append(long j) {
@@ -116,7 +111,9 @@ public final class StringHeap implements CharSequence, Heap {
 
     @Override
     public boolean equals(Object o) {
-        return (this == o) || (o != null && o.getClass() == StringHeap.class && isSame((StringHeap) o));
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        return isSame((StringHeap) o);
     }
 
     @Override

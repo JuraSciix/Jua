@@ -53,11 +53,16 @@ public final class InterpreterThread {
 
     private static final ThreadLocal<InterpreterThread> thread = new ThreadLocal<>();
 
-    public static InterpreterThread getInstance() {
+    public static InterpreterThread currentThread() {
         if (thread.get() == null) {
             throw new IllegalStateException("No thread present");
         }
         return thread.get();
+    }
+
+    @Deprecated
+    public static InterpreterThread getInstance() {
+        return currentThread();
     }
 
     public static void aError(String message) {
