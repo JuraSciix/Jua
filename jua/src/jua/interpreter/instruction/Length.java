@@ -13,7 +13,7 @@ public final class Length implements Instruction {
 
     @Override
     public void print(CodePrinter printer) {
-        printer.print("length");
+        printer.printName("length");
     }
 
     @Override
