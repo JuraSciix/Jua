@@ -64,4 +64,10 @@ fn print_list(l, keys = true) {
     return "[" + s + "]";
 }
 
-test_bubble_sort();
+fn print_range(from, to, step = 1) {
+    for i = from; i <= to; i += step {
+        println(i);
+    }
+}
+
+print_range(0, 9, 1);

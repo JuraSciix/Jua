@@ -12,6 +12,7 @@ import jua.util.Assert;
 import java.util.List;
 
 import static jua.compiler.InstructionUtils.*;
+import static jua.compiler.TreeInfo.removeParens;
 
 public final class MinorGen extends Gen {
 
@@ -242,7 +243,7 @@ public final class MinorGen extends Gen {
         } else {
             for (Expression label : tree.labels) {
                 // todo: Эта проверка должна находиться в другом этапе
-                if (!TreeInfo.removeParens(label).hasTag(Tag.LITERAL)) {
+                if (!removeParens(label).hasTag(Tag.LITERAL)) {
                     log.error(label.pos, "Constant expected");
                     continue;
                 }
@@ -423,9 +424,10 @@ public final class MinorGen extends Gen {
                 }
                 int localIdx = code.resolveLocal(name.value);
                 if (param.expr != null) {
-                    Expression expr = param.expr;
-                    if (expr.getTag() != Tag.LITERAL) {
+                    Expression expr = removeParens(param.expr);
+                    if (!expr.hasTag(Tag.LITERAL)) {
                         cError(expr.pos, "The values of the optional parameters can only be literals");
+                        continue;
                     }
                     code.get_cpb().putDefaultLocalEntry(localIdx, ((Literal) expr).type.getConstantIndex());
                     nOptionals++;
@@ -599,7 +601,7 @@ public final class MinorGen extends Gen {
 
     static boolean isShortIntegerLiteral(Expression tree) {
         if (tree == null) return false;
-        if (tree.hasTag(Tag.PARENS)) tree = (Expression) TreeInfo.removeParens(tree);
+        if (tree.hasTag(Tag.PARENS)) tree = (Expression) removeParens(tree);
         if (!tree.hasTag(Tag.LITERAL)) return false;
         Literal literal = (Literal) tree;
         if (!literal.type.isLong()) return false;
@@ -608,12 +610,11 @@ public final class MinorGen extends Gen {
     }
 
     private int unpackShortIntegerLiteral(Expression tree) {
-        tree = TreeInfo.removeParens(tree);
+        tree = removeParens(tree);
         return (int) ((Literal) tree).type.longValue();
     }
 
     private void genCmp(BinaryOp tree) {
-        // todo: ifconsteq, ifconstne, ifconstgt, ifconstge, ifconstlt, ifconstle
         JumpInstruction opcode;
         if (isShortIntegerLiteral(tree.lhs)) {
             genExpr(tree.rhs).load();
@@ -673,28 +674,23 @@ public final class MinorGen extends Gen {
     private void genNullCoalescing(BinaryOp tree) {
         genExpr(tree.lhs).load();
         emitDup();
-        int p = code.curStackTop();
         code.putPos(tree.pos);
         Ifnonnull cond = new Ifnonnull();
-        code.addInstruction(cond);
-        cond.offset = code.currentIP();
-        code.curStackTop(p);
+        int condPC = code.addInstruction(cond);
+        code.addInstruction(Pop.INSTANCE);
         genExpr(tree.rhs).load();
-        cond.offset = code.currentIP();
+        cond.offset = code.currentIP() - condPC;
         result = stackItem;
     }
 
     @Override
     public void visitParens(Parens tree) {
         tree.expr.accept(this);
-        // todo: выбрасывается AssertionError
-        //throw new AssertionError(
-        //        "all brackets should have been removed in ConstantFolder");
     }
 
     @Override
     public void visitAssign(Assign tree) {
-        Expression var = TreeInfo.removeParens(tree.var);
+        Expression var = removeParens(tree.var);
         switch (var.getTag()) {
             case MEMACCESS:
             case ARRAYACCESS:
@@ -827,7 +823,7 @@ public final class MinorGen extends Gen {
 
     static boolean isCondTrue(Expression tree) {
         if (tree == null) return true;
-        if (tree.hasTag(Tag.PARENS)) tree = TreeInfo.removeParens(tree);
+        if (tree.hasTag(Tag.PARENS)) tree = removeParens(tree);
         if (!tree.hasTag(Tag.LITERAL)) return false;
         Type type = ((Literal) tree).type;
         if (type.isBoolean()) return type.booleanValue();
@@ -872,7 +868,7 @@ public final class MinorGen extends Gen {
 
     @Override
     public void visitCompoundAssign(CompoundAssign tree) {
-        Expression var = TreeInfo.removeParens(tree.dst);
+        Expression var = removeParens(tree.dst);
 
         switch (var.getTag()) {
             case MEMACCESS:
@@ -1116,7 +1112,7 @@ public final class MinorGen extends Gen {
     }
 
     private void genIncrease(UnaryOp tree) {
-        Expression var = TreeInfo.removeParens(tree.expr);
+        Expression var = removeParens(tree.expr);
 
         // todo: Делать нормально уже лень. Рефакторинг
 
@@ -1283,8 +1279,6 @@ public final class MinorGen extends Gen {
     private void cError(int position, String message) {
         log.error(position, message);
     }
-
-    /* НИЖЕ РАСПОЛАГАЕТСЯ НОВЫЙ ЭКСПЕРИМЕНТАЛЬНЫЙ КОД */
 
     Item result;
 
