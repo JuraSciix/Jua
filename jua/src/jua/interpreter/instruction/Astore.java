@@ -18,10 +18,7 @@ public final class Astore implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        Operand val = state.popStack();
-        Operand key = state.popStack();
-        Operand map = state.popStack();
-        map.put(key, val);
+        state.stackAstore();
         return NEXT;
     }
 }

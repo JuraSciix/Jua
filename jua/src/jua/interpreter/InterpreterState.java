@@ -401,4 +401,19 @@ public final class InterpreterState {
             // todo: stack[i].reset();
             stack[i] = null;
     }
+
+    public void stackAload() {
+        Operand key = state.popStack();
+        Operand map = state.popStack();
+        Operand result = map.get(key);
+        // todo: В новой версии языка вместо подмены должна происходит ошибка.
+        state.pushStack(result == null ? NullOperand.NULL : result);
+    }
+
+    public void stackAstore() {
+        Operand val = state.popStack();
+        Operand key = state.popStack();
+        Operand map = state.popStack();
+        map.put(key, val);
+    }
 }

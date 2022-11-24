@@ -19,11 +19,7 @@ public final class Aload implements Instruction {
 
     @Override
     public int run(InterpreterState state) {
-        Operand key = state.popStack();
-        Operand map = state.popStack();
-        Operand result = map.get(key);
-        // todo: В новой версии языка вместо подмены должна происходит ошибка.
-        state.pushStack(result == null ? NullOperand.NULL : result);
+        state.stackAload();
         return NEXT;
     }
 }
