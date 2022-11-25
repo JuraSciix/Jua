@@ -27,8 +27,8 @@ public final class InterpreterState {
                             ConstantPool constantPool,
                             InterpreterThread thread) {
         this.code = code;
-        this.stack = Address.allocateMemory(0, maxStack);
-        this.locals = Address.allocateMemory(0, maxLocals);
+        this.stack = Address.allocateMemory(maxStack, 0);
+        this.locals = Address.allocateMemory(maxLocals, 0);
         this.constantPool = constantPool;
         this.thread = thread;
     }

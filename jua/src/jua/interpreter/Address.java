@@ -17,14 +17,16 @@ public final class Address {
         return copy;
     }
 
-    public static Address[] allocateMemory(int offset, int count) {
-        // 0 <= offset <= 2^16
-        // 0 <= count <= 2^16
-        // 0 <= offset+count <= 2^16
-
+    public static Address[] allocateMemory(int count, int start) {
+        if (count < 0 || count > 0xFFFF) {
+            throw new IllegalArgumentException("Count: " + count);
+        }
+        if (start < 0 || start > count) {
+            throw new IllegalArgumentException("Offset: " + start);
+        }
         Address[] memory = new Address[count];
 
-        for (int i = offset; i < count; i++) {
+        for (int i = start; i < count; i++) {
             memory[i] = new Address();
         }
 
@@ -32,10 +34,21 @@ public final class Address {
     }
 
     public static void arraycopy(Address[] src, int srcOffset, Address[] dst, int dstOffset, int count) {
-        // 0 <= srcOffset < src.length
-        // 0 <= dstOffset < dst.length
-        // 0 <= srcOffset+count <= src.length
-        // 0 <= dstOffset+count <= dst.length
+        if (src == null) {
+            throw new IllegalArgumentException("Source memory is null");
+        }
+
+        if (dst == null) {
+            throw new IllegalArgumentException("Destination memory is null");
+        }
+
+        if (srcOffset < 0 || dstOffset < 0 || count < 0 || (srcOffset + count) >= src.length || (dstOffset + count) >= dst.length) {
+            String message = String.format(
+                    "Memory (length, offset): source (%d, %d), destination (%d, %d). Count: %d",
+                    src.length, srcOffset, dst.length, dstOffset, count
+            );
+            throw new IllegalArgumentException(message);
+        }
 
         for (int i = 0; i < count; i++) {
             src[srcOffset + i].quickSet(dst[dstOffset + i]);
@@ -78,11 +91,16 @@ public final class Address {
 
     public StringHeap toStr() {
         switch (typeCode()) {
-            case LONG: return new StringHeap().append(longVal());
-            case DOUBLE: return new StringHeap().append(doubleVal());
-            case BOOLEAN: return new StringHeap().append(booleanVal());
-            case STRING: return stringVal();
-            case NULL: return new StringHeap().appendNull();
+            case LONG:
+                return new StringHeap().append(longVal());
+            case DOUBLE:
+                return new StringHeap().append(doubleVal());
+            case BOOLEAN:
+                return new StringHeap().append(booleanVal());
+            case STRING:
+                return stringVal();
+            case NULL:
+                return new StringHeap().appendNull();
             default:
                 currentThread().error("Non-stringable");
                 return new StringHeap();
@@ -97,7 +115,7 @@ public final class Address {
         if (type == this.type) {
             return true;
         }
-        currentThread().error(nameOf(type) + " expected, " + typeName()+ " got");
+        currentThread().error(nameOf(type) + " expected, " + typeName() + " got");
         return false;
     }
 
@@ -575,16 +593,26 @@ public final class Address {
     @Override
     public int hashCode() {
         switch (type) {
-            case UNDEFINED: throw new IllegalStateException("Trying calculate a hash-code of undefined type");
-            case LONG: return Long.hashCode(longVal());
-            case BOOLEAN: return Boolean.hashCode(booleanVal());
-            case DOUBLE: return Double.hashCode(doubleVal());
-            case STRING: return stringVal().hashCode();
-            case ARRAY: throw new UnsupportedOperationException();
-            case MAP: return mapValue().hashCode();
-            case ITERATOR: throw new UnsupportedOperationException();
-            case NULL: return 0;
-            default: throw new IllegalStateException("Unknown type");
+            case UNDEFINED:
+                throw new IllegalStateException("Trying calculate a hash-code of undefined type");
+            case LONG:
+                return Long.hashCode(longVal());
+            case BOOLEAN:
+                return Boolean.hashCode(booleanVal());
+            case DOUBLE:
+                return Double.hashCode(doubleVal());
+            case STRING:
+                return stringVal().hashCode();
+            case ARRAY:
+                throw new UnsupportedOperationException();
+            case MAP:
+                return mapValue().hashCode();
+            case ITERATOR:
+                throw new UnsupportedOperationException();
+            case NULL:
+                return 0;
+            default:
+                throw new IllegalStateException("Unknown type");
         }
     }
 
@@ -598,16 +626,26 @@ public final class Address {
     @Override
     public String toString() {
         switch (type) {
-            case UNDEFINED: throw new IllegalStateException();
-            case LONG: return Long.toString(longVal());
-            case BOOLEAN: return Boolean.toString(booleanVal());
-            case DOUBLE: return Double.toString(doubleVal());
-            case STRING: return stringVal().toString();
-            case ARRAY: throw new UnsupportedOperationException();
-            case MAP: return mapValue().toString();
-            case ITERATOR: throw new UnsupportedOperationException();
-            case NULL: return "null";
-            default: throw new IllegalStateException("Unknown type");
+            case UNDEFINED:
+                throw new IllegalStateException();
+            case LONG:
+                return Long.toString(longVal());
+            case BOOLEAN:
+                return Boolean.toString(booleanVal());
+            case DOUBLE:
+                return Double.toString(doubleVal());
+            case STRING:
+                return stringVal().toString();
+            case ARRAY:
+                throw new UnsupportedOperationException();
+            case MAP:
+                return mapValue().toString();
+            case ITERATOR:
+                throw new UnsupportedOperationException();
+            case NULL:
+                return "null";
+            default:
+                throw new IllegalStateException("Unknown type");
         }
     }
 }
