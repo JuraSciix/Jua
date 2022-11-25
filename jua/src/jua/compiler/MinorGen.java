@@ -766,12 +766,14 @@ public final class MinorGen extends Gen {
         code.putPos(tree.pos);
         CondItem cond = genCond(tree.cond);
         cond.resolveTrueJumps();
+        int a = code.curStackTop();
         genExpr(tree.thenexpr).load();
         int exiterPC = emitGoto();
         cond.resolveFalseJumps();
+        code.curStackTop(a);
         genExpr(tree.elseexpr).load();
         resolveJump(exiterPC);
-        assertStacktopEquality(limitstacktop);
+        assertStacktopEquality(limitstacktop + 1);
         result = stackItem;
     }
 
@@ -1686,7 +1688,7 @@ public final class MinorGen extends Gen {
             return code.alive;
         } finally {
             code.alive = true;
-            Assert.check(code.current_nstack == savedstacktop, "currentstacktop != savedstacktop");
+            assertStacktopEquality(savedstacktop);
         }
     }
 }
