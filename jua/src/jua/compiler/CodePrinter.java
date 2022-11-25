@@ -40,6 +40,8 @@ public class CodePrinter {
 
         private int index;
 
+        int stacktop, stackAdjustment;
+
         private String name;
 
         private List<String> operands;
@@ -66,7 +68,7 @@ public class CodePrinter {
                 });
                 sb.append(align).append("}");
             } else {
-                sb.append(String.format("%5d: %-15s %s", index, name, String.join(", ", operands)));
+                sb.append(String.format("%5d: %-15s %-20s %d(%d)", index, name, String.join(", ", operands), stacktop, stackAdjustment));
             }
             return sb.toString();
         }
@@ -115,6 +117,7 @@ public class CodePrinter {
         Instruction[] code = program.code();
         int length = code.length;
         for (int i = 0; i < length; i++) {
+            printer.stacktop += (printer.stackAdjustment = code[i].stackAdjustment());
             code[i].print(printer);
             int line = program.lineNumberTable().getLineNumber(i);
             if (line != lastLineNumber) {
@@ -138,7 +141,9 @@ public class CodePrinter {
 
     private final CodeSegment program;
 
-    private int index;
+    private int index = 0;
+
+    private int stacktop = 0, stackAdjustment;
 
     private PrintState current;
 
@@ -206,6 +211,8 @@ public class CodePrinter {
         if ((current) == null) {
             current = new PrintState();
             current.index = (index++);
+            current.stacktop = stacktop;
+            current.stackAdjustment = stackAdjustment;
             current.operands = new ArrayList<>();
             current.cases = new ArrayList<>();
         }
