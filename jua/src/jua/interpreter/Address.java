@@ -314,7 +314,7 @@ public final class Address {
             }
             return;
         }
-        binaryOperatorError("*", rhs);
+        binaryOperatorError("+", rhs);
     }
 
     public void sub(Address rhs, Address result) {
