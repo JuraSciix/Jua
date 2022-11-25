@@ -194,9 +194,9 @@ public final class InterpreterThread {
         return javaThread;
     }
 
-    public void set_callee(int calleeId, int numArgs) {
-        this.calleeId = calleeId;
-        this.numArgs = numArgs;
+    public void set_callee(short calleeId, byte numArgs) {
+        this.calleeId = calleeId & 0xffff;
+        this.numArgs = numArgs & 0xff;
         msg = MSG_CALLING;
     }
 
@@ -264,8 +264,8 @@ public final class InterpreterThread {
                         continue;
 
                     case MSG_CALLING: {
-                        set_msg(MSG_RUNNING);
                         joinFrame(environment.getFunction(calleeId), numArgs);
+                        set_msg(MSG_RUNNING);
                         calleeId = -1;
                         numArgs = 0;
                         break;

@@ -387,7 +387,10 @@ public final class MinorGen extends Gen {
                 int fn_idx = programLayout.tryFindFunc(callee);
                 visitInvocationArgs(tree.args);
                 code.putPos(tree.pos);
-                code.addInstruction(new Call(fn_idx, nargs, callee));
+                if (nargs > 0xff) {
+                    cError(tree.pos, "Too many arguments");
+                }
+                code.addInstruction(new Call((short) fn_idx, (byte) nargs));
                 result = stackItem;
         }
     }
