@@ -278,7 +278,12 @@ public final class InterpreterThread {
                     }
 
                     case MSG_CRASHED: {
-                        // todo: Избавиться от выброса исключения.
+                        state.set_cp(code_point);
+                        // todo: Сделать нормальный вывод ошибок
+                        System.err.printf("thread %s, file %s, line %d %n",
+                                javaThread.getName(),
+                                current_location(),
+                                current_line_number());
                         throw new RuntimeErrorException(error_msg);
                     }
 

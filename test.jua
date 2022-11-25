@@ -58,10 +58,23 @@ fn print_list(l, keys = true) {
             s += i;
             s += ": ";
         }
-        s += l[i];
+        s += typeof(l[i]) == 'map' ? print_list(l[i], keys) : l[i];
         b = true;
     }
     return "[" + s + "]";
 }
 
-test_bubble_sort();
+fn pascal_triangle(height) {
+    cols = [];
+    for i = 0; i <= height; i++ {
+        cols[i] = [];
+        cols[i][0] = cols[i][i] = 1;
+        for j = 1; j < i; j++ {
+            cols[i][j] = cols[i - 1][j - 1] + cols[i - 1][j];
+        }
+    }
+    return cols;
+}
+
+for a = pascal_triangle(5), i = 0; i < length(a); i++
+    println(print_list(a[i], false));

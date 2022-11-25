@@ -22,10 +22,10 @@ public final class InterpreterState {
 
     // Trusting constructor.
     InterpreterState(Instruction[] code,
-                            int maxStack,
-                            int maxLocals,
-                            ConstantPool constantPool,
-                            InterpreterThread thread) {
+                     int maxStack,
+                     int maxLocals,
+                     ConstantPool constantPool,
+                     InterpreterThread thread) {
         this.code = code;
         this.stack = Address.allocateMemory(maxStack, 0);
         this.locals = Address.allocateMemory(maxLocals, 0);
@@ -41,6 +41,49 @@ public final class InterpreterState {
         return code;
     }
 
+    public int cp() {
+        return cp & 0xffff;
+    }
+
+    public void set_cp(int cp) {
+        this.cp = cp;
+    }
+
+    public int sp() {
+        return sp & 0xffff;
+    }
+
+    public void set_sp(int sp) {
+        this.sp = sp;
+    }
+
+    public int cp_advance() {
+        return cpAdvance & 0xffff;
+    }
+
+    public void set_cp_advance(int cpAdvance) {
+        this.cpAdvance = cpAdvance;
+    }
+
+
+    @Deprecated
+    public byte getMsg() {
+        return thread.msg();
+    }
+
+    public void setMsg(byte msg) {
+        thread.set_msg(msg);
+    }
+
+    public ConstantPool constant_pool() {
+        return constantPool;
+    }
+
+    public void advance() {
+        cp += cpAdvance;
+        cpAdvance = 0;
+    }
+
     public void getconst(int id) {
         thread.environment().getConstant(id).writeToAddress(peekStack());
         sp++;
@@ -49,30 +92,6 @@ public final class InterpreterState {
     @Deprecated
     public Address getConstantById(int id) {
         throw new UnsupportedOperationException();
-    }
-
-    public int cp() {
-        return cp & 0xffff;
-    }
-
-    public void set_cp(int cp) {
-        this.cp =  cp;
-    }
-
-    public int sp() {
-        return sp & 0xffff;
-    }
-
-    public void set_sp(int sp) {
-        this.sp =  sp;
-    }
-
-    public int cp_advance() {
-        return cpAdvance & 0xffff;
-    }
-
-    public void set_cp_advance(int cpAdvance) {
-        this.cpAdvance =  cpAdvance;
     }
 
     public void pushStack(long value) {
@@ -92,6 +111,10 @@ public final class InterpreterState {
         return stack[--sp];
     }
 
+    public Address top() {
+        return stack[sp++];
+    }
+
     public long popInt() {
         return getInt(popStack());
     }
@@ -102,6 +125,12 @@ public final class InterpreterState {
 
     public long getInt(Address a) {
         return a.longVal();
+    }
+
+    @Deprecated
+    public void cleanupStack() {
+        for (int i = stack.length - 1; i >= sp; i--)
+            stack[i].reset();
     }
 
     @Deprecated
@@ -122,33 +151,11 @@ public final class InterpreterState {
         sp++;
     }
 
-    @Deprecated
-    public byte getMsg() {
-        return thread.msg();
-    }
-
-    public void setMsg(byte msg) {
-        thread.set_msg(msg);
-    }
-
-    public ConstantPool constant_pool() {
-        return constantPool;
-    }
-
-    public void advance() {
-        cp += cpAdvance;
-        cpAdvance = 0;
-    }
-
     /* ОПЕРАЦИИ НА СТЕКЕ */
 
     public void dup() {
         Address peek = peekStack();
         top().set(peek);
-    }
-
-    public Address top() {
-        return stack[sp++];
     }
 
     public void dup2() {
@@ -199,8 +206,13 @@ public final class InterpreterState {
         sp--;
     }
 
-    private Address lhs() { return stack[sp - 2]; }
-    private Address rhs() { return stack[sp - 1]; }
+    private Address lhs() {
+        return stack[sp - 2];
+    }
+
+    private Address rhs() {
+        return stack[sp - 1];
+    }
 
     public void stackAnd() {
         lhs().and(rhs(), lhs());
@@ -209,7 +221,7 @@ public final class InterpreterState {
 
     @Deprecated
     public void stackClone() {
-        
+
     }
 
     public void constFalse() {
@@ -281,8 +293,8 @@ public final class InterpreterState {
     }
 
     public void stackMul() {
-       lhs().mul(rhs(), lhs());
-       sp--;
+        lhs().mul(rhs(), lhs());
+        sp--;
     }
 
     public void stackNeg() {
@@ -290,11 +302,11 @@ public final class InterpreterState {
     }
 
     public void stackNewArray() {
-       top().set(new MapHeap());
+        top().set(new MapHeap());
     }
 
     public void stackNot() {
-       peekStack().not(peekStack());
+        peekStack().not(peekStack());
     }
 
     public void stackNanosTime() {
@@ -307,7 +319,7 @@ public final class InterpreterState {
     }
 
     public void stackPos() {
-       peekStack().pos(peekStack());
+        peekStack().pos(peekStack());
     }
 
     public void stackRem() {
@@ -330,59 +342,68 @@ public final class InterpreterState {
         sp--;
     }
 
-    public void stackVDec(int id) {
-        testLocal(id);
-        locals[id].dec(locals[id]);
-    }
-
-    public void stackVInc(int id) {
-        testLocal(id);
-        locals[id].inc(locals[id]);
-    }
-
-    public void stackVLoad(int id) {
-        testLocal(id);
-        pushStack(locals[id]);
-    }
-
-    public void stackVStore(int id) {
-        locals[id].set(popStack());
-    }
-
-    private void testLocal(int id) {
-        if (locals[id].typeCode() == ValueType.UNDEFINED) {
-            thread.error("Access to undefined variable");
-        }
-    }
-
     public void stackXor() {
-       lhs().xor(rhs(), lhs());
-       sp--;
+        lhs().xor(rhs(), lhs());
+        sp--;
     }
 
     public void stackGettype() {
         stack[sp - 1].set(new StringHeap(stack[sp - 1].typeName()));
     }
 
-    public void cleanupStack() {
-        for (int i = stack.length - 1; i >= sp; i--)
-            stack[i].reset();
-    }
-
     public void stackAload() {
-        stack[sp - 2].testType(ValueType.MAP);
-        Address val = stack[sp - 2].mapValue().get(stack[sp - 1]);
-        stack[sp - 2].set(val);
-        sp--;
+        if (stack[sp - 2].testType(ValueType.MAP)) {
+            Address val = stack[sp - 2].mapValue().get(stack[sp - 1]);
+            if (val == null || val.typeCode() == ValueType.UNDEFINED) {
+                stack[sp - 2].setNull();
+            } else {
+                stack[sp - 2].set(val);
+            }
+            sp--;
+        }
     }
 
     public void stackAstore() {
-        stack[sp - 3].testType(ValueType.MAP);
-        stack[sp - 3].mapValue().put(stack[sp - 2], stack[sp - 1]);
-        sp -= 3;
+         if (stack[sp - 3].testType(ValueType.MAP)) {
+             stack[sp - 3].mapValue().put(stack[sp - 2], stack[sp - 1]);
+             sp -= 3;
+         }
     }
-    
+
     public void stackLDC(int constantIndex) {
         constant_pool().at(constantIndex).writeToAddress(top());
+    }
+
+    /* ОПЕРАЦИИ С ПЕРЕМЕННЫМИ */
+
+    public void stackVDec(int id) {
+        if (testLocal(id)) {
+            locals[id].dec(locals[id]);
+        }
+    }
+
+    public void stackVInc(int id) {
+        if (testLocal(id)) {
+            locals[id].inc(locals[id]);
+        }
+    }
+
+    public void stackVLoad(int id) {
+        if (testLocal(id)) {
+            pushStack(locals[id]);
+        }
+    }
+
+    public void stackVStore(int id) {
+        locals[id].set(popStack());
+    }
+
+    private boolean testLocal(int id) {
+        if (locals[id].typeCode() == ValueType.UNDEFINED) {
+            thread.error("Access to undefined variable: " +
+                    thread.currentFrame().owningFunction().codeSegment().localNameTable().nameOf(id));
+            return false;
+        }
+        return true;
     }
 }
