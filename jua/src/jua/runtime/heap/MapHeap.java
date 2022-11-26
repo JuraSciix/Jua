@@ -32,8 +32,12 @@ public final class MapHeap implements Heap {
     public void put(Address key, Address value) {
         ensureScalarKey(key);
         Address storage = map.get(key);
+        if (value.isNull()) {
+            map.remove(key);
+            return;
+        }
         if (storage != null) {
-            storage.quickSet(value);
+            storage.set(value);
         } else {
             map.put(Address.copy(key), Address.copy(value));
         }

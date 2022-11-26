@@ -95,3 +95,28 @@ fn range(from, to, step = 1) {
 fn array_push(arr, elem) {
     arr[length(arr)] = elem;
 }
+
+fn array_pop(arr) {
+    tmp = arr[key = length(arr) - 1];
+    arr[key] = null;
+    return tmp;
+}
+
+fn join(pieces, separator) {
+    s = "";
+    if (len = length(pieces)) > 0 {
+        s += pieces[0];
+
+        for i = 1; i < len; i++ {
+            s = s + separator + pieces[i];
+        }
+    }
+    return s;
+}
+
+lines = [];
+array_push(lines, "Hi");
+array_push(lines, "Dick");
+array_pop(lines); // oops
+array_push(lines, "Richard");
+println(join(lines, " "));
