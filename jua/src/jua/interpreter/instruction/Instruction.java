@@ -18,5 +18,5 @@ public interface Instruction {
 
     void print(CodePrinter printer);
 
-    int run(InterpreterState state);
+    void run(InterpreterState state);
 }

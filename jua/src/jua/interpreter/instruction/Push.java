@@ -23,8 +23,7 @@ public final class Push implements Instruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
-        state.pushStack(value);
-        return NEXT;
+    public void run(InterpreterState state) {
+        state.push(value);
     }
 }

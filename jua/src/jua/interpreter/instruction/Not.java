@@ -17,8 +17,7 @@ public final class Not implements Instruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
+    public void run(InterpreterState state) {
         state.stackNot();
-        return NEXT;
     }
 }

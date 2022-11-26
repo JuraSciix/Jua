@@ -24,8 +24,7 @@ public final class Gettype implements Instruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
+    public void run(InterpreterState state) {
         state.stackGettype();
-        return NEXT;
     }
 }

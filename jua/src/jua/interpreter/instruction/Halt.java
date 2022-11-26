@@ -6,6 +6,7 @@ import jua.compiler.CodePrinter;
 /**
  * Данная инструкция прерывает выполнение в текущем потоке.
  */
+@Deprecated
 public final class Halt implements Instruction {
 
     public static final Halt INSTANCE = new Halt();
@@ -21,8 +22,7 @@ public final class Halt implements Instruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
+    public void run(InterpreterState state) {
         state.thread().interrupt();
-        return 0;
     }
 }

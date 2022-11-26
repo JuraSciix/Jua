@@ -18,11 +18,7 @@ public class LowerTest {
 
     @BeforeAll
     public static void doInit() {
-        try {
-            types = new Types(new Code(new Source("none")));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        types = new Types(new Code(new Source("<none>", "")));
 
         lower = new Lower(types);
     }

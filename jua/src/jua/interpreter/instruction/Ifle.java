@@ -26,11 +26,7 @@ public final class Ifle extends JumpInstruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
-        if (!state.stackCmple()) {
-           return NEXT;
-        } else {
-            return offset;
-        }
+    public void run(InterpreterState state) {
+        state.ifle(offset);
     }
 }

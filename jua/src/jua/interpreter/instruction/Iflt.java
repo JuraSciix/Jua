@@ -26,11 +26,7 @@ public final class Iflt extends JumpInstruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
-        if (!state.stackCmplt()) {
-            return NEXT;
-        } else {
-            return offset;
-        }
+    public void run(InterpreterState state) {
+        state.iflt(offset);
     }
 }

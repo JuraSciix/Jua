@@ -22,8 +22,7 @@ public final class Vload implements Instruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
+    public void run(InterpreterState state) {
         state.stackVLoad(id);
-        return NEXT;
     }
 }

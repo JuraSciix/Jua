@@ -18,8 +18,7 @@ public final class Dup_x1 implements Instruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
+    public void run(InterpreterState state) {
         state.dup1_x1();
-        return NEXT;
     }
 }

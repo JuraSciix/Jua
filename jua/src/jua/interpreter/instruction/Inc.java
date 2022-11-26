@@ -16,8 +16,7 @@ public final class Inc implements Instruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
+    public void run(InterpreterState state) {
         state.stackInc();
-        return NEXT;
     }
 }

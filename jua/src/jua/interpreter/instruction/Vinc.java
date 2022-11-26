@@ -20,8 +20,7 @@ public class Vinc implements Instruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
+    public void run(InterpreterState state) {
         state.stackVInc(id);
-        return NEXT;
     }
 }

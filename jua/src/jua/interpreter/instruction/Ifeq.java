@@ -26,11 +26,7 @@ public final class Ifeq extends JumpInstruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
-        if (state.stackCmpeq()) {
-            return offset;
-        } else {
-            return NEXT;
-        }
+    public void run(InterpreterState state) {
+        state.ifeq(offset);
     }
 }

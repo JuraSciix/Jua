@@ -46,7 +46,7 @@ public final class Switch extends JumpInstruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
+    public void run(InterpreterState state) {
         int[] l = literals;
 
         Address selector = state.popStack();
@@ -55,9 +55,10 @@ public final class Switch extends JumpInstruction {
         for (int i = 0; i < l.length; i++) {
             state.constant_pool().at(l[i]).writeToAddress(tmp);
             if (selector.compare(tmp, 1) == 0) {
-                return destIps[i];
+                state.offset(destIps[i]);
+                return;
             }
         }
-        return offset; /* default ip */
+        state.offset(offset); /* default ip */
     }
 }

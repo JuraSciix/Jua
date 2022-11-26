@@ -26,11 +26,7 @@ public final class Ifgt extends JumpInstruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
-        if (!state.stackCmpgt()) {
-            return NEXT;
-        } else {
-            return offset;
-        }
+    public void run(InterpreterState state) {
+        state.ifgt(offset);
     }
 }

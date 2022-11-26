@@ -17,8 +17,7 @@ public final class Shl implements Instruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
+    public void run(InterpreterState state) {
         state.stackShl();
-        return NEXT;
     }
 }

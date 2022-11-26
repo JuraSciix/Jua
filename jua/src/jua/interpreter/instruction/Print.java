@@ -21,14 +21,20 @@ public class Print implements Instruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
+    public void run(InterpreterState state) {
         String[] pieces = new String[count];
         for (int i = 1; i <= count; i++) {
-            pieces[count - i] = state.popStack().toStr().toString();
+            pieces[count - i] = state.popStack().stringVal().toString();
+
+            if (state.thread().isError()) {
+                // Прерываем выполнение инструкции, если произошла ошибка.
+                return;
+            }
         }
+
         for (int i = 0; i < count; i++) {
             System.out.print(pieces[i]);
         }
-        return NEXT;
+        state.next();
     }
 }

@@ -21,8 +21,7 @@ public final class NsTime implements Instruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
+    public void run(InterpreterState state) {
         state.stackNanosTime();
-        return NEXT;
     }
 }

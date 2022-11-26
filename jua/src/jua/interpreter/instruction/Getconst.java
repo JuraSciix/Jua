@@ -27,12 +27,12 @@ public final class Getconst implements Instruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
-        if (id == -1) {
-            state.thread().error("Constant named '%s' does not exists", name.value);
-            return ERROR;
-        }
+    public void run(InterpreterState state) {
+
+//        if (id == -1) { // Невозможно
+//            state.thread().error("Constant named '%s' does not exists", name.value);
+//            return ERROR;
+//        }
         state.getconst(id);
-        return NEXT;
     }
 }

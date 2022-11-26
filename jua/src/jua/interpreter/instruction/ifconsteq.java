@@ -30,11 +30,7 @@ public final class ifconsteq extends JumpInstruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
-        if (state.popStack().compareShort(value, 1) == 0) {
-            return offset;
-        } else {
-            return NEXT;
-        }
+    public void run(InterpreterState state) {
+        state.ifconsteq(value, offset);
     }
 }

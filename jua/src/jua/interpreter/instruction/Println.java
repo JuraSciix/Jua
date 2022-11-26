@@ -16,9 +16,10 @@ public final class Println extends Print {
     }
 
     @Override
-    public int run(InterpreterState state) {
+    public void run(InterpreterState state) {
         super.run(state);
-        System.out.println();
-        return NEXT;
+        if (!state.thread().isError()) {
+            System.out.println();
+        }
     }
 }

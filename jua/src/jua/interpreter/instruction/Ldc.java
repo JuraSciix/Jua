@@ -21,8 +21,7 @@ public final class Ldc implements Instruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
+    public void run(InterpreterState state) {
         state.stackLDC(operand);
-        return NEXT;
     }
 }

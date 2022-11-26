@@ -5,6 +5,17 @@ import java.lang.ref.WeakReference;
 
 public final class StringHeap implements CharSequence, Heap {
 
+    private static final ThreadLocal<StringHeap> TMP = new ThreadLocal<StringHeap>() {
+        @Override
+        protected StringHeap initialValue() {
+            return new StringHeap();
+        }
+    };
+
+    public static StringHeap temp() {
+        return TMP.get();
+    }
+
     private final StringBuffer buffer;
 
     // Кеш-содержащие поля

@@ -39,7 +39,7 @@ public final class Ifz extends JumpInstruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
-        return state.popStack().booleanVal() ? NEXT : offset;
+    public void run(InterpreterState state) {
+        state.ifz(offset);
     }
 }

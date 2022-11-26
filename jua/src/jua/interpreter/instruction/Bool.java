@@ -37,9 +37,8 @@ public final class Bool implements Instruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
+    public void run(InterpreterState state) {
         // todo:
         state.pushStack(state.popStack());
-        return NEXT;
     }
 }

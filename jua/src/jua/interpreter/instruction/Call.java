@@ -29,9 +29,9 @@ public final class Call implements Instruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
+    public void run(InterpreterState state) {
         state.set_cp_advance(1);
         state.thread().set_callee(index, nargs);
-        return UNREACHABLE; // I'll be back...
+        // I'll be back...
     }
 }

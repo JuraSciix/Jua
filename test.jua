@@ -1,3 +1,5 @@
+/*
+
 fn slow_fib(n) {
     if n <= 2 {
         if n <= 0 {
@@ -68,7 +70,7 @@ fn pascal_triangle(height) {
     cols = [];
     for i = 0; i <= height; i++ {
         cols[i] = [];
-        cols[i][0] = cols[i][i] = 1;
+        cols[i][0] = cols0[i][i] = 1;
         for j = 1; j < i; j++ {
             cols[i][j] = cols[i - 1][j - 1] + cols[i - 1][j];
         }
@@ -76,5 +78,14 @@ fn pascal_triangle(height) {
     return cols;
 }
 
-for a = pascal_triangle(5), i = 0; i < length(a); i++
+for a = pascal_triangle(6), i = 0; i < length(a); i++
     println(print_list(a[i], false));
+
+*/
+
+while true {
+    a = ns_time();
+    for i = 0; i < 1_000_000; i++ {}
+    b = ns_time();
+    println((b - a) / 1E9);
+}

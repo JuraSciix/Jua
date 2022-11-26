@@ -32,11 +32,7 @@ public final class ifconstlt extends JumpInstruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
-        if (state.popStack().compareShort(value, 1) < 0) {
-            return offset;
-        } else {
-            return NEXT;
-        }
+    public void run(InterpreterState state) {
+        state.ifconstlt(value, offset);
     }
 }

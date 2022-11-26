@@ -18,8 +18,7 @@ public final class Aload implements Instruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
+    public void run(InterpreterState state) {
         state.stackAload();
-        return NEXT;
     }
 }

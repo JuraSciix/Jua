@@ -19,8 +19,7 @@ public final class Dup2 implements Instruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
+    public void run(InterpreterState state) {
         state.dup2();
-        return NEXT;
     }
 }

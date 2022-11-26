@@ -17,8 +17,7 @@ public final class Or implements Instruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
+    public void run(InterpreterState state) {
         state.stackOr();
-        return NEXT;
     }
 }

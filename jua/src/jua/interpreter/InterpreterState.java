@@ -33,6 +33,14 @@ public final class InterpreterState {
         this.thread = thread;
     }
 
+    public Instruction currentInstruction() {
+        return code[cp];
+    }
+
+    public void runDiscretely() {
+        currentInstruction().run(this);
+    }
+
     public InterpreterThread thread() {
         return thread;
     }
@@ -65,6 +73,13 @@ public final class InterpreterState {
         this.cpAdvance = cpAdvance;
     }
 
+    public void next() {
+        cp++;
+    }
+
+    public void offset(int offset) {
+        cp += offset;
+    }
 
     @Deprecated
     public byte getMsg() {
@@ -153,9 +168,16 @@ public final class InterpreterState {
 
     /* ОПЕРАЦИИ НА СТЕКЕ */
 
+    public void push(short value) {
+        pushStack(value);
+        next();
+    }
+
     public void dup() {
         Address peek = peekStack();
         top().set(peek);
+        next();
+
     }
 
     public void dup2() {
@@ -165,6 +187,7 @@ public final class InterpreterState {
         pushStack(a);
         pushStack(b);
         pushStack(a);
+        next();
     }
 
     public void dup1_x1() {
@@ -172,6 +195,7 @@ public final class InterpreterState {
         stack[sp - 1].set(stack[sp - 2]);
         stack[sp - 2].set(stack[sp]);
         sp++;
+        next();
     }
 
     public void dup1_x2() {
@@ -180,6 +204,7 @@ public final class InterpreterState {
         stack[sp - 2].set(stack[sp - 3]);
         stack[sp - 3].set(stack[sp]);
         sp++;
+        next();
     }
 
     public void dup2_x1() {
@@ -189,6 +214,7 @@ public final class InterpreterState {
         stack[sp - 3].set(stack[sp + 1]);
         stack[sp - 4].set(stack[sp]);
         sp += 2;
+        next();
     }
 
     public void dup2_x2() {
@@ -199,11 +225,14 @@ public final class InterpreterState {
         stack[sp - 4].set(stack[sp + 1]);
         stack[sp - 5].set(stack[sp]);
         sp += 2;
+        next();
     }
 
     public void stackAdd() {
-        lhs().add(rhs(), lhs());
-        sp--;
+        if (lhs().add(rhs(), lhs())) {
+            sp--;
+            next();
+        }
     }
 
     private Address lhs() {
@@ -215,44 +244,189 @@ public final class InterpreterState {
     }
 
     public void stackAnd() {
-        lhs().and(rhs(), lhs());
-        sp--;
+        if (lhs().and(rhs(), lhs())) {
+            sp--;
+            next();
+        }
     }
 
     @Deprecated
     public void stackClone() {
-
+        throw new UnsupportedOperationException();
     }
 
     public void constFalse() {
         top().set(false);
+        next();
     }
 
     public void constNull() {
         top().setNull();
+        next();
     }
 
     public void constTrue() {
         top().set(true);
+        next();
     }
 
     public void stackInc() {
-        peekStack().inc(peekStack());
+        if (peekStack().inc(peekStack())) {
+            next();
+        }
     }
 
     public void stackDec() {
-        peekStack().dec(peekStack());
+        if (peekStack().dec(peekStack())) {
+            next();
+        }
     }
 
     public void stackDiv() {
-        lhs().div(rhs(), lhs());
-        sp--;
+        if (lhs().div(rhs(), lhs())) {
+            sp--;
+            next();
+        }
+    }
+    
+    public void ifeq(int offset) {
+        if (stackCmpeq()) {
+            next();
+        } else {
+            offset(offset);
+        }
+    }
+
+    public void ifne(int offset) {
+        if (stackCmpne()) {
+            offset(offset);
+        } else {
+            next();
+        }
+    }
+
+    public void ifgt(int offset) {
+        if (stackCmpgt()) {
+            offset(offset);
+        } else {
+            next();
+        }
+    }
+
+    public void ifge(int offset) {
+        if (stackCmpge()) {
+            offset(offset);
+        } else {
+            next();
+        }
+    }
+
+    public void iflt(int offset) {
+        if (stackCmplt()) {
+            offset(offset);
+        } else {
+            next();
+        }
+    }
+
+    public void ifle(int offset) {
+        if (stackCmple()) {
+            offset(offset);
+        } else {
+            next();
+        }
+    }
+
+    public void ifconsteq(short value, int offset) {
+        if (peekStack().compareShort(value, 1) == 0) {
+            offset(offset);
+        } else {
+            next();
+        }
+    }
+
+    public void ifconstne(short value, int offset) {
+        if (peekStack().compareShort(value, 0) != 0) {
+            offset(offset);
+        } else {
+            next();
+        }
+    }
+
+    public void ifconstgt(short value, int offset) {
+        if (peekStack().compareShort(value, 0) > 0) {
+            offset(offset);
+        } else {
+            next();
+        }
+    }
+
+    public void ifconstge(short value, int offset) {
+        if (peekStack().compareShort(value, -1) >= 0) {
+            offset(offset);
+        } else {
+            next();
+        }
+    }
+
+    public void ifconstlt(short value, int offset) {
+        if (peekStack().compareShort(value, 0) < 0) {
+            offset(offset);
+        } else {
+            next();
+        }
+    }
+
+    public void ifconstle(short value, int offset) {
+        if (peekStack().compareShort(value, 1) <= 0) {
+            offset(offset);
+        } else {
+            next();
+        }
+    }
+
+    public void ifnull(int offset) {
+        if (popStack().isNull()) {
+            offset(offset);
+        } else {
+            next();
+        }
+    }
+
+    public void ifnonnull(int offset) {
+        if (!popStack().isNull()) {
+            offset(offset);
+        } else {
+            next();
+        }
+    }
+
+    public void ifz(int offset) {
+        if (!popStack().booleanVal()) {
+            offset(offset);
+        } else {
+            next();
+        }
+    }
+
+    public void ifnz(int offset) {
+        if (!popStack().booleanVal()) {
+            offset(offset);
+        } else {
+            next();
+        }
     }
 
     public boolean stackCmpeq() {
         int cmp = lhs().compare(rhs(), 1);
         sp -= 2;
         return cmp == 0;
+    }
+    
+    public boolean stackCmpne() {
+        int cmp = lhs().compare(rhs(), 0);
+        sp -= 2;
+        return cmp != 0;
     }
 
     public boolean stackCmpge() {
@@ -289,66 +463,90 @@ public final class InterpreterState {
                 break;
             default:
                 thread.error("Invalid length");
+                return;
         }
+        next();
     }
 
     public void stackMul() {
-        lhs().mul(rhs(), lhs());
-        sp--;
+        if (lhs().mul(rhs(), lhs())) {
+            sp--;
+            next();
+        }
     }
 
     public void stackNeg() {
-        peekStack().neg(peekStack());
+        if (peekStack().neg(peekStack())) {
+            next();
+        }
     }
 
     public void stackNewArray() {
         top().set(new MapHeap());
+        next();
     }
 
     public void stackNot() {
-        peekStack().not(peekStack());
+        if (peekStack().not(peekStack())) {
+            next();
+        }
     }
 
     public void stackNanosTime() {
         pushStack(System.nanoTime());
+        next();
     }
 
     public void stackOr() {
-        lhs().or(rhs(), lhs());
-        sp--;
+        if (lhs().or(rhs(), lhs())) {
+            sp--;
+            next();
+        }
     }
 
     public void stackPos() {
         peekStack().pos(peekStack());
+        next();
     }
 
     public void stackRem() {
-        lhs().rem(rhs(), lhs());
-        sp--;
+        if (lhs().rem(rhs(), lhs())) {
+            sp--;
+            next();
+        }
     }
 
     public void stackShl() {
-        lhs().shl(rhs(), lhs());
-        sp--;
+        if (lhs().shl(rhs(), lhs())) {
+            sp--;
+            next();
+        }
     }
 
     public void stackShr() {
-        lhs().shr(rhs(), lhs());
-        sp--;
+        if (lhs().shr(rhs(), lhs())) {
+            sp--;
+            next();
+        }
     }
 
     public void stackSub() {
-        lhs().sub(rhs(), lhs());
-        sp--;
+        if (lhs().sub(rhs(), lhs())) {
+            sp--;
+            next();
+        }
     }
 
     public void stackXor() {
-        lhs().xor(rhs(), lhs());
-        sp--;
+        if (lhs().xor(rhs(), lhs())) {
+            sp--;
+            next();
+        }
     }
 
     public void stackGettype() {
         stack[sp - 1].set(new StringHeap(stack[sp - 1].typeName()));
+        next();
     }
 
     public void stackAload() {
@@ -360,6 +558,7 @@ public final class InterpreterState {
                 stack[sp - 2].set(val);
             }
             sp--;
+            next();
         }
     }
 
@@ -367,11 +566,13 @@ public final class InterpreterState {
          if (stack[sp - 3].testType(ValueType.MAP)) {
              stack[sp - 3].mapValue().put(stack[sp - 2], stack[sp - 1]);
              sp -= 3;
+             next();
          }
     }
 
     public void stackLDC(int constantIndex) {
         constant_pool().at(constantIndex).writeToAddress(top());
+        next();
     }
 
     /* ОПЕРАЦИИ С ПЕРЕМЕННЫМИ */
@@ -379,23 +580,27 @@ public final class InterpreterState {
     public void stackVDec(int id) {
         if (testLocal(id)) {
             locals[id].dec(locals[id]);
+            next();
         }
     }
 
     public void stackVInc(int id) {
         if (testLocal(id)) {
             locals[id].inc(locals[id]);
+            next();
         }
     }
 
     public void stackVLoad(int id) {
         if (testLocal(id)) {
             pushStack(locals[id]);
+            next();
         }
     }
 
     public void stackVStore(int id) {
         locals[id].set(popStack());
+        next();
     }
 
     private boolean testLocal(int id) {

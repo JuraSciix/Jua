@@ -74,23 +74,50 @@ public final class Address {
     }
 
     public long longVal() {
-        return l;
+        switch (type) {
+            case LONG: return l;
+            case DOUBLE: return (long) d;
+            case BOOLEAN: return l & 1L;
+            case NULL: return 0L;
+            default:
+                badTypeConversion(LONG);
+                return Long.MIN_VALUE;
+        }
     }
 
     public boolean booleanVal() {
-        return Conversions.l2b(l);
+        switch (type) {
+            case LONG:
+            case BOOLEAN:
+                return (l & 1L) != 0;
+            case DOUBLE:
+                return d != 0.0;
+            case STRING:
+                return stringVal().length() > 0;
+            case MAP:
+                return mapValue().size() > 0;
+            case NULL:
+                return false;
+            default:
+                badTypeConversion(BOOLEAN);
+                return false;
+        }
     }
 
     public double doubleVal() {
-        return d;
+        switch (type) {
+            case LONG: return l;
+            case DOUBLE: return d;
+            case BOOLEAN: return (l & 1L);
+            case NULL: return 0.0;
+            default:
+                badTypeConversion(DOUBLE);
+                return Double.NaN;
+        }
     }
 
     public StringHeap stringVal() {
-        return (StringHeap) a;
-    }
-
-    public StringHeap toStr() {
-        switch (typeCode()) {
+        switch (type) {
             case LONG:
                 return new StringHeap().append(longVal());
             case DOUBLE:
@@ -98,12 +125,12 @@ public final class Address {
             case BOOLEAN:
                 return new StringHeap().append(booleanVal());
             case STRING:
-                return stringVal();
+                return (StringHeap) a;
             case NULL:
                 return new StringHeap().appendNull();
             default:
-                currentThread().error("Non-stringable");
-                return new StringHeap();
+                badTypeConversion(STRING);
+                return StringHeap.temp();
         }
     }
 
@@ -115,8 +142,12 @@ public final class Address {
         if (type == this.type) {
             return true;
         }
-        currentThread().error(nameOf(type) + " expected, " + typeName() + " got");
+        badTypeConversion(type);
         return false;
+    }
+
+    private void badTypeConversion(byte type) {
+        currentThread().error("Cannot convert " + typeName() + " to " + nameOf(type));
     }
 
     public boolean isNull() {
@@ -240,35 +271,35 @@ public final class Address {
         a = null;
     }
 
-    public void add(Address rhs, Address result) {
+    public boolean add(Address rhs, Address result) {
         int union = pairOf(type, rhs.type);
         if (union == P_LL) {
             result.set(l + rhs.l);
-            return;
+            return true;
         }
         if (union == P_LD) {
             result.set(l + rhs.d);
-            return;
+            return true;
         }
         if (union == P_DL) {
             result.set(l + rhs.l);
-            return;
+            return true;
         }
         if (union == P_DD) {
             result.set(l + rhs.d);
-            return;
+            return true;
         }
         if (union == P_LS) {
             result.set(new StringHeap().append(longVal()).append(rhs.stringVal()));
-            return;
+            return true;
         }
         if (union == P_DS) {
             result.set(new StringHeap().append(doubleVal()).append(rhs.stringVal()));
-            return;
+            return true;
         }
         if (union == P_BS) {
             result.set(new StringHeap().append(booleanVal()).append(rhs.stringVal()));
-            return;
+            return true;
         }
         if (union == P_SS) {
             if (this == result) {
@@ -276,11 +307,11 @@ public final class Address {
             } else {
                 rhs.set(new StringHeap().append(stringVal()).append(rhs.stringVal()));
             }
-            return;
+            return true;
         }
         if (union == P_NS) {
             result.set(new StringHeap().appendNull().append(rhs.stringVal()));
-            return;
+            return true;
         }
         if (union == P_SL) {
             if (this == result) {
@@ -288,7 +319,7 @@ public final class Address {
             } else {
                 rhs.set(new StringHeap(stringVal()).append(rhs.longVal()));
             }
-            return;
+            return true;
         }
         if (union == P_SD) {
             if (this == result) {
@@ -296,7 +327,7 @@ public final class Address {
             } else {
                 rhs.set(new StringHeap(stringVal()).append(rhs.doubleVal()));
             }
-            return;
+            return true;
         }
         if (union == P_SB) {
             if (this == result) {
@@ -304,7 +335,7 @@ public final class Address {
             } else {
                 rhs.set(new StringHeap(stringVal()).append(rhs.booleanVal()));
             }
-            return;
+            return true;
         }
         if (union == P_SN) {
             if (this == result) {
@@ -312,230 +343,234 @@ public final class Address {
             } else {
                 rhs.set(new StringHeap(stringVal()).appendNull());
             }
-            return;
+            return true;
         }
-        binaryOperatorError("+", rhs);
+        return binaryOperatorError("+", rhs);
     }
 
-    public void sub(Address rhs, Address result) {
+    public boolean sub(Address rhs, Address result) {
         int union = pairOf(type, rhs.type);
         if (union == P_LL) {
             result.set(l - rhs.l);
-            return;
+            return true;
         }
         if (union == P_LD) {
             result.set(l - rhs.d);
-            return;
+            return true;
         }
         if (union == P_DL) {
             result.set(l - rhs.l);
-            return;
+            return true;
         }
         if (union == P_DD) {
             result.set(l - rhs.d);
-            return;
+            return true;
         }
         // todo: arrays, maps
-        binaryOperatorError("-", rhs);
+        return binaryOperatorError("-", rhs);
     }
 
-    public void mul(Address rhs, Address result) {
+    public boolean mul(Address rhs, Address result) {
         int union = pairOf(type, rhs.type);
         if (union == P_LL) {
             result.set(l * rhs.l);
-            return;
+            return true;
         }
         if (union == P_LD) {
             result.set(l * rhs.d);
-            return;
+            return true;
         }
         if (union == P_DL) {
             result.set(l * rhs.l);
-            return;
+            return true;
         }
         if (union == P_DD) {
             result.set(l * rhs.d);
-            return;
+            return true;
         }
-        binaryOperatorError("*", rhs);
+        return binaryOperatorError("*", rhs);
     }
 
-    public void div(Address rhs, Address result) {
+    public boolean div(Address rhs, Address result) {
         int union = pairOf(type, rhs.type);
         if (union == P_LL) {
             if (rhs.l == 0L) {
                 currentThread().error("division by zero");
-                return;
+                return false;
             }
             result.set(l / rhs.l);
-            return;
+            return true;
         }
         if (union == P_LD) {
             result.set(l / rhs.d);
-            return;
+            return true;
         }
         if (union == P_DL) {
             result.set(l / (double) rhs.l);
-            return;
+            return true;
         }
         if (union == P_DD) {
             result.set(l / rhs.d);
-            return;
+            return true;
         }
-        binaryOperatorError("/", rhs);
+        return binaryOperatorError("/", rhs);
     }
 
-    public void rem(Address rhs, Address result) {
+    public boolean rem(Address rhs, Address result) {
         int union = pairOf(type, rhs.type);
         if (union == P_LL) {
             if (rhs.l == 0L) {
                 currentThread().error("modulo by zero");
-                return;
+                return false;
             }
             result.set(l % rhs.l);
-            return;
+            return true;
         }
         if (union == P_LD) {
             if (rhs.d == 0.0) {
                 currentThread().error("modulo by zero");
-                return;
+                return false;
             }
             result.set(l % rhs.d);
-            return;
+            return true;
         }
         if (union == P_DL) {
             if (rhs.l == 0L) {
                 currentThread().error("modulo by zero");
-                return;
+                return false;
             }
             result.set(l % rhs.l);
-            return;
+            return true;
         }
         if (union == P_DD) {
             if (rhs.d == 0.0) {
                 currentThread().error("modulo by zero");
-                return;
+                return false;
             }
             result.set(l % rhs.d);
-            return;
+            return true;
         }
-        binaryOperatorError("%", rhs);
+        return binaryOperatorError("%", rhs);
     }
 
-    public void shl(Address rhs, Address result) {
+    public boolean shl(Address rhs, Address result) {
         int union = pairOf(type, rhs.type);
         if (union == P_LL) {
             result.set(l << rhs.l);
-            return;
+            return true;
         }
-        binaryOperatorError("<<", rhs);
+        return binaryOperatorError("<<", rhs);
     }
 
-    public void shr(Address rhs, Address result) {
+    public boolean shr(Address rhs, Address result) {
         int union = pairOf(type, rhs.type);
         if (union == P_LL) {
             result.set(l >> rhs.l);
-            return;
+            return true;
         }
-        binaryOperatorError(">>", rhs);
+        return binaryOperatorError(">>", rhs);
     }
 
-    public void and(Address rhs, Address result) {
+    public boolean and(Address rhs, Address result) {
         int union = pairOf(type, rhs.type);
         if (union == P_LL || union == P_BB) {
             result.set(l & rhs.l);
-            return;
+            return true;
         }
-        binaryOperatorError("&", rhs);
+        return binaryOperatorError("&", rhs);
     }
 
-    public void or(Address rhs, Address result) {
+    public boolean or(Address rhs, Address result) {
         int union = pairOf(type, rhs.type);
         if (union == P_LL || union == P_BB) {
             result.set(l | rhs.l);
-            return;
+            return true;
         }
-        binaryOperatorError("|", rhs);
+        return binaryOperatorError("|", rhs);
     }
 
-    public void xor(Address rhs, Address result) {
+    public boolean xor(Address rhs, Address result) {
         int union = pairOf(type, rhs.type);
         if (union == P_LL || union == P_BB) {
             result.set(l ^ rhs.l);
-            return;
+            return true;
         }
-        binaryOperatorError("^", rhs);
+        return binaryOperatorError("^", rhs);
     }
 
-    private void binaryOperatorError(String operator, Address rhs) {
+
+    private boolean binaryOperatorError(String operator, Address rhs) {
         currentThread().error("Cannot apply binary '%s' with %s and %s",
                 operator, typeName(), rhs.typeName());
+        // Методы бинарных операций возвращают результат этой функции, чтобы сократить число строк =)
+        return false;
     }
 
-    public void neg(Address result) { // -x
+    public boolean neg(Address result) { // -x
         if (type == LONG) {
             result.set(-l);
-            return;
+            return true;
         }
         if (type == DOUBLE) {
             result.set(-d);
-            return;
+            return true;
         }
 
-        unaryOperatorError("-");
+        return unaryOperatorError("-");
     }
 
-    public void pos(Address result) { // +x
+    public boolean pos(Address result) { // +x
         if (type == LONG) {
             result.set(+l);
-            return;
+            return true;
         }
         if (type == DOUBLE) {
             result.set(+d);
-            return;
+            return true;
         }
 
-        unaryOperatorError("+");
+        return unaryOperatorError("+");
     }
 
-    public void not(Address result) { // ~x
+    public boolean not(Address result) { // ~x
         if (type == LONG) {
             result.set(~l);
-            return;
+            return true;
         }
 
-        unaryOperatorError("~");
+        return unaryOperatorError("~");
     }
 
-    public void inc(Address result) { // -x
+    public boolean inc(Address result) { // -x
         if (type == LONG) {
             result.set(l + 1L);
-            return;
+            return true;
         }
         if (type == DOUBLE) {
             result.set(d + 1.0);
-            return;
+            return true;
         }
 
-        unaryOperatorError("++");
+        return unaryOperatorError("++");
     }
 
-    public void dec(Address result) { // -x
+    public boolean dec(Address result) { // -x
         if (type == LONG) {
             result.set(l - 1L);
-            return;
+            return true;
         }
         if (type == DOUBLE) {
             result.set(d - 1.0);
-            return;
+            return true;
         }
 
-        unaryOperatorError("--");
+        return unaryOperatorError("--");
     }
 
-    private void unaryOperatorError(String operator) {
-        currentThread().error("Cannot apply unary '%s' with %s",
-                operator, typeName());
+    private boolean unaryOperatorError(String operator) {
+        currentThread().error("Cannot apply unary '%s' with %s", operator, typeName());
+        // Методы унарных операций возвращают результат этой функции, чтобы сократить число строк =)
+        return false;
     }
 
     public int compareShort(short value, int except) {

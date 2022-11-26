@@ -26,11 +26,7 @@ public final class Ifnonnull extends JumpInstruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
-        if (!state.popStack().isNull()) {
-            return offset;
-        } else {
-            return NEXT;
-        }
+    public void run(InterpreterState state) {
+        state.ifnonnull(offset);
     }
 }

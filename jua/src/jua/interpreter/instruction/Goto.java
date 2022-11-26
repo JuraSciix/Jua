@@ -30,7 +30,7 @@ public final class Goto extends JumpInstruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
-        return offset;
+    public void run(InterpreterState state) {
+        state.offset(offset);
     }
 }

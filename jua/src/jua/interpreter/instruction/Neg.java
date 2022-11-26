@@ -17,8 +17,7 @@ public final class Neg implements Instruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
+    public void run(InterpreterState state) {
         state.stackNeg();
-        return NEXT;
     }
 }

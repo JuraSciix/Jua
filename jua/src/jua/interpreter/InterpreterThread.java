@@ -240,22 +240,20 @@ public final class InterpreterThread {
         while (true) {
             InterpreterFrame frame = current_frame;
             InterpreterState state = frame.state();
-            Instruction[] code = state.code();
-            int code_point = state.cp();
 
             try {
                 state.advance();
 
                 try {
                     while (isRunning()) {
-                        code_point += code[code_point].run(state);
+                        state.runDiscretely();
                     }
                 } catch (Throwable t) {
                     t.printStackTrace();
                     aError("FATAL ERROR. DETAILS:\n\t" +
                             "FILE: " + current_location() + "\n\t" +
                             "LINE: " + current_line_number() + "\n\t" +
-                            "CP: " + code_point + "\n\t" +
+                            "CP: " + state.cp() + "\n\t" +
                             "SP: " + state.sp());
                 }
 
@@ -278,7 +276,6 @@ public final class InterpreterThread {
                     }
 
                     case MSG_CRASHED: {
-                        state.set_cp(code_point);
                         // todo: Сделать нормальный вывод ошибок
                         System.err.printf("thread %s, file %s, line %d %n",
                                 javaThread.getName(),
@@ -296,8 +293,6 @@ public final class InterpreterThread {
                 // todo: Избавиться от выброса исключения.
                 e.thread = this;
                 throw e;
-            } finally {
-                state.set_cp(code_point);
             }
         }
     }
@@ -317,5 +312,9 @@ public final class InterpreterThread {
 
     public void error(String fmt, Object... args) {
         error(String.format(fmt, args));
+    }
+
+    public boolean isError() {
+        return msg == Messages.FALLEN;
     }
 }

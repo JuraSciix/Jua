@@ -30,11 +30,7 @@ public final class ifconstne extends JumpInstruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
-        if (state.popStack().compareShort(value, 0) != 0) {
-            return offset;
-        } else {
-            return NEXT;
-        }
+    public void run(InterpreterState state) {
+        state.ifconstne(value, offset);
     }
 }

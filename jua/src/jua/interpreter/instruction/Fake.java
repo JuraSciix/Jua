@@ -23,5 +23,5 @@ public final class Fake implements Instruction {
     public void print(CodePrinter printer) { throw new AssertionError(this); }
 
     @Override
-    public int run(InterpreterState state) { throw new AssertionError(this); }
+    public void run(InterpreterState state) { throw new AssertionError(this); }
 }

@@ -17,8 +17,7 @@ public final class Astore implements Instruction {
     }
 
     @Override
-    public int run(InterpreterState state) {
+    public void run(InterpreterState state) {
         state.stackAstore();
-        return NEXT;
     }
 }
