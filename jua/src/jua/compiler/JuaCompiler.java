@@ -19,10 +19,8 @@ public final class JuaCompiler {
         Source source = new Source(file.getName(), filecontents);
         try {
             ProgramLayout programLayout = new ProgramLayout();
-            programLayout.mainSource = source;
-            programLayout.mainCode = new Code(source);
 
-            JuaParser parser = new JuaParser(source, programLayout.mainCode.getTypes());
+            JuaParser parser = new JuaParser(source);
             programLayout.mainTree = parser.parse();
 
             Program program = programLayout.buildProgram();

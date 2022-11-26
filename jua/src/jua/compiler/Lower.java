@@ -4,16 +4,19 @@ import jua.compiler.Tree.*;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 public final class Lower extends Translator {
 
-    private final Types types;
+    public static final Lower instance = new Lower();
 
     private final Map<String, Literal> constantLiterals = new HashMap<>();
 
-    public Lower(Types types) {
-        this.types = Objects.requireNonNull(types, "Types is null");
+    Code code;
+
+    @Override
+    public void visitCompilationUnit(CompilationUnit tree) {
+        code = tree.code;
+        super.visitCompilationUnit(tree);
     }
 
     @Override
@@ -28,6 +31,17 @@ public final class Lower extends Translator {
             def.expr = expr;
         }
         result = tree;
+    }
+
+    @Override
+    public void visitFuncDef(FuncDef tree) {
+        Code prevCode = code;
+        try {
+            code = tree.code;
+            super.visitFuncDef(tree);
+        } finally {
+            code = prevCode;
+        }
     }
 
     @Override
@@ -48,7 +62,7 @@ public final class Lower extends Translator {
         //  1. Исправить это
         //  2. Удалить это преобразование
         result = new ArrayAccess(tree.pos, translate(tree.expr),
-                new Literal(tree.member.pos, types.asString(tree.member.value)));
+                new Literal(tree.member.pos, code.getTypes().asString(tree.member.value)));
     }
 
     @Override
@@ -127,19 +141,19 @@ public final class Lower extends Translator {
         switch (tree.tag) {
             case NOT:
                 if (literal.type.isBoolean())
-                    return new Literal(tree.pos, types.asBoolean(!literal.type.booleanValue()));
+                    return new Literal(tree.pos, code.getTypes().asBoolean(!literal.type.booleanValue()));
                 else return tree;
             case NEG:
                 if (literal.type.isLong())
-                    return new Literal(tree.pos, types.asLong(-literal.type.longValue()));
+                    return new Literal(tree.pos, code.getTypes().asLong(-literal.type.longValue()));
                 else if (literal.type.isNumber())
-                    return new Literal(tree.pos, types.asDouble(-literal.type.doubleValue()));
+                    return new Literal(tree.pos, code.getTypes().asDouble(-literal.type.doubleValue()));
                 else return tree;
             case POS:
                 if (literal.type.isLong())
-                    return new Literal(tree.pos, types.asLong(Math.abs(literal.type.longValue())));
+                    return new Literal(tree.pos, code.getTypes().asLong(Math.abs(literal.type.longValue())));
                 else if (literal.type.isNumber())
-                    return new Literal(tree.pos, types.asDouble(Math.abs(literal.type.doubleValue())));
+                    return new Literal(tree.pos, code.getTypes().asDouble(Math.abs(literal.type.doubleValue())));
                 else return tree;
 //            default: throw new IllegalArgumentException(tree.getTag() + " is not unary operation");
             default: return tree;
@@ -154,9 +168,9 @@ public final class Lower extends Translator {
 
         switch (tree.getTag()) {
             case SL:
-                return new Literal(left.pos, types.asLong(left.type.longValue() << right.type.longValue()));
+                return new Literal(left.pos, code.getTypes().asLong(left.type.longValue() << right.type.longValue()));
             case SR:
-                return new Literal(left.pos, types.asLong(left.type.longValue() >> right.type.longValue()));
+                return new Literal(left.pos, code.getTypes().asLong(left.type.longValue() >> right.type.longValue()));
 //            default: throw new IllegalArgumentException(tree.getTag() + " is not shift operation");
             default:return tree;
         }
@@ -168,23 +182,23 @@ public final class Lower extends Translator {
         switch (tree.getTag()) {
             case AND:
                 if (left.type.isLong() && right.type.isLong())
-                    return new Literal(left.pos, types.asLong(left.type.longValue() & right.type.longValue()));
+                    return new Literal(left.pos, code.getTypes().asLong(left.type.longValue() & right.type.longValue()));
                 else if (left.type.isBoolean() && right.type.isBoolean())
-                    return new Literal(left.pos, types.asBoolean(left.type.booleanValue() & right.type.booleanValue()));
+                    return new Literal(left.pos, code.getTypes().asBoolean(left.type.booleanValue() & right.type.booleanValue()));
                 else
                     return tree;
             case OR:
                 if (left.type.isLong() && right.type.isLong())
-                    return new Literal(left.pos, types.asLong(left.type.longValue() | right.type.longValue()));
+                    return new Literal(left.pos, code.getTypes().asLong(left.type.longValue() | right.type.longValue()));
                 else if (left.type.isBoolean() && right.type.isBoolean())
-                    return new Literal(left.pos, types.asBoolean(left.type.booleanValue() | right.type.booleanValue()));
+                    return new Literal(left.pos, code.getTypes().asBoolean(left.type.booleanValue() | right.type.booleanValue()));
                 else
                     return tree;
             case XOR:
                 if (left.type.isLong() && right.type.isLong())
-                    return new Literal(left.pos, types.asLong(left.type.longValue() ^ right.type.longValue()));
+                    return new Literal(left.pos, code.getTypes().asLong(left.type.longValue() ^ right.type.longValue()));
                 else if (left.type.isBoolean() && right.type.isBoolean())
-                    return new Literal(left.pos, types.asBoolean(left.type.booleanValue() ^ right.type.booleanValue()));
+                    return new Literal(left.pos, code.getTypes().asBoolean(left.type.booleanValue() ^ right.type.booleanValue()));
                 else
                     return tree;
             default: throw new IllegalArgumentException(tree.getTag() + " is not bitwise operation");
@@ -197,17 +211,17 @@ public final class Lower extends Translator {
 
         switch (tree.getTag()) {
             case LE:
-                return new Literal(left.pos, types.asBoolean(left.type.doubleValue() <= right.type.doubleValue()));
+                return new Literal(left.pos, code.getTypes().asBoolean(left.type.doubleValue() <= right.type.doubleValue()));
             case LT:
-                return new Literal(left.pos, types.asBoolean(left.type.doubleValue() < right.type.doubleValue()));
+                return new Literal(left.pos, code.getTypes().asBoolean(left.type.doubleValue() < right.type.doubleValue()));
             case GT:
-                return new Literal(left.pos, types.asBoolean(left.type.doubleValue() > right.type.doubleValue()));
+                return new Literal(left.pos, code.getTypes().asBoolean(left.type.doubleValue() > right.type.doubleValue()));
             case GE:
-                return new Literal(left.pos, types.asBoolean(left.type.doubleValue() >= right.type.doubleValue()));
+                return new Literal(left.pos, code.getTypes().asBoolean(left.type.doubleValue() >= right.type.doubleValue()));
             case NE:
-                return new Literal(left.pos, types.asBoolean(left.type.doubleValue() != right.type.doubleValue()));
+                return new Literal(left.pos, code.getTypes().asBoolean(left.type.doubleValue() != right.type.doubleValue()));
             case EQ:
-                return new Literal(left.pos, types.asBoolean(left.type.doubleValue() == right.type.doubleValue()));
+                return new Literal(left.pos, code.getTypes().asBoolean(left.type.doubleValue() == right.type.doubleValue()));
             default: throw new IllegalArgumentException(tree.getTag() + " is not relational operation");
         }
     }
@@ -219,35 +233,35 @@ public final class Lower extends Translator {
         switch (tree.getTag()) {
             case ADD:
                 if (left.type.isLong() && right.type.isLong())
-                    return new Literal(left.pos, types.asLong(left.type.longValue() + right.type.longValue()));
+                    return new Literal(left.pos, code.getTypes().asLong(left.type.longValue() + right.type.longValue()));
                 else if (left.type.isNumber() && right.type.isNumber())
-                    return new Literal(left.pos, types.asDouble(left.type.doubleValue() + right.type.doubleValue()));
+                    return new Literal(left.pos, code.getTypes().asDouble(left.type.doubleValue() + right.type.doubleValue()));
                 return tree;
             case MUL:
                 if (left.type.isLong() && right.type.isLong())
-                    return new Literal(left.pos, types.asLong(left.type.longValue() * right.type.longValue()));
+                    return new Literal(left.pos, code.getTypes().asLong(left.type.longValue() * right.type.longValue()));
                 else if (left.type.isNumber() && right.type.isNumber())
-                    return new Literal(left.pos, types.asDouble(left.type.doubleValue() * right.type.doubleValue()));
+                    return new Literal(left.pos, code.getTypes().asDouble(left.type.doubleValue() * right.type.doubleValue()));
                 return tree;
             case SUB:
                 if (left.type.isLong() && right.type.isLong())
-                    return new Literal(left.pos, types.asLong(left.type.longValue() - right.type.longValue()));
+                    return new Literal(left.pos, code.getTypes().asLong(left.type.longValue() - right.type.longValue()));
                 else if (left.type.isNumber() && right.type.isNumber())
-                    return new Literal(left.pos, types.asDouble(left.type.doubleValue() - right.type.doubleValue()));
+                    return new Literal(left.pos, code.getTypes().asDouble(left.type.doubleValue() - right.type.doubleValue()));
                 return tree;
             case REM:
                 if (left.type.isLong() && right.type.isLong())
-                    return new Literal(left.pos, types.asLong(left.type.longValue() % right.type.longValue()));
+                    return new Literal(left.pos, code.getTypes().asLong(left.type.longValue() % right.type.longValue()));
                 else if (left.type.isNumber() && right.type.isNumber())
-                    return new Literal(left.pos, types.asDouble(left.type.doubleValue() % right.type.doubleValue()));
+                    return new Literal(left.pos, code.getTypes().asDouble(left.type.doubleValue() % right.type.doubleValue()));
                 return tree;
             case DIV:
                 if (left.type.isLong() && right.type.isLong()) {
                     if (right.type.longValue() == 0)
                         return tree;
-                    return new Literal(left.pos, types.asLong(left.type.longValue() / right.type.longValue()));
+                    return new Literal(left.pos, code.getTypes().asLong(left.type.longValue() / right.type.longValue()));
                 } else if (left.type.isNumber() && right.type.isNumber())
-                    return new Literal(left.pos, types.asDouble(left.type.doubleValue() / right.type.doubleValue()));
+                    return new Literal(left.pos, code.getTypes().asDouble(left.type.doubleValue() / right.type.doubleValue()));
                 return tree;
             default: throw new IllegalArgumentException(tree.getTag() + " is not arithmetic operation");
         }
@@ -256,12 +270,12 @@ public final class Lower extends Translator {
     private Expression foldAnd(BinaryOp tree) {
         Literal left = (Literal) tree.lhs;
         Literal right = (Literal) tree.rhs;
-        return new Literal(left.pos, types.asBoolean(left.type.booleanValue() && right.type.booleanValue()));
+        return new Literal(left.pos, code.getTypes().asBoolean(left.type.booleanValue() && right.type.booleanValue()));
     }
 
     private Expression foldOr(BinaryOp tree) {
         Literal left = (Literal) tree.lhs;
         Literal right = (Literal) tree.rhs;
-        return new Literal(left.pos, types.asBoolean(left.type.booleanValue() || right.type.booleanValue()));
+        return new Literal(left.pos, code.getTypes().asBoolean(left.type.booleanValue() || right.type.booleanValue()));
     }
 }

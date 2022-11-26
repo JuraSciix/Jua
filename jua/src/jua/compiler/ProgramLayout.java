@@ -12,7 +12,6 @@ public final class ProgramLayout {
     Source mainSource;
 
     Tree mainTree;
-    Code mainCode;
 
     private FuncDef[] funcDefs;
     private ConstDef.Definition[] constantDefs;
@@ -48,12 +47,14 @@ public final class ProgramLayout {
     }
 
     public Program buildProgram() {
-        mainTree.accept(new Lower(mainCode.getTypes()));
+        mainTree.accept(Lower.instance);
         MinorGen mainCodegen = new MinorGen(this);
 
         List<Statement> toRemove = new ArrayList<>();
 
         CompilationUnit top = (CompilationUnit) mainTree;
+
+        mainSource = top.source;
 
         funcDefs = top.stats.stream()
                 .filter(stmt -> stmt.hasTag(Tag.FUNCDEF))
@@ -86,13 +87,11 @@ public final class ProgramLayout {
                 .toArray(ConstDef.Definition[]::new);
 
         top.stats.removeAll(toRemove);
-        top.code = mainCode;
 
         mainTree.accept(mainCodegen);
 
         functions = Arrays.stream(funcDefs)
                 .map(fn -> {
-                    fn.code = new Code(mainSource);
                     MinorGen codegen = new MinorGen(this);
                     codegen.funcSource = mainSource;
                     fn.accept(codegen);

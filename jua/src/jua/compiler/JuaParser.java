@@ -1,12 +1,12 @@
 package jua.compiler;
 
-import jua.compiler.Tokens.*;
+import jua.compiler.Tokens.Token;
+import jua.compiler.Tokens.TokenType;
 import jua.compiler.Tree.*;
 
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 
 import static jua.compiler.Tokens.TokenType.*;
 
@@ -26,31 +26,33 @@ public class JuaParser {
         }
     }
 
+    private final Source source;
+
     private final Tokenizer tokenizer;
 
-    private final Types types;
+    Token token;
 
-    private Token token;
+    Code code;
 
-    private final Log log;
-
-    public JuaParser(Source source, Types types) {
-        this.tokenizer = new Tokenizer(source);
-        this.types = Objects.requireNonNull(types, "Types is null");
-        this.log = source.getLog();
+    public JuaParser(Source source) {
+        this.source = source;
+        tokenizer = new Tokenizer(source);
+        code = new Code(source);
     }
 
-     public Tree parse() {
+    public Tree parse() {
         List<Statement> stats = new LinkedList<>();
         nextToken();
         while (!acceptToken(EOF)) {
             try {
                 stats.add(parseStatement());
             } catch (ParseNodeExit e) {
-                log.error(e.pos, e.msg);
+                source.getLog().error(e.pos, e.msg);
             }
         }
-        return new CompilationUnit(tokenizer.getSource(), stats);
+        CompilationUnit tree = new CompilationUnit(source, stats);
+        tree.code = code;
+        return tree;
     }
 
     private Statement parseStatement() {
@@ -144,7 +146,7 @@ public class JuaParser {
                 expectToken(EQ);
                 definitions.add(new ConstDef.Definition(name.toName(), parseExpression()));
             } catch (ParseNodeExit e) {
-                log.error(e.pos, e.msg);
+                source.getLog().error(e.pos, e.msg);
             }
         } while (acceptToken(COMMA));
 
@@ -171,32 +173,40 @@ public class JuaParser {
     }
 
     private Statement parseFunction(int pos) {
-        Name funcName = token.toName();
-        expectToken(IDENTIFIER);
-        expectToken(LPAREN);
-        List<FuncDef.Parameter> params = new LinkedList<>();
-        boolean comma = false, optionalState = false;
-
-        while (!acceptToken(RPAREN)) {
-            if (acceptToken(EOF) || comma && !acceptToken(COMMA)) {
-                expectToken(RPAREN);
-            }
-            Token name0 = token;
+        Code prevCode = code;
+        try {
+            code = new Code(source);
+            Name funcName = token.toName();
             expectToken(IDENTIFIER);
-            Name name1 = name0.toName();
-            Expression optional = null;
+            expectToken(LPAREN);
+            List<FuncDef.Parameter> params = new LinkedList<>();
+            boolean comma = false, optionalState = false;
 
-            if (acceptToken(EQ)) {
-                optional = parseExpression();
-                optionalState = true;
-            } else if (optionalState) {
-                pError(name0.pos, "here must be a optional argument.");
+            while (!acceptToken(RPAREN)) {
+                if (acceptToken(EOF) || comma && !acceptToken(COMMA)) {
+                    expectToken(RPAREN);
+                }
+                Token name0 = token;
+                expectToken(IDENTIFIER);
+                Name name1 = name0.toName();
+                Expression optional = null;
+
+                if (acceptToken(EQ)) {
+                    optional = parseExpression();
+                    optionalState = true;
+                } else if (optionalState) {
+                    pError(name0.pos, "here must be a optional argument.");
+                }
+                params.add(new FuncDef.Parameter(name1, optional));
+                comma = !acceptToken(COMMA);
             }
-            params.add(new FuncDef.Parameter(name1, optional));
-            comma = !acceptToken(COMMA);
+            Statement body = parseBody();
+            FuncDef tree = new FuncDef(pos, funcName, params, body);
+            tree.code = code;
+            return tree;
+        } finally {
+            code = prevCode;
         }
-        Statement body = parseBody();
-        return new FuncDef(pos, funcName, params, body);
     }
 
     private Statement parseBody() {
@@ -258,7 +268,7 @@ public class JuaParser {
             try {
                 statements.add(parseStatement());
             } catch (ParseNodeExit e) {
-                log.error(e.pos, e.msg);
+                source.getLog().error(e.pos, e.msg);
             }
         }
         return new Block(position, statements);
@@ -272,7 +282,7 @@ public class JuaParser {
         try {
             expr = parseExpression();
         } catch (ParseNodeExit e) {
-            log.error(e.pos, e.msg);
+            source.getLog().error(e.pos, e.msg);
         }
         expectToken(SEMI);
         return new Return(position, expr);
@@ -290,13 +300,13 @@ public class JuaParser {
                 try {
                     cases.add(parseCase(position1, false));
                 } catch (ParseNodeExit e) {
-                    log.error(e.pos, e.msg);
+                    source.getLog().error(e.pos, e.msg);
                 }
             } else if (acceptToken(DEFAULT)) {
                 try {
                     cases.add(parseCase(position1, true));
                 } catch (ParseNodeExit e) {
-                    log.error(e.pos, e.msg);
+                    source.getLog().error(e.pos, e.msg);
                 }
             } else if (acceptToken(EOF)) {
                 expectToken(RBRACE);
@@ -703,7 +713,7 @@ public class JuaParser {
                 pError(token.pos, "missing expected expression.");
             }
             case FALSE: {
-                return new Literal(token.pos, types.asBoolean(false));
+                return new Literal(token.pos, code.getTypes().asBoolean(false));
             }
             case FLOATLITERAL: {
                 return parseFloat(token);
@@ -724,13 +734,13 @@ public class JuaParser {
                 return parseParens(token.pos);
             }
             case NULL: {
-                return new Literal(token.pos, types.asNull());
+                return new Literal(token.pos, code.getTypes().asNull());
             }
             case STRINGLITERAL: {
-                return new Literal(token.pos, types.asString(token.value()));
+                return new Literal(token.pos, code.getTypes().asString(token.value()));
             }
             case TRUE: {
-                return new Literal(token.pos, types.asBoolean(true));
+                return new Literal(token.pos, code.getTypes().asBoolean(true));
             }
             default:
                 unexpected(token);
@@ -747,7 +757,7 @@ public class JuaParser {
         if ((d == 0.0) && !token.value().matches("\\.?0\\.?\\d*(?:[Ee][+-]\\d+)?$")) {
             pError(token.pos, "number too small.");
         }
-        return new Literal(token.pos, types.asDouble(d));
+        return new Literal(token.pos, code.getTypes().asDouble(d));
     }
 
     private Expression parseIdentifier(Token token) {
@@ -792,7 +802,7 @@ public class JuaParser {
 
     private Expression parseInt(Token token) {
         try {
-            return new Literal(token.pos, types.asLong(Long.parseLong(token.value(), token.radix())));
+            return new Literal(token.pos, code.getTypes().asLong(Long.parseLong(token.value(), token.radix())));
         } catch (NumberFormatException e) {
             pError(token.pos, "number too large.");
             return null;
@@ -818,7 +828,7 @@ public class JuaParser {
                 }
                 entries.add(new ArrayLiteral.Entry(pos, key, value));
             } catch (ParseNodeExit e) {
-                log.error(e.pos, e.msg);
+                source.getLog().error(e.pos, e.msg);
             }
             comma = !acceptToken(COMMA);
         }
@@ -857,21 +867,21 @@ public class JuaParser {
             String found = token2string(token);
 
             if (expected != null && found != null) {
-                log.error(token.pos, expected + " expected, " + found + " found.");
+                pError(token.pos, expected + " expected, " + found + " found.");
                 return;
             }
 
             if (expected != null) {
-                log.error(token.pos, expected + " expected.");
+                pError(token.pos, expected + " expected.");
                 return;
             }
 
             if (found != null) {
-                log.error(token.pos, "unexpected " + found + ".");
+                pError(token.pos, "unexpected " + found + ".");
                 return;
             }
 
-            log.error(token.pos, "invalid syntax.");
+            pError(token.pos, "invalid syntax.");
         } finally {
             nextToken();
         }

@@ -99,7 +99,6 @@ public class CodePrinter {
                 System.out.print(p.localNameTable().nameOf(i));
                 if (i >= function.minNumArgs()) {
                     System.out.print(" = ");
-                    //todo: Переписать пул констант - он не работает. Увидеть проблему можно при выводе функции print_range в test.jua
                     System.out.print(p.constantPool().defaultLocalAt(i).toString());
                 }
             }

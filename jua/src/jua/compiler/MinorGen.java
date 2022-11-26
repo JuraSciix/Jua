@@ -466,6 +466,7 @@ public final class MinorGen extends Gen {
 
         code.popState();
         code.popContext();
+        code = null;
     }
 
     private boolean declarationsUnallowedHere() {

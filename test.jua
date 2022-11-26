@@ -1,9 +1,9 @@
-/*
+const FIB_ERROR = 0;
 
 fn slow_fib(n) {
     if n <= 2 {
         if n <= 0 {
-            return 0;
+            return FIB_ERROR;
         }
         return 1;
     }
@@ -12,7 +12,7 @@ fn slow_fib(n) {
 
 fn fast_fib(n) {
     if n <= 0 {
-        return 0;
+        return FIB_ERROR;
     }
     q1 = 1;
     q2 = 1;
@@ -78,14 +78,20 @@ fn pascal_triangle(height) {
     return cols;
 }
 
-for a = pascal_triangle(6), i = 0; i < length(a); i++
-    println(print_list(a[i], false));
+fn test_pascal_triangle() {
+    for a = pascal_triangle(6), i = 0; i < length(a); i++ {
+        println(print_list(a[i], false));
+    }
+}
 
-*/
+fn range(from, to, step = 1) {
+    range = [];
+    for i = from; t <= to; i += step {
+        array_push(range, i);
+    }
+    return range;
+}
 
-while true {
-    a = ns_time();
-    for i = 0; i < 1_000_000; i++ {}
-    b = ns_time();
-    println((b - a) / 1E9);
+fn array_push(arr, elem) {
+    arr[length(arr)] = elem;
 }
