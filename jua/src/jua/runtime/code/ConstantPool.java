@@ -1,6 +1,7 @@
 package jua.runtime.code;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import jua.interpreter.Address;
 import jua.runtime.heap.*;
 
 import java.util.HashMap;
@@ -115,6 +116,10 @@ public final class ConstantPool {
 
     public Operand at(int index) {
         return entries[index];
+    }
+
+    public void at(int index, Address address) {
+        at(index).writeToAddress(address);
     }
 
     public Operand defaultLocalAt(int local_idx) {
