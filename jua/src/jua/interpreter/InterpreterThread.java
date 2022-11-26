@@ -262,7 +262,6 @@ public final class InterpreterThread {
 
                     case MSG_CALLING: {
                         joinFrame(environment.getFunction(calleeId), numArgs);
-                        set_msg(MSG_RUNNING);
                         calleeId = -1;
                         numArgs = 0;
                         break;
