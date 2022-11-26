@@ -1,7 +1,6 @@
 package jua.interpreter;
 
-import jua.Options;
-import jua.interpreter.instruction.Instruction;
+import jua.util.Options;
 import jua.runtime.JuaEnvironment;
 import jua.runtime.JuaFunction;
 import jua.runtime.RuntimeErrorException;

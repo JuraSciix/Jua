@@ -3,6 +3,7 @@ package jua;
 import jua.compiler.Program;
 import jua.compiler.JuaCompiler;
 import jua.runtime.RuntimeErrorException;
+import jua.util.Options;
 
 import java.io.File;
 import java.io.IOException;

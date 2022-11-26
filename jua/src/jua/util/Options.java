@@ -1,10 +1,12 @@
-package jua;
+package jua.util;
+
+import jua.Main;
 
 public final class Options {
 
     private static final Options OPTIONS = new Options();
 
-    static void bind(String[] args) {
+    public static void bind(String[] args) {
         int i;
 
         for (i = 0; i < args.length && args[i].startsWith("-"); i++) {
