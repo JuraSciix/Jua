@@ -17,7 +17,6 @@ public final class Pop2 implements Instruction {
 
     @Override
     public void run(InterpreterState state) {
-        state.popStack();
-        state.popStack();
+        state.pop2();
     }
 }

@@ -173,6 +173,16 @@ public final class InterpreterState {
         next();
     }
 
+    public void pop() {
+        sp--;
+        next();
+    }
+
+    public void pop2() {
+        sp -= 2;
+        next();
+    }
+
     public void dup() {
         Address peek = peekStack();
         top().set(peek);
@@ -338,7 +348,7 @@ public final class InterpreterState {
     }
 
     public void ifconsteq(short value, int offset) {
-        if (peekStack().compareShort(value, 1) == 0) {
+        if (popStack().compareShort(value, 1) == 0) {
             offset(offset);
         } else {
             next();
@@ -346,7 +356,7 @@ public final class InterpreterState {
     }
 
     public void ifconstne(short value, int offset) {
-        if (peekStack().compareShort(value, 0) != 0) {
+        if (popStack().compareShort(value, 0) != 0) {
             offset(offset);
         } else {
             next();
@@ -354,7 +364,7 @@ public final class InterpreterState {
     }
 
     public void ifconstgt(short value, int offset) {
-        if (peekStack().compareShort(value, 0) > 0) {
+        if (popStack().compareShort(value, 0) > 0) {
             offset(offset);
         } else {
             next();
@@ -362,7 +372,7 @@ public final class InterpreterState {
     }
 
     public void ifconstge(short value, int offset) {
-        if (peekStack().compareShort(value, -1) >= 0) {
+        if (popStack().compareShort(value, -1) >= 0) {
             offset(offset);
         } else {
             next();
@@ -370,7 +380,7 @@ public final class InterpreterState {
     }
 
     public void ifconstlt(short value, int offset) {
-        if (peekStack().compareShort(value, 0) < 0) {
+        if (popStack().compareShort(value, 0) < 0) {
             offset(offset);
         } else {
             next();
@@ -378,7 +388,7 @@ public final class InterpreterState {
     }
 
     public void ifconstle(short value, int offset) {
-        if (peekStack().compareShort(value, 1) <= 0) {
+        if (popStack().compareShort(value, 1) <= 0) {
             offset(offset);
         } else {
             next();
