@@ -102,7 +102,7 @@ public class CodePrinter {
                     System.out.print(p.constantPool().defaultLocalAt(i).toString());
                 }
             }
-            System.out.println(") {");
+            System.out.println(") { // id=" + functions.indexOf(function));
             print(p, 1);
             System.out.println("}");
         });
