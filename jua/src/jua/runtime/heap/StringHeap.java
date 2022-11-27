@@ -1,7 +1,6 @@
 package jua.runtime.heap;
 
 import java.lang.ref.SoftReference;
-import java.lang.ref.WeakReference;
 
 public final class StringHeap implements CharSequence, Heap {
 
@@ -68,6 +67,19 @@ public final class StringHeap implements CharSequence, Heap {
         for (int i = 0; i < b1.length(); i++)
             if (b1.charAt(i) != b2.charAt(i)) return false;
         return true;
+    }
+
+    public int compare(StringHeap that) {
+        StringBuffer b1 = buffer;
+        StringBuffer b2 = that.buffer;
+        for (int i = 0, j = Math.min(b1.length(), b2.length()); i < j; i++) {
+            char ch1 = b1.charAt(i);
+            char ch2 = b2.charAt(i);
+            if (ch1 != ch2) {
+                return Integer.compare(ch1, ch2);
+            }
+        }
+        return Integer.compare(b1.length(), b2.length());
     }
 
     public Heap copy() { return new StringHeap(this); }

@@ -173,6 +173,7 @@ public final class InterpreterThread {
         }
         // todo: Нативных функций пока нет
         uf1.state().pushStack(returnAddress);
+        returnAddress.reset();
         uf1.state().advance();
         current_frame = uf1;
         msg = MSG_RUNNING; // Переходим в состояние выполнения.
@@ -275,10 +276,15 @@ public final class InterpreterThread {
 
                     case MSG_CRASHED: {
                         // todo: Сделать нормальный вывод ошибок
-                        System.err.printf("thread %s, file %s, line %d %n",
-                                javaThread.getName(),
-                                current_location(),
-                                current_line_number());
+                        {
+                            InterpreterFrame rf = current_frame;
+                            System.err.printf("Stack trace for thread %s%n", javaThread.getName());
+                            while (current_frame != null) {
+                                System.err.printf("file %s, line %d %n", current_location(), current_line_number());
+                                current_frame = current_frame.callingFrame();
+                            }
+                            current_frame = rf;
+                        }
                         throw new RuntimeErrorException(error_msg);
                     }
 

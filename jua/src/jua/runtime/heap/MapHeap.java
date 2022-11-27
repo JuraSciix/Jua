@@ -4,6 +4,7 @@ import jua.interpreter.Address;
 import jua.runtime.ValueType;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.StringJoiner;
 
@@ -28,6 +29,22 @@ public final class MapHeap implements Heap {
     public Heap copy() { return this; }
 
     public Heap deepCopy() { return new MapHeap(this); }
+
+    public int compare(MapHeap that, int except) {
+        Map<Address, Address> m1 = map;
+        Map<Address, Address> m2 = that.map;
+        Iterator<Map.Entry<Address, Address>> i1 = m1.entrySet().iterator();
+        Iterator<Map.Entry<Address, Address>> i2 = m2.entrySet().iterator();
+        while (i1.hasNext() && i2.hasNext()) {
+            Map.Entry<Address, Address> e1 = i1.next();
+            Map.Entry<Address, Address> e2 = i2.next();
+            int cmp1 = e1.getKey().realCompare(e2.getKey(), except);
+            if (cmp1 != 0) return cmp1;
+            int cmp2 = e1.getValue().realCompare(e2.getValue(), except);
+            if (cmp2 != 0) return cmp2;
+        }
+        return m1.size() - m2.size();
+    }
 
     public void put(Address key, Address value) {
         ensureScalarKey(key);
