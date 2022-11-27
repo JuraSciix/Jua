@@ -301,9 +301,9 @@ public final class InterpreterState {
     
     public void ifeq(int offset) {
         if (stackCmpeq()) {
-            next();
-        } else {
             offset(offset);
+        } else {
+            next();
         }
     }
 
@@ -434,9 +434,7 @@ public final class InterpreterState {
     }
     
     public boolean stackCmpne() {
-        int cmp = lhs().compare(rhs(), 0);
-        sp -= 2;
-        return cmp != 0;
+        return !stackCmpeq();
     }
 
     public boolean stackCmpge() {
