@@ -282,11 +282,11 @@ public final class Address {
             return true;
         }
         if (union == P_DL) {
-            result.set(l + rhs.l);
+            result.set(d + rhs.l);
             return true;
         }
         if (union == P_DD) {
-            result.set(l + rhs.d);
+            result.set(d + rhs.d);
             return true;
         }
         if (union == P_LS) {
@@ -406,11 +406,11 @@ public final class Address {
             return true;
         }
         if (union == P_DL) {
-            result.set(l / (double) rhs.l);
+            result.set(d / (double) rhs.l);
             return true;
         }
         if (union == P_DD) {
-            result.set(l / rhs.d);
+            result.set(d / rhs.d);
             return true;
         }
         return binaryOperatorError("/", rhs);
@@ -611,6 +611,26 @@ public final class Address {
         return except;
     }
 
+    public int realCompare(Address rhs, int except) {
+        if (type == STRING) {
+            if (rhs.type == MAP) return except;
+            return stringVal().compare(rhs.stringVal());
+        }
+        if (rhs.type == STRING) {
+            if (rhs.type == MAP) return except;
+            return stringVal().compare(rhs.stringVal());
+        }
+        int union = pairOf(type, rhs.type);
+        if (union == P_LL || union == P_BB) return Long.compare(l, rhs.l);
+        if (union == P_LD) return Double.isNaN(rhs.d) ? except : Double.compare(l, rhs.d);
+        if (union == P_DL) return Double.isNaN(d) ? except : Double.compare(d, rhs.l);
+        if (union == P_DD)
+            return Double.isNaN(d) || Double.isNaN(rhs.d) ? except : Double.compare(d, rhs.d);
+        if (union == P_MM)
+            return mapValue().compare(rhs.mapValue(), except);
+        return except;
+    }
+
     public boolean isSame(Address that) {
         if (this == that) return true;
         int p = ValueType.pairOf(type, that.type);
@@ -620,6 +640,7 @@ public final class Address {
             return l == that.d;
         if (p == P_DL)
             return d == that.l;
+        if (p == P_SS || p == P_AA || p == P_MM || p == P_II)
         if (p == P_SS || p == P_AA || p == P_MM || p == P_II)
             return a.equals(that.a);
         return p == P_NN; // null == null
