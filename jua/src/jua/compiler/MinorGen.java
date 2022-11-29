@@ -628,11 +628,11 @@ public final class MinorGen extends Gen {
         if (isShortIntegerLiteral(tree.lhs)) {
             genExpr(tree.rhs).load();
             opcode = InstructionUtils.fromConstComparisonOpTag(tree.tag,
-                    unpackShortIntegerLiteral(tree.lhs), false);
+                    unpackShortIntegerLiteral(tree.lhs));
         } else if (isShortIntegerLiteral(tree.rhs)) {
             genExpr(tree.lhs).load();
             opcode = InstructionUtils.fromConstComparisonOpTag(tree.tag,
-                    unpackShortIntegerLiteral(tree.rhs), false);
+                    unpackShortIntegerLiteral(tree.rhs));
         } else if (isNull(tree.lhs)) {
             genExpr(tree.rhs).load();
             opcode = new Ifnonnull();
@@ -642,7 +642,7 @@ public final class MinorGen extends Gen {
         } else {
             genExpr(tree.lhs).load();
             genExpr(tree.rhs).load();
-            opcode = InstructionUtils.fromComparisonOpTag(tree.tag, false);
+            opcode = InstructionUtils.fromComparisonOpTag(tree.tag);
         }
         code.putPos(tree.pos);
         result = new CondItem(code.addInstruction(opcode));
