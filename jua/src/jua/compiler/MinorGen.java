@@ -911,16 +911,16 @@ public final class MinorGen extends Gen {
             Ifnonnull cond = new Ifnonnull();
             code.putPos(tree.pos);
             int cPC = code.addInstruction(cond);
-            int sp1 = code.current_nstack;
+            int sp1 = code.curStackTop();
             genExpr(tree.src).load().duplicate();
             emitVStore(tmp);
             varitem.store();
-            int sp2 = code.current_nstack;
+            int sp2 = code.curStackTop();
             Goto e = new Goto();
             int ePC = code.currentIP();
             code.addInstruction(e);
             cond.offset = code.currentIP() - cPC;
-            code.current_nstack = sp1;
+            code.curStackTop(sp1);
             varitem.drop();
             e.offset = code.currentIP() - ePC;
             assertStacktopEquality(sp2);
@@ -1681,7 +1681,7 @@ public final class MinorGen extends Gen {
     boolean genBranch(Statement tree) {
         Assert.check(!(tree instanceof Expression));
 
-        int savedstacktop = code.current_nstack;
+        int savedstacktop = code.curStackTop();
 
         try {
             tree.accept(this);
