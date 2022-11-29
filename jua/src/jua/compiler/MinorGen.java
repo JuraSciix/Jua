@@ -13,7 +13,6 @@ import java.util.List;
 import static jua.compiler.InstructionUtils.*;
 import static jua.compiler.TreeInfo.removeParens;
 
-// todo: Все позиции из AST должны обрабатываться в стадии Enter
 public final class MinorGen extends Gen {
 
     /**
