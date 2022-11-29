@@ -40,6 +40,8 @@ public final class Types {
         public abstract int getConstantIndex();
 
         public abstract Operand toOperand();
+
+        public abstract int quickCompare(Type other, int except);
     }
 
     public static abstract class ScalarType extends Type {
@@ -90,6 +92,13 @@ public final class Types {
 
         @Override
         public Operand toOperand() { return LongOperand.valueOf(value); }
+
+        @Override
+        public int quickCompare(Type other, int except) {
+            if (other.isLong()) return Long.compare(value, other.longValue());
+            if (other.isDouble()) return Double.compare(value, other.doubleValue());
+            return except;
+        }
     }
 
     public final class DoubleType extends NumberType {
@@ -130,6 +139,13 @@ public final class Types {
 
         @Override
         public Operand toOperand() { return DoubleOperand.valueOf(value); }
+
+        @Override
+        public int quickCompare(Type other, int except) {
+            if (other.isLong())  return Double.isNaN(value) ? except : Double.compare(value, other.longValue());
+            if (other.isDouble()) return Double.isNaN(value) || Double.isNaN(other.doubleValue()) ? except : Double.compare(value, other.doubleValue());
+            return except;
+        }
     }
 
     public static abstract class BooleanType extends ScalarType {
@@ -169,6 +185,11 @@ public final class Types {
 
         @Override
         public Operand toOperand() { return TrueOperand.TRUE; }
+
+        @Override
+        public int quickCompare(Type other, int except) {
+            return other.isBoolean() && other.booleanValue() ? 0 : except;
+        }
     }
 
     public final class FalseType extends BooleanType {
@@ -194,6 +215,11 @@ public final class Types {
 
         @Override
         public Operand toOperand() { return FalseOperand.FALSE; }
+
+        @Override
+        public int quickCompare(Type other, int except) {
+            return other.isBoolean() && !other.booleanValue() ? 0 : except;
+        }
     }
 
     public final class StringType extends ScalarType {
@@ -226,6 +252,11 @@ public final class Types {
 
         @Override
         public Operand toOperand() { return new StringOperand(value); }
+
+        @Override
+        public int quickCompare(Type other, int except) {
+            return other.isString() && value.length() == other.stringValue().length() ? value.compareTo(other.stringValue()) : except;
+        }
     }
 
     public final class NullType extends Type {
@@ -261,6 +292,11 @@ public final class Types {
 
         @Override
         public Operand toOperand() { return NullOperand.NULL; }
+
+        @Override
+        public int quickCompare(Type other, int except) {
+            return other.isNull() ? 0 : except;
+        }
     }
 
     public final TrueType True = new TrueType();

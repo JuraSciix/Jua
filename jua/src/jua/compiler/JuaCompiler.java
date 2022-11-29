@@ -22,7 +22,7 @@ public final class JuaCompiler {
 
             JuaParser parser = new JuaParser(source);
             programLayout.mainTree = parser.parse();
-
+            programLayout.lower = new Lower();
             Program program = programLayout.buildProgram();
             if (!source.getLog().hasErrors()) {
                 return program;

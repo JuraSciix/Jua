@@ -85,4 +85,73 @@ public final class TreeInfo {
         }
         return false;
     }
+
+    public static boolean isLiteralFalse(Expression tree) {
+        Expression innerTree = stripParens(tree);
+        if (innerTree.hasTag(Tag.LITERAL)) {
+            Literal literalTree = (Literal) innerTree;
+            return !literalTree.type.booleanValue();
+        }
+        if (innerTree.hasTag(Tag.ARRAYLITERAL)) {
+            ArrayLiteral arrayTree = (ArrayLiteral) innerTree;
+            return arrayTree.entries.isEmpty();
+        }
+        return false;
+    }
+
+    public static int getOperatorPrecedence(Tag tag) {
+        switch (tag) {
+            case ASSIGN:
+            case ASG_ADD:
+            case ASG_SUB:
+            case ASG_MUL:
+            case ASG_DIV:
+            case ASG_REM:
+            case ASG_SL:
+            case ASG_SR:
+            case ASG_AND:
+            case ASG_OR:
+            case ASG_XOR:
+                return 1;
+            case NULLCOALESCE:
+                return 8;
+            case TERNARY:
+                return 9;
+            case FLOW_OR:
+                return 10;
+            case FLOW_AND:
+                return 11;
+            case XOR:
+                return 12;
+            case OR:
+                return 13;
+            case AND:
+                return 14;
+            case EQ:
+            case NE:
+            case GT:
+            case GE:
+            case LT:
+            case LE:
+                return 15;
+            case SL:
+            case SR:
+                return 16;
+            case ADD:
+            case SUB:
+                return 17;
+            case MUL:
+            case DIV:
+            case REM:
+                return 18;
+
+            case ARRAYACCESS:
+                return 90;
+                // todo
+            case VARIABLE:
+                return 100;
+            default:
+                throw new AssertionError(tag);
+        }
+    }
 }
