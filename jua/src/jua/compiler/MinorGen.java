@@ -11,7 +11,7 @@ import jua.util.Assert;
 import java.util.List;
 
 import static jua.compiler.InstructionUtils.*;
-import static jua.compiler.TreeInfo.removeParens;
+import static jua.compiler.TreeInfo.*;
 
 public final class MinorGen extends Gen {
 
@@ -242,7 +242,7 @@ public final class MinorGen extends Gen {
         } else {
             for (Expression label : tree.labels) {
                 // todo: Эта проверка должна находиться в другом этапе
-                if (!removeParens(label).hasTag(Tag.LITERAL)) {
+                if (!stripParens(label).hasTag(Tag.LITERAL)) {
                     log.error(label.pos, "Constant expected");
                     continue;
                 }
@@ -432,7 +432,7 @@ public final class MinorGen extends Gen {
                 }
                 int localIdx = code.resolveLocal(name.value);
                 if (param.expr != null) {
-                    Expression expr = removeParens(param.expr);
+                    Expression expr = stripParens(param.expr);
                     if (!expr.hasTag(Tag.LITERAL)) {
                         cError(expr.pos, "The values of the optional parameters can only be literals");
                         continue;
@@ -608,42 +608,27 @@ public final class MinorGen extends Gen {
         genCmp(expression);
     }
 
-    static boolean isShortIntegerLiteral(Expression tree) {
-        if (tree == null) return false;
-        if (tree.hasTag(Tag.PARENS)) tree = (Expression) removeParens(tree);
-        if (!tree.hasTag(Tag.LITERAL)) return false;
-        Literal literal = (Literal) tree;
-        if (!literal.type.isLong()) return false;
-        long value = literal.type.longValue();
-        return (value >= Short.MIN_VALUE && value <= Short.MAX_VALUE);
-    }
-
-    private short unpackShortIntegerLiteral(Expression tree) {
-        tree = removeParens(tree);
-        return (short) ((Literal) tree).type.longValue();
-    }
-
     private void genCmp(BinaryOp tree) {
         JumpInstruction opcode;
-        if (isShortIntegerLiteral(tree.lhs)) {
+
+        if (isLiteralShort(tree.lhs)) {
             genExpr(tree.rhs).load();
-            opcode = InstructionUtils.fromConstComparisonOpTag(tree.tag,
-                    unpackShortIntegerLiteral(tree.lhs));
-        } else if (isShortIntegerLiteral(tree.rhs)) {
+            opcode = fromConstComparisonOpTag(tree.tag, getLiteralShort(tree.lhs));
+        } else if (isLiteralShort(tree.rhs)) {
             genExpr(tree.lhs).load();
-            opcode = InstructionUtils.fromConstComparisonOpTag(tree.tag,
-                    unpackShortIntegerLiteral(tree.rhs));
-        } else if (isNull(tree.lhs)) {
+            opcode = fromConstComparisonOpTag(tree.tag, getLiteralShort(tree.rhs));
+        } else if (isLiteralNull(tree.lhs)) {
             genExpr(tree.rhs).load();
             opcode = new Ifnonnull();
-        } else if (isNull(tree.rhs)) {
+        } else if (isLiteralNull(tree.rhs)) {
             genExpr(tree.lhs).load();
             opcode = new Ifnonnull();
         } else {
             genExpr(tree.lhs).load();
             genExpr(tree.rhs).load();
-            opcode = InstructionUtils.fromComparisonOpTag(tree.tag);
+            opcode = fromComparisonOpTag(tree.tag);
         }
+
         code.putPos(tree.pos);
         result = new CondItem(code.addInstruction(opcode));
     }
@@ -691,24 +676,21 @@ public final class MinorGen extends Gen {
         genExpr(tree.lhs).load();
         emitDup();
         code.putPos(tree.pos);
-        Ifnonnull cond = new Ifnonnull();
-        code.putPos(tree.pos);
-        int condPC = code.addInstruction(cond);
+        int condPC = code.addInstruction(new Ifnonnull());
         code.addInstruction(Pop.INSTANCE);
         genExpr(tree.rhs).load();
-        cond.offset = code.currentIP() - condPC;
+        resolveJump(condPC);
         result = stackItem;
     }
 
     @Override
     public void visitParens(Parens tree) {
-        code.putPos(tree.pos);
         tree.expr.accept(this);
     }
 
     @Override
     public void visitAssign(Assign tree) {
-        Expression var = removeParens(tree.var);
+        Expression var = stripParens(tree.var);
         switch (var.getTag()) {
             case MEMACCESS:
             case ARRAYACCESS:
@@ -743,7 +725,7 @@ public final class MinorGen extends Gen {
     @Override
     public void visitReturn(Tree.Return tree) {
         code.putPos(tree.pos);
-        if (isNull(tree.expr)) {
+        if (tree.expr == null || isLiteralNull(tree.expr)) {
             emitRetnull();
         } else {
             genExpr(tree.expr).load();
@@ -754,10 +736,6 @@ public final class MinorGen extends Gen {
     private void emitRetnull() {
         code.addInstruction(ReturnNull.INSTANCE);
         code.dead();
-    }
-
-    private static boolean isNull(Expression tree) {
-        return tree == null || tree.getTag() == Tag.LITERAL && ((Literal) tree).type == null;
     }
 
     @Override
@@ -809,7 +787,7 @@ public final class MinorGen extends Gen {
 
         if (init != null) init.forEach(expr -> genExpr(expr).drop());
 
-        boolean truecond = isCondTrue(cond);
+        boolean truecond = (cond == null) || isLiteralTrue(cond);
         int loopstartPC, limitstacktop;
         if (testFirst && !truecond) {
             code.putPos(loop.pos);
@@ -827,9 +805,7 @@ public final class MinorGen extends Gen {
         }
         flow.resolveCont();
         if (truecond) {
-            Goto back2start = new Goto();
-            back2start.offset = loopstartPC - code.currentIP();
-            code.addInstruction(back2start);
+            resolveJump(emitGoto(), loopstartPC);
             if (!flow.interrupted) code.dead();
         } else {
             CondItem condItem = genCond(cond).negate();
@@ -841,18 +817,6 @@ public final class MinorGen extends Gen {
         assertStacktopEquality(limitstacktop);
 
         flow = flow.parent;
-    }
-
-    static boolean isCondTrue(Expression tree) {
-        if (tree == null) return true;
-        if (tree.hasTag(Tag.PARENS)) tree = removeParens(tree);
-        if (!tree.hasTag(Tag.LITERAL)) return false;
-        Type type = ((Literal) tree).type;
-        if (type.isBoolean()) return type.booleanValue();
-        if (type.isString()) return !type.stringValue().isEmpty();
-        if (type.isLong()) return type.longValue() != 0L;
-        if (type.isDouble()) return type.doubleValue() != 0.0D;
-        return false;
     }
 
     private void visitExpression(Expression expression) {
@@ -890,7 +854,7 @@ public final class MinorGen extends Gen {
 
     @Override
     public void visitCompoundAssign(CompoundAssign tree) {
-        Expression var = removeParens(tree.dst);
+        Expression var = stripParens(tree.dst);
 
         switch (var.getTag()) {
             case MEMACCESS:
@@ -908,21 +872,18 @@ public final class MinorGen extends Gen {
             varitem.load().duplicate();
             String tmp = code.acquireSyntheticName(); // synthetic0
             emitVStore(tmp);
-            Ifnonnull cond = new Ifnonnull();
             code.putPos(tree.pos);
-            int cPC = code.addInstruction(cond);
+            int cPC = code.addInstruction(new Ifnonnull());
             int sp1 = code.curStackTop();
             genExpr(tree.src).load().duplicate();
             emitVStore(tmp);
             varitem.store();
             int sp2 = code.curStackTop();
-            Goto e = new Goto();
-            int ePC = code.currentIP();
-            code.addInstruction(e);
-            cond.offset = code.currentIP() - cPC;
+            int ePC = emitGoto();
+            resolveJump(cPC);
             code.curStackTop(sp1);
             varitem.drop();
-            e.offset = code.currentIP() - ePC;
+            resolveJump(ePC);
             assertStacktopEquality(sp2);
             result = new Item() {
                 @Override
@@ -1134,7 +1095,7 @@ public final class MinorGen extends Gen {
     }
 
     private void genIncrease(UnaryOp tree) {
-        Expression var = removeParens(tree.expr);
+        Expression var = stripParens(tree.expr);
 
         // todo: Делать нормально уже лень. Рефакторинг
 

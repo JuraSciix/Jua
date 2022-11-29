@@ -91,7 +91,7 @@ public final class Lower extends Translator {
         result = new Assign(tree.pos,
                 dst,
                 new BinaryOp(src.pos,
-                        TreeInfo.tagWithoutAsg(tree.tag),
+                        TreeInfo.stripAsgTag(tree.tag),
                         dst,
                         src));
     }

@@ -33,7 +33,7 @@ public class InstructionUtils {
     }
 
     public static Instruction fromBinaryAsgOpTag(Tag tag) {
-        return fromBinaryOpTag(TreeInfo.tagWithoutAsg(tag));
+        return fromBinaryOpTag(TreeInfo.stripAsgTag(tag));
     }
 
     public static JumpInstruction fromConstComparisonOpTag(Tag tag, short comparing) {
