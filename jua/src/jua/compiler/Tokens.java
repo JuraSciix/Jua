@@ -75,7 +75,6 @@ public final class Tokens {
         SLASHEQ("/="),
         STAR("*"),
         STAREQ("*="),
-        STR("str", TokenKind.NAMED),
         STRINGLITERAL(TokenKind.STRING),
         SWITCH("switch"),
         TILDE("~"),
