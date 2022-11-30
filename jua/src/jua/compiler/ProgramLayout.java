@@ -2,10 +2,12 @@ package jua.compiler;
 
 import jua.compiler.Tree.*;
 import jua.interpreter.Address;
+import jua.interpreter.InterpreterFrame;
 import jua.interpreter.InterpreterThread;
 import jua.runtime.JuaFunction;
 import jua.runtime.JuaNativeExecutor;
 import jua.runtime.heap.ArrayOperand;
+import jua.runtime.heap.MapHeap;
 import jua.runtime.heap.Operand;
 import jua.runtime.heap.StringHeap;
 
@@ -103,6 +105,55 @@ public final class ProgramLayout {
                 func("current_thread_name", 0, 0, (thread, args, argc, returnAddress) -> {
                     returnAddress.set(new StringHeap(thread.getNativeThread().getName()));
                     return true;
+                }),
+
+                func("get_stack_trace", 0, 0, (thread, args, argc, returnAddress) -> {
+                    MapHeap stackTraceElements = new MapHeap();
+
+                    Address tmp1 = new Address();
+                    Address tmp2 = new Address();
+
+                    for (InterpreterFrame frame = thread.currentFrame(); frame != null; frame = frame.callingFrame()) {
+                        MapHeap stackTraceElement = new MapHeap();
+                        tmp1.set(new StringHeap("file"));
+                        tmp2.set(new StringHeap(frame.owningFunction().filename()));
+                        stackTraceElement.put(tmp1, tmp2);
+                        tmp1.set(new StringHeap("line"));
+                        tmp2.set(new StringHeap().append(frame.currentLineNumber()));
+                        stackTraceElement.put(tmp1, tmp2);
+                        tmp1.set(new StringHeap("function"));
+                        tmp2.set(new StringHeap(frame.owningFunction().name()));
+                        stackTraceElement.put(tmp1, tmp2);
+                        tmp1.set(stackTraceElement);
+                        stackTraceElements.push(tmp1);
+                    }
+
+                    returnAddress.set(stackTraceElements);
+                    return true;
+                }),
+
+                func("nope", 0, 0, (thread, args, argc, returnAddress) -> {
+                    returnAddress.setNull();
+                    return true;
+                }),
+
+                func("invoke", 1, 2, (thread, args, argc, returnAddress) -> {
+                    JuaFunction function = thread.environment().findFunc(args[0].getStringHeap().toString());
+                    if (function == null) {
+                        thread.error("function with name '%s' not exists", args[0].getStringHeap().toString());
+                        return false;
+                    }
+                    Address[] _args;
+                    if (args[1].isValid()) {
+                        _args = new Address[args[1].getMapHeap().size()];
+                        int i = 0;
+                        for (Address a : args[1].getMapHeap()) {
+                            _args[i++] = Address.allocateCopy(a);
+                        }
+                    } else {
+                        _args = new Address[0];
+                    }
+                    return thread.call(function, _args, returnAddress);
                 })
 
 //                func("length", 1, 1, (thread, args, argc, returnAddress) -> {

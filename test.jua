@@ -1,0 +1,10 @@
+fn print_stack_trace() {
+    stack_trace = get_stack_trace();
+
+    for i = 0; i < length(stack_trace); i++ {
+        file = stack_trace[i].file;
+        line = stack_trace[i].line;
+        func = stack_trace[i].function;
+        println('#' + i + ' ' + func + '(' + file + ':' + line + ')');
+    }
+}

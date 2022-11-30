@@ -399,9 +399,7 @@ public final class InterpreterThread {
     }
 
     public int current_line_number() {
-        JuaFunction function = current_frame.owningFunction();
-        if (function.isNative()) return -1;
-        return function.codeSegment().lineNumberTable().getLineNumber(current_frame.state().cp());
+        return currentFrame().currentLineNumber();
     }
 
     public String currentFunction() {

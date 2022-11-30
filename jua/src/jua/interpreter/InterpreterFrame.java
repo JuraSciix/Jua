@@ -20,4 +20,9 @@ public final class InterpreterFrame {
     public InterpreterFrame callingFrame() { return callingFrame; }
     public JuaFunction owningFunction()    { return owningFunction; }
     public InterpreterState state()  { return state; }
+
+    public int currentLineNumber() {
+        if (owningFunction().isNative()) return -1;
+        return owningFunction().codeSegment().lineNumberTable().getLineNumber(state.cp());
+    }
 }
