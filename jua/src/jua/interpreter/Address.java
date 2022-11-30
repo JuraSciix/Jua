@@ -597,7 +597,7 @@ public final class Address {
         return unaryOperatorError("~");
     }
 
-    public boolean inc(Address result) { // -x
+    public boolean inc(Address result) { // ++x
         if (type == LONG) {
             result.set(getLong() + 1L);
             return true;
@@ -611,7 +611,7 @@ public final class Address {
         return unaryOperatorError("++");
     }
 
-    public boolean dec(Address result) { // -x
+    public boolean dec(Address result) { // --x
         if (type == LONG) {
             result.set(getLong() - 1L);
             return true;
