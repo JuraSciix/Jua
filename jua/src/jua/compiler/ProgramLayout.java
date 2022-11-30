@@ -1,24 +1,77 @@
 package jua.compiler;
 
 import jua.compiler.Tree.*;
+import jua.interpreter.Address;
 import jua.runtime.JuaFunction;
+import jua.runtime.JuaNativeExecutor;
 import jua.runtime.heap.ArrayOperand;
 import jua.runtime.heap.Operand;
+import jua.runtime.heap.StringHeap;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public final class ProgramLayout {
+
+    private static List<JuaFunction> builtinFunctions() {
+        return Arrays.asList(
+                func("print", 0, 255, (thread, args, argc, returnAddress) -> {
+                    Address tmp = thread.getTempAddress();
+                    for (int i = 0; i < argc; i++) {
+                        if (!args[i].stringVal(tmp)) {
+                            return false;
+                        }
+                        System.out.print(tmp.getStringHeap().toString());
+                    }
+                    returnAddress.setNull();
+                    return true;
+                }),
+
+                func("println", 0, 255, (thread, args, argc, returnAddress) -> {
+                    Address tmp = thread.getTempAddress();
+                    for (int i = 0; i < argc; i++) {
+                        if (!args[i].stringVal(tmp)) {
+                            return false;
+                        }
+                        System.out.println(tmp.getStringHeap().toString());
+                    }
+                    returnAddress.setNull();
+                    return true;
+                }),
+
+                func("ns_time", 0, 0, (thread, args, argc, returnAddress) -> {
+                    returnAddress.set(System.nanoTime());
+                    return true;
+                }),
+
+                func("typeof", 1, 1, (thread, args, argc, returnAddress) -> {
+                    returnAddress.set(new StringHeap(args[0].getTypeName()));
+                    return true;
+                })
+
+//                func("length", 1, 1, (thread, args, argc, returnAddress) -> {
+//                    switch (args[0].getType()) {
+//                        case ValueType.STRING:
+//                            returnAddress.set(args[0].getStringHeap().length());
+//                            return true;
+//                        case ValueType.MAP:
+//                            returnAddress.set(args[0].getMapHeap().size());
+//                            return true;
+//                        default:
+//                            thread.error("%s has no length", args[0].getTypeName());
+//                            return false;
+//                    }
+//                })
+        );
+    }
+
+    private static JuaFunction func(String name, int fromargc, int toargc, JuaNativeExecutor body) {
+        return JuaFunction.fromNativeHandler(name, fromargc, toargc, body, "ProgramLayout.java");
+    }
 
     Source mainSource;
 
     Tree mainTree;
-
-    private FuncDef[] funcDefs;
-    private ConstDef.Definition[] constantDefs;
-
-    private Operand[] constants;
-
-    private JuaFunction[] functions;
 
     private final Map<String, Integer> constantMap = new HashMap<>();
 
@@ -46,6 +99,15 @@ public final class ProgramLayout {
         });
     }
 
+    public int addFunction(String name) {
+        if (functionMap.containsKey(name)) {
+            throw new IllegalArgumentException();
+        }
+        int id = functionMap.size();
+        functionMap.put(name, id);
+        return id;
+    }
+
     Lower lower;
 
     public Program buildProgram() {
@@ -58,7 +120,11 @@ public final class ProgramLayout {
 
         mainSource = top.source;
 
-        funcDefs = top.stats.stream()
+        List<JuaFunction> builtinFunctions = builtinFunctions();
+        Map<Integer, JuaFunction> a = builtinFunctions.stream()
+                .collect(Collectors.toMap(f -> addFunction(f.name()), f -> f));
+
+        List<FuncDef> funcDefs = top.stats.stream()
                 .filter(stmt -> stmt.hasTag(Tag.FUNCDEF))
                 .map(fn -> (FuncDef) fn)
                 .peek(fn -> {
@@ -70,9 +136,9 @@ public final class ProgramLayout {
                     }
                     functionMap.put(fnName, functionMap.size());
                 })
-                .toArray(FuncDef[]::new);
+                .collect(Collectors.toList());
 
-        constantDefs = top.stats.stream()
+        List<ConstDef.Definition> constantDefs = top.stats.stream()
                 .filter(stmt -> stmt.hasTag(Tag.CONSTDEF))
                 .flatMap(stmt -> {
                     toRemove.add(stmt);
@@ -86,21 +152,25 @@ public final class ProgramLayout {
                     }
                     constantMap.put(cName, constantMap.size());
                 })
-                .toArray(ConstDef.Definition[]::new);
+                .collect(Collectors.toList());
 
         top.stats.removeAll(toRemove);
 
         mainTree.accept(mainCodegen);
 
-        functions = Arrays.stream(funcDefs)
+
+        List<JuaFunction> functions = funcDefs.stream()
                 .map(fn -> {
                     MinorGen codegen = new MinorGen(this);
                     codegen.funcSource = mainSource;
                     fn.accept(codegen);
                     return codegen.resultFunc;
                 })
-                .toArray(JuaFunction[]::new);
-        constants = Arrays.stream(constantDefs)
+                .collect(Collectors.toList());
+
+        a.forEach(functions::add);
+
+        List<Operand> constants = constantDefs.stream()
                 .map(def -> {
                     Expression expr = def.expr;
                     if (expr.getTag() == Tag.ARRAYLITERAL) {
@@ -118,8 +188,10 @@ public final class ProgramLayout {
                         return null;
                     }
                 })
-                .toArray(Operand[]::new);
+                .collect(Collectors.toList());
 
-        return new Program(mainSource, mainCodegen.code.buildCodeSegment(), functions, constants);
+        return new Program(mainSource, mainCodegen.code.buildCodeSegment(),
+                functions.toArray(new JuaFunction[0]),
+                constants.toArray(new Operand[0]));
     }
 }

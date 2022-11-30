@@ -423,7 +423,7 @@ public final class InterpreterState {
     final Address tmp = new Address();
 
     public Address getTemporalAddress() {
-        return tmp;
+        return thread.getTempAddress();
     }
 
     private boolean popBoolean() {

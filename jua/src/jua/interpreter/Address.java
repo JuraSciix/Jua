@@ -40,7 +40,7 @@ public final class Address {
             throw new IllegalArgumentException("Destination memory is null");
         }
 
-        if (srcOffset < 0 || dstOffset < 0 || count < 0 || (srcOffset + count) >= src.length || (dstOffset + count) >= dst.length) {
+        if (srcOffset < 0 || dstOffset < 0 || count < 0 || (srcOffset + count) > src.length || (dstOffset + count) > dst.length) {
             String message = String.format(
                     "Memory (length, offset): source (%d, %d), destination (%d, %d). Count: %d",
                     src.length, srcOffset, dst.length, dstOffset, count
@@ -49,7 +49,7 @@ public final class Address {
         }
 
         for (int i = 0; i < count; i++) {
-            src[srcOffset + i].quickSet(dst[dstOffset + i]);
+            dst[srcOffset + i].set(src[dstOffset + i]);
         }
     }
 
@@ -196,6 +196,10 @@ public final class Address {
 
     private void badTypeConversion(byte type) {
         threadError("Cannot convert %s to %s", getTypeName(), ValueType.getTypeName(type));
+    }
+
+    public boolean isValid() {
+        return type != UNDEFINED;
     }
 
     public boolean isNull() {

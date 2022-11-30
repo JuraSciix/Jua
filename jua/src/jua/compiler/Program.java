@@ -1,5 +1,6 @@
 package jua.compiler;
 
+import jua.interpreter.Address;
 import jua.interpreter.InterpreterFrame;
 import jua.interpreter.InterpreterThread;
 import jua.runtime.JuaEnvironment;
@@ -37,6 +38,7 @@ public final class Program {
         CodePrinter.printFunctions(new ArrayList<>(Arrays.asList(functions)));
     }
 
+    @Deprecated
     public InterpreterThread toThread() {
         // jua thread
         InterpreterThread j_thread = new InterpreterThread(Thread.currentThread(), createEnvironment());
@@ -50,5 +52,11 @@ public final class Program {
         j_thread.set_frame_force(j_mainFrame);
 
         return j_thread;
+    }
+
+    public void run() {
+        InterpreterThread thread = new InterpreterThread(Thread.currentThread(), createEnvironment());
+        JuaFunction functionMain = JuaFunction.fromCode("<main>", 0, 0, main, source.name);
+        thread.call(functionMain, new Address[0], null);
     }
 }

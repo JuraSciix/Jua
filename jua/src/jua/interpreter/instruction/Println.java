@@ -3,6 +3,7 @@ package jua.interpreter.instruction;
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
+@Deprecated
 public final class Println extends Print {
 
     public Println(int count) {

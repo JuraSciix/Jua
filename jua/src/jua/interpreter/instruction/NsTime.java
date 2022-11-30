@@ -8,6 +8,7 @@ import jua.interpreter.InterpreterState;
  *
  * <strong>ВНИМАНИЕ: ЭТА ИНСТРУКЦИЯ ВРЕМЕННАЯ</strong>
  */
+@Deprecated
 public final class NsTime implements Instruction {
 
     public static final NsTime INSTANCE = new NsTime();

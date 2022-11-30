@@ -4,6 +4,7 @@ import jua.compiler.CodePrinter;
 import jua.interpreter.Address;
 import jua.interpreter.InterpreterState;
 
+@Deprecated
 public class Print implements Instruction {
 
     protected final int count;

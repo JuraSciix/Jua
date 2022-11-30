@@ -37,7 +37,7 @@ public class Main {
             }
         }
         try {
-            result.toThread().run();
+            result.run();
         } catch (RuntimeErrorException e) {
             // todo: Починить вывод который влад сломал
             e.printStackTrace();

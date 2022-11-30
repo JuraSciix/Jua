@@ -134,8 +134,6 @@ public final class MinorGen extends Gen {
 
     private final StackItem stackItem = new StackItem();
 
-    private final EmptyItem emptyItem = new EmptyItem();
-
     @Override
     public void visitArrayAccess(ArrayAccess tree) {
         genExpr(tree.expr).load();
@@ -343,20 +341,20 @@ public final class MinorGen extends Gen {
         int nargs = tree.args.size();
 
         switch (callee.value) {
-            case "print":
-                visitInvocationArgs(tree.args);
-                code.putPos(tree.pos);
-                code.addInstruction(new Print(nargs));
-                result = emptyItem;
-                break;
-
-            case "println":
-                visitInvocationArgs(tree.args);
-                code.putPos(tree.pos);
-                code.addInstruction(new Println(nargs));
-                result = emptyItem;
-                break;
-
+//            case "print":
+//                visitInvocationArgs(tree.args);
+//                code.putPos(tree.pos);
+//                code.addInstruction(new Print(nargs));
+//                result = emptyItem;
+//                break;
+//
+//            case "println":
+//                visitInvocationArgs(tree.args);
+//                code.putPos(tree.pos);
+//                code.addInstruction(new Println(nargs));
+//                result = emptyItem;
+//                break;
+//
             case "length":
             case "sizeof":
                 require_nargs(tree, 1);
@@ -365,22 +363,22 @@ public final class MinorGen extends Gen {
                 code.addInstruction(Length.INSTANCE);
                 result = stackItem;
                 break;
-
-            case "gettype":
-            case "typeof":
-                require_nargs(tree, 1);
-                genExpr(tree.args.get(0).expr).load();
-                code.putPos(tree.pos);
-                code.addInstruction(Gettype.INSTANCE);
-                result = stackItem;
-                break;
-
-            case "ns_time":
-                require_nargs(tree, 0);
-                code.putPos(tree.pos);
-                code.addInstruction(NsTime.INSTANCE);
-                result = stackItem;
-                break;
+//
+//            case "gettype":
+//            case "typeof":
+//                require_nargs(tree, 1);
+//                genExpr(tree.args.get(0).expr).load();
+//                code.putPos(tree.pos);
+//                code.addInstruction(Gettype.INSTANCE);
+//                result = stackItem;
+//                break;
+//
+//            case "ns_time":
+//                require_nargs(tree, 0);
+//                code.putPos(tree.pos);
+//                code.addInstruction(NsTime.INSTANCE);
+//                result = stackItem;
+//                break;
 
             default:
                 int fn_idx = programLayout.tryFindFunc(callee);
@@ -1324,19 +1322,6 @@ public final class MinorGen extends Gen {
         void stash() {
             emitDup();
         }
-    }
-
-    /** Синтетический результат. */
-    class EmptyItem extends Item {
-
-        @Override
-        Item load() {
-            code.addInstruction(ConstNull.INSTANCE);
-            return stackItem;
-        }
-
-        @Override
-        void drop() { /* no-op */ }
     }
 
     /** Литерал. */

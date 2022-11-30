@@ -93,6 +93,15 @@ public final class InterpreterThread {
 
     private int numArgs;
 
+    private final Address tempAddress = new Address();
+
+    public Address getTempAddress() {
+        return tempAddress;
+    }
+
+    // Дешевле один раз аллоцировать все, чем каждый раз понемногу
+    private final Address[] argsTransfer = Address.allocateMemory(255, 0);
+
     private String error_msg;
 
     private byte msg = MSG_CREATED;
@@ -137,7 +146,6 @@ public final class InterpreterThread {
     public void joinFrame(JuaFunction callee, int argc) {
         Objects.requireNonNull(callee, "callee");
 
-        // todo: Нативных функций пока нет
         if (((callee.maxNumArgs() - argc) | (argc - callee.minNumArgs())) < 0) {
             error((argc > callee.maxNumArgs()) ?
                     "too many arguments. (total " + callee.maxNumArgs() + ", got " + argc + ")" :
@@ -148,14 +156,11 @@ public final class InterpreterThread {
         InterpreterFrame sender = current_frame;
         current_frame = makeFrame(callee);
 
-        for (int i = callee.maxNumArgs() - 1; i >= argc; i--) {
-            current_frame.state().store(i, current_frame.state().constant_pool().defaultLocalAt(i));
-        }
         for (int i = argc - 1; i >= 0; i--) {
-            current_frame.state().store(i, sender.state().popStack());
+            argsTransfer[i].set(sender.state().popStack());
         }
 
-        msg = MSG_RUNNING; // Переходим в состояние выполнения
+//        msg = MSG_RUNNING; // Переходим в состояние выполнения
     }
 
     public byte msg() {
@@ -171,18 +176,11 @@ public final class InterpreterThread {
         InterpreterFrame uf = current_frame;
         InterpreterFrame uf1 = uf.callingFrame();
         if (uf1 == null) {
-            msg = MSG_HALTED; // Выполнять больше нечего.
-            current_frame = null;
+            interrupt(); // Выполнять более нечего
             return;
         }
-        // todo: Нативных функций пока нет
-        uf1.state().pushStack(returnAddress);
-        returnAddress.reset();
-        uf1.state().advance();
         current_frame = uf1;
-        msg = MSG_RUNNING; // Переходим в состояние выполнения.
     }
-
 
     @Deprecated
     public void enterCall(InterpreterFrame p) {
@@ -195,6 +193,10 @@ public final class InterpreterThread {
     }
 
     public Thread java_thread() {
+        return getNativeThread();
+    }
+
+    public Thread getNativeThread() {
         return javaThread;
     }
 
@@ -224,6 +226,7 @@ public final class InterpreterThread {
     public void interrupt() {
         javaThread.interrupt();
         msg = MSG_HALTED;
+        current_frame = null;
     }
 
     public void start() {
@@ -238,27 +241,113 @@ public final class InterpreterThread {
         return msg == MSG_RUNNING;
     }
 
-    public void run() {
-        set_msg(MSG_RUNNING);
+    /**
+     * Вызывает указанную функцию и ждет завершения ее выполнения.
+     * Возвращает {@code true}, если ошибок не произошло, иначе {@code false}.
+     */
+    public boolean call(JuaFunction function, Address[] args, Address returnAddress) {
+        set_msg(MSG_CALLING);
+        set_frame_force(makeFrame(function));
+        Address.arraycopy(args, 0, argsTransfer, 0, args.length);
+        numArgs = args.length;
+        run();
+        if (isError()) {
+            return false;
+        }
+        if (returnAddress != null && this.returnAddress.isValid()) {
+            returnAddress.set(this.returnAddress);
+        }
+        if (returnAddress != this.returnAddress) this.returnAddress.reset();
+        return true;
+    }
 
+    public void run() {
         while (true) {
-            InterpreterFrame frame = current_frame;
-            InterpreterState state = frame.state();
+
+            switch (msg()) {
+
+                case MSG_CRASHED: {
+                    // todo: Сделать нормальный вывод ошибок
+                    {
+                        InterpreterFrame rf = current_frame;
+                        System.err.printf("Stack trace for thread %s%n", javaThread.getName());
+                        while (current_frame != null) {
+                            System.err.printf("\t%s(%s:%d) %n", currentFunction(), current_location(), current_line_number());
+                            current_frame = current_frame.callingFrame();
+                        }
+                        current_frame = rf;
+                    }
+                    throw new RuntimeErrorException(error_msg);
+                }
+
+                case MSG_CALLING:
+                case MSG_POPPING:
+                    break;
+
+                default:
+                    throw new AssertionError(msg());
+            }
+
+            InterpreterFrame frame = currentFrame();
 
             try {
-                state.advance();
 
                 try {
-                    while (isRunning()) {
-                        state.runDiscretely();
+
+                    if (frame.owningFunction().isNative()) {
+                        switch (msg()) {
+                            case MSG_CALLING:
+                                set_msg(MSG_RUNNING);
+                                boolean success = frame.owningFunction().nativeHandler().execute(this, argsTransfer.clone(), numArgs, returnAddress);
+                                if (success && !isError()) {
+                                    set_returnee();
+                                }
+                                break;
+                            case MSG_POPPING:
+                                return;
+                        }
+                    } else {
+                        InterpreterState state = frame.state();
+
+                        switch (msg()) {
+                            case MSG_CALLING:
+                                // Инициализируем стейт
+
+                                for (int i = 0; i < numArgs; i++) {
+                                    state.store(i, argsTransfer[i]);
+                                }
+
+                                for (int i = numArgs; i < frame.owningFunction().maxNumArgs(); i++) {
+                                    state.constant_pool().defaultLocalAt(i).writeToAddress(state.locals[i]);
+                                }
+
+                                calleeId = -1;
+                                numArgs = 0;
+                                break;
+
+                            case MSG_POPPING:
+                                state.advance();
+                                if (returnAddress.isValid()) {
+                                    state.pushStack(returnAddress);
+                                    returnAddress.reset();
+                                }
+                                break;
+                        }
+
+                        set_msg(MSG_RUNNING);
+
+                        while (isRunning()) {
+                            state.runDiscretely();
+                        }
                     }
                 } catch (Throwable t) {
                     t.printStackTrace();
-                    aError("FATAL ERROR. DETAILS:\n\t" +
-                            "FILE: " + current_location() + "\n\t" +
-                            "LINE: " + current_line_number() + "\n\t" +
-                            "CP: " + state.cp() + "\n\t" +
-                            "SP: " + state.sp());
+                    error("FATAL ERROR");
+//                    aError("FATAL ERROR. DETAILS:\n\t" +
+//                            "FILE: " + current_location() + "\n\t" +
+//                            "LINE: " + current_line_number() + "\n\t" +
+//                            "CP: " + state.cp() + "\n\t" +
+//                            "SP: " + state.sp());
                 }
 
                 switch (msg) {
@@ -267,13 +356,10 @@ public final class InterpreterThread {
 
                     case MSG_CALLING: {
                         joinFrame(environment.getFunction(calleeId), numArgs);
-                        calleeId = -1;
-                        numArgs = 0;
                         break;
                     }
 
                     case MSG_POPPING: {
-                        set_msg(MSG_RUNNING);
                         returnFrame();
                         break;
                     }
@@ -284,7 +370,7 @@ public final class InterpreterThread {
                             InterpreterFrame rf = current_frame;
                             System.err.printf("Stack trace for thread %s%n", javaThread.getName());
                             while (current_frame != null) {
-                                System.err.printf("file %s, line %d %n", current_location(), current_line_number());
+                                System.err.printf("\t%s(%s:%d) %n", currentFunction(), current_location(), current_line_number());
                                 current_frame = current_frame.callingFrame();
                             }
                             current_frame = rf;
@@ -310,7 +396,13 @@ public final class InterpreterThread {
     }
 
     public int current_line_number() {
-        return current_frame.owningFunction().codeSegment().lineNumberTable().getLineNumber(current_frame.state().cp());
+        JuaFunction function = current_frame.owningFunction();
+        if (function.isNative()) return -1;
+        return function.codeSegment().lineNumberTable().getLineNumber(current_frame.state().cp());
+    }
+
+    public String currentFunction() {
+        return currentFrame().owningFunction().name();
     }
 
     public void error(String msg) {

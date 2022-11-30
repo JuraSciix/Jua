@@ -3,10 +3,7 @@ package jua.runtime.heap;
 import jua.interpreter.Address;
 import jua.runtime.ValueType;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.StringJoiner;
+import java.util.*;
 
 public final class MapHeap implements Heap {
 

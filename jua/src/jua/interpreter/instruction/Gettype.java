@@ -9,6 +9,7 @@ import jua.interpreter.InterpreterState;
  * <strong>ВНИМАНИЕ: ЭТА ИНСТРУКЦИЯ ВРЕМЕННАЯ</strong>
  */
 // todo: Переименовать в Typeof
+@Deprecated
 public final class Gettype implements Instruction {
 
     public static final Gettype INSTANCE = new Gettype();
