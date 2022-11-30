@@ -67,7 +67,6 @@ public interface Tree {
         POS,
         NOT,
         INVERSE,
-        CLONE,
         PREINC,
         PREDEC,
         POSTINC,

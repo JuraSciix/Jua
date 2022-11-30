@@ -615,17 +615,6 @@ public class JuaParser {
         if (acceptToken(TILDE)) {
             return new UnaryOp(position, Tag.INVERSE, parseUnary());
         }
-        return parseClone();
-    }
-
-    private Expression parseClone() {
-        int position = token.pos;
-
-        // HACK todo
-        if (token.type == IDENTIFIER && token.name().equals("clone")) {
-            nextToken();
-            return new UnaryOp(position, Tag.CLONE, parsePost());
-        }
         return parsePost();
     }
 
