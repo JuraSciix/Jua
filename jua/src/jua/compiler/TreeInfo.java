@@ -99,57 +99,49 @@ public final class TreeInfo {
         return false;
     }
 
+    /** Возвращает приоритет оператора. */
     public static int getOperatorPrecedence(Tag tag) {
         switch (tag) {
-            case ASSIGN:
-            case ASG_ADD:
-            case ASG_SUB:
-            case ASG_MUL:
-            case ASG_DIV:
-            case ASG_REM:
-            case ASG_SL:
-            case ASG_SR:
-            case ASG_AND:
-            case ASG_OR:
-            case ASG_XOR:
+            case ASSIGN: case ASG_ADD: case ASG_SUB:
+            case ASG_MUL: case ASG_DIV: case ASG_REM:
+            case ASG_SL: case ASG_SR: case ASG_AND:
+            case ASG_OR: case ASG_XOR:
                 return 1;
             case NULLCOALESCE:
-                return 8;
+                return 2;
             case TERNARY:
-                return 9;
+                return 3;
             case FLOW_OR:
-                return 10;
+                return 4;
             case FLOW_AND:
-                return 11;
-            case XOR:
-                return 12;
+                return 5;
             case OR:
-                return 13;
+                return 6;
+            case XOR:
+                return 7;
             case AND:
+                return 8;
+            case EQ: case NE:
+                return 9;
+            case GT: case GE: case LT: case LE:
+                return 10;
+            case SL: case SR:
+                return 11;
+            case ADD: case SUB:
+                return 12;
+            case MUL: case DIV: case REM:
+                return 13;
+            case POS: case NEG: case NOT:
+            case INVERSE: case PREINC: case PREDEC:
                 return 14;
-            case EQ:
-            case NE:
-            case GT:
-            case GE:
-            case LT:
-            case LE:
+            case POSTINC: case POSTDEC:
                 return 15;
-            case SL:
-            case SR:
+            case INVOCATION:
                 return 16;
-            case ADD:
-            case SUB:
+            case MEMACCESS: case ARRAYACCESS:
                 return 17;
-            case MUL:
-            case DIV:
-            case REM:
-                return 18;
-
-            case ARRAYACCESS:
-                return 90;
-                // todo
             case VARIABLE:
-                return 100;
+                return 18;
             default:
                 throw new AssertionError(tag);
         }
