@@ -68,7 +68,7 @@ public class CodePrinter {
                 });
                 sb.append(align).append("}");
             } else {
-                sb.append(String.format("%5d: %-15s %-20s %d(%d)", index, name, String.join(", ", operands), stacktop, stackAdjustment));
+                sb.append(String.format("%5d: %-12s %-40s %3d(%2d)", index, name, String.join(", ", operands), stacktop, stackAdjustment));
             }
             return sb.toString();
         }
@@ -86,7 +86,7 @@ public class CodePrinter {
 //        }
     }
 
-    public static void printFunctions(ArrayList<JuaFunction> functions) {
+    public static void printFunctions(Program script, ArrayList<JuaFunction> functions) {
         functions.forEach(function -> {
             if (function == null || function.isNative()) return;
             String name = function.name();
@@ -103,13 +103,13 @@ public class CodePrinter {
                 }
             }
             System.out.println(") { // id=" + functions.indexOf(function));
-            print(p, 1);
+            print(script, p, 1);
             System.out.println("}");
         });
     }
 
-    public static void print(CodeSegment program, int align) {
-        CodePrinter printer = new CodePrinter(program);
+    public static void print(Program script, CodeSegment program, int align) {
+        CodePrinter printer = new CodePrinter(script, program);
         printer.setAlign(align);
         printer.printHead(program);
         int lastLineNumber = 0;
@@ -138,6 +138,8 @@ public class CodePrinter {
         current.line = line;
     }
 
+    private final Program script;
+
     private final CodeSegment program;
 
     private int index = 0;
@@ -148,8 +150,9 @@ public class CodePrinter {
 
     private int align;
 
-    private CodePrinter(CodeSegment program) {
+    private CodePrinter(Program script, CodeSegment program) {
         super();
+        this.script = script;
         this.program = program;
     }
 
@@ -203,7 +206,14 @@ public class CodePrinter {
 
     public void printLiteral(int index) {
         Operand constant = program.constantPool().at(index);
-        preparePrint().operands.add("#" + index + " (" + constant.type().name + " " + constant + ")");
+        preparePrint().operands.add(String.format("#%d (%s %s)", index, constant.type().name, constant));
+    }
+
+    public void printFunctionRef(int index) {
+        JuaFunction function = script.functions[index];
+        // test.jua:hello@8
+        // Stub.java:sum@10
+        preparePrint().operands.add(String.format("%s:%s@%d", function.filename(), function.name(), index));
     }
 
     private PrintState preparePrint() {

@@ -24,7 +24,7 @@ public final class Call implements Instruction {
     @Override
     public void print(CodePrinter printer) {
         printer.printName("call");
-        printer.print(index & 0xffff); // todo: printer.printFunctionRef
+        printer.printFunctionRef(index & 0xffff);
         printer.print(nargs & 0xff);
     }
 

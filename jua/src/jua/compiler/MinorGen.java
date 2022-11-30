@@ -88,7 +88,7 @@ public final class MinorGen extends Gen {
         setState(STATE_ROOTED);
         scan(tree.stats);
         state = prev_state;
-        code.addInstruction(Halt.INSTANCE);
+        emitLeave();
         code.popState();
     }
 
@@ -444,7 +444,7 @@ public final class MinorGen extends Gen {
 
             if (tree.body.hasTag(Tag.BLOCK)) {
                 if (generateBranch(tree.body)) {
-                    emitRetnull();
+                    emitLeave();
                 }
             } else {
                 Assert.check(tree.body instanceof Expression, "Function body neither block ner expression");
@@ -724,15 +724,15 @@ public final class MinorGen extends Gen {
     public void visitReturn(Tree.Return tree) {
         code.putPos(tree.pos);
         if (tree.expr == null || isLiteralNull(tree.expr)) {
-            emitRetnull();
+            emitLeave();
         } else {
             genExpr(tree.expr).load();
             emitReturn();
         }
     }
 
-    private void emitRetnull() {
-        code.addInstruction(ReturnNull.INSTANCE);
+    private void emitLeave() {
+        code.addInstruction(Leave.INSTANCE);
         code.dead();
     }
 

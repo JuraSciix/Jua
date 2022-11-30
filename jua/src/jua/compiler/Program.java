@@ -34,8 +34,8 @@ public final class Program {
     }
 
     public void print() {
-        CodePrinter.print(main, 0);
-        CodePrinter.printFunctions(new ArrayList<>(Arrays.asList(functions)));
+        CodePrinter.print(this, main, 0);
+        CodePrinter.printFunctions(this, new ArrayList<>(Arrays.asList(functions)));
     }
 
     @Deprecated
