@@ -6,24 +6,22 @@ import jua.runtime.heap.MapHeap;
 import jua.runtime.heap.StringHeap;
 import jua.util.Conversions;
 
-import static jua.interpreter.InterpreterThread.currentThread;
+import static jua.interpreter.InterpreterThread.threadError;
 import static jua.runtime.ValueType.*;
 
 public final class Address {
 
-    public static Address copy(Address source) {
+    public static Address allocateCopy(Address source) {
         Address copy = new Address();
         copy.set(source);
         return copy;
     }
 
     public static Address[] allocateMemory(int count, int start) {
-        if (count < 0 || count > 0xFFFF) {
-            throw new IllegalArgumentException("Count: " + count);
+        if (!(0xFFFF >= count && count >= start && start >= 0)) {
+            throw new IllegalArgumentException("count: " + count + ", start: " + start);
         }
-        if (start < 0 || start > count) {
-            throw new IllegalArgumentException("Offset: " + start);
-        }
+
         Address[] memory = new Address[count];
 
         for (int i = start; i < count; i++) {
@@ -55,87 +53,137 @@ public final class Address {
         }
     }
 
+    /** Тип текущего значения. */
     private byte type;
 
     private long l;
     private double d;
     private Heap a;
 
-    public byte typeCode() {
-        return type;
-    }
+    /** Возвращает тип текущего значения. */
+    public byte getType() { return type; }
 
-    public String typeName() {
-        return ValueType.nameOf(type);
-    }
+    /** Возвращает название типа текущего значения. */
+    public String getTypeName() { return ValueType.getTypeName(type); }
 
-    public boolean isScalar() {
-        return ValueType.isTypeScalar(type);
-    }
+    /** Возвращает {@code true}, если текущее значение считается скалярным, иначе {@code false}. */
+    public boolean isScalar() { return isTypeScalar(type); }
 
-    public long longVal() {
+    /* * * * * * * * * * * * * * * * * * * *
+     *               ГЕТТЕРЫ               *
+     * * * * * * * * * * * * * * * * * * * */
+
+    public long getLong() { return l; }
+
+    public double getDouble() { return d; }
+
+    public boolean getBoolean() { return Conversions.l2b(l); }
+
+    public StringHeap getStringHeap() { return (StringHeap) a; }
+
+    public MapHeap getMapHeap() { return (MapHeap) a; }
+
+    /* * * * * * * * * * * * * * * * * * * *
+     *           ПРЕОБРАЗОВАНИЯ            *
+     * * * * * * * * * * * * * * * * * * * */
+
+    /** Преобразовывает значение в целочисленное 64-битное. */
+    public boolean longVal(Address dst) {
         switch (type) {
-            case LONG: return l;
-            case DOUBLE: return (long) d;
-            case BOOLEAN: return l & 1L;
-            case NULL: return 0L;
+            case NULL:
+                dst.set(0L);
+                return true;
+            case LONG:
+                dst.set(getLong());
+                return true;
+            case DOUBLE:
+                dst.set((long) getDouble());
+                return true;
+            case BOOLEAN:
+                dst.set(l & 1L);
+                return true;
             default:
                 badTypeConversion(LONG);
-                return Long.MIN_VALUE;
+                return false;
         }
     }
 
-    public boolean booleanVal() {
+    /** Преобразовывает значение в вещественное 64-битное. */
+    public boolean doubleVal(Address dst) {
         switch (type) {
+            case NULL:
+                dst.set(0.0);
+                return true;
+            case LONG:
+                dst.set((double) getLong());
+                return true;
+            case DOUBLE:
+                dst.set(getDouble());
+                return true;
+            case BOOLEAN:
+                dst.set((double) (l & 1L));
+                return true;
+            default:
+                badTypeConversion(DOUBLE);
+                return false;
+        }
+    }
+
+    /** Преобразовывает значение в логическое. */
+    public boolean booleanVal(Address dst) {
+        switch (type) {
+            case NULL:
+                dst.set(false);
+                return true;
             case LONG:
             case BOOLEAN:
-                return (l & 1L) != 0;
+                dst.set(Conversions.l2b(getLong()));
+                return true;
             case DOUBLE:
-                return d != 0.0;
+                dst.set(getDouble() != 0.0);
+                return true;
             case STRING:
-                return stringVal().length() > 0;
+                dst.set(getStringHeap().nonEmpty());
+                return true;
             case MAP:
-                return mapValue().size() > 0;
-            case NULL:
-                return false;
+                dst.set(getMapHeap().nonEmpty());
+                return true;
             default:
                 badTypeConversion(BOOLEAN);
                 return false;
         }
     }
 
-    public double doubleVal() {
+    public boolean stringVal(Address dst) {
         switch (type) {
-            case LONG: return l;
-            case DOUBLE: return d;
-            case BOOLEAN: return (l & 1L);
-            case NULL: return 0.0;
-            default:
-                badTypeConversion(DOUBLE);
-                return Double.NaN;
-        }
-    }
-
-    public StringHeap stringVal() {
-        switch (type) {
-            case LONG:
-                return new StringHeap().append(longVal());
-            case DOUBLE:
-                return new StringHeap().append(doubleVal());
-            case BOOLEAN:
-                return new StringHeap().append(booleanVal());
-            case STRING:
-                return (StringHeap) a;
             case NULL:
-                return new StringHeap().appendNull();
+                dst.set(new StringHeap().appendNull());
+                return true;
+            case LONG:
+                dst.set(new StringHeap().append(getLong()));
+                return true;
+            case DOUBLE:
+                dst.set(new StringHeap().append(getDouble()));
+                return true;
+            case BOOLEAN:
+                dst.set(new StringHeap().append(getBoolean()));
+                return true;
+            case STRING:
+                dst.set(getStringHeap());
+                return true;
             default:
                 badTypeConversion(STRING);
-                return StringHeap.temp();
+                return false;
         }
     }
 
-    public MapHeap mapValue() {
-        return (MapHeap) a;
+    public boolean mapValue(Address dst) {
+        if (type == MAP) {
+            dst.set(getMapHeap());
+            return true;
+        }
+        badTypeConversion(MAP);
+        return false;
     }
 
     public boolean testType(byte type) {
@@ -147,35 +195,39 @@ public final class Address {
     }
 
     private void badTypeConversion(byte type) {
-        currentThread().error("Cannot convert " + typeName() + " to " + nameOf(type));
+        threadError("Cannot convert %s to %s", getTypeName(), ValueType.getTypeName(type));
     }
 
     public boolean isNull() {
         return type == NULL;
     }
 
+    /* * * * * * * * * * * * * * * * * * * *
+     *               СЕТТЕРЫ               *
+     * * * * * * * * * * * * * * * * * * * */
+
     public void set(long _l) {
-        type = ValueType.LONG;
+        type = LONG;
         l = _l;
     }
 
     public void set(boolean b) {
-        type = ValueType.BOOLEAN;
+        type = BOOLEAN;
         l = Conversions.b2l(b);
     }
 
     public void set(double _d) {
-        type = ValueType.DOUBLE;
+        type = DOUBLE;
         d = _d;
     }
 
     public void set(StringHeap s) {
-        type = ValueType.STRING;
+        type = STRING;
         a = s;
     }
 
     public void set(MapHeap m) {
-        type = ValueType.MAP;
+        type = MAP;
         a = m;
     }
 
@@ -188,331 +240,334 @@ public final class Address {
 
     public void set(Address source) {
         switch (source.type) {
-            case UNDEFINED:
-                throw new IllegalArgumentException();
-            case LONG:
-                type = LONG;
-                l = source.l;
-                break;
-            case DOUBLE:
-                type = DOUBLE;
-                d = source.d;
-                break;
-            case BOOLEAN:
-                type = BOOLEAN;
-                l = source.l;
-                break;
-            case STRING:
-                type = STRING;
-                a = source.stringVal().copy();
-            case ARRAY:
-                // todo
-                break;
-            case MAP:
-                type = MAP;
-                a = source.mapValue().copy();
-                break;
-            case ITERATOR:
-                // todo
-                break;
             case NULL:
-                type = NULL;
-                break;
+                setNull();
+                return;
+            case LONG:
+                set(source.getLong());
+                return;
+            case DOUBLE:
+                set(source.getDouble());
+                return;
+            case BOOLEAN:
+                set(source.getBoolean());
+                return;
+            case STRING:
+                set(source.getStringHeap().copy());
+                return;
+            case MAP:
+                set(source.getMapHeap().copy());
+                return;
             default:
-                throw new IllegalArgumentException();
+                throw new AssertionError(source.type);
         }
     }
 
     public void slowSet(Address source) {
         switch (source.type) {
-            case UNDEFINED:
-                throw new IllegalArgumentException();
-            case LONG:
-                type = LONG;
-                l = source.l;
-                break;
-            case DOUBLE:
-                type = DOUBLE;
-                d = source.d;
-                break;
-            case BOOLEAN:
-                type = BOOLEAN;
-                l = source.l;
-                break;
-            case STRING:
-                type = STRING;
-                a = source.stringVal().deepCopy();
-            case ARRAY:
-                // todo
-                break;
-            case MAP:
-                type = MAP;
-                a = source.mapValue().deepCopy();
-                break;
-            case ITERATOR:
-                // todo
-                break;
             case NULL:
-                type = NULL;
-                break;
+                setNull();
+                return;
+            case LONG:
+                set(source.getLong());
+                return;
+            case DOUBLE:
+                set(source.getDouble());
+                return;
+            case BOOLEAN:
+                set(source.getBoolean());
+                return;
+            case STRING:
+                set(source.getStringHeap().deepCopy());
+                return;
+            case MAP:
+                set(source.getMapHeap().deepCopy());
+                return;
             default:
-                throw new IllegalArgumentException();
+                throw new AssertionError(source.type);
         }
     }
 
     public void setNull() {
-        type = ValueType.NULL;
+        type = NULL;
     }
 
     public void reset() {
-        type = ValueType.UNDEFINED;
-        l = 0L;
-        d = 0.0;
-        a = null;
+        type = UNDEFINED;
+        a = null; // В помощь GC
     }
 
+    public boolean hasType(byte type) {
+        return getType() == type;
+    }
+
+    /* * * * * * * * * * * * * * * * * * * *
+     *          БИНАРНЫЕ ОПЕРАЦИИ          *
+     * * * * * * * * * * * * * * * * * * * */
+
     public boolean add(Address rhs, Address result) {
-        int union = pairOf(type, rhs.type);
-        if (union == P_LL) {
-            result.set(l + rhs.l);
+        int union = getTypeUnion(type, rhs.type);
+
+        if (getTypeUnion(LONG, LONG) == union) {
+            result.set(getLong() + rhs.getLong());
             return true;
         }
-        if (union == P_LD) {
-            result.set(l + rhs.d);
+
+        if (getTypeUnion(LONG, DOUBLE) == union) {
+            result.set(getLong() + rhs.getDouble());
             return true;
         }
-        if (union == P_DL) {
-            result.set(d + rhs.l);
+
+        if (getTypeUnion(DOUBLE, LONG) == union) {
+            result.set(getDouble() + rhs.getLong());
             return true;
         }
-        if (union == P_DD) {
-            result.set(d + rhs.d);
+
+        if (getTypeUnion(DOUBLE, DOUBLE) == union) {
+            result.set(getDouble() + rhs.getDouble());
             return true;
         }
-        if (union == P_LS) {
-            result.set(new StringHeap().append(longVal()).append(rhs.stringVal()));
-            return true;
-        }
-        if (union == P_DS) {
-            result.set(new StringHeap().append(doubleVal()).append(rhs.stringVal()));
-            return true;
-        }
-        if (union == P_BS) {
-            result.set(new StringHeap().append(booleanVal()).append(rhs.stringVal()));
-            return true;
-        }
-        if (union == P_SS) {
+
+        if (getTypeUnion(STRING, STRING) == union) {
             if (this == result) {
-                stringVal().append(rhs.stringVal());
+                getStringHeap().append(rhs.getStringHeap());
             } else {
-                rhs.set(new StringHeap().append(stringVal()).append(rhs.stringVal()));
+                result.set(new StringHeap().append(getStringHeap()).append(getStringHeap()));
             }
             return true;
         }
-        if (union == P_NS) {
-            result.set(new StringHeap().appendNull().append(rhs.stringVal()));
-            return true;
-        }
-        if (union == P_SL) {
-            if (this == result) {
-                stringVal().append(rhs.longVal());
-            } else {
-                rhs.set(new StringHeap(stringVal()).append(rhs.longVal()));
+
+        if (type == STRING) {
+            Address tmp = new Address();
+            if (!rhs.stringVal(tmp)) {
+                return false;
             }
+            result.set(new StringHeap().append(getStringHeap()).append(tmp.getStringHeap()));
             return true;
         }
-        if (union == P_SD) {
-            if (this == result) {
-                stringVal().append(rhs.doubleVal());
-            } else {
-                rhs.set(new StringHeap(stringVal()).append(rhs.doubleVal()));
+
+        if (rhs.type == STRING) {
+            Address tmp = new Address();
+            if (!stringVal(tmp)) {
+                return false;
             }
+            result.set(new StringHeap().append(tmp.getStringHeap()).append(rhs.getStringHeap()));
             return true;
         }
-        if (union == P_SB) {
-            if (this == result) {
-                stringVal().append(rhs.booleanVal());
-            } else {
-                rhs.set(new StringHeap(stringVal()).append(rhs.booleanVal()));
-            }
-            return true;
-        }
-        if (union == P_SN) {
-            if (this == result) {
-                stringVal().appendNull();
-            } else {
-                rhs.set(new StringHeap(stringVal()).appendNull());
-            }
-            return true;
-        }
+
         return binaryOperatorError("+", rhs);
     }
 
     public boolean sub(Address rhs, Address result) {
-        int union = pairOf(type, rhs.type);
-        if (union == P_LL) {
-            result.set(l - rhs.l);
+        int union = getTypeUnion(type, rhs.type);
+
+        if (getTypeUnion(LONG, LONG) == union) {
+            result.set(getLong() - rhs.getLong());
             return true;
         }
-        if (union == P_LD) {
-            result.set(l - rhs.d);
+
+        if (getTypeUnion(LONG, DOUBLE) == union) {
+            result.set((double) getLong() - rhs.getDouble());
             return true;
         }
-        if (union == P_DL) {
-            result.set(l - rhs.l);
+
+        if (getTypeUnion(DOUBLE, LONG) == union) {
+            result.set(getDouble() - (double) rhs.getLong());
             return true;
         }
-        if (union == P_DD) {
-            result.set(l - rhs.d);
+
+        if (getTypeUnion(DOUBLE, DOUBLE) == union) {
+            result.set(getDouble() - rhs.getDouble());
             return true;
         }
-        // todo: arrays, maps
+
         return binaryOperatorError("-", rhs);
     }
 
     public boolean mul(Address rhs, Address result) {
-        int union = pairOf(type, rhs.type);
-        if (union == P_LL) {
-            result.set(l * rhs.l);
+        int union = getTypeUnion(type, rhs.type);
+
+        if (getTypeUnion(LONG, LONG) == union) {
+            result.set(getLong() * rhs.getLong());
             return true;
         }
-        if (union == P_LD) {
-            result.set(l * rhs.d);
+
+        if (getTypeUnion(LONG, DOUBLE) == union) {
+            result.set((double) getLong() * rhs.getDouble());
             return true;
         }
-        if (union == P_DL) {
-            result.set(l * rhs.l);
+
+        if (getTypeUnion(DOUBLE, LONG) == union) {
+            result.set(getDouble() * (double) rhs.getLong());
             return true;
         }
-        if (union == P_DD) {
-            result.set(l * rhs.d);
+
+        if (getTypeUnion(DOUBLE, DOUBLE) == union) {
+            result.set(getDouble() * rhs.getDouble());
             return true;
         }
+
         return binaryOperatorError("*", rhs);
     }
 
     public boolean div(Address rhs, Address result) {
-        int union = pairOf(type, rhs.type);
-        if (union == P_LL) {
-            if (rhs.l == 0L) {
-                currentThread().error("division by zero");
+        int union = getTypeUnion(type, rhs.type);
+
+        if (getTypeUnion(LONG, LONG) == union) {
+            if (rhs.getLong() == 0L) {
+                threadError("integer division by zero");
                 return false;
             }
-            result.set(l / rhs.l);
+            result.set(getLong() / rhs.getLong());
             return true;
         }
-        if (union == P_LD) {
-            result.set(l / rhs.d);
+
+        if (getTypeUnion(LONG, DOUBLE) == union) {
+            result.set((double) getLong() / rhs.getDouble());
             return true;
         }
-        if (union == P_DL) {
-            result.set(d / (double) rhs.l);
+
+        if (getTypeUnion(DOUBLE, LONG) == union) {
+            result.set(getDouble() / (double) rhs.getLong());
             return true;
         }
-        if (union == P_DD) {
-            result.set(d / rhs.d);
+
+        if (getTypeUnion(DOUBLE, DOUBLE) == union) {
+            result.set(getDouble() / rhs.getDouble());
             return true;
         }
+
         return binaryOperatorError("/", rhs);
     }
 
     public boolean rem(Address rhs, Address result) {
-        int union = pairOf(type, rhs.type);
-        if (union == P_LL) {
-            if (rhs.l == 0L) {
-                currentThread().error("modulo by zero");
+        int union = getTypeUnion(type, rhs.type);
+
+        if (getTypeUnion(LONG, LONG) == union) {
+            if (rhs.getLong() == 0L) {
+                threadError("modulo by zero");
                 return false;
             }
-            result.set(l % rhs.l);
+            result.set(getLong() % rhs.getLong());
             return true;
         }
-        if (union == P_LD) {
-            if (rhs.d == 0.0) {
-                currentThread().error("modulo by zero");
+
+        if (getTypeUnion(LONG, DOUBLE) == union) {
+            if (rhs.getDouble() == 0.0) {
+                threadError("modulo by zero");
                 return false;
             }
-            result.set(l % rhs.d);
+            result.set(getLong() % rhs.getDouble());
             return true;
         }
-        if (union == P_DL) {
-            if (rhs.l == 0L) {
-                currentThread().error("modulo by zero");
+
+        if (getTypeUnion(DOUBLE, LONG) == union) {
+            if (rhs.getLong() == 0L) {
+                threadError("modulo by zero");
                 return false;
             }
-            result.set(l % rhs.l);
+            result.set(getDouble() % rhs.getLong());
             return true;
         }
-        if (union == P_DD) {
-            if (rhs.d == 0.0) {
-                currentThread().error("modulo by zero");
+
+        if (getTypeUnion(DOUBLE, DOUBLE) == union) {
+            if (rhs.getDouble() == 0.0) {
+                threadError("modulo by zero");
                 return false;
             }
-            result.set(l % rhs.d);
+            result.set(getDouble() % rhs.getDouble());
             return true;
         }
+
         return binaryOperatorError("%", rhs);
     }
 
     public boolean shl(Address rhs, Address result) {
-        int union = pairOf(type, rhs.type);
-        if (union == P_LL) {
-            result.set(l << rhs.l);
+        if (getTypeUnion(LONG, LONG) == getTypeUnion(type, rhs.type)) {
+            result.set(getLong() << rhs.getLong());
             return true;
         }
+
         return binaryOperatorError("<<", rhs);
     }
 
     public boolean shr(Address rhs, Address result) {
-        int union = pairOf(type, rhs.type);
-        if (union == P_LL) {
-            result.set(l >> rhs.l);
+        if (getTypeUnion(LONG, LONG) == getTypeUnion(type, rhs.type)) {
+            result.set(getLong() >> rhs.getLong());
             return true;
         }
+
         return binaryOperatorError(">>", rhs);
     }
 
     public boolean and(Address rhs, Address result) {
-        int union = pairOf(type, rhs.type);
-        if (union == P_LL || union == P_BB) {
-            result.set(l & rhs.l);
+        int union = getTypeUnion(type, rhs.type);
+
+        if (getTypeUnion(LONG, LONG) == union) {
+            result.set(getLong() & rhs.getLong());
             return true;
         }
+
+        if (getTypeUnion(BOOLEAN, BOOLEAN) == union) {
+            result.set(getBoolean() & rhs.getBoolean());
+            return true;
+        }
+
         return binaryOperatorError("&", rhs);
     }
 
     public boolean or(Address rhs, Address result) {
-        int union = pairOf(type, rhs.type);
-        if (union == P_LL || union == P_BB) {
-            result.set(l | rhs.l);
+        int union = getTypeUnion(type, rhs.type);
+
+        if (getTypeUnion(LONG, LONG) == union) {
+            result.set(getLong() | rhs.getLong());
             return true;
         }
+
+        if (getTypeUnion(BOOLEAN, BOOLEAN) == union) {
+            result.set(getBoolean() | rhs.getBoolean());
+            return true;
+        }
+
         return binaryOperatorError("|", rhs);
     }
 
     public boolean xor(Address rhs, Address result) {
-        int union = pairOf(type, rhs.type);
-        if (union == P_LL || union == P_BB) {
-            result.set(l ^ rhs.l);
+        int union = getTypeUnion(type, rhs.type);
+
+        if (getTypeUnion(LONG, LONG) == union) {
+            result.set(getLong() ^ rhs.getLong());
             return true;
         }
+
+        if (getTypeUnion(BOOLEAN, BOOLEAN) == union) {
+            result.set(getBoolean() ^ rhs.getBoolean());
+            return true;
+        }
+
         return binaryOperatorError("^", rhs);
     }
 
-
     private boolean binaryOperatorError(String operator, Address rhs) {
-        currentThread().error("Cannot apply binary '%s' with %s and %s",
-                operator, typeName(), rhs.typeName());
+        threadError(
+                "Cannot apply binary '%s' with %s and %s", operator, getTypeName(), rhs.getTypeName()
+        );
         // Методы бинарных операций возвращают результат этой функции, чтобы сократить число строк =)
         return false;
     }
 
+    /* * * * * * * * * * * * * * * * * * * *
+     *          УНАРНЫЕ ОПЕРАЦИИ           *
+     * * * * * * * * * * * * * * * * * * * */
+
     public boolean neg(Address result) { // -x
         if (type == LONG) {
-            result.set(-l);
+            result.set(-getLong());
             return true;
         }
+
         if (type == DOUBLE) {
-            result.set(-d);
+            result.set(-getDouble());
             return true;
         }
 
@@ -521,11 +576,12 @@ public final class Address {
 
     public boolean pos(Address result) { // +x
         if (type == LONG) {
-            result.set(+l);
+            result.set(+getLong());
             return true;
         }
+
         if (type == DOUBLE) {
-            result.set(+d);
+            result.set(+getDouble());
             return true;
         }
 
@@ -543,11 +599,12 @@ public final class Address {
 
     public boolean inc(Address result) { // -x
         if (type == LONG) {
-            result.set(l + 1L);
+            result.set(getLong() + 1L);
             return true;
         }
+
         if (type == DOUBLE) {
-            result.set(d + 1.0);
+            result.set(getDouble() + 1.0);
             return true;
         }
 
@@ -556,11 +613,12 @@ public final class Address {
 
     public boolean dec(Address result) { // -x
         if (type == LONG) {
-            result.set(l - 1L);
+            result.set(getLong() - 1L);
             return true;
         }
+
         if (type == DOUBLE) {
-            result.set(d - 1.0);
+            result.set(getDouble() - 1.0);
             return true;
         }
 
@@ -568,12 +626,49 @@ public final class Address {
     }
 
     private boolean unaryOperatorError(String operator) {
-        currentThread().error("Cannot apply unary '%s' with %s", operator, typeName());
+        threadError("Cannot apply unary '%s' with %s", operator, getTypeName());
         // Методы унарных операций возвращают результат этой функции, чтобы сократить число строк =)
         return false;
     }
 
-    public int compareShort(short value, int except) {
+    public int quickCompare(Address rhs, int except) {
+        int union = getTypeUnion(type, rhs.type);
+
+        if (getTypeUnion(LONG, LONG) == union) {
+            return Long.compare(getLong(), rhs.getLong());
+        }
+
+        if (getTypeUnion(LONG, DOUBLE) == union) {
+            return Double.compare(getLong(), rhs.getDouble());
+        }
+
+        if (getTypeUnion(DOUBLE, LONG) == union) {
+            return Double.compare(getDouble(), rhs.getLong());
+        }
+
+        if (getTypeUnion(DOUBLE, DOUBLE) == union) {
+            if (Double.isNaN(getDouble()) || Double.isNaN(rhs.getDouble()))
+                return except;
+            else
+                return Double.compare(getDouble(), rhs.getDouble());
+        }
+
+        if (getTypeUnion(STRING, STRING) == union) {
+            return getStringHeap().compare(rhs.getStringHeap());
+        }
+
+        if (getTypeUnion(MAP, MAP) == union) {
+            return getMapHeap().compare(rhs.getMapHeap(), except);
+        }
+
+        if (getTypeUnion(NULL, NULL) == union) {
+            return 0;
+        }
+
+        return except;
+    }
+
+    public int quickConstCompare(short value, int except) {
         if (type == LONG) {
             return Long.compare(l, value);
         }
@@ -583,92 +678,16 @@ public final class Address {
         return except;
     }
 
-    public int compare(Address rhs, int except) {
-        int union = pairOf(type, rhs.type);
-        if (union == P_LL) {
-            return Long.compare(l, rhs.l);
-        }
-        if (union == P_LD) {
-            return Double.isNaN(rhs.d) ? except : Double.compare(l, rhs.d);
-        }
-        if (union == P_DL) {
-            return Double.isNaN(d) ? except : Double.compare(d, rhs.l);
-        }
-        if (union == P_DD) {
-            return Double.isNaN(d) || Double.isNaN(rhs.d) ? except : Double.compare(d, rhs.d);
-        }
-        if (union == P_SS) {
-            return stringVal().isSame(rhs.stringVal()) ? 0 : except;
-        }
-        // todo: P_AA
-        if (union == P_MM) {
-            return mapValue().isSame(rhs.mapValue()) ? 0 : except;
-        }
-        // todo: P_II
-        if (union == P_NN) {
-            return 0; // null == null
-        }
-        return except;
-    }
-
-    public int realCompare(Address rhs, int except) {
-        if (type == STRING) {
-            if (rhs.type == MAP) return except;
-            return stringVal().compare(rhs.stringVal());
-        }
-        if (rhs.type == STRING) {
-            if (rhs.type == MAP) return except;
-            return stringVal().compare(rhs.stringVal());
-        }
-        int union = pairOf(type, rhs.type);
-        if (union == P_LL || union == P_BB) return Long.compare(l, rhs.l);
-        if (union == P_LD) return Double.isNaN(rhs.d) ? except : Double.compare(l, rhs.d);
-        if (union == P_DL) return Double.isNaN(d) ? except : Double.compare(d, rhs.l);
-        if (union == P_DD)
-            return Double.isNaN(d) || Double.isNaN(rhs.d) ? except : Double.compare(d, rhs.d);
-        if (union == P_MM)
-            return mapValue().compare(rhs.mapValue(), except);
-        return except;
-    }
-
-    public boolean isSame(Address that) {
-        if (this == that) return true;
-        int p = ValueType.pairOf(type, that.type);
-        if (p == P_LL || p == P_BB)
-            return l == that.l;
-        if (p == P_LD)
-            return l == that.d;
-        if (p == P_DL)
-            return d == that.l;
-        if (p == P_SS || p == P_AA || p == P_MM || p == P_II)
-        if (p == P_SS || p == P_AA || p == P_MM || p == P_II)
-            return a.equals(that.a);
-        return p == P_NN; // null == null
-    }
-
     @Override
     public int hashCode() {
         switch (type) {
-            case UNDEFINED:
-                throw new IllegalStateException("Trying calculate a hash-code of undefined type");
-            case LONG:
-                return Long.hashCode(longVal());
-            case BOOLEAN:
-                return Boolean.hashCode(booleanVal());
-            case DOUBLE:
-                return Double.hashCode(doubleVal());
-            case STRING:
-                return stringVal().hashCode();
-            case ARRAY:
-                throw new UnsupportedOperationException();
-            case MAP:
-                return mapValue().hashCode();
-            case ITERATOR:
-                throw new UnsupportedOperationException();
-            case NULL:
-                return 0;
-            default:
-                throw new IllegalStateException("Unknown type");
+            case NULL:    return 0;
+            case LONG:    return Long.hashCode(getLong());
+            case BOOLEAN: return Boolean.hashCode(getBoolean());
+            case DOUBLE:  return Double.hashCode(getDouble());
+            case STRING:  return getStringHeap().hashCode();
+            case MAP:     return getMapHeap().hashCode();
+            default:      throw new AssertionError(type);
         }
     }
 
@@ -676,32 +695,20 @@ public final class Address {
     public boolean equals(Object o) {
         if (this == o) return true; // Очень маловероятно
         if (o == null || getClass() != o.getClass()) return false;
-        return isSame((Address) o);
+        return quickCompare((Address) o, Integer.MIN_VALUE) == 0;
     }
 
     @Override
     public String toString() {
+        // Этот метод не связан с рантаймом Jua
         switch (type) {
-            case UNDEFINED:
-                throw new IllegalStateException();
-            case LONG:
-                return Long.toString(longVal());
-            case BOOLEAN:
-                return Boolean.toString(booleanVal());
-            case DOUBLE:
-                return Double.toString(doubleVal());
-            case STRING:
-                return stringVal().toString();
-            case ARRAY:
-                throw new UnsupportedOperationException();
-            case MAP:
-                return mapValue().toString();
-            case ITERATOR:
-                throw new UnsupportedOperationException();
-            case NULL:
-                return "null";
-            default:
-                throw new IllegalStateException("Unknown type");
+            case NULL:    return "null";
+            case LONG:    return Long.toString(getLong());
+            case DOUBLE:  return Double.toString(getDouble());
+            case BOOLEAN: return Boolean.toString(getBoolean());
+            case STRING:  return getStringHeap().toString();
+            case MAP:     return getMapHeap().toString();
+            default:      throw new AssertionError(type);
         }
     }
 }

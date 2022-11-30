@@ -1,7 +1,5 @@
 package jua.runtime.heap;
 
-import java.lang.ref.SoftReference;
-
 public final class StringHeap implements CharSequence, Heap {
 
     private static final ThreadLocal<StringHeap> TMP = new ThreadLocal<StringHeap>() {
@@ -20,7 +18,6 @@ public final class StringHeap implements CharSequence, Heap {
     // Кеш-содержащие поля
     private volatile transient int hashCode;
     private volatile transient boolean hashCodeCalculated = false;
-    private volatile transient SoftReference<String> stringCache = null;
 
     public StringHeap() {
         buffer = new StringBuffer(0);
@@ -41,12 +38,19 @@ public final class StringHeap implements CharSequence, Heap {
         buffer = new StringBuffer(original.buffer);
         hashCode = original.hashCode;
         hashCodeCalculated = original.hashCodeCalculated;
-        stringCache = original.stringCache;
     }
 
     public StringHeap(StringHeap original, int offset, int count) {
         buffer = new StringBuffer(count);
         buffer.append(original.buffer, offset, offset + count);
+    }
+
+    public boolean isEmpty() {
+        return length() == 0;
+    }
+
+    public boolean nonEmpty() {
+        return !isEmpty();
     }
 
     @Override
@@ -82,9 +86,9 @@ public final class StringHeap implements CharSequence, Heap {
         return Integer.compare(b1.length(), b2.length());
     }
 
-    public Heap copy() { return new StringHeap(this); }
+    public StringHeap copy() { return new StringHeap(this); }
 
-    public Heap deepCopy() { return new StringHeap(this); }
+    public StringHeap deepCopy() { return new StringHeap(this); }
 
     public StringHeap append(long j) {
         buffer.append(j);
@@ -118,7 +122,6 @@ public final class StringHeap implements CharSequence, Heap {
 
     private void resetCaches() {
         hashCodeCalculated = false;
-        stringCache = null;
     }
 
     @Override
@@ -142,11 +145,6 @@ public final class StringHeap implements CharSequence, Heap {
 
     @Override
     public String toString() {
-        if (stringCache == null || stringCache.isEnqueued()) {
-            stringCache = new SoftReference<>(buffer.toString());
-        }
-        String value = stringCache.get();
-        assert value != null;
-        return value;
+        return buffer.toString();
     }
 }

@@ -64,6 +64,10 @@ public final class InterpreterThread {
         return currentThread();
     }
 
+    public static void threadError(String message, Object... args) {
+        currentThread().error(message, args);
+    }
+
     public static void aError(String message) {
         getInstance().error(message);
     }

@@ -10,6 +10,17 @@ import java.util.StringJoiner;
 
 public final class MapHeap implements Heap {
 
+    private static final ThreadLocal<MapHeap> TEMP = new ThreadLocal<MapHeap>() {
+        @Override
+        protected MapHeap initialValue() {
+            return new MapHeap();
+        }
+    };
+
+    public static MapHeap temp() {
+        return TEMP.get();
+    }
+
     // todo: использовать собственную реализацию карты.
 
     private final Map<Address, Address> map;
@@ -24,11 +35,15 @@ public final class MapHeap implements Heap {
 
     public int size() { return map.size(); }
 
+    public boolean isEmpty() { return size() == 0; }
+
+    public boolean nonEmpty() { return !isEmpty(); }
+
     public boolean isSame(MapHeap that) { return map.equals(that.map); }
 
-    public Heap copy() { return this; }
+    public MapHeap copy() { return this; }
 
-    public Heap deepCopy() { return new MapHeap(this); }
+    public MapHeap deepCopy() { return new MapHeap(this); }
 
     public int compare(MapHeap that, int except) {
         Map<Address, Address> m1 = map;
@@ -38,9 +53,9 @@ public final class MapHeap implements Heap {
         while (i1.hasNext() && i2.hasNext()) {
             Map.Entry<Address, Address> e1 = i1.next();
             Map.Entry<Address, Address> e2 = i2.next();
-            int cmp1 = e1.getKey().realCompare(e2.getKey(), except);
+            int cmp1 = e1.getKey().quickCompare(e2.getKey(), except);
             if (cmp1 != 0) return cmp1;
-            int cmp2 = e1.getValue().realCompare(e2.getValue(), except);
+            int cmp2 = e1.getValue().quickCompare(e2.getValue(), except);
             if (cmp2 != 0) return cmp2;
         }
         return m1.size() - m2.size();
@@ -56,7 +71,7 @@ public final class MapHeap implements Heap {
         if (storage != null) {
             storage.set(value);
         } else {
-            map.put(Address.copy(key), Address.copy(value));
+            map.put(Address.allocateCopy(key), Address.allocateCopy(value));
         }
     }
 
@@ -89,7 +104,7 @@ public final class MapHeap implements Heap {
             esb.append(entry.getKey().toString());
             esb.append(": ");
             Address value = entry.getValue();
-            if (value.typeCode() == ValueType.MAP && value.mapValue() == this) {
+            if (value.hasType(ValueType.MAP) && value.getMapHeap() == this) {
                 esb.append("<self>");
             } else {
                 esb.append(value);

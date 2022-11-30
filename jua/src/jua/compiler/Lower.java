@@ -39,10 +39,13 @@ public final class Lower extends Translator {
 
     @Override
     public void visitFuncDef(FuncDef tree) {
-        Assert.check(types == null);
-        types = tree.code.getTypes();
-        super.visitFuncDef(tree);
-        types = null;
+        Types prevTypes = types;
+        try {
+            types = tree.code.getTypes();
+            super.visitFuncDef(tree);
+        } finally {
+            types = prevTypes;
+        }
     }
 
     @Override

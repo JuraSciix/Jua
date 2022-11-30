@@ -18,7 +18,7 @@ public final class Println extends Print {
     @Override
     public void run(InterpreterState state) {
         super.run(state);
-        if (!state.thread().isError()) {
+        if (!interrupted) {
             System.out.println();
         }
     }

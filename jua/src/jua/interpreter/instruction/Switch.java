@@ -3,7 +3,6 @@ package jua.interpreter.instruction;
 import jua.compiler.CodePrinter;
 import jua.interpreter.Address;
 import jua.interpreter.InterpreterState;
-import jua.runtime.heap.Operand;
 
 public final class Switch extends JumpInstruction {
 
@@ -54,7 +53,7 @@ public final class Switch extends JumpInstruction {
         Address tmp = new Address();
         for (int i = 0; i < l.length; i++) {
             state.constant_pool().at(l[i]).writeToAddress(tmp);
-            if (selector.compare(tmp, 1) == 0) {
+            if (selector.quickCompare(tmp, 1) == 0) {
                 state.offset(destIps[i]);
                 return;
             }

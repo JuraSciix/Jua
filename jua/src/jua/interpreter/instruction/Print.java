@@ -1,6 +1,7 @@
 package jua.interpreter.instruction;
 
 import jua.compiler.CodePrinter;
+import jua.interpreter.Address;
 import jua.interpreter.InterpreterState;
 
 public class Print implements Instruction {
@@ -20,17 +21,21 @@ public class Print implements Instruction {
         printer.print(count);
     }
 
+    protected boolean interrupted = false;
+
     @Override
     public void run(InterpreterState state) {
         String[] pieces = new String[count];
+        Address tmp = state.getTemporalAddress();
         for (int i = 1; i <= count; i++) {
-            pieces[count - i] = state.popStack().stringVal().toString();
-
-            if (state.thread().isError()) {
+            if (!state.popStack().stringVal(tmp)) {
                 // Прерываем выполнение инструкции, если произошла ошибка.
+                interrupted = true;
                 return;
             }
+            pieces[count - i] = tmp.toString();
         }
+        tmp.reset();
 
         for (int i = 0; i < count; i++) {
             System.out.print(pieces[i]);

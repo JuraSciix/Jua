@@ -130,16 +130,9 @@ public final class InterpreterState {
         return stack[sp++];
     }
 
-    public long popInt() {
-        return getInt(popStack());
-    }
 
     public Address peekStack() {
         return stack[sp - 1];
-    }
-
-    public long getInt(Address a) {
-        return a.longVal();
     }
 
     @Deprecated
@@ -348,7 +341,7 @@ public final class InterpreterState {
     }
 
     public void ifconsteq(short value, int offset) {
-        if (popStack().compareShort(value, 1) == 0) {
+        if (popStack().quickConstCompare(value, 1) == 0) {
             offset(offset);
         } else {
             next();
@@ -356,7 +349,7 @@ public final class InterpreterState {
     }
 
     public void ifconstne(short value, int offset) {
-        if (popStack().compareShort(value, 0) != 0) {
+        if (popStack().quickConstCompare(value, 0) != 0) {
             offset(offset);
         } else {
             next();
@@ -364,7 +357,7 @@ public final class InterpreterState {
     }
 
     public void ifconstgt(short value, int offset) {
-        if (popStack().compareShort(value, 0) > 0) {
+        if (popStack().quickConstCompare(value, 0) > 0) {
             offset(offset);
         } else {
             next();
@@ -372,7 +365,7 @@ public final class InterpreterState {
     }
 
     public void ifconstge(short value, int offset) {
-        if (popStack().compareShort(value, -1) >= 0) {
+        if (popStack().quickConstCompare(value, -1) >= 0) {
             offset(offset);
         } else {
             next();
@@ -380,7 +373,7 @@ public final class InterpreterState {
     }
 
     public void ifconstlt(short value, int offset) {
-        if (popStack().compareShort(value, 0) < 0) {
+        if (popStack().quickConstCompare(value, 0) < 0) {
             offset(offset);
         } else {
             next();
@@ -388,7 +381,7 @@ public final class InterpreterState {
     }
 
     public void ifconstle(short value, int offset) {
-        if (popStack().compareShort(value, 1) <= 0) {
+        if (popStack().quickConstCompare(value, 1) <= 0) {
             offset(offset);
         } else {
             next();
@@ -412,7 +405,7 @@ public final class InterpreterState {
     }
 
     public void ifz(int offset) {
-        if (!popStack().booleanVal()) {
+        if (!popBoolean()) {
             offset(offset);
         } else {
             next();
@@ -420,15 +413,26 @@ public final class InterpreterState {
     }
 
     public void ifnz(int offset) {
-        if (!popStack().booleanVal()) {
+        if (popBoolean()) {
             offset(offset);
         } else {
             next();
         }
     }
 
+    final Address tmp = new Address();
+
+    public Address getTemporalAddress() {
+        return tmp;
+    }
+
+    private boolean popBoolean() {
+        popStack().booleanVal(tmp);
+        return tmp.getBoolean();
+    }
+
     public boolean stackCmpeq() {
-        int cmp = lhs().compare(rhs(), 1);
+        int cmp = lhs().quickCompare(rhs(), 1);
         sp -= 2;
         return cmp == 0;
     }
@@ -438,39 +442,39 @@ public final class InterpreterState {
     }
 
     public boolean stackCmpge() {
-        int cmp = lhs().compare(rhs(), -1);
+        int cmp = lhs().quickCompare(rhs(), -1);
         sp -= 2;
         return cmp >= 0;
     }
 
     public boolean stackCmpgt() {
-        int cmp = lhs().compare(rhs(), -1);
+        int cmp = lhs().quickCompare(rhs(), -1);
         sp -= 2;
         return cmp > 0;
     }
 
     public boolean stackCmple() {
-        int cmp = lhs().compare(rhs(), 1);
+        int cmp = lhs().quickCompare(rhs(), 1);
         sp -= 2;
         return cmp <= 0;
     }
 
     public boolean stackCmplt() {
-        int cmp = lhs().compare(rhs(), 1);
+        int cmp = lhs().quickCompare(rhs(), 1);
         sp -= 2;
         return cmp < 0;
     }
 
     public void stackLength() {
-        switch (peekStack().typeCode()) {
+        switch (peekStack().getType()) {
             case ValueType.STRING:
-                pushStack(popStack().stringVal().length());
+                pushStack(popStack().getStringHeap().length());
                 break;
             case ValueType.MAP:
-                pushStack(popStack().mapValue().size());
+                pushStack(popStack().getMapHeap().size());
                 break;
             default:
-                thread.error("Invalid length");
+                thread.error("%s has no length", peekStack().getTypeName());
                 return;
         }
         next();
@@ -553,14 +557,14 @@ public final class InterpreterState {
     }
 
     public void stackGettype() {
-        stack[sp - 1].set(new StringHeap(stack[sp - 1].typeName()));
+        stack[sp - 1].set(new StringHeap(stack[sp - 1].getTypeName()));
         next();
     }
 
     public void stackAload() {
         if (stack[sp - 2].testType(ValueType.MAP)) {
-            Address val = stack[sp - 2].mapValue().get(stack[sp - 1]);
-            if (val == null || val.typeCode() == ValueType.UNDEFINED) {
+            Address val = stack[sp - 2].getMapHeap().get(stack[sp - 1]);
+            if (val == null || val.getType() == ValueType.UNDEFINED) {
                 stack[sp - 2].setNull();
             } else {
                 stack[sp - 2].set(val);
@@ -572,7 +576,7 @@ public final class InterpreterState {
 
     public void stackAstore() {
          if (stack[sp - 3].testType(ValueType.MAP)) {
-             stack[sp - 3].mapValue().put(stack[sp - 2], stack[sp - 1]);
+             stack[sp - 3].getMapHeap().put(stack[sp - 2], stack[sp - 1]);
              sp -= 3;
              next();
          }
@@ -612,7 +616,7 @@ public final class InterpreterState {
     }
 
     private boolean testLocal(int id) {
-        if (locals[id].typeCode() == ValueType.UNDEFINED) {
+        if (locals[id].getType() == ValueType.UNDEFINED) {
             thread.error("Access to undefined variable: " +
                     thread.currentFrame().owningFunction().codeSegment().localNameTable().nameOf(id));
             return false;
