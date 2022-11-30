@@ -2,6 +2,7 @@ package jua.compiler;
 
 import jua.compiler.Tree.*;
 import jua.interpreter.Address;
+import jua.interpreter.InterpreterThread;
 import jua.runtime.JuaFunction;
 import jua.runtime.JuaNativeExecutor;
 import jua.runtime.heap.ArrayOperand;
@@ -46,6 +47,61 @@ public final class ProgramLayout {
 
                 func("typeof", 1, 1, (thread, args, argc, returnAddress) -> {
                     returnAddress.set(new StringHeap(args[0].getTypeName()));
+                    return true;
+                }),
+
+                func("array_keys", 1, 1, (thread, args, argc, returnAddress) -> {
+                    args[0].mapValue(args[0]);
+                    returnAddress.set(args[0].getMapHeap().keys());
+                    return true;
+                }),
+
+                func("sleep", 1, 1, (thread, args, argc, returnAddress) -> {
+                    try {
+                        Thread.sleep(args[0].getLong());
+                        returnAddress.setNull();
+                        return true;
+                    } catch (InterruptedException e) {
+                        thread.error("thread was interrupted");
+                        return false;
+                    }
+                }),
+
+                // start_thread(name, func, args)
+                func("start_thread", 2, 3, (thread, args, argc, returnAddress) -> {
+                    JuaFunction function = thread.environment().findFunc(args[1].getStringHeap().toString());
+                    if (function == null) {
+                        thread.error("function with name '%s' not exists", args[1].getStringHeap().toString());
+                        return false;
+                    }
+                    Address[] _args;
+                    if (args[2].isValid()) {
+                        _args = new Address[args[2].getMapHeap().size()];
+                        int i = 0;
+                        for (Address a : args[2].getMapHeap()) {
+                            _args[i++] = Address.allocateCopy(a);
+                        }
+                    } else {
+                        _args = new Address[0];
+                    }
+                    Thread newThread = new Thread() {
+                        @Override
+                        public void run() {
+                            new InterpreterThread(this, thread.environment())
+                                    .call(function, _args, null);
+                        }
+                    };
+                    if (!args[0].isNull()) {
+                        args[0].stringVal(args[0]);
+                        newThread.setName(args[0].getStringHeap().toString());
+                    }
+                    newThread.start();
+                    returnAddress.setNull();
+                    return true;
+                }),
+
+                func("current_thread_name", 0, 0, (thread, args, argc, returnAddress) -> {
+                    returnAddress.set(new StringHeap(thread.getNativeThread().getName()));
                     return true;
                 })
 

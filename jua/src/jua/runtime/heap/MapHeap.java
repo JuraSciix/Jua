@@ -5,7 +5,7 @@ import jua.runtime.ValueType;
 
 import java.util.*;
 
-public final class MapHeap implements Heap {
+public final class MapHeap implements Heap, Iterable<Address> {
 
     private static final ThreadLocal<MapHeap> TEMP = new ThreadLocal<MapHeap>() {
         @Override
@@ -83,6 +83,28 @@ public final class MapHeap implements Heap {
         }
     }
 
+    public void push(Address value) {
+        Address key = new Address();
+        key.set(map.size());
+        map.put(key, Address.allocateCopy(value));
+    }
+
+    public MapHeap keys() {
+        MapHeap keys = new MapHeap();
+        for (Address key : map.keySet()) {
+            keys.push(key);
+        }
+        return keys;
+    }
+
+    public MapHeap values() {
+        MapHeap keys = new MapHeap();
+        for (Address key : map.values()) {
+            keys.push(key);
+        }
+        return keys;
+    }
+
     @Override
     public int hashCode() { return map.hashCode(); }
 
@@ -109,5 +131,10 @@ public final class MapHeap implements Heap {
             sj.add(esb.toString());
         }
         return sj.toString();
+    }
+
+    @Override
+    public Iterator<Address> iterator() {
+        return map.values().iterator();
     }
 }

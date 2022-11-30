@@ -284,6 +284,9 @@ public final class InterpreterThread {
                 case MSG_POPPING:
                     break;
 
+                case MSG_HALTED:
+                    return;
+
                 default:
                     throw new AssertionError(msg());
             }

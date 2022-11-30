@@ -14,6 +14,15 @@ public class JuaEnvironment {
         this.constants = constants;
     }
 
+    public JuaFunction findFunc(String name) {
+        for (JuaFunction function : functions) {
+            if (function.name().equals(name)) {
+                return function;
+            }
+        }
+        return null;
+    }
+
     public JuaFunction getFunction(int id) {
         return functions[id];
     }
