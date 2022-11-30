@@ -62,6 +62,10 @@ public final class Code {
 
     Log log;
 
+    int lastLineNum() {
+        return current_lineNumber;
+    }
+
     String acquireSyntheticName() {
         if (freeSyntheticNames.isEmpty()) {
             String s = "s$" + syntheticLimit++;
@@ -237,6 +241,10 @@ public final class Code {
 
     public boolean isAlive() {
         return alive;
+    }
+
+    public void setAlive() {
+        alive = true;
     }
 
     public boolean localExists(String name) {

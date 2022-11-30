@@ -550,7 +550,7 @@ public final class MinorGen extends Gen {
         Assert.check(code.curStackTop() == limitstacktop, "limitstacktop mismatch (" +
                 "before: " + limitstacktop + ", " +
                 "after: " + code.curStackTop() + ", " +
-                "code line num: " + code.current_lineNumber +
+                "code line num: " + code.lastLineNum() +
                 ")");
     }
 
@@ -1646,9 +1646,9 @@ public final class MinorGen extends Gen {
 
         try {
             tree.accept(this);
-            return code.alive;
+            return code.isAlive();
         } finally {
-            code.alive = true;
+            code.setAlive();
             assertStacktopEquality(savedstacktop);
         }
     }
