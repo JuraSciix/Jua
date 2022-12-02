@@ -8,3 +8,5 @@ fn print_stack_trace() {
         println('#' + i + ' ' + func + '(' + file + ':' + line + ')');
     }
 }
+
+print_stack_trace();

@@ -219,7 +219,7 @@ public final class ProgramLayout {
 
     public Program buildProgram() {
         mainTree.accept(lower);
-        MinorGen mainCodegen = new MinorGen(this);
+        Gen mainCodegen = new Gen(this);
 
         List<Statement> toRemove = new ArrayList<>();
 
@@ -268,7 +268,7 @@ public final class ProgramLayout {
 
         List<JuaFunction> functions = funcDefs.stream()
                 .map(fn -> {
-                    MinorGen codegen = new MinorGen(this);
+                    Gen codegen = new Gen(this);
                     codegen.funcSource = mainSource;
                     fn.accept(codegen);
                     return codegen.resultFunc;
