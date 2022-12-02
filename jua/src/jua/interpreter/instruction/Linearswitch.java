@@ -4,13 +4,13 @@ import jua.compiler.CodePrinter;
 import jua.interpreter.Address;
 import jua.interpreter.InterpreterState;
 
-public final class Switch extends JumpInstruction {
+public final class Linearswitch extends JumpInstruction {
 
     private final int[] literals;
 
     private final int[] destIps;
 
-    public Switch(int[] literals, int[] destIps, int defaultIp) {
+    public Linearswitch(int[] literals, int[] destIps, int defaultIp) {
         super(defaultIp);
         assert literals.length == destIps.length;
         this.literals = literals;
@@ -27,7 +27,7 @@ public final class Switch extends JumpInstruction {
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName("switch");
+        printer.printName("linearswitch");
         if (literals.length > 0) {
             int last = destIps[0];
             int last_index = 0;

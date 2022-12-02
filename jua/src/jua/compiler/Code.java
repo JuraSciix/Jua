@@ -8,6 +8,7 @@ import it.unimi.dsi.fastutil.shorts.Short2IntRBTreeMap;
 import it.unimi.dsi.fastutil.shorts.Short2IntSortedMap;
 import jua.interpreter.instruction.Instruction;
 import jua.interpreter.instruction.JumpInstruction;
+import jua.interpreter.instruction.Binaryswitch;
 import jua.runtime.code.CodeSegment;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.LineNumberTable;
@@ -271,21 +272,28 @@ public final class Code {
     public int resolveString(String value) { return this.constant_pool_b.putStringEntry(value); }
 
     public CodeSegment buildCodeSegment() {
-        return new CodeSegment(buildCode(),
+        ConstantPool cp = buildConstantPool();
+        return new CodeSegment(buildCode(cp),
                 this.nstack,
                 this.nlocals,
-                buildConstantPool(),
+                cp,
                 buildLineTable(),
                 new LocalNameTable(this.localNames));
     }
 
     private static final Instruction[] EMPTY_INSTRUCTIONS = new Instruction[0];
-    private Instruction[] buildCode() {
+    private Instruction[] buildCode(ConstantPool cp) {
         Instruction[] instructions = this.instructions.toArray(EMPTY_INSTRUCTIONS);
         for (Chain chain : this.chains.values()) {
             for (Int2ObjectMap.Entry<JumpInstructionConstructor> entry : chain.constructors.int2ObjectEntrySet()) {
                 int ip = entry.getIntKey();
                 instructions[ip] = entry.getValue().create(chain.resultIP - ip);
+            }
+        }
+        for (Instruction instruction : instructions) {
+            if (instruction.getClass() == Binaryswitch.class) {
+                Binaryswitch switch_ = (Binaryswitch) instruction;
+                switch_.sort(cp);
             }
         }
         return instructions;

@@ -8,6 +8,7 @@ import jua.interpreter.instruction.*;
 import jua.runtime.JuaFunction;
 import jua.util.Assert;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static jua.compiler.InstructionUtils.*;
@@ -213,13 +214,24 @@ public final class Gen extends Scanner {
             flow.switchDefaultOffset = code.currentIP() - flow.switchStartPC;
         }
 
-        code.setInstruction(flow.switchStartPC,
-                new jua.interpreter.instruction.Switch(
-                        flow.caseLabelsConstantIndexes.toIntArray(),
-                        flow.switchCaseOffsets.toIntArray(),
-                        flow.switchDefaultOffset
-                )
-        );
+        if (flow.caseLabelsConstantIndexes.size() > 10) {
+            code.setInstruction(flow.switchStartPC,
+                    new Linearswitch(
+                            flow.caseLabelsConstantIndexes.toIntArray(),
+                            flow.switchCaseOffsets.toIntArray(),
+                            flow.switchDefaultOffset
+                    )
+            );
+        } else {
+            code.setInstruction(flow.switchStartPC,
+                    new Binaryswitch(
+                            flow.caseLabelsConstantIndexes.toIntArray(),
+                            flow.switchCaseOffsets.toIntArray(),
+                            flow.switchDefaultOffset
+                    )
+            );
+        }
+
 
         flow.resolveExit();
 

@@ -1,6 +1,6 @@
 package jua.runtime.heap;
 
-public final class StringHeap implements CharSequence, Heap {
+public final class StringHeap implements CharSequence, Heap, Comparable<StringHeap> {
 
     private static final ThreadLocal<StringHeap> TMP = new ThreadLocal<StringHeap>() {
         @Override
@@ -146,5 +146,12 @@ public final class StringHeap implements CharSequence, Heap {
     @Override
     public String toString() {
         return buffer.toString();
+    }
+
+    @Override
+    public int compareTo(StringHeap o) {
+        if (this == o) return 0;
+        // todo: Исправить ленивую реализацию
+        return buffer.toString().compareTo(o.buffer.toString());
     }
 }

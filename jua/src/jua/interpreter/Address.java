@@ -9,7 +9,7 @@ import jua.util.Conversions;
 import static jua.interpreter.InterpreterThread.threadError;
 import static jua.runtime.ValueType.*;
 
-public final class Address {
+public final class Address implements Comparable<Address> {
 
     public static Address allocateCopy(Address source) {
         Address copy = new Address();
@@ -680,6 +680,31 @@ public final class Address {
             return Double.compare(d, value);
         }
         return except;
+    }
+
+    @Override
+    public int compareTo(Address o) {
+        if (this == o) return 0;
+        int union = getTypeUnion(type, o.type);
+        if (getTypeUnion(LONG, LONG) == union) return Long.compare(getLong(), o.getLong());
+        if (getTypeUnion(LONG, DOUBLE) == union) return Double.compare(getLong(), o.getDouble());
+        if (getTypeUnion(DOUBLE, LONG) == union) return Double.compare(getDouble(), o.getLong());
+        if (getTypeUnion(DOUBLE, DOUBLE) == union) return Double.compare(getDouble(), o.getDouble());
+        if (type == STRING && o.isScalar()) {
+            Address tmp = new Address();
+            if (!o.stringVal(tmp)) {
+                throw new AssertionError("Scalar type cannot be converted to string: " + o.getTypeName());
+            }
+            return getStringHeap().compareTo(tmp.getStringHeap());
+        }
+        if (o.type == STRING && isScalar()) {
+            Address tmp = new Address();
+            if (!stringVal(tmp)) {
+                throw new AssertionError("Scalar type cannot be converted to string: " + o.getTypeName());
+            }
+            return tmp.getStringHeap().compareTo(o.getStringHeap());
+        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
