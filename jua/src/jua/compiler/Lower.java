@@ -52,7 +52,7 @@ public final class Lower extends Translator {
     public void visitVariable(Var tree) {
         String nameString = tree.name.value;
         if (constantLiterals.containsKey(nameString)) {
-            result = new Literal(tree.pos, constantLiterals.get(nameString));
+            result = new Literal(tree.pos, constantLiterals.get(nameString).copy(types));
         } else {
             result = tree;
         }

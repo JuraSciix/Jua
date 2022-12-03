@@ -42,6 +42,8 @@ public final class Types {
         public abstract Operand toOperand();
 
         public abstract int quickCompare(Type other, int except);
+
+        public abstract Type copy(Types types);
     }
 
     public static abstract class ScalarType extends Type {
@@ -99,6 +101,9 @@ public final class Types {
             if (other.isDouble()) return Double.compare(value, other.doubleValue());
             return except;
         }
+
+        @Override
+        public Type copy(Types types) { return types.asLong(value); }
     }
 
     public final class DoubleType extends NumberType {
@@ -146,6 +151,9 @@ public final class Types {
             if (other.isDouble()) return Double.isNaN(value) || Double.isNaN(other.doubleValue()) ? except : Double.compare(value, other.doubleValue());
             return except;
         }
+
+        @Override
+        public Type copy(Types types) { return types.asDouble(value); }
     }
 
     public static abstract class BooleanType extends ScalarType {
@@ -160,6 +168,9 @@ public final class Types {
             BooleanType that = (BooleanType) o;
             return Objects.equals(booleanValue(), that.booleanValue());
         }
+
+        @Override
+        public Type copy(Types types) { return types.asBoolean(booleanValue()); }
     }
 
     public final class TrueType extends BooleanType {
@@ -257,6 +268,9 @@ public final class Types {
         public int quickCompare(Type other, int except) {
             return other.isString() && value.length() == other.stringValue().length() ? value.compareTo(other.stringValue()) : except;
         }
+
+        @Override
+        public Type copy(Types types) { return types.asString(value); }
     }
 
     public final class NullType extends Type {
@@ -297,6 +311,9 @@ public final class Types {
         public int quickCompare(Type other, int except) {
             return other.isNull() ? 0 : except;
         }
+
+        @Override
+        public Type copy(Types types) { return types.asNull(); }
     }
 
     public final TrueType True = new TrueType();
