@@ -64,16 +64,22 @@ public final class InterpreterThread {
         return currentThread();
     }
 
+    public static void threadError(String message) {
+        currentThread().error(message);
+    }
+
     public static void threadError(String message, Object... args) {
         currentThread().error(message, args);
     }
 
+    @Deprecated
     public static void aError(String message) {
-        getInstance().error(message);
+        threadError(message);
     }
 
+    @Deprecated
     public static void aError(String message, Object... args) {
-        getInstance().error(message, args);
+        threadError(message, args);
     }
 
     @Deprecated
@@ -99,8 +105,12 @@ public final class InterpreterThread {
         return tempAddress;
     }
 
-    // Дешевле один раз аллоцировать все, чем каждый раз понемногу
-    private final Address[] argsTransfer = Address.allocateMemory(255, 0);
+    /**
+     * Временное хранилище для аргументов вызовов функций.
+     * Массив расширяется по мере нарастания числа аргументов за весь цикл работы программы.
+     * Максимальный размер - 255. Это ограничение на число аргументов на уровне модели языка.
+     */
+    private Address[] argsTransfer = AddressUtils.allocateMemory(0, 0);
 
     private String error_msg;
 
@@ -156,6 +166,12 @@ public final class InterpreterThread {
         InterpreterFrame sender = current_frame;
         current_frame = makeFrame(callee);
 
+        if (argsTransfer.length < argc) {
+            // Расширяем массив без лишних аллокаций
+            Address[] grownArgs = AddressUtils.allocateMemory(argc, argsTransfer.length);
+            AddressUtils.arraycopy(argsTransfer, 0, grownArgs, 0, argsTransfer.length, AddressUtils.CM_REFERRAL);
+            argsTransfer = grownArgs;
+        }
         for (int i = argc - 1; i >= 0; i--) {
             argsTransfer[i].set(sender.state().popStack());
         }
@@ -330,10 +346,11 @@ public final class InterpreterThread {
 
                             case MSG_POPPING:
                                 state.advance();
-                                if (returnAddress.isValid()) {
-                                    state.pushStack(returnAddress);
-                                    returnAddress.reset();
+                                if (!returnAddress.isValid()) {
+                                    throw new IllegalStateException("No return value received");
                                 }
+                                state.pushStack(returnAddress);
+                                returnAddress.reset();
                                 break;
                         }
 

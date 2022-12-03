@@ -11,46 +11,28 @@ import static jua.runtime.ValueType.*;
 
 public final class Address implements Comparable<Address> {
 
+    /**
+     * @deprecated Используйте {@link AddressUtils#allocateCopy(Address)}. Метод подлежит удалению в ближайшем будущем.
+     */
+    @Deprecated
     public static Address allocateCopy(Address source) {
-        Address copy = new Address();
-        copy.set(source);
-        return copy;
+        return AddressUtils.allocateCopy(source);
     }
 
+    /**
+     * @deprecated Используйте {@link AddressUtils#allocateMemory(int, int)}. Метод подлежит удалению в ближайшем будущем.
+     */
+    @Deprecated
     public static Address[] allocateMemory(int count, int start) {
-        if (!(0xFFFF >= count && count >= start && start >= 0)) {
-            throw new IllegalArgumentException("count: " + count + ", start: " + start);
-        }
-
-        Address[] memory = new Address[count];
-
-        for (int i = start; i < count; i++) {
-            memory[i] = new Address();
-        }
-
-        return memory;
+        return AddressUtils.allocateMemory(count, start);
     }
 
+    /**
+     * @deprecated Используйте {@link AddressUtils#arraycopy(Address[], int, Address[], int, int)}. Метод подлежит удалению в ближайшем будущем.
+     */
+    @Deprecated
     public static void arraycopy(Address[] src, int srcOffset, Address[] dst, int dstOffset, int count) {
-        if (src == null) {
-            throw new IllegalArgumentException("Source memory is null");
-        }
-
-        if (dst == null) {
-            throw new IllegalArgumentException("Destination memory is null");
-        }
-
-        if (srcOffset < 0 || dstOffset < 0 || count < 0 || (srcOffset + count) > src.length || (dstOffset + count) > dst.length) {
-            String message = String.format(
-                    "Memory (length, offset): source (%d, %d), destination (%d, %d). Count: %d",
-                    src.length, srcOffset, dst.length, dstOffset, count
-            );
-            throw new IllegalArgumentException(message);
-        }
-
-        for (int i = 0; i < count; i++) {
-            dst[srcOffset + i].set(src[dstOffset + i]);
-        }
+        AddressUtils.arraycopy(src, srcOffset, dst, dstOffset, count);
     }
 
     /** Тип текущего значения. */
@@ -695,14 +677,16 @@ public final class Address implements Comparable<Address> {
             if (!o.stringVal(tmp)) {
                 throw new AssertionError("Scalar type cannot be converted to string: " + o.getTypeName());
             }
-            return getStringHeap().compareTo(tmp.getStringHeap());
+            int cmp = getStringHeap().compareTo(tmp.getStringHeap());
+            return cmp == 0 && type == o.type ? cmp : -1;
         }
         if (o.type == STRING && isScalar()) {
             Address tmp = new Address();
             if (!stringVal(tmp)) {
                 throw new AssertionError("Scalar type cannot be converted to string: " + o.getTypeName());
             }
-            return tmp.getStringHeap().compareTo(o.getStringHeap());
+            int cmp = tmp.getStringHeap().compareTo(o.getStringHeap());
+            return cmp == 0 && type == o.type ? cmp : -1;
         }
         throw new UnsupportedOperationException();
     }
