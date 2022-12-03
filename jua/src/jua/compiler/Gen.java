@@ -8,7 +8,6 @@ import jua.interpreter.instruction.*;
 import jua.runtime.JuaFunction;
 import jua.util.Assert;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static jua.compiler.InstructionUtils.*;
@@ -181,14 +180,15 @@ public final class Gen extends Scanner {
     @Override
     public void visitBreak(Break tree) {
         // todo: Эта проверка должна находиться в другом этапе
-        if (flow == null) {
+        FlowEnv env = flow;
+        if (env == null) {
             cError(tree.pos, "'break' is not allowed outside of loop/switch.");
             return;
         }
         code.putPos(tree.pos);
-        flow.exitjumps.add(emitGoto());
+        env.exitjumps.add(emitGoto());
         code.dead();
-        flow.interrupted = true;
+        env.interrupted = true;
     }
 
     private int emitGoto() {
@@ -214,7 +214,7 @@ public final class Gen extends Scanner {
             flow.switchDefaultOffset = code.currentIP() - flow.switchStartPC;
         }
 
-        if (flow.caseLabelsConstantIndexes.size() > 10) {
+        if (flow.caseLabelsConstantIndexes.size() <= 16) {
             code.setInstruction(flow.switchStartPC,
                     new Linearswitch(
                             flow.caseLabelsConstantIndexes.toIntArray(),
@@ -280,20 +280,21 @@ public final class Gen extends Scanner {
     @Override
     public void visitContinue(Continue tree) {
         // todo: Эта проверка должна находиться в другом этапе
-        if (!searchEnv(false)) {
+        FlowEnv env = searchEnv(false);
+        if (env == null) {
             cError(tree.pos, "'continue' is not allowed outside of loop.");
             return;
         }
         code.putPos(tree.pos);
-        flow.contjumps.add(emitGoto());
+        env.contjumps.add(emitGoto());
         code.dead();
     }
 
-    private boolean searchEnv(boolean isSwitch) {
+    private FlowEnv searchEnv(boolean isSwitch) {
         for (FlowEnv env = flow; env != null; env = env.parent)
             if (env.isSwitch == isSwitch)
-                return true;
-        return false;
+                return env;
+        return null;
     }
 
     @Override
@@ -321,12 +322,13 @@ public final class Gen extends Scanner {
     @Override
     public void visitFallthrough(Fallthrough tree) {
         // todo: Эта проверка должна находиться в другом этапе
-        if (!searchEnv(true)) {
+        FlowEnv env = searchEnv(true);
+        if (env == null) {
             cError(tree.pos, "'fallthrough' is not allowed outside of switch.");
             return;
         }
         code.putPos(tree.pos);
-        flow.contjumps.add(emitGoto());
+        env.contjumps.add(emitGoto());
         code.dead();
     }
 
