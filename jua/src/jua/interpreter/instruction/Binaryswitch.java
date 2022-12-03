@@ -98,7 +98,7 @@ public final class Binaryswitch extends JumpInstruction {
                 int i = (l + h) >> 1;
                 cp.at(literals[i], tmp);
 
-                int d = sel.quickCompare(tmp, 2);
+                int d = sel.compareTo(tmp);
 
                 if (d > 0) {
                     l = i + 1;

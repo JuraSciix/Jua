@@ -53,7 +53,7 @@ public final class Linearswitch extends JumpInstruction {
         Address tmp = new Address();
         for (int i = 0; i < l.length; i++) {
             state.constant_pool().at(l[i]).writeToAddress(tmp);
-            if (selector.quickCompare(tmp, 1) == 0) {
+            if (selector.compareTo(tmp) == 0) {
                 state.offset(destIps[i]);
                 return;
             }
