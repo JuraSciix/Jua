@@ -1,5 +1,8 @@
 package jua.runtime.heap;
 
+import java.io.IOException;
+import java.io.Writer;
+
 public final class StringHeap implements CharSequence, Heap, Comparable<StringHeap> {
 
     private static final ThreadLocal<StringHeap> TMP = new ThreadLocal<StringHeap>() {
@@ -124,6 +127,24 @@ public final class StringHeap implements CharSequence, Heap, Comparable<StringHe
         hashCodeCalculated = false;
     }
 
+    public void writeTo(Writer writer) throws IOException {
+        int i = 0;
+        int j = buffer.length();
+
+        while (i < j) {
+            int codePoint = buffer.codePointAt(i);
+            writer.write(codePoint);
+            i += Character.charCount(i);
+        }
+    }
+
+    @Override
+    public int compareTo(StringHeap o) {
+        if (this == o) return 0;
+        // todo: Исправить ленивую реализацию
+        return buffer.toString().compareTo(o.buffer.toString());
+    }
+
     @Override
     public int hashCode() {
         if (hashCodeCalculated) return hashCode;
@@ -145,13 +166,6 @@ public final class StringHeap implements CharSequence, Heap, Comparable<StringHe
 
     @Override
     public String toString() {
-        return buffer.toString();
-    }
-
-    @Override
-    public int compareTo(StringHeap o) {
-        if (this == o) return 0;
-        // todo: Исправить ленивую реализацию
-        return buffer.toString().compareTo(o.buffer.toString());
+        return '"' + buffer.toString() + '"';
     }
 }

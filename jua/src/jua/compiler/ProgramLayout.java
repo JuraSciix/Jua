@@ -11,6 +11,8 @@ import jua.runtime.heap.MapHeap;
 import jua.runtime.heap.Operand;
 import jua.runtime.heap.StringHeap;
 
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -18,28 +20,15 @@ public final class ProgramLayout {
 
     private static List<JuaFunction> builtinFunctions() {
         return Arrays.asList(
-                func("print", 0, 255, (thread, args, argc, returnAddress) -> {
-                    Address tmp = thread.getTempAddress();
-                    for (int i = 0; i < argc; i++) {
-                        if (!args[i].stringVal(tmp)) {
-                            return false;
-                        }
-                        System.out.print(tmp.getStringHeap().toString());
-                    }
-                    returnAddress.setNull();
-                    return true;
-                }),
+                func("print", 0, 255, ProgramLayout::nativePrint),
 
                 func("println", 0, 255, (thread, args, argc, returnAddress) -> {
-                    Address tmp = thread.getTempAddress();
-                    for (int i = 0; i < argc; i++) {
-                        if (!args[i].stringVal(tmp)) {
-                            return false;
-                        }
-                        System.out.println(tmp.getStringHeap().toString());
+                    if (nativePrint(thread, args, argc, returnAddress)) {
+                        System.out.println();
+                        return true;
+                    } else {
+                        return false;
                     }
-                    returnAddress.setNull();
-                    return true;
                 }),
 
                 func("ns_time", 0, 0, (thread, args, argc, returnAddress) -> {
@@ -170,6 +159,24 @@ public final class ProgramLayout {
 //                    }
 //                })
         );
+    }
+
+    private static boolean nativePrint(InterpreterThread thread, Address[] args, int argc, Address returnAddress) {
+        Address tmp = thread.getTempAddress();
+        PrintWriter writer = new PrintWriter(System.out);
+        for (int i = 0; i < argc; i++) {
+            if (!args[i].stringVal(tmp)) {
+                return false;
+            }
+            try {
+                tmp.getStringHeap().writeTo(writer);
+            } catch (IOException e) {
+                thread.error("Native error: " + e);
+                return false;
+            }
+        }
+        returnAddress.setNull();
+        return true;
     }
 
     private static JuaFunction func(String name, int fromargc, int toargc, JuaNativeExecutor body) {
