@@ -12,6 +12,10 @@ public final class Conversions {
         return b ? 1L : 0L;
     }
 
+    public static double b2d(boolean b) {
+        return b ? 1.0 : 0.0;
+    }
+
     public static String l2s(long l) {
         return Long.toString(l);
     }

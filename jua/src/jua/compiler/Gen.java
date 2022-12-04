@@ -449,7 +449,7 @@ public final class Gen extends Scanner {
                         cError(expr.pos, "The values of the optional parameters can only be literals");
                         continue;
                     }
-                    code.get_cpb().putDefaultLocalEntry(localIdx, ((Literal) expr).type.getConstantIndex());
+                    code.get_cpb().putDefaultLocalEntry(localIdx, ((Literal) expr).type.resolvePoolConstant(code));
                     nOptionals++;
                 }
             }
@@ -1377,7 +1377,7 @@ public final class Gen extends Scanner {
         void drop() { /* no-op */ }
 
         @Override
-        int constantIndex() { return type.getConstantIndex(); }
+        int constantIndex() { return type.resolvePoolConstant(code); }
     }
 
     /** Обращение к локальной переменной. */

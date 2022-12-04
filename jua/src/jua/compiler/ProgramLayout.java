@@ -224,6 +224,7 @@ public final class ProgramLayout {
         List<Statement> toRemove = new ArrayList<>();
 
         CompilationUnit top = (CompilationUnit) mainTree;
+        top.code = new Code(top.source);
 
         mainSource = top.source;
 
@@ -268,6 +269,7 @@ public final class ProgramLayout {
 
         List<JuaFunction> functions = funcDefs.stream()
                 .map(fn -> {
+                    fn.code = new Code(mainSource);
                     Gen codegen = new Gen(this);
                     codegen.funcSource = mainSource;
                     fn.accept(codegen);

@@ -1,27 +1,17 @@
 package jua.compiler;
 
 import jua.compiler.Tree.*;
-import jua.compiler.Types.Type;
-import jua.util.Assert;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static jua.compiler.TreeInfo.*;
+import static jua.compiler.TreeInfo.isLiteralNull;
+import static jua.compiler.TreeInfo.stripParens;
+import static jua.compiler.Types.*;
 
 public final class Lower extends Translator {
     
     private final Map<String, Type> constantLiterals = new HashMap<>();
-    
-    Types types;
-    
-    @Override
-    public void visitCompilationUnit(CompilationUnit tree) {
-        Assert.check(types == null);
-        types = tree.code.getTypes();
-        super.visitCompilationUnit(tree);
-        types = null;
-    }
 
     @Override
     public void visitConstDef(ConstDef tree) {
@@ -38,21 +28,10 @@ public final class Lower extends Translator {
     }
 
     @Override
-    public void visitFuncDef(FuncDef tree) {
-        Types prevTypes = types;
-        try {
-            types = tree.code.getTypes();
-            super.visitFuncDef(tree);
-        } finally {
-            types = prevTypes;
-        }
-    }
-
-    @Override
     public void visitVariable(Var tree) {
         String nameString = tree.name.value;
         if (constantLiterals.containsKey(nameString)) {
-            result = new Literal(tree.pos, constantLiterals.get(nameString).copy(types));
+            result = new Literal(tree.pos, constantLiterals.get(nameString));
         } else {
             result = tree;
         }
@@ -118,31 +97,31 @@ public final class Lower extends Translator {
         switch (tree.tag) {
             case ADD:
                 if (lhs.isLong() && rhs.isLong()) {
-                    return types.asLong(lhs.longValue() + rhs.longValue());
+                    return new LongType(lhs.longValue() + rhs.longValue());
                 }
                 if (lhs.isNumber() && rhs.isNumber()) {
-                    return types.asDouble(lhs.doubleValue() + rhs.doubleValue());
+                    return new DoubleType(lhs.doubleValue() + rhs.doubleValue());
                 }
                 if (lhs.isString() || rhs.isString()) {
-                    return types.asString(lhs.stringValue() + rhs.stringValue());
+                    return new StringType(lhs.stringValue() + rhs.stringValue());
                 }
                 break;
                 
             case SUB:
                 if (lhs.isLong() && rhs.isLong()) {
-                    return types.asLong(lhs.longValue() - rhs.longValue());
+                    return new LongType(lhs.longValue() - rhs.longValue());
                 }
                 if (lhs.isNumber() && rhs.isNumber()) {
-                    return types.asDouble(lhs.doubleValue() - rhs.doubleValue());
+                    return new DoubleType(lhs.doubleValue() - rhs.doubleValue());
                 }
                 break;
                 
             case MUL:
                 if (lhs.isLong() && rhs.isLong()) {
-                    return types.asLong(lhs.longValue() * rhs.longValue());
+                    return new LongType(lhs.longValue() * rhs.longValue());
                 }
                 if (lhs.isNumber() && rhs.isNumber()) {
-                    return types.asDouble(lhs.doubleValue() * rhs.doubleValue());
+                    return new DoubleType(lhs.doubleValue() * rhs.doubleValue());
                 }
                 break;
                 
@@ -152,10 +131,10 @@ public final class Lower extends Translator {
                     if (divisor == 0L) {
                         break; // Мы не можем поделить целое число на ноль
                     }
-                    return types.asLong(lhs.longValue() / divisor);
+                    return new LongType(lhs.longValue() / divisor);
                 }
                 if (lhs.isNumber() && rhs.isNumber()) {
-                    return types.asDouble(lhs.doubleValue() / rhs.doubleValue());
+                    return new DoubleType(lhs.doubleValue() / rhs.doubleValue());
                 }
                 break;
 
@@ -165,62 +144,62 @@ public final class Lower extends Translator {
                     if (divisor == 0L) {
                         break; // Мы не можем взять остаток от нуля
                     }
-                    return types.asLong(lhs.longValue() % divisor);
+                    return new LongType(lhs.longValue() % divisor);
                 }
                 if (lhs.isNumber() && rhs.isNumber()) {
                     double divisor = rhs.doubleValue();
                     if (divisor == 0.0) {
                         break; // Мы не можем взять остаток от нуля
                     }
-                    return types.asDouble(lhs.doubleValue() % divisor);
+                    return new DoubleType(lhs.doubleValue() % divisor);
                 }
                 break;
                 
             case SL:
                 if (lhs.isLong() && rhs.isLong()) {
-                    return types.asLong(lhs.longValue() >> rhs.longValue());
+                    return new LongType(lhs.longValue() >> rhs.longValue());
                 }
                 break;
 
             case SR:
                 if (lhs.isLong() && rhs.isLong()) {
-                    return types.asLong(lhs.longValue() << rhs.longValue());
+                    return new LongType(lhs.longValue() << rhs.longValue());
                 }
                 break;
 
             case AND:
                 if (lhs.isLong() && rhs.isLong()) {
-                    return types.asLong(lhs.longValue() & rhs.longValue());
+                    return new LongType(lhs.longValue() & rhs.longValue());
                 }
                 if (lhs.isBoolean() && rhs.isBoolean()) {
-                    return types.asBoolean(lhs.booleanValue() & rhs.booleanValue());
+                    return ofBoolean(lhs.booleanValue() & rhs.booleanValue());
                 }
                 break;
 
             case OR:
                 if (lhs.isLong() && rhs.isLong()) {
-                    return types.asLong(lhs.longValue() | rhs.longValue());
+                    return new LongType(lhs.longValue() | rhs.longValue());
                 }
                 if (lhs.isBoolean() && rhs.isBoolean()) {
-                    return types.asBoolean(lhs.booleanValue() | rhs.booleanValue());
+                    return ofBoolean(lhs.booleanValue() | rhs.booleanValue());
                 }
                 break;
 
             case XOR:
                 if (lhs.isLong() && rhs.isLong()) {
-                    return types.asLong(lhs.longValue() ^ rhs.longValue());
+                    return new LongType(lhs.longValue() ^ rhs.longValue());
                 }
                 if (lhs.isBoolean() && rhs.isBoolean()) {
-                    return types.asBoolean(lhs.booleanValue() ^ rhs.booleanValue());
+                    return ofBoolean(lhs.booleanValue() ^ rhs.booleanValue());
                 }
                 break;
 
-            case EQ: return types.asBoolean(lhs.quickCompare(rhs, 2) == 0);
-            case NE: return types.asBoolean(lhs.quickCompare(rhs, 2) != 0);
-            case GT: return types.asBoolean(lhs.quickCompare(rhs, 0) > 0);
-            case GE: return types.asBoolean(lhs.quickCompare(rhs, -1) >= 0);
-            case LT: return types.asBoolean(lhs.quickCompare(rhs, 0) < 0);
-            case LE: return types.asBoolean(lhs.quickCompare(rhs, 1) <= 0);
+            case EQ: return ofBoolean(lhs.quickCompare(rhs, 2) == 0);
+            case NE: return ofBoolean(lhs.quickCompare(rhs, 2) != 0);
+            case GT: return ofBoolean(lhs.quickCompare(rhs, 0) > 0);
+            case GE: return ofBoolean(lhs.quickCompare(rhs, -1) >= 0);
+            case LT: return ofBoolean(lhs.quickCompare(rhs, 0) < 0);
+            case LE: return ofBoolean(lhs.quickCompare(rhs, 1) <= 0);
         }
 
         return null; // Не успех
@@ -263,19 +242,19 @@ public final class Lower extends Translator {
 
             case NEG:
                 if (type.isLong()) {
-                    return types.asLong(-type.longValue());
+                    return new LongType(-type.longValue());
                 }
                 if (type.isDouble()) {
-                    return types.asDouble(-type.doubleValue());
+                    return new DoubleType(-type.doubleValue());
                 }
                 break;
 
             case NOT:
-                return types.asBoolean(!type.booleanValue());
+                return ofBoolean(!type.booleanValue());
 
             case INVERSE:
                 if (type.isLong()) {
-                    return types.asLong(~type.longValue());
+                    return new LongType(~type.longValue());
                 }
                 break;
         }

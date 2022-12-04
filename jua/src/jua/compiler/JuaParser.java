@@ -9,6 +9,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static jua.compiler.Tokens.TokenType.*;
+import static jua.compiler.Types.*;
 
 public class JuaParser {
 
@@ -32,12 +33,9 @@ public class JuaParser {
 
     Token token;
 
-    Code code;
-
     public JuaParser(Source source) {
         this.source = source;
         tokenizer = new Tokenizer(source);
-        code = new Code(source);
     }
 
     public Tree parse() {
@@ -50,9 +48,7 @@ public class JuaParser {
                 source.getLog().error(e.pos, e.msg);
             }
         }
-        CompilationUnit tree = new CompilationUnit(source, stats);
-        tree.code = code;
-        return tree;
+        return new CompilationUnit(source, stats);
     }
 
     private Statement parseStatement() {
@@ -173,40 +169,32 @@ public class JuaParser {
     }
 
     private Statement parseFunction(int pos) {
-        Code prevCode = code;
-        try {
-            code = new Code(source);
-            Name funcName = token.toName();
-            expectToken(IDENTIFIER);
-            expectToken(LPAREN);
-            List<FuncDef.Parameter> params = new LinkedList<>();
-            boolean comma = false, optionalState = false;
+        Name funcName = token.toName();
+        expectToken(IDENTIFIER);
+        expectToken(LPAREN);
+        List<FuncDef.Parameter> params = new LinkedList<>();
+        boolean comma = false, optionalState = false;
 
-            while (!acceptToken(RPAREN)) {
-                if (acceptToken(EOF) || comma && !acceptToken(COMMA)) {
-                    expectToken(RPAREN);
-                }
-                Token name0 = token;
-                expectToken(IDENTIFIER);
-                Name name1 = name0.toName();
-                Expression optional = null;
-
-                if (acceptToken(EQ)) {
-                    optional = parseExpression();
-                    optionalState = true;
-                } else if (optionalState) {
-                    pError(name0.pos, "here must be a optional argument.");
-                }
-                params.add(new FuncDef.Parameter(name1, optional));
-                comma = !acceptToken(COMMA);
+        while (!acceptToken(RPAREN)) {
+            if (acceptToken(EOF) || comma && !acceptToken(COMMA)) {
+                expectToken(RPAREN);
             }
-            Statement body = parseBody();
-            FuncDef tree = new FuncDef(pos, funcName, params, body);
-            tree.code = code;
-            return tree;
-        } finally {
-            code = prevCode;
+            Token name0 = token;
+            expectToken(IDENTIFIER);
+            Name name1 = name0.toName();
+            Expression optional = null;
+
+            if (acceptToken(EQ)) {
+                optional = parseExpression();
+                optionalState = true;
+            } else if (optionalState) {
+                pError(name0.pos, "here must be a optional argument.");
+            }
+            params.add(new FuncDef.Parameter(name1, optional));
+            comma = !acceptToken(COMMA);
         }
+        Statement body = parseBody();
+        return new FuncDef(pos, funcName, params, body);
     }
 
     private Statement parseBody() {
@@ -702,7 +690,7 @@ public class JuaParser {
                 pError(token.pos, "missing expected expression.");
             }
             case FALSE: {
-                return new Literal(token.pos, code.getTypes().asBoolean(false));
+                return new Literal(token.pos, ofBoolean(false));
             }
             case FLOATLITERAL: {
                 return parseFloat(token);
@@ -723,13 +711,13 @@ public class JuaParser {
                 return parseParens(token.pos);
             }
             case NULL: {
-                return new Literal(token.pos, code.getTypes().asNull());
+                return new Literal(token.pos, nullType());
             }
             case STRINGLITERAL: {
-                return new Literal(token.pos, code.getTypes().asString(token.value()));
+                return new Literal(token.pos, new StringType(token.value()));
             }
             case TRUE: {
-                return new Literal(token.pos, code.getTypes().asBoolean(true));
+                return new Literal(token.pos, ofBoolean(true));
             }
             default:
                 unexpected(token);
@@ -746,7 +734,7 @@ public class JuaParser {
         if ((d == 0.0) && !token.value().matches("\\.?0\\.?\\d*(?:[Ee][+-]\\d+)?$")) {
             pError(token.pos, "number too small.");
         }
-        return new Literal(token.pos, code.getTypes().asDouble(d));
+        return new Literal(token.pos, new DoubleType(d));
     }
 
     private Expression parseIdentifier(Token token) {
@@ -791,7 +779,7 @@ public class JuaParser {
 
     private Expression parseInt(Token token) {
         try {
-            return new Literal(token.pos, code.getTypes().asLong(Long.parseLong(token.value(), token.radix())));
+            return new Literal(token.pos, new LongType(Long.parseLong(token.value(), token.radix())));
         } catch (NumberFormatException e) {
             pError(token.pos, "number too large.");
             return null;

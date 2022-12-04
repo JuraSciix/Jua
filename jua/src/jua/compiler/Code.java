@@ -315,9 +315,4 @@ public final class Code {
     }
 
     private Types types;
-
-    Types getTypes() {
-        if (types == null) types = new Types(this);
-        return types;
-    }
 }
