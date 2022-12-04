@@ -1,5 +1,6 @@
 package jua.compiler;
 
+import jua.interpreter.Address;
 import jua.runtime.code.CodeSegment;
 import jua.interpreter.instruction.Instruction;
 import jua.runtime.JuaFunction;
@@ -13,7 +14,7 @@ import java.util.stream.Collectors;
 
 public class CodePrinter {
 
-    private static class Case {
+    private class Case {
 
         private final int[] operands;
 
@@ -30,7 +31,10 @@ public class CodePrinter {
         @Override
         public String toString() {
             String operands0 = (operands == null) ? "default" : Arrays.stream(operands)
-                    .mapToObj(a -> program.constantPool().at(a).toString())
+                    .mapToObj(index -> {
+                        program.constantPool().load(index, address);
+                        return address.toString();
+                    })
                     .collect(Collectors.joining(", "));
             return String.format("%s: ->%d", operands0, index);
         }
@@ -99,7 +103,8 @@ public class CodePrinter {
                 System.out.print(p.localNameTable().nameOf(i));
                 if (i >= function.minNumArgs()) {
                     System.out.print(" = ");
-                    System.out.print(p.constantPool().defaultLocalAt(i).toString());
+                    p.constantPool().load(p.localNameTable().defaultPCIOf(i), address);
+                    System.out.print(address);
                 }
             }
             System.out.println(") { // id=" + functions.indexOf(function));
@@ -204,9 +209,11 @@ public class CodePrinter {
         preparePrint().cases.add(new Case(operands, this.index + index - 1, program));
     }
 
+    private static final Address address = new Address();
+
     public void printLiteral(int index) {
-        Operand constant = program.constantPool().at(index);
-        preparePrint().operands.add(String.format("#%d (%s %s)", index, constant.type().name, constant));
+        program.constantPool().load(index, address);
+        preparePrint().operands.add(String.format("#%d (%s %s)", index, address.getTypeName(), address));
     }
 
     public void printFunctionRef(int index) {

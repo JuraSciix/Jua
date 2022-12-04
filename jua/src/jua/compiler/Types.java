@@ -62,7 +62,7 @@ public interface Types {
         public Operand toOperand() { return NullOperand.NULL; }
 
         @Override
-        public int resolvePoolConstant(Code code) { return code.get_cpb().putNullEntry(); }
+        public int resolvePoolConstant(Code code) { return code.resolveNull(); }
 
         @Override
         public int compareTo(Type o) {
@@ -198,7 +198,7 @@ public interface Types {
         public Operand toOperand() { return BooleanOperand.valueOf(value); }
 
         @Override
-        public int resolvePoolConstant(Code code) { return value ? code.get_cpb().putTrueEntry() : code.get_cpb().putFalseEntry(); }
+        public int resolvePoolConstant(Code code) { return code.resolveBoolean(value); }
 
         @Override
         public int compareTo(Type o) {

@@ -1,17 +1,21 @@
 package jua.runtime.code;
 
-import java.util.Map;
+import jua.runtime.LocalTable;
 
+@Deprecated
 public final class LocalNameTable {
 
-    private final String[] localNameTable;
+    private final LocalTable localTable;
 
-    public LocalNameTable(Map<String, Integer> sharedLocalNameTable) {
-        // todo: Проверить существование конфликтов переменных в разных областях видимости.
-        localNameTable = sharedLocalNameTable.keySet().toArray(new String[0]);
+    public LocalNameTable(LocalTable localTable) {
+        this.localTable = localTable;
     }
 
     public String nameOf(int localIndex) {
-        return localNameTable[localIndex];
+        return localTable.getLocalName(localIndex);
+    }
+
+    public int defaultPCIOf(int localIndex) {
+        return localTable.getLocalDefaultPCI(localIndex);
     }
 }

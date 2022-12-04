@@ -337,7 +337,10 @@ public final class InterpreterThread {
                                 }
 
                                 for (int i = numArgs; i < frame.owningFunction().maxNumArgs(); i++) {
-                                    state.constant_pool().defaultLocalAt(i).writeToAddress(state.locals[i]);
+                                    state.constant_pool().load(
+                                            frame.owningFunction().codeSegment().localNameTable().defaultPCIOf(i),
+                                            state.locals[i]
+                                    );
                                 }
 
                                 calleeId = -1;

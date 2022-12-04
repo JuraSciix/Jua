@@ -449,7 +449,8 @@ public final class Gen extends Scanner {
                         cError(expr.pos, "The values of the optional parameters can only be literals");
                         continue;
                     }
-                    code.get_cpb().putDefaultLocalEntry(localIdx, ((Literal) expr).type.resolvePoolConstant(code));
+
+                    code.setLocalDefaultPCI(name, ((Literal) expr).type.resolvePoolConstant(code));
                     nOptionals++;
                 }
             }

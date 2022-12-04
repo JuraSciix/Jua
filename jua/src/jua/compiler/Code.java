@@ -6,18 +6,20 @@ import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.shorts.Short2IntRBTreeMap;
 import it.unimi.dsi.fastutil.shorts.Short2IntSortedMap;
+import jua.compiler.Tree.Name;
+import jua.interpreter.Address;
+import jua.interpreter.instruction.Binaryswitch;
 import jua.interpreter.instruction.Instruction;
 import jua.interpreter.instruction.JumpInstruction;
-import jua.interpreter.instruction.Binaryswitch;
+import jua.runtime.LocalTable;
 import jua.runtime.code.CodeSegment;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.LineNumberTable;
 import jua.runtime.code.LocalNameTable;
+import jua.runtime.heap.StringHeap;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
+import java.util.*;
+import java.util.function.Supplier;
 
 public final class Code {
 
@@ -46,7 +48,7 @@ public final class Code {
 
     final Object2IntMap<String> localNames = new Object2IntLinkedOpenHashMap<>();
 
-    final ConstantPool.Builder constant_pool_b = new ConstantPool.Builder();
+    final ConstantPoolBuilder constant_pool_b = new ConstantPoolBuilder();
 
     int nstack = 0;
 
@@ -252,7 +254,7 @@ public final class Code {
         return this.localNames.containsKey(name);
     }
 
-    public int resolveLocal(Tree.Name name) {
+    public int resolveLocal(Name name) {
         return resolveLocal(name.value);
     }
 
@@ -267,9 +269,11 @@ public final class Code {
         }
     }
 
-    public int resolveLong(long value) { return this.constant_pool_b.putLongEntry(value); }
-    public int resolveDouble(double value) { return this.constant_pool_b.putDoubleEntry(value); }
-    public int resolveString(String value) { return this.constant_pool_b.putStringEntry(value); }
+    public int resolveNull() { return constant_pool_b.putNull(); }
+    public int resolveLong(long value) { return constant_pool_b.putLong(value); }
+    public int resolveDouble(double value) { return constant_pool_b.putDouble(value); }
+    public int resolveBoolean(boolean value) { return constant_pool_b.putBoolean(value); }
+    public int resolveString(String value) { return constant_pool_b.putString(value); }
 
     public CodeSegment buildCodeSegment() {
         ConstantPool cp = buildConstantPool();
@@ -277,8 +281,8 @@ public final class Code {
                 this.nstack,
                 this.nlocals,
                 cp,
-                buildLineTable(),
-                new LocalNameTable(this.localNames));
+                buildLineNumberTable(),
+                new LocalNameTable(buildLocalTable()));
     }
 
     private static final Instruction[] EMPTY_INSTRUCTIONS = new Instruction[0];
@@ -299,20 +303,102 @@ public final class Code {
         return instructions;
     }
 
-    private LineNumberTable buildLineTable() {
+    private LineNumberTable buildLineNumberTable() {
         return new LineNumberTable(
-                this.lineTable.keySet().toShortArray(),
-                this.lineTable.values().toIntArray()
+                lineTable.keySet().toShortArray(),
+                lineTable.values().toIntArray()
         );
+    }
+
+    private LocalTable buildLocalTable() {
+        LocalTable.Local[] locals = new LocalTable.Local[localNames.size()];
+
+        for (String name : localNames.keySet()) {
+            int index = localNames.getInt(name);
+            locals[index] = new LocalTable.Local(name, defaultPCIs.getOrDefault(name, -1));
+        }
+
+        return new LocalTable(locals);
     }
 
     private ConstantPool buildConstantPool() {
         return this.constant_pool_b.build();
     }
 
-    ConstantPool.Builder get_cpb() {
+    ConstantPoolBuilder get_cpb() {
         return this.constant_pool_b;
     }
 
-    private Types types;
+    Map<String, Integer> defaultPCIs = new HashMap<>();
+
+    void setLocalDefaultPCI(Name name, int defaultPCI) {
+        defaultPCIs.put(name.value, defaultPCI);
+    }
+
+    public static final class ConstantPoolBuilder {
+
+        final Map<Object, Integer> indexMap = new HashMap<>();
+
+        Address[] entries = new Address[1];
+
+        private int putLenient(Object key, Supplier<Address> addressSupplier) {
+            return indexMap.computeIfAbsent(key, _key -> {
+                int newIdx = indexMap.size();
+                if (newIdx >= entries.length) {
+                    if (newIdx > ConstantPool.MAX_SIZE) {
+                        throw new OutOfMemoryError(); // todo: Выбрасывать соответствующе исключение
+                    }
+                    entries = Arrays.copyOf(entries, entries.length << 1);
+                }
+                entries[newIdx] = addressSupplier.get();
+                return newIdx;
+            });
+        }
+
+        public int putNull() {
+            return putLenient(null, () -> {
+                Address a = new Address();
+                a.setNull();
+                return a;
+            });
+        }
+
+        public int putLong(long value) {
+            return putLenient(value, () -> {
+                Address a = new Address();
+                a.set(value);
+                return a;
+            });
+        }
+
+        public int putDouble(double value) {
+            return putLenient(value, () -> {
+                Address a = new Address();
+                a.set(value);
+                return a;
+            });
+        }
+
+        public int putBoolean(boolean value) {
+            return putLenient(value, () -> {
+                Address a = new Address();
+                a.set(value);
+                return a;
+            });
+        }
+
+        public int putString(String value) {
+            return putLenient(value, () -> {
+                Address a = new Address();
+                a.set(new StringHeap(value));
+                return a;
+            });
+        }
+
+        // todo: putMap
+
+        public ConstantPool build() {
+            return new ConstantPool(entries);
+        }
+    }
 }
