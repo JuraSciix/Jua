@@ -6,7 +6,7 @@ import static java.lang.Character.*;
 import static jua.compiler.Tokens.*;
 import static jua.compiler.Tokens.TokenType.*;
 
-public class Tokenizer implements AutoCloseable {
+public class Tokenizer implements Lexer, AutoCloseable {
 
     private static class TokenBuilder {
 
@@ -71,6 +71,7 @@ public class Tokenizer implements AutoCloseable {
         return true;
     }
 
+    @Override
     public Token nextToken() {
         while (reader.hasMore()) {
             pos = reader.cursor();

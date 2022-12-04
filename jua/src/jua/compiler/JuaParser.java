@@ -11,7 +11,7 @@ import java.util.List;
 import static jua.compiler.Tokens.TokenType.*;
 import static jua.compiler.Types.*;
 
-public class JuaParser {
+public final class JuaParser implements Parser {
 
     // todo: Рефакторинг и оптимизация.
 
@@ -29,7 +29,7 @@ public class JuaParser {
 
     private final Source source;
 
-    private final Tokenizer tokenizer;
+    private final Lexer tokenizer;
 
     Token token;
 
@@ -38,7 +38,8 @@ public class JuaParser {
         tokenizer = new Tokenizer(source);
     }
 
-    public Tree parse() {
+    @Override
+    public CompilationUnit parseCompilationUnit() {
         List<Statement> stats = new LinkedList<>();
         nextToken();
         while (!acceptToken(EOF)) {
@@ -51,7 +52,8 @@ public class JuaParser {
         return new CompilationUnit(source, stats);
     }
 
-    private Statement parseStatement() {
+    @Override
+    public Statement parseStatement() {
         int position = token.pos;
 
         switch (token.type) {
@@ -168,7 +170,14 @@ public class JuaParser {
         return new Fallthrough(position);
     }
 
-    private Statement parseFunction(int pos) {
+    @Override
+    public FuncDef parseFunctionDeclare() {
+        int pos = token.pos;
+        expectToken(FN);
+        return parseFunction(pos);
+    }
+
+    private FuncDef parseFunction(int pos) {
         Name funcName = token.toName();
         expectToken(IDENTIFIER);
         expectToken(LPAREN);
@@ -333,7 +342,8 @@ public class JuaParser {
         return expressions;
     }
 
-    private Expression parseExpression() {
+    @Override
+    public Expression parseExpression() {
         return parseAssignment();
     }
 

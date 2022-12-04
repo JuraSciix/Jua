@@ -20,8 +20,8 @@ public final class JuaCompiler {
         try {
             ProgramLayout programLayout = new ProgramLayout();
 
-            JuaParser parser = new JuaParser(source);
-            programLayout.mainTree = parser.parse();
+            Parser parser = new JuaParser(source);
+            programLayout.topTree = parser.parseCompilationUnit();
             programLayout.lower = new Lower();
             Program program = programLayout.buildProgram();
             if (!source.getLog().hasErrors()) {

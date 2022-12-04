@@ -185,7 +185,7 @@ public final class ProgramLayout {
 
     Source mainSource;
 
-    Tree mainTree;
+    CompilationUnit topTree;
 
     private final Map<String, Integer> constantMap = new HashMap<>();
 
@@ -225,21 +225,19 @@ public final class ProgramLayout {
     Lower lower;
 
     public Program buildProgram() {
-        mainTree.accept(lower);
+        topTree.accept(lower);
         Gen mainCodegen = new Gen(this);
 
         List<Statement> toRemove = new ArrayList<>();
 
-        CompilationUnit top = (CompilationUnit) mainTree;
-        top.code = new Code(top.source);
-
-        mainSource = top.source;
+        topTree.code = new Code(topTree.source);
+        mainSource = topTree.source;
 
         List<JuaFunction> builtinFunctions = builtinFunctions();
         Map<Integer, JuaFunction> a = builtinFunctions.stream()
                 .collect(Collectors.toMap(f -> addFunction(f.name()), f -> f));
 
-        List<FuncDef> funcDefs = top.stats.stream()
+        List<FuncDef> funcDefs = topTree.stats.stream()
                 .filter(stmt -> stmt.hasTag(Tag.FUNCDEF))
                 .map(fn -> (FuncDef) fn)
                 .peek(fn -> {
@@ -253,7 +251,7 @@ public final class ProgramLayout {
                 })
                 .collect(Collectors.toList());
 
-        List<ConstDef.Definition> constantDefs = top.stats.stream()
+        List<ConstDef.Definition> constantDefs = topTree.stats.stream()
                 .filter(stmt -> stmt.hasTag(Tag.CONSTDEF))
                 .flatMap(stmt -> {
                     toRemove.add(stmt);
@@ -269,9 +267,9 @@ public final class ProgramLayout {
                 })
                 .collect(Collectors.toList());
 
-        top.stats.removeAll(toRemove);
+        topTree.stats.removeAll(toRemove);
 
-        mainTree.accept(mainCodegen);
+        topTree.accept(mainCodegen);
 
 
         List<JuaFunction> functions = funcDefs.stream()

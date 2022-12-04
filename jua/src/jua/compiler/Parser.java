@@ -1,12 +1,17 @@
 package jua.compiler;
 
-import jua.compiler.Tree;
+import jua.compiler.Tree.CompilationUnit;
+import jua.compiler.Tree.Expression;
+import jua.compiler.Tree.FuncDef;
+import jua.compiler.Tree.Statement;
 
 public interface Parser {
 
-    Tree.CompilationUnit parse();
+    CompilationUnit parseCompilationUnit();
 
-    Tree.Statement parseStatement();
+    FuncDef parseFunctionDeclare();
 
-    Tree.Expression parseExpression();
+    Statement parseStatement();
+
+    Expression parseExpression();
 }
