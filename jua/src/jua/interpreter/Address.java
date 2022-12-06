@@ -617,6 +617,33 @@ public final class Address implements Comparable<Address> {
         return false;
     }
 
+    public boolean store(Address key, Address value) {
+        if (type != MAP) {
+            threadError("trying to store array-element to %s", getTypeName());
+            return false;
+        }
+
+        getMapHeap().put(key, value);
+        return true;
+    }
+
+    public boolean load(Address key, Address receptor) {
+        if (type != MAP) {
+            threadError("trying to load array-element from %s", getTypeName());
+            return false;
+        }
+
+        MapHeap map = getMapHeap();
+
+        if (map.containsKey(key)) {
+            receptor.set(map.get(key));
+        } else {
+            receptor.setNull();
+        }
+
+        return true;
+    }
+
     public int quickCompare(Address rhs, int except) {
         int union = getTypeUnion(type, rhs.type);
 

@@ -105,6 +105,10 @@ public final class MapHeap implements Heap, Iterable<Address> {
         return keys;
     }
 
+    public boolean containsKey(Address key) {
+        return map.containsKey(key);
+    }
+
     @Override
     public int hashCode() { return map.hashCode(); }
 

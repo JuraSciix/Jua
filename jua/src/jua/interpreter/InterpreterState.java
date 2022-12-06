@@ -132,7 +132,7 @@ public final class InterpreterState {
 
 
     public Address peekStack() {
-        return stack[sp - 1];
+        return first();
     }
 
     @Deprecated
@@ -195,37 +195,41 @@ public final class InterpreterState {
     }
 
     public void dup1_x1() {
-        stack[sp].set(stack[sp - 1]);
-        stack[sp - 1].set(stack[sp - 2]);
-        stack[sp - 2].set(stack[sp]);
+        stack[sp].set(first());
+        first().set(second());
+        second().set(stack[sp]);
         sp++;
         next();
     }
 
+    private Address first() {
+        return stack[sp - 1];
+    }
+
     public void dup1_x2() {
-        stack[sp].set(stack[sp - 1]);
-        stack[sp - 1].set(stack[sp - 2]);
-        stack[sp - 2].set(stack[sp - 3]);
-        stack[sp - 3].set(stack[sp]);
+        stack[sp].set(first());
+        first().set(second());
+        second().set(third());
+        third().set(stack[sp]);
         sp++;
         next();
     }
 
     public void dup2_x1() {
-        stack[sp + 1].set(stack[sp - 1]);
-        stack[sp].set(stack[sp - 2]);
-        stack[sp - 2].set(stack[sp - 3]);
-        stack[sp - 3].set(stack[sp + 1]);
+        stack[sp + 1].set(first());
+        stack[sp].set(second());
+        second().set(third());
+        third().set(stack[sp + 1]);
         stack[sp - 4].set(stack[sp]);
         sp += 2;
         next();
     }
 
     public void dup2_x2() {
-        stack[sp + 1].set(stack[sp - 1]);
-        stack[sp].set(stack[sp - 2]);
-        stack[sp - 1].set(stack[sp - 3]);
-        stack[sp - 2].set(stack[sp - 4]);
+        stack[sp + 1].set(first());
+        stack[sp].set(second());
+        first().set(third());
+        second().set(stack[sp - 4]);
         stack[sp - 4].set(stack[sp + 1]);
         stack[sp - 5].set(stack[sp]);
         sp += 2;
@@ -233,22 +237,14 @@ public final class InterpreterState {
     }
 
     public void stackAdd() {
-        if (lhs().add(rhs(), lhs())) {
+        if (second().add(first(), second())) {
             sp--;
             next();
         }
     }
 
-    private Address lhs() {
-        return stack[sp - 2];
-    }
-
-    private Address rhs() {
-        return stack[sp - 1];
-    }
-
     public void stackAnd() {
-        if (lhs().and(rhs(), lhs())) {
+        if (second().and(first(), second())) {
             sp--;
             next();
         }
@@ -287,12 +283,12 @@ public final class InterpreterState {
     }
 
     public void stackDiv() {
-        if (lhs().div(rhs(), lhs())) {
+        if (second().div(first(), second())) {
             sp--;
             next();
         }
     }
-    
+
     public void ifeq(int offset) {
         if (stackCmpeq()) {
             offset(offset);
@@ -433,35 +429,35 @@ public final class InterpreterState {
     }
 
     public boolean stackCmpeq() {
-        int cmp = lhs().quickCompare(rhs(), 1);
+        int cmp = second().quickCompare(first(), 1);
         sp -= 2;
         return cmp == 0;
     }
-    
+
     public boolean stackCmpne() {
         return !stackCmpeq();
     }
 
     public boolean stackCmpge() {
-        int cmp = lhs().quickCompare(rhs(), -1);
+        int cmp = second().quickCompare(first(), -1);
         sp -= 2;
         return cmp >= 0;
     }
 
     public boolean stackCmpgt() {
-        int cmp = lhs().quickCompare(rhs(), -1);
+        int cmp = second().quickCompare(first(), -1);
         sp -= 2;
         return cmp > 0;
     }
 
     public boolean stackCmple() {
-        int cmp = lhs().quickCompare(rhs(), 1);
+        int cmp = second().quickCompare(first(), 1);
         sp -= 2;
         return cmp <= 0;
     }
 
     public boolean stackCmplt() {
-        int cmp = lhs().quickCompare(rhs(), 1);
+        int cmp = second().quickCompare(first(), 1);
         sp -= 2;
         return cmp < 0;
     }
@@ -482,7 +478,7 @@ public final class InterpreterState {
     }
 
     public void stackMul() {
-        if (lhs().mul(rhs(), lhs())) {
+        if (second().mul(first(), second())) {
             sp--;
             next();
         }
@@ -511,7 +507,7 @@ public final class InterpreterState {
     }
 
     public void stackOr() {
-        if (lhs().or(rhs(), lhs())) {
+        if (second().or(first(), second())) {
             sp--;
             next();
         }
@@ -523,64 +519,65 @@ public final class InterpreterState {
     }
 
     public void stackRem() {
-        if (lhs().rem(rhs(), lhs())) {
+        if (second().rem(first(), second())) {
             sp--;
             next();
         }
     }
 
     public void stackShl() {
-        if (lhs().shl(rhs(), lhs())) {
+        if (second().shl(first(), second())) {
             sp--;
             next();
         }
     }
 
     public void stackShr() {
-        if (lhs().shr(rhs(), lhs())) {
+        if (second().shr(first(), second())) {
             sp--;
             next();
         }
     }
 
     public void stackSub() {
-        if (lhs().sub(rhs(), lhs())) {
+        if (second().sub(first(), second())) {
             sp--;
             next();
         }
     }
 
     public void stackXor() {
-        if (lhs().xor(rhs(), lhs())) {
+        if (second().xor(first(), second())) {
             sp--;
             next();
         }
     }
 
     public void stackGettype() {
-        stack[sp - 1].set(new StringHeap(stack[sp - 1].getTypeName()));
+        first().set(new StringHeap(first().getTypeName()));
         next();
     }
 
     public void stackAload() {
-        if (stack[sp - 2].testType(ValueType.MAP)) {
-            Address val = stack[sp - 2].getMapHeap().get(stack[sp - 1]);
-            if (val == null || val.getType() == ValueType.UNDEFINED) {
-                stack[sp - 2].setNull();
-            } else {
-                stack[sp - 2].set(val);
-            }
+        if (second().load(first(), second())) {
             sp--;
             next();
         }
     }
 
     public void stackAstore() {
-         if (stack[sp - 3].testType(ValueType.MAP)) {
-             stack[sp - 3].getMapHeap().put(stack[sp - 2], stack[sp - 1]);
-             sp -= 3;
-             next();
-         }
+        if (third().store(second(), first())) {
+            sp -= 3;
+            next();
+        }
+    }
+
+    private Address second() {
+        return stack[sp - 2];
+    }
+
+    private Address third() {
+        return stack[sp - 3];
     }
 
     public void stackLDC(int constantIndex) {
