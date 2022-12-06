@@ -1,6 +1,6 @@
 package jua.runtime;
 
-public final class LocalTable {
+public class LocalTable {
 
     public static final class Local {
 

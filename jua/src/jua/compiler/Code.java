@@ -15,7 +15,6 @@ import jua.runtime.LocalTable;
 import jua.runtime.code.CodeSegment;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.LineNumberTable;
-import jua.runtime.code.LocalNameTable;
 import jua.runtime.heap.StringHeap;
 
 import java.util.*;
@@ -282,7 +281,7 @@ public final class Code {
                 this.nlocals,
                 cp,
                 buildLineNumberTable(),
-                new LocalNameTable(buildLocalTable()));
+                buildLocalTable());
     }
 
     private static final Instruction[] EMPTY_INSTRUCTIONS = new Instruction[0];

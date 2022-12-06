@@ -153,7 +153,8 @@ public final class InterpreterState {
     public void load(int index) {
         if (locals[index] == null) {
             thread.error("accessing an undefined variable '" +
-                    thread.currentFrame().owningFunction().codeSegment().localNameTable().nameOf(index) + "'.");
+                    thread().currentFrame().owningFunction().codeSegment().localTable().getLocalName(index) + "'.");
+            return;
         }
         peekStack().set(locals[index]);
         sp++;
@@ -618,7 +619,7 @@ public final class InterpreterState {
     private boolean testLocal(int id) {
         if (locals[id].getType() == ValueType.UNDEFINED) {
             thread.error("Access to undefined variable: " +
-                    thread.currentFrame().owningFunction().codeSegment().localNameTable().nameOf(id));
+                    thread.currentFrame().owningFunction().codeSegment().localTable().getLocalName(id));
             return false;
         }
         return true;

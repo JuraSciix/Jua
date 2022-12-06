@@ -175,6 +175,7 @@ public final class ProgramLayout {
                 return false;
             }
         }
+        writer.flush();
         returnAddress.setNull();
         return true;
     }

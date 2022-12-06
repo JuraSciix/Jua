@@ -100,10 +100,10 @@ public class CodePrinter {
                 if (i > 0) {
                     System.out.print(", ");
                 }
-                System.out.print(p.localNameTable().nameOf(i));
+                System.out.print(p.localTable().getLocalName(i));
                 if (i >= function.minNumArgs()) {
                     System.out.print(" = ");
-                    p.constantPool().load(p.localNameTable().defaultPCIOf(i), address);
+                    p.constantPool().load(p.localTable().getLocalDefaultPCI(i), address);
                     System.out.print(address);
                 }
             }
@@ -194,7 +194,7 @@ public class CodePrinter {
     }
 
     public void printLocal(int id) {
-        print(String.format("%d (%s)", id, program.localNameTable().nameOf(id)));
+        print(String.format("%d (%s)", id, program.localTable().getLocalName(id)));
     }
 
     public void printIp(int ip) {

@@ -1,6 +1,7 @@
 package jua.runtime.code;
 
 import jua.interpreter.instruction.Instruction;
+import jua.runtime.LocalTable;
 
 public final class CodeSegment {
 
@@ -14,15 +15,15 @@ public final class CodeSegment {
 
     private final LineNumberTable lineNumberTable;
 
-    private final LocalNameTable localNameTable;
+    private final LocalTable localTable;
 
-    public CodeSegment(Instruction[] code, int maxStack, int maxLocals, ConstantPool constantPool, LineNumberTable lineNumberTable, LocalNameTable localNameTable) {
+    public CodeSegment(Instruction[] code, int maxStack, int maxLocals, ConstantPool constantPool, LineNumberTable lineNumberTable, LocalTable localTable) {
         this.code = code;
         this.maxStack = maxStack;
         this.maxLocals = maxLocals;
         this.constantPool = constantPool;
         this.lineNumberTable = lineNumberTable;
-        this.localNameTable = localNameTable;
+        this.localTable = localTable;
     }
 
     public Instruction[] code()              { return code; }
@@ -30,5 +31,5 @@ public final class CodeSegment {
     public int maxLocals()                   { return maxLocals; }
     public ConstantPool constantPool()       { return constantPool; }
     public LineNumberTable lineNumberTable() { return lineNumberTable; }
-    public LocalNameTable localNameTable()   { return localNameTable; }
+    public LocalTable localTable()           { return localTable; }
 }

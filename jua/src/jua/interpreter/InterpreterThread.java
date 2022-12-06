@@ -338,7 +338,7 @@ public final class InterpreterThread {
 
                                 for (int i = numArgs; i < frame.owningFunction().maxNumArgs(); i++) {
                                     state.constant_pool().load(
-                                            frame.owningFunction().codeSegment().localNameTable().defaultPCIOf(i),
+                                            frame.owningFunction().codeSegment().localTable().getLocalDefaultPCI(i),
                                             state.locals[i]
                                     );
                                 }
