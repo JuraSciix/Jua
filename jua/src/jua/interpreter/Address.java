@@ -113,26 +113,26 @@ public final class Address implements Comparable<Address> {
 
     /** Преобразовывает значение в логическое. */
     public boolean booleanVal(Address dst) {
+        dst.set(booleanVal());
+        return true;
+    }
+
+    public boolean booleanVal() {
         switch (type) {
             case NULL:
-                dst.set(false);
-                return true;
+                return false;
             case LONG:
             case BOOLEAN:
-                dst.set(Conversions.l2b(getLong()));
-                return true;
+                return Conversions.l2b(getLong());
             case DOUBLE:
-                dst.set(getDouble() != 0.0);
-                return true;
+                return getDouble() != 0.0;
             case STRING:
-                dst.set(getStringHeap().nonEmpty());
-                return true;
+                return getStringHeap().nonEmpty();
             case MAP:
-                dst.set(getMapHeap().nonEmpty());
-                return true;
+                return getMapHeap().nonEmpty();
             default:
-                badTypeConversion(BOOLEAN);
-                return false;
+                // Любой валидный тип можно преобразовать в логический
+                throw new AssertionError(getTypeName());
         }
     }
 
@@ -642,6 +642,21 @@ public final class Address implements Comparable<Address> {
         }
 
         return true;
+    }
+
+    public boolean length(Address receptor) {
+        if (type == STRING) {
+            receptor.set(getStringHeap().size());
+            return true;
+        }
+
+        if (type == MAP) {
+            receptor.set(getMapHeap().size());
+            return true;
+        }
+
+        threadError("trying to calculate the length of %s", getTypeName());
+        return false;
     }
 
     public int quickCompare(Address rhs, int except) {

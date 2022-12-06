@@ -250,11 +250,6 @@ public final class InterpreterState {
         }
     }
 
-    @Deprecated
-    public void stackClone() {
-        throw new UnsupportedOperationException();
-    }
-
     public void constFalse() {
         top().set(false);
         next();
@@ -424,8 +419,7 @@ public final class InterpreterState {
     }
 
     private boolean popBoolean() {
-        popStack().booleanVal(tmp);
-        return tmp.getBoolean();
+        return popStack().booleanVal();
     }
 
     public boolean stackCmpeq() {
@@ -463,18 +457,9 @@ public final class InterpreterState {
     }
 
     public void stackLength() {
-        switch (peekStack().getType()) {
-            case ValueType.STRING:
-                pushStack(popStack().getStringHeap().length());
-                break;
-            case ValueType.MAP:
-                pushStack(popStack().getMapHeap().size());
-                break;
-            default:
-                thread.error("%s has no length", peekStack().getTypeName());
-                return;
+        if (first().length(first())) {
+            next();
         }
-        next();
     }
 
     public void stackMul() {

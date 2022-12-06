@@ -1,3 +1,2 @@
-a = ['foo': 'bar'];
-println(a[0]); // null
-println(a['foo']); // bar
+println(length("foobar")); // 6
+println(length("foobar") == 6);
