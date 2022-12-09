@@ -4,6 +4,7 @@ import jua.compiler.Tree.*;
 import jua.interpreter.Address;
 import jua.interpreter.InterpreterFrame;
 import jua.interpreter.InterpreterThread;
+import jua.interpreter.instruction.Getconst;
 import jua.runtime.JuaFunction;
 import jua.runtime.JuaNativeExecutor;
 import jua.runtime.heap.ArrayOperand;
@@ -231,7 +232,7 @@ public final class ProgramLayout {
 
         List<Statement> toRemove = new ArrayList<>();
 
-        topTree.code = new Code(topTree.source);
+        topTree.code = mainCodegen.code = new Code(topTree.source);
         mainSource = topTree.source;
 
         List<JuaFunction> builtinFunctions = builtinFunctions();
@@ -270,8 +271,31 @@ public final class ProgramLayout {
 
         topTree.stats.removeAll(toRemove);
 
-        topTree.accept(mainCodegen);
+        List<Address> constants = constantDefs.stream()
+                .map(def -> {
+                    Expression expr = def.expr;
+                    Address address = new Address();
+                    if (expr.getTag() == Tag.ARRAYLITERAL) {
+                        ArrayLiteral arrayLiteral = (ArrayLiteral) expr;
 
+                        if (!arrayLiteral.entries.isEmpty()) {
+                            mainCodegen.code.addInstruction(new Getconst(tryFindConst(def.name), def.name));
+                            mainCodegen.genArrayInitializr(arrayLiteral.entries).drop();
+                        }
+
+                        address.set(new MapHeap());
+//                        return new ArrayOperand();
+                    } else if (expr.getTag() == Tag.LITERAL) {
+                        Literal literal = (Literal) expr;
+//                        return literal.type.toOperand();
+                        literal.type.toOperand().writeToAddress(address);
+                    } else {
+                        mainSource.getLog().error(expr.pos, "Literal expected");
+                        return null;
+                    }
+                    return address;
+                })
+                .collect(Collectors.toList());
 
         List<JuaFunction> functions = funcDefs.stream()
                 .map(fn -> {
@@ -285,28 +309,10 @@ public final class ProgramLayout {
 
         a.forEach(functions::add);
 
-        List<Operand> constants = constantDefs.stream()
-                .map(def -> {
-                    Expression expr = def.expr;
-                    if (expr.getTag() == Tag.ARRAYLITERAL) {
-                        ArrayLiteral arrayLiteral = (ArrayLiteral) expr;
-
-                        if (!arrayLiteral.entries.isEmpty())
-                            mainCodegen.genArrayInitializr(arrayLiteral.entries);
-
-                        return new ArrayOperand();
-                    } else if (expr.getTag() == Tag.LITERAL) {
-                        Literal literal = (Literal) expr;
-                        return literal.type.toOperand();
-                    } else {
-                        mainSource.getLog().error(expr.pos, "Literal expected");
-                        return null;
-                    }
-                })
-                .collect(Collectors.toList());
+        topTree.accept(mainCodegen);
 
         return new Program(mainSource, mainCodegen.code.buildCodeSegment(),
                 functions.toArray(new JuaFunction[0]),
-                constants.toArray(new Operand[0]));
+                constants.toArray(new Address[0]));
     }
 }

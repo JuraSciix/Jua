@@ -1,2 +1,5 @@
-println(length("foobar")); // 6
-println(length("foobar") == 6);
+const A = {
+    'foo': 'bar'
+};
+
+println(A.foo);

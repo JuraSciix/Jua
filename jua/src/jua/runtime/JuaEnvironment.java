@@ -1,15 +1,13 @@
 package jua.runtime;
 
-import jua.runtime.heap.Operand;
-
-import java.util.Set;
+import jua.interpreter.Address;
 
 public class JuaEnvironment {
 
     final JuaFunction[] functions;
-    final Operand[] constants;
+    final Address[] constants;
 
-    public JuaEnvironment(JuaFunction[] functions, Operand[] constants) {
+    public JuaEnvironment(JuaFunction[] functions, Address[] constants) {
         this.functions = functions;
         this.constants = constants;
     }
@@ -27,7 +25,7 @@ public class JuaEnvironment {
         return functions[id];
     }
 
-    public Operand getConstant(int id) {
+    public Address getConstant(int id) {
         return constants[id];
     }
 }

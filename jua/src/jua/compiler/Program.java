@@ -19,10 +19,10 @@ public final class Program {
 
     public final JuaFunction[] functions;
 
-    public final Operand[] constants;
+    public final Address[] constants;
 
     // Trusting constructor
-    Program(Source source, CodeSegment main, JuaFunction[] functions, Operand[] constants) {
+    Program(Source source, CodeSegment main, JuaFunction[] functions, Address[] constants) {
         this.source = source;
         this.main = main;
         this.functions = functions;

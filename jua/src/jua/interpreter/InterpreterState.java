@@ -100,8 +100,8 @@ public final class InterpreterState {
     }
 
     public void getconst(int id) {
-        thread.environment().getConstant(id).writeToAddress(peekStack());
-        sp++;
+        top().set(thread.environment().getConstant(id));
+        next();
     }
 
     @Deprecated
