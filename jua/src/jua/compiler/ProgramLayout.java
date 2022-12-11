@@ -7,9 +7,7 @@ import jua.interpreter.InterpreterThread;
 import jua.interpreter.instruction.Getconst;
 import jua.runtime.JuaFunction;
 import jua.runtime.JuaNativeExecutor;
-import jua.runtime.heap.ArrayOperand;
 import jua.runtime.heap.MapHeap;
-import jua.runtime.heap.Operand;
 import jua.runtime.heap.StringHeap;
 
 import java.io.IOException;
@@ -279,7 +277,7 @@ public final class ProgramLayout {
                         ArrayLiteral arrayLiteral = (ArrayLiteral) expr;
 
                         if (!arrayLiteral.entries.isEmpty()) {
-                            mainCodegen.code.addInstruction(new Getconst(tryFindConst(def.name), def.name));
+                            mainCodegen.code.addInstruction(new Getconst(tryFindConst(def.name)));
                             mainCodegen.genArrayInitializr(arrayLiteral.entries).drop();
                         }
 

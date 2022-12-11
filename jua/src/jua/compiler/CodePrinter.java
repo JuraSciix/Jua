@@ -223,6 +223,11 @@ public class CodePrinter {
         preparePrint().operands.add(String.format("%s:%s@%d", function.filename(), function.name(), index));
     }
 
+    public void printConstRef(int index) {
+        // todo: Выводить название константы.
+        print(String.format("@%d", index));
+    }
+
     private PrintState preparePrint() {
         if ((current) == null) {
             current = new PrintState();

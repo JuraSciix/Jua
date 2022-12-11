@@ -1,18 +1,14 @@
 package jua.interpreter.instruction;
 
 import jua.compiler.CodePrinter;
-import jua.compiler.Tree;
 import jua.interpreter.InterpreterState;
 
 public final class Getconst implements Instruction {
 
     private final int id;
 
-    private final Tree.Name name; // todo: Исправить костыль. Нужно чтобы существование константы определялось на этапе компиляции
-
-    public Getconst(int id, Tree.Name name) {
+    public Getconst(int id) {
         this.id = id;
-        this.name = name;
     }
 
     @Override
@@ -23,16 +19,11 @@ public final class Getconst implements Instruction {
     @Override
     public void print(CodePrinter printer) {
         printer.printName("getconst");
-        printer.print(id);
+        printer.printConstRef(id);
     }
 
     @Override
     public void run(InterpreterState state) {
-
-//        if (id == -1) { // Невозможно
-//            state.thread().error("Constant named '%s' does not exists", name.value);
-//            return ERROR;
-//        }
         state.getconst(id);
     }
 }

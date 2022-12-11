@@ -1478,7 +1478,7 @@ public final class Gen extends Scanner {
         @Override
         Item load() {
             code.putPos(pos);
-            code.addInstruction(new Getconst(programLayout.tryFindConst(name), name));
+            code.addInstruction(new Getconst(programLayout.tryFindConst(name)));
             return stackItem;
         }
     }
