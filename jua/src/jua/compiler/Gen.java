@@ -15,93 +15,22 @@ import static jua.compiler.TreeInfo.*;
 
 public final class Gen extends Scanner {
 
-    /**
-     *
-     */
-    @Deprecated
-    static final int STATE_ROOTED = (1 << 0);
-
-    /**
-     * Состояние кода, в котором нельзя определять функции и константы.
-     */
-    @Deprecated
-    static final int STATE_NO_DECLS = (1 << 1);
-
-    /**
-     * Состояние кода, в котором любое обрабатываемое выражение должно оставлять за собой какое-либо значение.
-     */
-    @Deprecated
-    static final int STATE_RESIDUAL = (1 << 2);
-
-    /**
-     * Состояние кода, в котором любое обрабатываемое выражение должно приводиться к логическому виду.
-     */
-    @Deprecated
-    static final int STATE_COND = (1 << 3);
-
-    /**
-     * Состояние кода, в котором все логические выражения должны инвертироваться.
-     */
-    @Deprecated
-    static final int STATE_COND_INVERT = (1 << 4);
-
-    /**
-     * Состояние кода, в котором текущий обрабатываемый цикл считается бесконечным.
-     */
-    @Deprecated
-    static final int STATE_INFINITY_LOOP = (1 << 5);
-
-    /**
-     * Состояние кода, в котором оператор switch не является конечным.
-     */
-    @Deprecated
-    static final int STATE_ALIVE_SWITCH = (1 << 6);
-
-    @Deprecated private final IntArrayList breakChains = new IntArrayList();
-    @Deprecated private final IntArrayList continueChains = new IntArrayList();
-    @Deprecated private final IntArrayList fallthroughChains = new IntArrayList();
-    @Deprecated private final IntArrayList conditionalChains = new IntArrayList();
-
-    /**
-     * Состояние кода.
-     */
-    private int state = 0; // unassigned state
+    private final ProgramLayout programLayout;
 
     Code code;
-    private Log log;
 
-    private final ProgramLayout programLayout;
+    Log log;
 
     Gen(ProgramLayout programLayout) {
         this.programLayout = programLayout;
     }
 
-    // todo: исправить этот low-cohesion
-
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
         code = tree.code;
         log = tree.source.getLog();
-        code.pushContext(0);
-        code.pushState();
-        int prev_state = state;
-        setState(STATE_ROOTED);
         scan(tree.stats);
-        state = prev_state;
         emitLeave();
-        code.popState();
-    }
-
-    private boolean isState(int state_flag) {
-        return (state & state_flag) != 0;
-    }
-
-    private void unsetState(int state_flag) {
-        state &= ~state_flag;
-    }
-
-    private void setState(int state_flag) {
-        state |= state_flag;
     }
 
     private void genFlowAnd(BinaryOp tree) {
@@ -263,7 +192,7 @@ public final class Gen extends Scanner {
             }
         }
 
-        boolean caseBodyAlive = generateBranch(tree.body);
+        boolean caseBodyAlive = genBranch(tree.body);
 
         if (caseBodyAlive) {
             // Неявный break
@@ -300,23 +229,6 @@ public final class Gen extends Scanner {
     @Override
     public void visitDoLoop(DoLoop tree) {
         genLoop(tree, null, tree.cond, null, tree.body, false);
-    }
-
-    @Deprecated
-    private int pushMakeConditionChain() {
-        int newChain = code.makeChain();
-        conditionalChains.push(newChain);
-        return newChain;
-    }
-
-    @Deprecated
-    private int popConditionChain() {
-        return conditionalChains.popInt();
-    }
-
-    @Deprecated
-    private int peekConditionChain() {
-        return conditionalChains.topInt();
     }
 
     @Override
@@ -432,123 +344,61 @@ public final class Gen extends Scanner {
         code = tree.code;
         log = funcSource.getLog();
 
-        code.pushContext(tree.pos);
-        code.pushState();
-
-        {
-            int nOptionals = 0;
-            for (FuncDef.Parameter param : tree.params) {
-                Name name = param.name;
-                if (code.localExists(name.value)) {
-                    cError(name.pos, "Duplicate parameter named '" + name.value + "'.");
-                }
-                int localIdx = code.resolveLocal(name.value);
-                if (param.expr != null) {
-                    Expression expr = stripParens(param.expr);
-                    if (!expr.hasTag(Tag.LITERAL)) {
-                        cError(expr.pos, "The values of the optional parameters can only be literals");
-                        continue;
-                    }
-
-                    code.setLocalDefaultPCI(name, ((Literal) expr).type.resolvePoolConstant(code));
-                    nOptionals++;
-                }
+        int nOptionals = 0;
+        for (FuncDef.Parameter param : tree.params) {
+            Name name = param.name;
+            if (code.localExists(name.value)) {
+                cError(name.pos, "Duplicate parameter named '" + name.value + "'.");
             }
-
-            assert tree.body != null;
-
-            if (tree.body.hasTag(Tag.BLOCK)) {
-                if (generateBranch(tree.body)) {
-                    emitLeave();
+            int localIdx = code.resolveLocal(name.value);
+            if (param.expr != null) {
+                Expression expr = stripParens(param.expr);
+                if (!expr.hasTag(Tag.LITERAL)) {
+                    cError(expr.pos, "The values of the optional parameters can only be literals");
+                    continue;
                 }
-            } else {
-                Assert.check(tree.body instanceof Expression, "Function body neither block ner expression");
-                genExpr((Expression) tree.body).load();
-                emitReturn();
-            }
 
-            resultFunc = JuaFunction.fromCode(
-                    tree.name.value,
-                    tree.params.size() - nOptionals,
-                    tree.params.size(),
-                    code.buildCodeSegment(),
-                    funcSource.name
-            );
+                code.setLocalDefaultPCI(name, ((Literal) expr).type.resolvePoolConstant(code));
+                nOptionals++;
+            }
         }
 
-        code.popState();
-        code.popContext();
-        code = null;
-    }
+        assert tree.body != null;
 
-    private boolean declarationsUnallowedHere() {
-        return isState(STATE_NO_DECLS);
-    }
+        if (tree.body.hasTag(Tag.BLOCK)) {
+            if (genBranch(tree.body)) {
+                emitLeave();
+            }
+        } else {
+            Assert.check(tree.body instanceof Expression, "Function body neither block ner expression");
+            genExpr((Expression) tree.body).load();
+            code.addInstruction(jua.interpreter.instruction.Return.RETURN);
+            code.dead();
+        }
 
-    public void visitGreaterEqual(BinaryOp expression) {
-//        beginCondition();
-//        if (expression.lhs instanceof IntExpression) {
-//            visitExpression(expression.rhs);
-//            code.addFlow(ListDequeUtils.peekLastInt(conditionalChains), invertCond
-//                    ? new Ifle(((IntExpression) expression.lhs).value)
-//                    : new Ifgt(((IntExpression) expression.lhs).value));
-//            code.decStack();
-//        } else if (expression.rhs instanceof IntExpression) {
-//            visitExpression(expression.lhs);
-//            code.addFlow(ListDequeUtils.peekLastInt(conditionalChains), invertCond
-//                    ? new Ifge(((IntExpression) expression.rhs).value)
-//                    : new Iflt(((IntExpression) expression.rhs).value));
-//            code.decStack();
-//        } else {
-//            visitBinaryOp(expression);
-//            code.addFlow(TreeInfo.line(expression), ListDequeUtils.peekLastInt(conditionalChains),
-//                    invertCond ? new Ifcmpge() : new Ifcmplt());
-//            code.decStack(2);
-//        }
-//        endCondition();
-
-        genCmp(expression);
-    }
-
-    public void visitGreater(BinaryOp expression) {
-//        beginCondition();
-//        if (expression.lhs instanceof IntExpression) {
-//            visitExpression(expression.rhs);
-//            code.addFlow(ListDequeUtils.peekLastInt(conditionalChains), invertCond
-//                    ? new Ifge(((IntExpression) expression.lhs).value)
-//                    : new Iflt(((IntExpression) expression.lhs).value));
-//            code.decStack();
-//        } else if (expression.rhs instanceof IntExpression) {
-//            visitExpression(expression.lhs);
-//            code.addFlow(ListDequeUtils.peekLastInt(conditionalChains), invertCond
-//                    ? new Ifle(((IntExpression) expression.rhs).value)
-//                    : new Ifgt(((IntExpression) expression.rhs).value));
-//            code.decStack();
-//        } else {
-//            visitBinaryOp(expression);
-//            code.addFlow(TreeInfo.line(expression), ListDequeUtils.peekLastInt(conditionalChains),
-//                    invertCond ? new Ifcmpgt() : new Ifcmple());
-//            code.decStack(2);
-//        }
-//        endCondition();
-
-        genCmp(expression);
+        resultFunc = JuaFunction.fromCode(
+                tree.name.value,
+                tree.params.size() - nOptionals,
+                tree.params.size(),
+                code.buildCodeSegment(),
+                funcSource.name
+        );
     }
 
     @Override
     public void visitIf(If tree) {
         CondItem cond = genCond(tree.cond);
         cond.resolveTrueJumps();
-        boolean alive = generateBranch(tree.thenbody);
+        boolean alive = genBranch(tree.thenbody);
         if (tree.elsebody != null) {
             if (alive) {
                 int skipperPC = emitGoto();
                 cond.resolveFalseJumps();
-                generateBranch(tree.elsebody);
+                genBranch(tree.elsebody);
                 resolveJump(skipperPC);
             } else {
                 cond.resolveFalseJumps();
-                alive = generateBranch(tree.elsebody);
+                alive = genBranch(tree.elsebody);
             }
         } else {
             cond.resolveFalseJumps();
@@ -565,60 +415,6 @@ public final class Gen extends Scanner {
                 "after: " + code.curStackTop() + ", " +
                 "code line num: " + code.lastLineNum() +
                 ")");
-    }
-
-    public void visitLessEqual(BinaryOp expression) {
-//        beginCondition();
-//        Expression lhs = expression.lhs;
-//        Expression rhs = expression.rhs;
-//        int line = TreeInfo.line(expression);
-//        if (TreeInfo.resolveShort(lhs) >= 0) {
-//            visitExpression(rhs);
-//            int shortVal = TreeInfo.resolveShort(lhs);
-//            code.addChainedInstruction(line,
-//                    (invertCond ? new Ifge(shortVal) : new Iflt(shortVal)),
-//                    peekConditionChain(), -1);
-//        } else if (TreeInfo.resolveShort(rhs) >= 0) {
-//            visitExpression(rhs);
-//            int shortVal = TreeInfo.resolveShort(lhs);
-//            code.addChainedInstruction(line,
-//                    (invertCond ? new Ifle(shortVal) : new Ifgt(shortVal)),
-//                    peekConditionChain(), -1);
-//        } else {
-//            visitExpression(lhs);
-//            visitExpression(rhs);
-//            code.addChainedInstruction(line,
-//                    (invertCond ? new Ifcmple() : new Ifcmpgt()),
-//                    peekConditionChain(), -2);
-//        }
-//        endCondition();
-
-        genCmp(expression);
-    }
-
-    public void visitLess(BinaryOp expression) {
-//        beginCondition();
-//        if (expression.lhs instanceof IntExpression) {
-//            visitExpression(expression.rhs);
-//            code.addFlow(ListDequeUtils.peekLastInt(conditionalChains), invertCond
-//                    ? new Ifgt(((IntExpression) expression.lhs).value)
-//                    : new Ifle(((IntExpression) expression.lhs).value));
-//            code.decStack();
-//        } else if (expression.rhs instanceof IntExpression) {
-//            visitExpression(expression.lhs);
-//            code.addFlow(ListDequeUtils.peekLastInt(conditionalChains), invertCond
-//                    ? new Iflt(((IntExpression) expression.rhs).value)
-//                    : new Ifge(((IntExpression) expression.rhs).value));
-//            code.decStack();
-//        } else {
-//            visitBinaryOp(expression);
-//            code.addFlow(TreeInfo.line(expression), ListDequeUtils.peekLastInt(conditionalChains),
-//                    invertCond ? new Ifcmplt() : new Ifcmpge());
-//            code.decStack(2);
-//        }
-//        endCondition();
-
-        genCmp(expression);
     }
 
     private void genCmp(BinaryOp tree) {
@@ -646,48 +442,9 @@ public final class Gen extends Scanner {
         result = new CondItem(code.addInstruction(opcode));
     }
 
-    public void visitNotEqual(BinaryOp expression) {
-//        beginCondition();
-//        Expression lhs = expression.lhs;
-//        Expression rhs = expression.rhs;
-//        int line = TreeInfo.line(expression);
-//        if (lhs instanceof NullExpression) {
-//            visitExpression(rhs);
-//            code.addChainedInstruction(line,
-//                    invertCond ? new Ifnonnull() : new Ifnull(),
-//                    peekConditionChain(), -1);
-//        } else if (rhs instanceof NullExpression) {
-//            visitExpression(lhs);
-//            code.addChainedInstruction(line,
-//                    (invertCond ? new Ifnonnull() : new Ifnull()),
-//                    peekConditionChain(), -1);
-//        } else if (TreeInfo.resolveShort(lhs) >= 0) {
-//            visitExpression(rhs);
-//            int shortVal = TreeInfo.resolveShort(lhs);
-//            code.addChainedInstruction(line,
-//                    (invertCond ? new Ifne(shortVal) : new Ifeq(shortVal)),
-//                    peekConditionChain(), -1);
-//        } else if (TreeInfo.resolveShort(rhs) >= 0) {
-//            visitExpression(rhs);
-//            int shortVal = TreeInfo.resolveShort(lhs);
-//            code.addChainedInstruction(line,
-//                    (invertCond ? new Ifne(shortVal) : new Ifeq(shortVal)),
-//                    peekConditionChain(), -1);
-//        } else {
-//            visitExpression(lhs);
-//            visitExpression(rhs);
-//            code.addChainedInstruction(line,
-//                    (invertCond ? new Ifcmpne() : new Ifcmpeq()),
-//                    peekConditionChain(), -2);
-//        }
-//        endCondition();
-
-        genCmp(expression);
-    }
-
     private void genNullCoalescing(BinaryOp tree) {
         genExpr(tree.lhs).load();
-        emitDup();
+        code.addInstruction(Dup.INSTANCE);
         code.putPos(tree.pos);
         int condPC = code.addInstruction(new Ifnonnull());
         code.addInstruction(Pop.INSTANCE);
@@ -720,8 +477,10 @@ public final class Gen extends Scanner {
 
     private void generateUnary(UnaryOp tree) {
         switch (tree.tag) {
-            case POSTDEC: case PREDEC:
-            case POSTINC: case PREINC:
+            case POSTDEC:
+            case PREDEC:
+            case POSTINC:
+            case PREINC:
                 genIncrease(tree);
                 break;
             case NOT:
@@ -742,7 +501,8 @@ public final class Gen extends Scanner {
             emitLeave();
         } else {
             genExpr(tree.expr).load();
-            emitReturn();
+            code.addInstruction(jua.interpreter.instruction.Return.RETURN);
+            code.dead();
         }
     }
 
@@ -807,13 +567,13 @@ public final class Gen extends Scanner {
             int skipBodyPC = emitGoto();
             loopstartPC = code.currentIP();
             limitstacktop = code.curStackTop();
-            generateBranch(body);
+            genBranch(body);
             if (steps != null) steps.forEach(expr -> genExpr(expr).drop());
             resolveJump(skipBodyPC);
         } else {
             loopstartPC = code.currentIP();
             limitstacktop = code.curStackTop();
-            generateBranch(body);
+            genBranch(body);
             if (steps != null) steps.forEach(expr -> genExpr(expr).drop());
         }
         flow.resolveCont();
@@ -832,13 +592,6 @@ public final class Gen extends Scanner {
         flow = flow.parent;
     }
 
-    private void visitExpression(Expression expression) {
-        int prev_state = state;
-        setState(STATE_RESIDUAL);
-        expression.accept(this);
-        state = prev_state;
-    }
-
     public void visitBinaryOp(BinaryOp tree) {
         switch (tree.tag) {
             case FLOW_AND:
@@ -847,9 +600,12 @@ public final class Gen extends Scanner {
             case FLOW_OR:
                 genFlowOr(tree);
                 break;
-            case EQ: case NE:
-            case GT: case GE:
-            case LT: case LE:
+            case EQ:
+            case NE:
+            case GT:
+            case GE:
+            case LT:
+            case LE:
                 genCmp(tree);
                 break;
             case NULLCOALESCE:
@@ -884,12 +640,12 @@ public final class Gen extends Scanner {
         if (tree.hasTag(Tag.ASG_NULLCOALESCE)) {
             varitem.load().duplicate();
             String tmp = code.acquireSyntheticName(); // synthetic0
-            emitVStore(tmp);
+            code.addInstruction(new Vstore(code.resolveLocal(tmp)));
             code.putPos(tree.pos);
             int cPC = code.addInstruction(new Ifnonnull());
             int sp1 = code.curStackTop();
             genExpr(tree.src).load().duplicate();
-            emitVStore(tmp);
+            code.addInstruction(new Vstore(code.resolveLocal(tmp)));
             varitem.store();
             int sp2 = code.curStackTop();
             int ePC = emitGoto();
@@ -901,7 +657,7 @@ public final class Gen extends Scanner {
             result = new Item() {
                 @Override
                 Item load() {
-                    emitVLoad(tmp);
+                    code.addInstruction(new Vload(code.resolveLocal(tmp)));
                     drop();
                     return stackItem;
                 }
@@ -909,7 +665,7 @@ public final class Gen extends Scanner {
                 @Override
                 void drop() {
                     code.addInstruction(ConstNull.INSTANCE);
-                    emitVStore(tmp);
+                    code.addInstruction(new Vstore(code.resolveLocal(tmp)));
                     code.releaseSyntheticName(tmp);
                 }
             };
@@ -926,185 +682,10 @@ public final class Gen extends Scanner {
         result = new LiteralItem(tree.pos, tree.type);
     }
 
-    private void visitList(List<? extends Tree> expressions) {
-        int prev_state = state;
-        setState(STATE_RESIDUAL);
-        for (Tree expr : expressions)
-            expr.accept(this);
-        state = prev_state;
-    }
-
-    @Deprecated
-    private void generateCondition(Expression tree) {
-//        assert tree != null;
-//        int prev_state = state;
-//        setState(STATE_COND);
-//        visitExpression(tree);
-//        state = prev_state;
-//        if (TreeInfo.isConditionalTag(tree.getTag())) {
-//            return;
-//        }
-//        // todo: Здешний код отвратителен. Следует переписать всё с нуля...
-////        code.addInstruction(Bool.INSTANCE);
-//        code.putPos(tree.pos);
-//        code.addChainedInstruction(isState(STATE_COND_INVERT) ? Iftrue::new : Iffalse::new,
-//                peekConditionChain(), -1);
-    }
 
     @Override
     public void visitDiscarded(Discarded tree) {
-//        visitStatement(tree.expr);
-//        switch (tree.expr.getTag()) {
-//            case ASSIGN: case ASG_ADD: case ASG_SUB: case ASG_MUL:
-//            case ASG_DIV: case ASG_REM: case ASG_AND: case ASG_OR:
-//            case ASG_XOR: case ASG_SL: case ASG_SR: case ASG_NULLCOALESCE:
-//            case PREINC: case PREDEC: case POSTINC: case POSTDEC:
-//                break;
-//            default:
-//                code.addInstruction(Pop.INSTANCE, -1);
-//        }
-
         genExpr(tree.expr).drop();
-    }
-
-    @Deprecated
-    private void genAssignment(int pos, Tag tag, Expression lhs, Expression rhs) {
-//        Expression var = expression.var.child();
-//        checkAssignable(var);
-//        int line = line(expression);
-//        if (var instanceof ArrayAccess) {
-//            ArrayAccess var0 = (ArrayAccess) var;
-//            visitExpression(var0.hs);
-//            visitExpression(var0.key);
-//            if (state != null) {
-//                emitDup2(line);
-//                emitALoad(line(var0.key));
-//                state.emit(line);
-//            } else {
-//                visitExpression(expression.expr);
-//            }
-//            if (isUsed())
-//                // Здесь используется var0.key потому что
-//                // он может быть дальше, чем var0, а если бы он был ближе
-//                // к началу файла, то это было бы некорректно для таблицы линий
-//                emitDup_x2(line(var0.key));
-//            emitAStore(line);
-//        } else if (var instanceof Var) {
-//            if (state != null) {
-//                visitExpression(var);
-//                state.emit(line);
-//            } else {
-//                visitExpression(expression.expr);
-//                if (isUsed()) {
-//                    emitDup(line(var));
-//                }
-//            }
-//            emitVStore(line, ((Var) var).name);
-//        }
-
-//        switch (lhs.getTag()) {
-//            case ARRAYACCESS: {
-//                ArrayAccess arrayAccess = (ArrayAccess) lhs;
-//                code.putPos(arrayAccess.pos);
-//                visitExpression(arrayAccess.expr);
-//                visitExpression(arrayAccess.index);
-//                if (tag == Tag.ASG_NULLCOALESCE) {
-//                    int el = code.makeChain();
-//                    int ex = code.makeChain();
-//                    emitDup2();
-//                    emitALoad();
-//                    code.addChainedInstruction(Ifnonnull::new, el, -1);
-//                    int sp_cache = code.curStackTop();
-//                    visitExpression(rhs);
-//                    if (isUsed()) {
-//                        emitDupX2();
-//                    }
-//                    code.putPos(arrayAccess.pos);
-//                    emitAStore();
-//                    emitGoto(ex);
-//                    int sp_cache2 = code.curStackTop();
-//                    code.resolveChain(el);
-//                    code.curStackTop(sp_cache);
-//                    if (isUsed()) {
-//                        code.putPos(arrayAccess.pos);
-//                        emitALoad();
-//                    } else {
-//                        code.addInstruction(Pop2.INSTANCE, -2);
-//                    }
-//                    code.resolveChain(ex);
-//                    assert code.curStackTop() == sp_cache2;
-//                } else {
-//                    if (tag != Tag.ASSIGN) {
-//                        emitDup2();
-//                        code.putPos(arrayAccess.pos);
-//                        emitALoad();
-//                        visitExpression(rhs);
-//                        code.putPos(pos);
-//                        code.addInstruction(asg2state(tag), -1);
-//                    } else {
-//                        visitExpression(rhs);
-//                    }
-//                    if (isUsed()) {
-//                        emitDupX2();
-//                    }
-//                    code.putPos(arrayAccess.pos);
-//                    emitAStore();
-//                }
-//                break;
-//            }
-//            case VARIABLE: {
-//                Var variable = (Var) lhs;
-//                if (tag == Tag.ASG_NULLCOALESCE) {
-//                    int ex = code.makeChain();
-//                    visitExpression(lhs);
-//                    code.addChainedInstruction(Ifnonnull::new, ex, -1);
-//                    visitExpression(rhs);
-//                    if (isUsed()) {
-//                        emitDup();
-//                    }
-//                    code.putPos(pos);
-//                    emitVStore(variable.name.value);
-//                    if (isUsed()) {
-//                        int el = code.makeChain();
-//                        emitGoto(el);
-//                        code.resolveChain(ex);
-//                        visitExpression(lhs);
-//                        code.resolveChain(el);
-//                    } else {
-//                        code.resolveChain(ex);
-//                    }
-//                } else {
-//                    if (tag != Tag.ASSIGN) {
-//                        visitExpression(lhs);
-//                        visitExpression(rhs);
-//                        code.putPos(pos);
-//                        code.addInstruction(asg2state(tag), -1);
-//                    } else {
-//                        visitExpression(rhs);
-//                    }
-//                    if (isUsed()) {
-//                        emitDup();
-//                    }
-//                    code.putPos(pos);
-//                    emitVStore(variable.name.value);
-//                }
-//                break;
-//            }
-//            default: cError(lhs.pos, "assignable expression expected.");
-//        }
-    }
-
-    // todo: В будущем планируется заменить поле expressionDepth на более удобный механизм.
-    private boolean isUsed() {
-        return isState(STATE_RESIDUAL);
-    }
-    @Deprecated
-    private void enableUsed() {
-
-    }
-    @Deprecated
-    private void disableUsed() {
-
     }
 
     private void genIncrease(UnaryOp tree) {
@@ -1123,6 +704,7 @@ public final class Gen extends Scanner {
                 if (varitem instanceof LocalItem) {
                     result = new Item() {
                         final LocalItem localitem = (LocalItem) varitem;
+
                         @Override
                         Item load() {
                             if (post) {
@@ -1178,38 +760,21 @@ public final class Gen extends Scanner {
         }
     }
 
-    /** Генерирует код оператора в дочерней ветке и возвращает жива ли она. */
-    private boolean generateBranch(Statement statement) {
-        return genBranch(statement);
-    }
+    /**
+     * Генерирует код оператора в дочерней ветке и возвращает жива ли она.
+     */
+    private boolean genBranch(Statement statement) {
+        Assert.check(!(statement instanceof Expression));
 
-    private void visitStatement(Statement statement) {
-        if (statement == null) return;
-        int prev_state = state;
-        setState(STATE_NO_DECLS);
-        statement.accept(this);
-        state = prev_state;
-    }
+        int savedstacktop = code.curStackTop();
 
-    @Deprecated
-    private void beginCondition() {
-        if (isState(STATE_COND)) {
-            return;
+        try {
+            statement.accept(this);
+            return code.isAlive();
+        } finally {
+            code.setAlive();
+            assertStacktopEquality(savedstacktop);
         }
-        pushMakeConditionChain();
-    }
-
-    @Deprecated
-    private void endCondition() {
-//        if (isState(STATE_COND)) {
-//            return;
-//        }
-//        int ex = code.makeChain();
-//        emitPushTrue();
-//        gotobranch(ex);
-//        code.resolveChain(popConditionChain());
-//        emitPushFalse();
-//        code.resolveChain(ex);
     }
 
     private void emitPushLong(long value) {
@@ -1221,12 +786,7 @@ public final class Gen extends Scanner {
     }
 
     private void emitPushDouble(double value) {
-        long lv = (long) value;
-        if (false && lv == value && isShort(lv)) {
-//            code.addInstruction(new Push(Operand.Type.LONG, (short) lv), 1);
-        } else {
-            code.addInstruction(new Ldc(code.resolveDouble(value)));
-        }
+        code.addInstruction(new Ldc(code.resolveDouble(value)));
     }
 
     private void emitPushString(String value) {
@@ -1234,46 +794,7 @@ public final class Gen extends Scanner {
     }
 
     private static boolean isShort(long value) {
-        return value >= Short.MIN_VALUE && value <= Short.MAX_VALUE;
-    }
-
-    // emit methods
-
-    private void emitPushTrue() { code.addInstruction(ConstTrue.CONST_TRUE); }
-    private void emitPushFalse() { code.addInstruction(ConstFalse.CONST_FALSE); }
-    @Deprecated private void emitGoto(int chainId) {  }
-    private void emitDup() { code.addInstruction(Dup.INSTANCE); }
-    private void emitDupX1() { code.addInstruction(Dup_x1.INSTANCE); }
-    private void emitDupX2() { code.addInstruction(Dup_x2.INSTANCE); }
-    private void emitDup2() { code.addInstruction(Dup2.INSTANCE); }
-    private void emitDup2X1() { code.addInstruction(Dup2_x1.INSTANCE); }
-    private void emitDup2X2() { code.addInstruction(Dup2_x2.INSTANCE); }
-    private void emitAdd() { code.addInstruction(Add.INSTANCE); }
-    private void emitAnd() { code.addInstruction(And.INSTANCE); }
-    private void emitOr() { code.addInstruction(Or.INSTANCE); }
-    private void emitXor() { code.addInstruction(Xor.INSTANCE); }
-    private void emitDiv() { code.addInstruction(Div.INSTANCE); }
-    private void emitLhs() { code.addInstruction(Shl.INSTANCE); }
-    private void emitMul() { code.addInstruction(Mul.INSTANCE); }
-    private void emitRem() { code.addInstruction(Rem.INSTANCE); }
-    private void emitRhs() { code.addInstruction(Shr.INSTANCE); }
-    private void emitSub() { code.addInstruction(Sub.INSTANCE); }
-    private void emitALoad() { code.addInstruction(Aload.INSTANCE); }
-    private void emitVLoad(String name) { code.addInstruction(new Vload(code.resolveLocal(name))); }
-    private void emitAStore() { code.addInstruction(Astore.INSTANCE); } // todo: Тут тоже было sp<0, вроде при generateArrayCreation.
-    private void emitVStore(String name) { code.addInstruction(new Vstore(code.resolveLocal(name))); }
-    @Deprecated private void emitCaseBody(Statement body) {
-        code.resolveChain(fallthroughChains.popInt());
-        fallthroughChains.push(code.makeChain());
-        int prev_state = state;
-        setState(STATE_INFINITY_LOOP);
-        visitStatement(body);
-        if (!isState(STATE_INFINITY_LOOP)) emitGoto(breakChains.topInt());
-        state = prev_state;
-    }
-    private void emitReturn() {
-        code.addInstruction(jua.interpreter.instruction.Return.RETURN);
-        code.dead();
+        return (value >>> 16) == 0;
     }
 
     private void cError(int position, String message) {
@@ -1298,29 +819,45 @@ public final class Gen extends Scanner {
 
     abstract class Item {
 
-        Item load() { throw new AssertionError(this); }
+        Item load() {
+            throw new AssertionError(this);
+        }
 
-        void store() { throw new AssertionError(this); }
+        void store() {
+            throw new AssertionError(this);
+        }
 
-        void drop() { throw new AssertionError(this); }
+        void drop() {
+            throw new AssertionError(this);
+        }
 
-        void duplicate() { throw new AssertionError(this); }
+        void duplicate() {
+            throw new AssertionError(this);
+        }
 
-        void stash() { throw new AssertionError(this); }
+        void stash() {
+            throw new AssertionError(this);
+        }
 
         CondItem toCond() {
             load();
             return new CondItem(code.addInstruction(new Ifz()));
         }
 
-        int constantIndex() { throw new AssertionError(this); }
+        int constantIndex() {
+            throw new AssertionError(this);
+        }
     }
 
-    /** Динамическое значение. */
+    /**
+     * Динамическое значение.
+     */
     class StackItem extends Item {
 
         @Override
-        Item load() { return this; }
+        Item load() {
+            return this;
+        }
 
         @Override
         void drop() {
@@ -1330,16 +867,18 @@ public final class Gen extends Scanner {
 
         @Override
         void duplicate() {
-            emitDup();
+            code.addInstruction(Dup.INSTANCE);
         }
 
         @Override
         void stash() {
-            emitDup();
+            code.addInstruction(Dup.INSTANCE);
         }
     }
 
-    /** Литерал. */
+    /**
+     * Литерал.
+     */
     class LiteralItem extends Item {
 
         final int pos;
@@ -1360,9 +899,9 @@ public final class Gen extends Scanner {
                 emitPushDouble(type.doubleValue());
             } else if (type.isBoolean()) {
                 if (type.booleanValue()) {
-                    emitPushTrue();
+                    code.addInstruction(ConstTrue.CONST_TRUE);
                 } else {
-                    emitPushFalse();
+                    code.addInstruction(ConstFalse.CONST_FALSE);
                 }
             } else if (type.isString()) {
                 emitPushString(type.stringValue());
@@ -1378,10 +917,14 @@ public final class Gen extends Scanner {
         void drop() { /* no-op */ }
 
         @Override
-        int constantIndex() { return type.resolvePoolConstant(code); }
+        int constantIndex() {
+            return type.resolvePoolConstant(code);
+        }
     }
 
-    /** Обращение к локальной переменной. */
+    /**
+     * Обращение к локальной переменной.
+     */
     class LocalItem extends Item {
 
         final int pos;
@@ -1395,7 +938,7 @@ public final class Gen extends Scanner {
         @Override
         Item load() {
             code.putPos(pos);
-            emitVLoad(name.value);
+            code.addInstruction(new Vload(code.resolveLocal(name.value)));
             return stackItem;
         }
 
@@ -1410,12 +953,12 @@ public final class Gen extends Scanner {
 
         @Override
         void store() {
-            emitVStore(name.value);
+            code.addInstruction(new Vstore(code.resolveLocal(name.value)));
         }
 
         @Override
         void stash() {
-            emitDup();
+            code.addInstruction(Dup.INSTANCE);
         }
 
         void inc() {
@@ -1427,7 +970,9 @@ public final class Gen extends Scanner {
         }
     }
 
-    /** Обращение к элементу массива. */
+    /**
+     * Обращение к элементу массива.
+     */
     class AccessItem extends Item {
 
         final int pos;
@@ -1439,13 +984,13 @@ public final class Gen extends Scanner {
         @Override
         Item load() {
             code.putPos(pos);
-            emitALoad();
+            code.addInstruction(Aload.INSTANCE);
             return stackItem;
         }
 
         @Override
         void store() {
-            emitAStore();
+            code.addInstruction(Astore.INSTANCE);
         }
 
         @Override
@@ -1455,16 +1000,18 @@ public final class Gen extends Scanner {
 
         @Override
         void duplicate() {
-            emitDup2();
+            code.addInstruction(Dup2.INSTANCE);
         }
 
         @Override
         void stash() {
-            emitDupX2();
+            code.addInstruction(Dup_x2.INSTANCE);
         }
     }
 
-    /** Обращение к рантайм константе. */
+    /**
+     * Обращение к рантайм константе.
+     */
     class ConstantItem extends Item {
 
         final int pos;
@@ -1483,7 +1030,9 @@ public final class Gen extends Scanner {
         }
     }
 
-    /** Присвоение. */
+    /**
+     * Присвоение.
+     */
     class AssignItem extends Item {
 
         final int pos;
@@ -1514,7 +1063,9 @@ public final class Gen extends Scanner {
         }
     }
 
-    /** Условное разветвление. */
+    /**
+     * Условное разветвление.
+     */
     class CondItem extends Item {
 
         final int opcodePC;
@@ -1536,10 +1087,10 @@ public final class Gen extends Scanner {
         @Override
         Item load() {
             resolveTrueJumps();
-            emitPushTrue();
+            code.addInstruction(ConstTrue.CONST_TRUE);
             int skipPC = emitGoto();
             resolveFalseJumps();
-            emitPushFalse();
+            code.addInstruction(ConstFalse.CONST_FALSE);
             resolveJump(skipPC);
             return stackItem;
         }
@@ -1551,7 +1102,9 @@ public final class Gen extends Scanner {
         }
 
         @Override
-        CondItem toCond() { return this; }
+        CondItem toCond() {
+            return this;
+        }
 
         CondItem negate() {
             code.setInstruction(opcodePC, code.getJump(opcodePC).negate());
@@ -1582,18 +1135,30 @@ public final class Gen extends Scanner {
         final FlowEnv parent;
         final boolean isSwitch;
 
-        /** continue-прыжки, если isSwitch=true, то fallthrough */
+        /**
+         * continue-прыжки, если isSwitch=true, то fallthrough
+         */
         final IntArrayList contjumps = new IntArrayList();
-        /** break-прыжки */
+        /**
+         * break-прыжки
+         */
         final IntArrayList exitjumps = new IntArrayList();
 
-        /** Указатель на инструкцию, где находится switch. */
+        /**
+         * Указатель на инструкцию, где находится switch.
+         */
         int switchStartPC;
-        /** Индексы констант из ключей кейзов. Равно null когда isSwitch=false */
+        /**
+         * Индексы констант из ключей кейзов. Равно null когда isSwitch=false
+         */
         final IntList caseLabelsConstantIndexes;
-        /** Точка входа (IP) для каждого кейза. Равно null когда isSwitch=false */
+        /**
+         * Точка входа (IP) для каждого кейза. Равно null когда isSwitch=false
+         */
         final IntList switchCaseOffsets;
-        /** Указатель на точку входа в default-case */
+        /**
+         * Указатель на точку входа в default-case
+         */
         int switchDefaultOffset = -1;
 
         /**
@@ -1637,19 +1202,5 @@ public final class Gen extends Scanner {
 
     void resolveJump(int jumpPC, int pc) {
         code.getJump(jumpPC).offset = pc - jumpPC;
-    }
-
-    boolean genBranch(Statement tree) {
-        Assert.check(!(tree instanceof Expression));
-
-        int savedstacktop = code.curStackTop();
-
-        try {
-            tree.accept(this);
-            return code.isAlive();
-        } finally {
-            code.setAlive();
-            assertStacktopEquality(savedstacktop);
-        }
     }
 }
