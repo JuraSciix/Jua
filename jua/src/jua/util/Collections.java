@@ -1,5 +1,7 @@
 package jua.util;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.BiConsumer;
@@ -17,5 +19,12 @@ public class Collections {
         while (i1.hasNext()) {
             action.accept(i1.next(), i2.next());
         }
+    }
+
+    public static IntArrayList mergeIntLists(IntArrayList lhs, IntArrayList rhs) {
+        IntArrayList sum = new IntArrayList(lhs.size() + rhs.size());
+        sum.addAll(lhs);
+        sum.addAll(rhs);
+        return sum;
     }
 }

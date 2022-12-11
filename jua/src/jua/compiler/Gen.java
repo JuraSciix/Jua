@@ -12,6 +12,7 @@ import java.util.List;
 
 import static jua.compiler.InstructionUtils.*;
 import static jua.compiler.TreeInfo.*;
+import static jua.util.Collections.mergeIntLists;
 
 public final class Gen extends Scanner {
 
@@ -37,28 +38,14 @@ public final class Gen extends Scanner {
         CondItem lcond = genCond(tree.lhs);
         lcond.resolveTrueJumps();
         CondItem rcond = genCond(tree.rhs);
-        result = new CondItem(rcond.opcodePC, rcond.truejumps, mergeFalsejumps(lcond, rcond));
+        result = new CondItem(rcond.opcodePC, rcond.truejumps, mergeIntLists(lcond.falsejumps, rcond.falsejumps));
     }
 
     private void genFlowOr(BinaryOp tree) {
         CondItem lcond = genCond(tree.lhs).negate();
         lcond.resolveTrueJumps();
         CondItem rcond = genCond(tree.rhs);
-        result = new CondItem(rcond.opcodePC, mergeFalsejumps(lcond, rcond), rcond.truejumps);
-    }
-
-    static IntArrayList mergeFalsejumps(CondItem lcond, CondItem rcond) {
-        IntArrayList falsejumps = new IntArrayList(lcond.falsejumps.size() + rcond.falsejumps.size());
-        falsejumps.addAll(lcond.falsejumps);
-        falsejumps.addAll(rcond.falsejumps);
-        return falsejumps;
-    }
-
-    static IntArrayList mergeTruejumps(CondItem lcond, CondItem rcond) {
-        IntArrayList truejumps = new IntArrayList(lcond.truejumps.size() + rcond.truejumps.size());
-        truejumps.addAll(lcond.truejumps);
-        truejumps.addAll(rcond.truejumps);
-        return truejumps;
+        result = new CondItem(rcond.opcodePC, mergeIntLists(lcond.falsejumps, rcond.falsejumps), rcond.truejumps);
     }
 
     private final StackItem stackItem = new StackItem();
