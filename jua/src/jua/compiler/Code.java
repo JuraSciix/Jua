@@ -1,7 +1,5 @@
 package jua.compiler;
 
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.shorts.Short2IntRBTreeMap;
@@ -22,28 +20,9 @@ import java.util.function.Supplier;
 
 public final class Code {
 
-    @Deprecated
-    interface JumpInstructionConstructor {
-
-        JumpInstruction create(int dest_ip);
-    }
-
-    @Deprecated
-    private static class Chain {
-
-        // Map<IP, ChainInstructionFactory>
-        final Int2ObjectMap<JumpInstructionConstructor> constructors
-                = new Int2ObjectOpenHashMap<>();
-
-        int resultIP = -1;
-    }
-
     final List<Instruction> instructions = new ArrayList<>();
 
     final Short2IntSortedMap lineTable = new Short2IntRBTreeMap();
-
-    @Deprecated
-    final Int2ObjectMap<Chain> chains = new Int2ObjectOpenHashMap<>();
 
     final Object2IntMap<String> localNames = new Object2IntLinkedOpenHashMap<>();
 
@@ -88,23 +67,6 @@ public final class Code {
         log = source.getLog();
     }
 
-    @Deprecated
-    public void pushContext(int startPos) {
-        putPos(startPos);
-    }
-
-    @Deprecated
-    public void popContext() {
-
-    }
-
-    @Deprecated
-    public int makeChain() {
-        int nextChainId = this.chains.size();
-        this.chains.put(nextChainId, new Chain());
-        return nextChainId;
-    }
-
     Instruction get(int pc) {
         return instructions.get(pc);
     }
@@ -117,22 +79,6 @@ public final class Code {
         }
     }
 
-    private void resolveChain0(int chainId, int resultIP) {
-        this.chains.get(chainId).resultIP = resultIP;
-    }
-
-    public void resolveChain(int chainId) {
-        resolveChain0(chainId, currentIP());
-    }
-
-    public void resolveChain(int chainId, int resultBci) {
-        resolveChain0(chainId, resultBci);
-    }
-
-    public int getChainDest(int chainId) {
-        return this.chains.get(chainId).resultIP;
-    }
-
     public int currentIP() {
         return this.instructions.size();
     }
@@ -143,18 +89,6 @@ public final class Code {
 
     public int addInstruction(Instruction instr) {
         return addInstruction0(instr);
-    }
-
-    @Deprecated
-    public void addChainedInstruction(JumpInstructionConstructor factory, int chainId) {
-        addChainedInstruction0(factory, chainId);
-    }
-
-    private void addChainedInstruction0(JumpInstructionConstructor factory, int chainId) {
-        if (!isAlive()) return;
-        this.chains.get(chainId).constructors.put(currentIP(), factory);
-        this.instructions.add(null); // will be installed later
-        adjustStack(factory.create(0).stackAdjustment());
     }
 
     private int addInstruction0(Instruction instruction) {
@@ -227,16 +161,6 @@ public final class Code {
             this.nstack = this.current_nstack;
     }
 
-    @Deprecated
-    public void pushState() {
-
-    }
-
-    @Deprecated
-    public void popState() {
-
-    }
-
     public void dead() {
         alive = false;
     }
@@ -287,12 +211,6 @@ public final class Code {
     private static final Instruction[] EMPTY_INSTRUCTIONS = new Instruction[0];
     private Instruction[] buildCode(ConstantPool cp) {
         Instruction[] instructions = this.instructions.toArray(EMPTY_INSTRUCTIONS);
-        for (Chain chain : this.chains.values()) {
-            for (Int2ObjectMap.Entry<JumpInstructionConstructor> entry : chain.constructors.int2ObjectEntrySet()) {
-                int ip = entry.getIntKey();
-                instructions[ip] = entry.getValue().create(chain.resultIP - ip);
-            }
-        }
         for (Instruction instruction : instructions) {
             if (instruction.getClass() == Binaryswitch.class) {
                 Binaryswitch switch_ = (Binaryswitch) instruction;
@@ -324,11 +242,12 @@ public final class Code {
         return this.constant_pool_b.build();
     }
 
+    @Deprecated
     ConstantPoolBuilder get_cpb() {
         return this.constant_pool_b;
     }
 
-    Map<String, Integer> defaultPCIs = new HashMap<>();
+    private final Map<String, Integer> defaultPCIs = new HashMap<>();
 
     void setLocalDefaultPCI(Name name, int defaultPCI) {
         defaultPCIs.put(name.value, defaultPCI);
