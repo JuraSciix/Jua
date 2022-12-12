@@ -284,7 +284,9 @@ public interface Tree {
         }
 
         @Override
-        public void visitDiscarded(Discarded tree) { }
+        public void visitDiscarded(Discarded tree) {
+            scan(tree.expr);
+        }
 
         @Override
         public void visitLiteral(Literal tree) {  }
@@ -1061,7 +1063,7 @@ public interface Tree {
 
         public final Tag tag;
 
-        public Expression dst, src;
+        public Expression dst, src; // todo: Переименовать в var, expr соответственно.
 
         public CompoundAssign(int pos, Tag tag, Expression dst, Expression src) {
             super(pos);
