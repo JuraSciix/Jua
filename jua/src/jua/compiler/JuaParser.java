@@ -4,9 +4,11 @@ import jua.compiler.Tokens.Token;
 import jua.compiler.Tokens.TokenType;
 import jua.compiler.Tree.*;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static jua.compiler.Tokens.TokenType.*;
 import static jua.compiler.Types.*;
@@ -83,7 +85,7 @@ public final class JuaParser implements Parser {
             }
             case ELSE: {
                 nextToken();
-                pError(position, "'else' is not allowed without if.");
+                pError(position, "'else' is not allowed without if-statement.");
             }
             case EOF: {
                 nextToken();
@@ -308,7 +310,7 @@ public final class JuaParser implements Parser {
             } else if (acceptToken(EOF)) {
                 expectToken(RBRACE);
             } else {
-                pError(token.pos, token + " is not allowed inside switch.");
+                unexpected(token, Arrays.asList(CASE, DEFAULT, RBRACE));
             }
         }
         return new Switch(position, selector, cases);
@@ -730,7 +732,11 @@ public final class JuaParser implements Parser {
                 return new Literal(token.pos, ofBoolean(true));
             }
             default:
-                unexpected(token);
+                unexpected(token, Arrays.asList(
+                        FALSE, FLOATLITERAL, IDENTIFIER,
+                        INTLITERAL, LBRACE, LBRACKET,
+                        LPAREN, NULL, STRINGLITERAL, TRUE
+                ));
                 return null; // UNREACHABLE
         }
     }
@@ -891,6 +897,13 @@ public final class JuaParser implements Parser {
 
     private void unexpected(Token token) {
         pError(token.pos, "unexpected " + token2string(token) + '.');
+    }
+
+    private void unexpected(Token foundToken, List<TokenType> expectedTypes) {
+        pError(token.pos, "unexpected " +
+                token2string(foundToken) +
+                ", expected instead: " +
+                expectedTypes.stream().map(JuaParser::type2string).collect(Collectors.joining(", ")));
     }
 
     private void pError(int position, String message) {
