@@ -95,12 +95,8 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitBreak(Break tree) {
-        // todo: Эта проверка должна находиться в другом этапе
         FlowEnv env = flow;
-        if (env == null) {
-            cError(tree.pos, "'break' is not allowed outside of loop/switch.");
-            return;
-        }
+        Assert.notNull(env);
         code.putPos(tree.pos);
         env.exitjumps.add(emitGoto());
         code.dead();
@@ -167,11 +163,6 @@ public final class Gen extends Scanner {
             flow.switchDefaultOffset = code.currentIP() - flow.switchStartPC;
         } else {
             for (Expression label : tree.labels) {
-                // todo: Эта проверка должна находиться в другом этапе
-                if (!stripParens(label).hasTag(Tag.LITERAL)) {
-                    log.error(label.pos, "Constant expected");
-                    continue;
-                }
                 flow.caseLabelsConstantIndexes.add(genExpr(label).constantIndex());
                 // Это не ошибка. Следующая строчка должна находиться именно в цикле
                 // Потому что инструкция switch ассоциирует значения к переходам в масштабе 1 к 1.
@@ -189,18 +180,9 @@ public final class Gen extends Scanner {
     }
 
     @Override
-    public void visitConstDef(ConstDef tree) {
-        cError(tree.pos, "constants declaration is not allowed here.");
-    }
-
-    @Override
     public void visitContinue(Continue tree) {
-        // todo: Эта проверка должна находиться в другом этапе
         FlowEnv env = searchEnv(false);
-        if (env == null) {
-            cError(tree.pos, "'continue' is not allowed outside of loop.");
-            return;
-        }
+        Assert.notNull(env);
         code.putPos(tree.pos);
         env.contjumps.add(emitGoto());
         code.dead();
@@ -220,12 +202,8 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitFallthrough(Fallthrough tree) {
-        // todo: Эта проверка должна находиться в другом этапе
         FlowEnv env = searchEnv(true);
-        if (env == null) {
-            cError(tree.pos, "'fallthrough' is not allowed outside of switch.");
-            return;
-        }
+        Assert.notNull(env);
         code.putPos(tree.pos);
         env.contjumps.add(emitGoto());
         code.dead();
@@ -238,18 +216,8 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitInvocation(Invocation tree) {
-        if (!tree.callee.hasTag(Tag.MEMACCESS) || ((MemberAccess) tree.callee).expr != null) {
-            log.error(tree.pos, "Only a function calling allowed");
-            return;
-        }
+        Assert.check(tree.callee instanceof MemberAccess);
         Name callee = ((MemberAccess) tree.callee).member;
-
-        for (Invocation.Argument argument : tree.args) {
-            if (argument.name != null) {
-                log.error(argument.name.pos, "Named arguments not supported yet");
-                return;
-            }
-        }
 
         int nargs = tree.args.size();
 
@@ -270,7 +238,7 @@ public final class Gen extends Scanner {
 //
             case "length":
             case "sizeof":
-                require_nargs(tree, 1);
+
                 genExpr(tree.args.get(0).expr).load();
                 code.putPos(tree.pos);
                 code.addInstruction(Length.INSTANCE);
@@ -297,20 +265,8 @@ public final class Gen extends Scanner {
                 int fn_idx = programLayout.tryFindFunc(callee);
                 visitInvocationArgs(tree.args);
                 code.putPos(tree.pos);
-                if (nargs > 0xff) {
-                    cError(tree.pos, "Too many arguments");
-                }
                 code.addInstruction(new Call((short) fn_idx, (byte) nargs));
                 result = stackItem;
-        }
-    }
-
-    private void require_nargs(Invocation tree, int nargs) {
-        if (tree.args.size() != nargs) {
-            log.error(tree.pos, "Required arguments count mismatch (" +
-                    "required: " + nargs + ", " +
-                    "provided: " + tree.args.size() +
-                    ")");
         }
     }
 
@@ -324,27 +280,15 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitFuncDef(FuncDef tree) {
-        if (code != null) {
-            cError(tree.pos, "Function declaration is not allowed here");
-            return;
-        }
         code = tree.code;
         log = funcSource.getLog();
 
         int nOptionals = 0;
         for (FuncDef.Parameter param : tree.params) {
             Name name = param.name;
-            if (code.localExists(name.value)) {
-                cError(name.pos, "Duplicate parameter named '" + name.value + "'.");
-            }
-            int localIdx = code.resolveLocal(name.value);
+            code.resolveLocal(name.value);
             if (param.expr != null) {
                 Expression expr = stripParens(param.expr);
-                if (!expr.hasTag(Tag.LITERAL)) {
-                    cError(expr.pos, "The values of the optional parameters can only be literals");
-                    continue;
-                }
-
                 code.setLocalDefaultPCI(name, ((Literal) expr).type.resolvePoolConstant(code));
                 nOptionals++;
             }
@@ -458,7 +402,7 @@ public final class Gen extends Scanner {
                 break;
 
             default:
-                log.error(var.pos, "Assignable expression expected");
+                Assert.error();
         }
     }
 
@@ -611,17 +555,6 @@ public final class Gen extends Scanner {
     @Override
     public void visitCompoundAssign(CompoundAssign tree) {
         Expression var = stripParens(tree.dst);
-
-        switch (var.getTag()) {
-            case MEMACCESS:
-            case ARRAYACCESS:
-            case VARIABLE:
-                break;
-
-            default:
-                log.error(var.pos, "Assignable expression expected");
-        }
-
         Item varitem = genExpr(tree.dst);
         varitem.duplicate();
         if (tree.hasTag(Tag.ASG_NULLCOALESCE)) {
@@ -743,7 +676,7 @@ public final class Gen extends Scanner {
                 break;
 
             default:
-                log.error(tree.expr.pos, "Assignable expression expected");
+                Assert.error();
         }
     }
 
@@ -784,6 +717,7 @@ public final class Gen extends Scanner {
         return (value >>> 16) == 0;
     }
 
+    @Deprecated
     private void cError(int position, String message) {
         log.error(position, message);
     }

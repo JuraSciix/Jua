@@ -53,7 +53,6 @@ public final class JuaCompiler {
 
             Parser parser = new JuaParser(source);
             programLayout.topTree = parser.parseCompilationUnit();
-            programLayout.lower = new Lower();
             Program program = programLayout.buildProgram();
             if (!source.getLog().hasErrors()) {
                 return program;

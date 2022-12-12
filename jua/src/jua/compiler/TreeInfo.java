@@ -42,6 +42,32 @@ public final class TreeInfo {
         }
     }
 
+    public static boolean isAssignable(Expression tree) {
+        switch (stripParens(tree).getTag()) {
+            case VARIABLE:
+            case ARRAYACCESS:
+            case MEMACCESS:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    public static boolean isLiteral(Expression tree) {
+        Expression innerTree = stripParens(tree);
+        if (innerTree.hasTag(Tag.LITERAL)) return true;
+        if (innerTree.hasTag(Tag.ARRAYLITERAL)) {
+            ArrayLiteral arrayTree = (ArrayLiteral) innerTree;
+            for (ArrayLiteral.Entry entry : arrayTree.entries) {
+                if (entry.key != null && !isLiteral(entry.key) || !isLiteral(entry.value)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
     public static boolean isLiteralNull(Expression tree) {
         Expression innerTree = stripParens(tree);
         if (innerTree.hasTag(Tag.LITERAL)) {

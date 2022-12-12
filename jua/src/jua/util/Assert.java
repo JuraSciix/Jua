@@ -14,6 +14,12 @@ public class Assert {
         }
     }
 
+    public static void notNull(Object obj) {
+        if (obj == null) {
+            throw new AssertionError();
+        }
+    }
+
     public static void notNull(Object obj, String msg) {
         if (obj == null) {
             throw new AssertionError(msg);

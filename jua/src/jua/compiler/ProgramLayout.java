@@ -222,10 +222,10 @@ public final class ProgramLayout {
         return id;
     }
 
-    Lower lower;
+    final Lower lower = new Lower();
+    final Check check = new Check();
 
     public Program buildProgram() {
-        topTree.accept(lower);
         Gen mainCodegen = new Gen(this);
 
         List<Statement> toRemove = new ArrayList<>();
@@ -236,6 +236,12 @@ public final class ProgramLayout {
         List<JuaFunction> builtinFunctions = builtinFunctions();
         Map<Integer, JuaFunction> a = builtinFunctions.stream()
                 .collect(Collectors.toMap(f -> addFunction(f.name()), f -> f));
+
+        // Регистрируем встроенные (нативные) функции.
+        builtinFunctions.forEach(bf -> check.functions.add(bf.name()));
+
+        topTree.accept(lower);
+        topTree.accept(check);
 
         List<FuncDef> funcDefs = topTree.stats.stream()
                 .filter(stmt -> stmt.hasTag(Tag.FUNCDEF))
