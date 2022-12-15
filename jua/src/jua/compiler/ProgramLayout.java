@@ -7,6 +7,7 @@ import jua.interpreter.InterpreterThread;
 import jua.interpreter.instruction.Getconst;
 import jua.runtime.JuaFunction;
 import jua.runtime.JuaNativeExecutor;
+import jua.runtime.VirtualMachine;
 import jua.runtime.heap.MapHeap;
 import jua.runtime.heap.StringHeap;
 
@@ -224,6 +225,13 @@ public final class ProgramLayout {
 
     final Lower lower = new Lower();
     final Check check = new Check();
+
+    /**
+     * Создает объект виртуальной машины из информации, собранной компилятором.
+     */
+    public VirtualMachine createVM() {
+        throw new UnsupportedOperationException("Not yet implemented"); // todo
+    }
 
     public Program buildProgram() {
         Gen mainCodegen = new Gen(this);

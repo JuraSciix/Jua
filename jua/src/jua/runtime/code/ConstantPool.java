@@ -2,6 +2,7 @@ package jua.runtime.code;
 
 import jua.interpreter.Address;
 
+@Deprecated
 public final class ConstantPool {
 
     public static final int MAX_SIZE = 65535;
