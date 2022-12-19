@@ -136,6 +136,17 @@ public final class Address implements Comparable<Address> {
         }
     }
 
+    public StringHeap stringVal() {
+        switch (type) {
+            case NULL:    return new StringHeap().appendNull();
+            case LONG:    return new StringHeap().append(getLong());
+            case DOUBLE:  return new StringHeap().append(getDouble());
+            case BOOLEAN: return new StringHeap().append(getBoolean());
+            case STRING:  return getStringHeap();
+            default: throw new IllegalArgumentException("Unable to convert " + getTypeName() + " to string");
+        }
+    }
+
     public boolean stringVal(Address dst) {
         switch (type) {
             case NULL:
@@ -682,7 +693,7 @@ public final class Address implements Comparable<Address> {
         }
 
         if (getTypeUnion(STRING, STRING) == union) {
-            return getStringHeap().compare(rhs.getStringHeap());
+            return getStringHeap().compareTo(rhs.getStringHeap());
         }
 
         if (getTypeUnion(MAP, MAP) == union) {
@@ -709,28 +720,39 @@ public final class Address implements Comparable<Address> {
     @Override
     public int compareTo(Address o) {
         if (this == o) return 0;
-        int union = getTypeUnion(type, o.type);
-        if (getTypeUnion(LONG, LONG) == union) return Long.compare(getLong(), o.getLong());
-        if (getTypeUnion(LONG, DOUBLE) == union) return Double.compare(getLong(), o.getDouble());
-        if (getTypeUnion(DOUBLE, LONG) == union) return Double.compare(getDouble(), o.getLong());
-        if (getTypeUnion(DOUBLE, DOUBLE) == union) return Double.compare(getDouble(), o.getDouble());
-        if (type == STRING && o.isScalar()) {
-            Address tmp = new Address();
-            if (!o.stringVal(tmp)) {
-                throw new AssertionError("Scalar type cannot be converted to string: " + o.getTypeName());
-            }
-            int cmp = getStringHeap().compareTo(tmp.getStringHeap());
-            return cmp == 0 && type == o.type ? cmp : -1;
-        }
-        if (o.type == STRING && isScalar()) {
-            Address tmp = new Address();
-            if (!stringVal(tmp)) {
-                throw new AssertionError("Scalar type cannot be converted to string: " + o.getTypeName());
-            }
-            int cmp = tmp.getStringHeap().compareTo(o.getStringHeap());
-            return cmp == 0 && type == o.type ? cmp : -1;
-        }
-        throw new UnsupportedOperationException();
+        int typeUnion = getTypeUnion(type, o.type);
+
+        if (typeUnion == getTypeUnion(LONG, LONG) || typeUnion == getTypeUnion(BOOLEAN, BOOLEAN))
+            return Long.compare(getLong(), o.getLong());
+
+        if (typeUnion == getTypeUnion(LONG, DOUBLE) || typeUnion == getTypeUnion(BOOLEAN, DOUBLE))
+            return Double.compare(getLong(), o.getDouble());
+
+        if (typeUnion == getTypeUnion(LONG, STRING))
+            return new StringHeap().append(getLong()).compareTo(o.getStringHeap());
+
+        if (typeUnion == getTypeUnion(DOUBLE, LONG) || typeUnion == getTypeUnion(DOUBLE, BOOLEAN))
+            return Double.compare(getDouble(), o.getLong());
+
+        if (typeUnion == getTypeUnion(DOUBLE, DOUBLE))
+            return Double.compare(getDouble(), o.getDouble());
+
+        if (typeUnion == getTypeUnion(DOUBLE, STRING))
+            return new StringHeap().append(getDouble()).compareTo(o.getStringHeap());
+
+        if (typeUnion == getTypeUnion(STRING, LONG))
+            return getStringHeap().compareTo(new StringHeap().append(getLong()));
+
+        if (typeUnion == getTypeUnion(STRING, DOUBLE))
+            return getStringHeap().compareTo(new StringHeap().append(getBoolean()));
+
+        if (typeUnion == getTypeUnion(STRING, BOOLEAN))
+            return getStringHeap().compareTo(new StringHeap().append(getBoolean()));
+
+        if (typeUnion == getTypeUnion(STRING, STRING))
+            return getStringHeap().compareTo(o.getStringHeap());
+
+        throw new IllegalArgumentException("Unable to compare " + getTypeName() + " with " + o.getTypeName());
     }
 
     @Override

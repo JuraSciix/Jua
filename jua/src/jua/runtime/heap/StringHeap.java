@@ -3,49 +3,53 @@ package jua.runtime.heap;
 import java.io.IOException;
 import java.io.Writer;
 
-public final class StringHeap implements CharSequence, Heap, Comparable<StringHeap> {
+public final class StringHeap implements CharSequence, Comparable<StringHeap>, Heap {
 
-    private static final ThreadLocal<StringHeap> TMP = new ThreadLocal<StringHeap>() {
-        @Override
-        protected StringHeap initialValue() {
-            return new StringHeap();
-        }
-    };
-
-    public static StringHeap temp() {
-        return TMP.get();
-    }
-
-    private final StringBuffer buffer;
+    private final StringBuilder buffer;
 
     // Кеш-содержащие поля
     private volatile transient int hashCode;
     private volatile transient boolean hashCodeCalculated = false;
 
     public StringHeap() {
-        buffer = new StringBuffer(0);
-        hashCodeCalculated = true; // Хеш-код пустой строки всегда равняется нулю.
+        this("", 0, 0);
     }
 
-    public StringHeap(String initialString) {
-        buffer = new StringBuffer(initialString.length());
-        buffer.append(initialString);
+    public StringHeap(String source) {
+        this(source, 0, source.length());
     }
 
-    public StringHeap(String initialString, int offset, int count) {
-        buffer = new StringBuffer(count);
-        buffer.append(initialString, offset, offset + count);
+    public StringHeap(String source, int offset, int count) {
+        if (count == 0) {
+            buffer = new StringBuilder(1);
+            hashCodeCalculated = true; // Хеш-код пустой строки всегда равняется нулю.
+        } else {
+            buffer = new StringBuilder(count);
+            buffer.append(source, offset, offset + count);
+        }
     }
 
     public StringHeap(StringHeap original) {
-        buffer = new StringBuffer(original.buffer);
-        hashCode = original.hashCode;
-        hashCodeCalculated = original.hashCodeCalculated;
+        this(original, 0, original.length());
     }
 
     public StringHeap(StringHeap original, int offset, int count) {
-        buffer = new StringBuffer(count);
-        buffer.append(original.buffer, offset, offset + count);
+        if (count == 0) {
+            buffer = new StringBuilder(1);
+            hashCodeCalculated = true;
+        } else {
+            buffer = new StringBuilder(count);
+            buffer.append(original.buffer, offset, offset + count);
+            if (offset == 0 && count == original.length()) {
+                hashCode = original.hashCode;
+                hashCodeCalculated = original.hashCodeCalculated;
+            }
+        }
+    }
+
+    @Override
+    public int length() {
+        return buffer.length();
     }
 
     public boolean isEmpty() {
@@ -57,56 +61,50 @@ public final class StringHeap implements CharSequence, Heap, Comparable<StringHe
     }
 
     @Override
-    public int length() { return buffer.length(); }
+    public char charAt(int index) {
+        return buffer.charAt(index);
+    }
 
     @Override
-    public char charAt(int index) { return buffer.charAt(index); }
+    public StringHeap subSequence(int start, int end) {
+        return new StringHeap(this, start, end - start);
+    }
 
-    @Override
-    public CharSequence subSequence(int start, int end) { return new StringHeap(this, start, end - start); }
-
-    public int size() { return buffer.length(); }
+    public int size() {
+        return buffer.length();
+    }
 
     public boolean isSame(StringHeap that) {
-        StringBuffer b1 = buffer;
-        StringBuffer b2 = that.buffer;
+        StringBuilder b1 = buffer;
+        StringBuilder b2 = that.buffer;
         if (b1.length() != b2.length()) return false;
         for (int i = 0; i < b1.length(); i++)
             if (b1.charAt(i) != b2.charAt(i)) return false;
         return true;
     }
 
-    public int compare(StringHeap that) {
-        StringBuffer b1 = buffer;
-        StringBuffer b2 = that.buffer;
-        for (int i = 0, j = Math.min(b1.length(), b2.length()); i < j; i++) {
-            char ch1 = b1.charAt(i);
-            char ch2 = b2.charAt(i);
-            if (ch1 != ch2) {
-                return Integer.compare(ch1, ch2);
-            }
-        }
-        return Integer.compare(b1.length(), b2.length());
+    public StringHeap copy() {
+        return new StringHeap(this);
     }
 
-    public StringHeap copy() { return new StringHeap(this); }
-
-    public StringHeap deepCopy() { return new StringHeap(this); }
-
-    public StringHeap append(long j) {
-        buffer.append(j);
-        resetCaches();
-        return this;
+    public StringHeap deepCopy() {
+        return new StringHeap(this);
     }
 
-    public StringHeap append(boolean z) {
+    public StringHeap append(long l) {
+        buffer.append(l);
         resetCaches();
-        buffer.append(z);
         return this;
     }
 
     public StringHeap append(double d) {
         buffer.append(d);
+        resetCaches();
+        return this;
+    }
+
+    public StringHeap append(boolean b) {
+        buffer.append(b);
         resetCaches();
         return this;
     }
@@ -141,19 +139,29 @@ public final class StringHeap implements CharSequence, Heap, Comparable<StringHe
     @Override
     public int compareTo(StringHeap o) {
         if (this == o) return 0;
-        // todo: Исправить ленивую реализацию
-        return buffer.toString().compareTo(o.buffer.toString());
+        StringBuilder bt = buffer;
+        StringBuilder bo = o.buffer;
+        int lbt = bt.length();
+        int lbo = bo.length();
+        int lm = Math.min(lbt, lbo);
+        for (int i = 0; i < lm; i++) {
+            char ct = bt.charAt(i);
+            char co = bo.charAt(i);
+            if (ct != co) return ct - co;
+        }
+        return lbt - lbo;
     }
 
     @Override
     public int hashCode() {
-        if (hashCodeCalculated) return hashCode;
-        StringBuffer b = buffer;
-        int h = 0;
-        for (int i = 0; i < b.length(); i++)
-            h = (h << 5) - h + b.charAt(i);
-        hashCode = h;
-        hashCodeCalculated = true;
+        int h = hashCode;
+        if (!hashCodeCalculated) {
+            assert h == 0;
+            for (int i = 0, l = buffer.length(); i < l; i++)
+                h = (h << 5) - h + buffer.charAt(i);
+            hashCode = h;
+            hashCodeCalculated = true;
+        }
         return h;
     }
 
@@ -166,6 +174,6 @@ public final class StringHeap implements CharSequence, Heap, Comparable<StringHe
 
     @Override
     public String toString() {
-        return '"' + buffer.toString() + '"';
+        return buffer.toString();
     }
 }
