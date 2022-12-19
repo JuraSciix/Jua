@@ -138,10 +138,12 @@ public class Check extends Scanner {
 
     @Override
     public void visitCase(Case tree) {
-        for (Expression label : tree.labels) {
-            Expression innerLabel = stripParens(label);
-            if (!isLiteral(innerLabel)) {
-                log.error(innerLabel.pos, "only literals are allowed as the case label expression");
+        if (tree.labels != null) { // default-case check
+            for (Expression label : tree.labels) {
+                Expression innerLabel = stripParens(label);
+                if (!isLiteral(innerLabel)) {
+                    log.error(innerLabel.pos, "only literals are allowed as the case label expression");
+                }
             }
         }
         scanCaseBody(tree.body);
