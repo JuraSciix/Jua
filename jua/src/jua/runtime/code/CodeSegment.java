@@ -1,7 +1,6 @@
 package jua.runtime.code;
 
 import jua.interpreter.instruction.Instruction;
-import jua.runtime.LocalTable;
 
 public final class CodeSegment {
 

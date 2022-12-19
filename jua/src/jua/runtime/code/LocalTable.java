@@ -1,4 +1,4 @@
-package jua.runtime;
+package jua.runtime.code;
 
 public class LocalTable {
 

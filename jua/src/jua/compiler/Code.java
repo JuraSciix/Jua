@@ -9,7 +9,7 @@ import jua.interpreter.Address;
 import jua.interpreter.instruction.Binaryswitch;
 import jua.interpreter.instruction.Instruction;
 import jua.interpreter.instruction.JumpInstruction;
-import jua.runtime.LocalTable;
+import jua.runtime.code.LocalTable;
 import jua.runtime.code.CodeSegment;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.LineNumberTable;
