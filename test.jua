@@ -1,5 +1,7 @@
 const FIB_ERROR = 0;
 
+fn abs(n) = n < 0 ? -n : n;
+
 fn slow_fib(n) {
     if n <= 2 {
         if n <= 0 {
@@ -24,9 +26,29 @@ fn fast_fib(n) {
     return q2;
 }
 
+fn sort(a) = qsort(a); // sort by default
+fn bsort(a) = bubble_sort(a); // alias
+fn qsort(a, lo = null, hi = null) {
+    i = lo ??= 0;
+    j = hi ??= length(a) - 1;
+    pivot = a[(i + j) >> 1];
+    do {
+        while (a[i] < pivot) i++;
+        while (a[j] > pivot) j--;
+        if (i <= j) {
+            tmp = a[i];
+            a[i] = a[j];
+            a[j] = tmp;
+            i++; j--;
+        }
+    } while (i <= j);
+    if (j > lo) qsort(a, lo, j);
+    if (i < hi) qsort(a, i, hi);
+}
+
 fn bubble_sort(a) {
     for i = 0; i < length(a); i++ {
-        for j = 1; j < length(a); j++ {
+        for j = 1; j < length(a) - i; j++ {
             x = a[j - 1];
             y = a[j];
             if x > y {
@@ -104,6 +126,8 @@ fn array_pop(arr) {
 
 fn array_avg(arr) {
     uarr = array_unique(arr);
+    if length(uarr) < 1
+        return uarr[0] ?? 0.0;
     return array_sum(uarr) / length(uarr);
 }
 
@@ -146,6 +170,8 @@ fn array_last_index_of(arr, elem, start = 0) {
 }
 
 fn array_unique(arr) {
+    if length(arr) < 1
+        return arr;
     result = [];
     for i = 0, l = length(arr); i < l; i++ {
         if array_index_of(result, arr[i]) == -1 {
@@ -536,7 +562,7 @@ fn test_switch(x) {
     }
 }
 
-fn bench_switch() {
+fn bench_switch(max_itr = 15) {
     param_seq = [
         ['sd', 11500], ['mp', 12208], ['xg', 12360], ['ok', 11877], ['ut', 13572], ['dz', 12200], ['cn', 10890], ['oa', 10767], ['yl', 13068],
         ['sq', 12995], ['gk', 11021], ['qe', 11413], ['cd', 9900], ['mq', 12317], ['up', 13104], ['hk', 11128], ['rs', 13110], ['nn', 12100],
@@ -616,26 +642,61 @@ fn bench_switch() {
         ['ak', 10379]
     ];
 
-    for itr = 1, max_itr = 5; itr <= max_itr; itr++ {
+    for itr = 1; itr <= max_itr; itr++ {
         println("bench_switch: iteration " + itr + " of " + max_itr + "...");
         m_parts = [];
         for i = 0, l = length(param_seq); i < l; i++ {
+            v = param_seq[i][0];
             m_start = ns_time();
-            result = test_switch(param_seq[i][0]);
+            result = test_switch(v);
             m_end = ns_time();
             if result != param_seq[i][1] {
                 println("ERROR(" + i + "): " + print_list(param_seq[i], false) + " => " + result);
                 return;
             }
-            array_push(m_parts, (m_end - m_start) / 1E6);
+            array_push(m_parts, (m_end - m_start));
         }
-        bubble_sort(m_parts);
-        lines = [
-            "measurements: " + m_parts[0] + " / " + array_pop(m_parts),
-            "avg: " + array_avg(m_parts)
-        ];
-        println("bench_switch: " + join(lines, ", "));
+        print_bench("bench_switch", itr, max_itr, m_parts);
     }
 }
 
-bench_switch();
+fn loop() {
+    for i = 0; i < 1_000; i++ {
+        for j = 0; j < 1_000; j++ {
+            // no-op
+        }
+    }
+}
+
+fn loop_bench(itrc = 5) {
+    for itr = 1; itr <= itrc; itr++ {
+        m_start = ns_time();
+        loop();
+        m_end = ns_time();
+        print_bench("loop_bench", itr, itrc, [m_end - m_start]);
+    }
+}
+
+fn print_bench(bench_name, itr_n, itr_c, measurements, quick_print = true) { // measurements = array of nanos
+    if length(measurements) == 0 {
+        measurements_str = "[no measurements]";
+    } else {
+        sort(measurements);
+        best = measurements[0];
+        worth = array_pop(measurements);
+        avg = array_avg([worth, best]);
+        if (best - worth) < 0.000001 { // equals
+            measurements_str = 1E9 / avg + " op/sec";
+        } else {
+            a = array_avg([abs(worth - avg), abs(best - avg)]);
+            measurements_str = avg + "±" + a + " ns/op | " + 1E9 / array_avg(measurements) + " op/sec";
+        }
+    }
+    str = bench_name + " (" + itr_n + "/" + itr_c + "): " + measurements_str;
+    if (quick_print) {
+        println(str);
+    }
+    return str;
+}
+
+loop_bench(30);

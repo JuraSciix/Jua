@@ -16,6 +16,9 @@ import static jua.util.Collections.mergeIntLists;
 
 public final class Gen extends Scanner {
 
+    @Deprecated
+    private static final boolean GEN_JVM_LOOPS = false;
+
     private final ProgramLayout programLayout;
 
     Code code;
@@ -483,43 +486,80 @@ public final class Gen extends Scanner {
 
     FlowEnv flow;
 
+    private void visitOptionalExpressionList(List<Expression> trees) {
+        if (trees != null) {
+            trees.forEach(tree -> genExpr(tree).drop());
+        }
+    }
+
+    private static boolean isInfiniteLoopCond(Expression tree) {
+        return tree == null || isLiteralTrue(tree);
+    }
+    
     private void genLoop(
             Statement loop,
-            List<Expression> init, Expression cond, List<Expression> steps,
-            Statement body, boolean testFirst) {
+            List<Expression> init,
+            Expression cond,
+            List<Expression> steps,
+            Statement body,
+            boolean testFirst
+    ) {
+        visitOptionalExpressionList(init);
+
         flow = new FlowEnv(flow, false);
 
-        if (init != null) init.forEach(expr -> genExpr(expr).drop());
+        boolean infinitecond = isInfiniteLoopCond(cond);
 
-        boolean truecond = (cond == null) || isLiteralTrue(cond);
-        int loopstartPC, limitstacktop;
-        if (testFirst && !truecond) {
-            code.putPos(loop.pos);
-            int skipBodyPC = emitGoto();
-            loopstartPC = code.currentIP();
-            limitstacktop = code.curStackTop();
-            genBranch(body);
-            if (steps != null) steps.forEach(expr -> genExpr(expr).drop());
-            resolveJump(skipBodyPC);
+        if (GEN_JVM_LOOPS) {
+            int loopstartPC = code.currentIP();
+            if (infinitecond) {
+                genBranch(body);
+                flow.resolveCont(loopstartPC);
+                resolveJump(emitGoto(), loopstartPC);
+                if (!flow.interrupted) code.dead(); // Подлинный вечный цикл.
+            } else {
+                if (testFirst) {
+                    CondItem condItem = genCond(cond);
+                    condItem.resolveTrueJumps();
+                    genBranch(body);
+                    visitOptionalExpressionList(steps);
+                    flow.resolveCont(loopstartPC);
+                    resolveJump(emitGoto(), loopstartPC);
+                    condItem.resolveFalseJumps();
+                } else {
+                    genBranch(body);
+                    visitOptionalExpressionList(steps);
+                    flow.resolveCont();
+                    CondItem condItem = genCond(cond).negate();
+                    condItem.resolveTrueJumps();
+                    condItem.resolveFalseJumps(loopstartPC);
+                }
+            }
         } else {
-            loopstartPC = code.currentIP();
-            limitstacktop = code.curStackTop();
-            genBranch(body);
-            if (steps != null) steps.forEach(expr -> genExpr(expr).drop());
+            int loopstartPC;
+            if (testFirst && !infinitecond) {
+                int skipBodyPC = emitGoto();
+                loopstartPC = code.currentIP();
+                genBranch(body);
+                if (steps != null) steps.forEach(expr -> genExpr(expr).drop());
+                resolveJump(skipBodyPC);
+            } else {
+                loopstartPC = code.currentIP();
+                genBranch(body);
+                if (steps != null) steps.forEach(expr -> genExpr(expr).drop());
+            }
+            flow.resolveCont();
+            if (infinitecond) {
+                resolveJump(emitGoto(), loopstartPC);
+                if (!flow.interrupted) code.dead(); // Подлинный вечный цикл.
+            } else {
+                CondItem condItem = genCond(cond).negate();
+                condItem.resolveTrueJumps();
+                condItem.resolveFalseJumps(loopstartPC);
+            }
         }
-        flow.resolveCont();
-        if (truecond) {
-            resolveJump(emitGoto(), loopstartPC);
-            if (!flow.interrupted) code.dead();
-        } else {
-            CondItem condItem = genCond(cond).negate();
-            condItem.resolveTrueJumps();
-            condItem.resolveFalseJumps(loopstartPC);
-        }
+
         flow.resolveExit();
-
-        assertStacktopEquality(limitstacktop);
-
         flow = flow.parent;
     }
 
