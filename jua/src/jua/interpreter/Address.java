@@ -634,6 +634,11 @@ public final class Address implements Comparable<Address> {
             return false;
         }
 
+        if (!key.isScalar()) {
+            threadError("trying to store array-element by non-scalar key of type " + key.getTypeName());
+            return false;
+        }
+
         getMapHeap().put(key, value);
         return true;
     }
@@ -641,6 +646,11 @@ public final class Address implements Comparable<Address> {
     public boolean load(Address key, Address receptor) {
         if (type != MAP) {
             threadError("trying to load array-element from %s", getTypeName());
+            return false;
+        }
+
+        if (!key.isScalar()) {
+            threadError("trying to load array-element by non-scalar key of type " + key.getTypeName());
             return false;
         }
 
