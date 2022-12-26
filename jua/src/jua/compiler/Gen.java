@@ -214,7 +214,7 @@ public final class Gen extends Scanner {
     }
 
     @Override
-    public void visitFor(ForLoop tree) {
+    public void visitForLoop(ForLoop tree) {
         genLoop(tree, tree.init, tree.cond, tree.step, tree.body, true);
     }
 

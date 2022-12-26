@@ -81,7 +81,7 @@ public interface Tree {
         void visitIf(If tree);
         void visitWhileLoop(WhileLoop tree);
         void visitDoLoop(DoLoop tree);
-        void visitFor(ForLoop tree);
+        void visitForLoop(ForLoop tree);
         void visitSwitch(Switch tree);
         void visitCase(Case tree);
         void visitBreak(Break tree);
@@ -126,7 +126,7 @@ public interface Tree {
         public void visitDoLoop(DoLoop tree) { visitTree(tree); }
 
         @Override
-        public void visitFor(ForLoop tree) { visitTree(tree); }
+        public void visitForLoop(ForLoop tree) { visitTree(tree); }
 
         @Override
         public void visitSwitch(Switch tree) { visitTree(tree); }
@@ -250,7 +250,7 @@ public interface Tree {
         }
 
         @Override
-        public void visitFor(ForLoop tree) {
+        public void visitForLoop(ForLoop tree) {
             scan(tree.init);
             scan(tree.cond);
             scan(tree.step);
@@ -436,7 +436,7 @@ public interface Tree {
         }
 
         @Override
-        public void visitFor(ForLoop tree) {
+        public void visitForLoop(ForLoop tree) {
             tree.init = translate(tree.init);
             tree.cond = translate(tree.cond);
             tree.body = translate(tree.body);
@@ -766,7 +766,7 @@ public interface Tree {
         public Tag getTag() { return Tag.FORLOOP; }
 
         @Override
-        public void accept(Visitor visitor) { visitor.visitFor(this); }
+        public void accept(Visitor visitor) { visitor.visitForLoop(this); }
     }
 
     final class Switch extends Statement {

@@ -118,7 +118,7 @@ public class Check extends Scanner {
     }
 
     @Override
-    public void visitFor(ForLoop tree) {
+    public void visitForLoop(ForLoop tree) {
         scan(tree.init);
         scan(tree.cond);
         scan(tree.step);
