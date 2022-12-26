@@ -3,7 +3,7 @@ package jua.compiler;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import jua.compiler.Tree.*;
-import jua.compiler.Types.Type;
+import jua.compiler.Items.*;
 import jua.interpreter.instruction.*;
 import jua.runtime.JuaFunction;
 import jua.util.Assert;
@@ -24,6 +24,8 @@ public final class Gen extends Scanner {
     Code code;
 
     Log log;
+    
+    Items items;
 
     Gen(ProgramLayout programLayout) {
         this.programLayout = programLayout;
@@ -32,6 +34,7 @@ public final class Gen extends Scanner {
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
         code = tree.code;
+        items = new Items(code);
         log = tree.source.getLog();
         scan(tree.stats);
         emitLeave();
@@ -41,23 +44,21 @@ public final class Gen extends Scanner {
         CondItem lcond = genCond(tree.lhs);
         lcond.resolveTrueJumps();
         CondItem rcond = genCond(tree.rhs);
-        result = new CondItem(rcond.opcodePC, rcond.truejumps, mergeIntLists(lcond.falsejumps, rcond.falsejumps));
+        result = items.makeCond(rcond.opcodePC, rcond.truejumps, mergeIntLists(lcond.falsejumps, rcond.falsejumps));
     }
 
     private void genFlowOr(BinaryOp tree) {
         CondItem lcond = genCond(tree.lhs).negate();
         lcond.resolveTrueJumps();
         CondItem rcond = genCond(tree.rhs);
-        result = new CondItem(rcond.opcodePC, mergeIntLists(lcond.falsejumps, rcond.falsejumps), rcond.truejumps);
+        result = items.makeCond(rcond.opcodePC, mergeIntLists(lcond.falsejumps, rcond.falsejumps), rcond.truejumps);
     }
-
-    private final StackItem stackItem = new StackItem();
 
     @Override
     public void visitArrayAccess(ArrayAccess tree) {
         genExpr(tree.expr).load();
         genExpr(tree.index).load();
-        result = new AccessItem(tree.pos);
+        result = items.makeAccess(tree.pos);
     }
 
     @Override
@@ -69,7 +70,7 @@ public final class Gen extends Scanner {
 
     Item genArrayInitializr(List<ArrayLiteral.Entry> entries) {
         long implicitIndex = 0L;
-        Item item = stackItem;
+        Item item = items.makeStack();
         for (ArrayLiteral.Entry entry : entries) {
             item.duplicate();
             if (entry.key == null) {
@@ -79,7 +80,7 @@ public final class Gen extends Scanner {
                 genExpr(entry.key).load();
             }
             genExpr(entry.value).load();
-            new AccessItem(entry.pos).store();
+            items.makeAccess(entry.pos).store();
         }
         return item;
     }
@@ -93,7 +94,7 @@ public final class Gen extends Scanner {
         genExpr(tree.rhs).load();
         code.putPos(tree.pos);
         code.addInstruction(fromBinaryOpTag(tree.tag));
-        result = stackItem;
+        result = items.makeStack();
     }
 
     @Override
@@ -245,7 +246,7 @@ public final class Gen extends Scanner {
                 genExpr(tree.args.get(0).expr).load();
                 code.putPos(tree.pos);
                 code.addInstruction(Length.INSTANCE);
-                result = stackItem;
+                result = items.makeStack();
                 break;
 //
 //            case "gettype":
@@ -269,7 +270,7 @@ public final class Gen extends Scanner {
                 visitInvocationArgs(tree.args);
                 code.putPos(tree.pos);
                 code.addInstruction(new Call((short) fn_idx, (byte) nargs));
-                result = stackItem;
+                result = items.makeStack();
         }
     }
 
@@ -284,6 +285,7 @@ public final class Gen extends Scanner {
     @Override
     public void visitFuncDef(FuncDef tree) {
         code = tree.code;
+        items = new Items(code);
         log = funcSource.getLog();
 
         int nOptionals = 0;
@@ -329,7 +331,7 @@ public final class Gen extends Scanner {
                 int skipperPC = emitGoto();
                 cond.resolveFalseJumps();
                 genBranch(tree.elsebody);
-                resolveJump(skipperPC);
+                code.resolveJump(skipperPC);
             } else {
                 cond.resolveFalseJumps();
                 alive = genBranch(tree.elsebody);
@@ -373,7 +375,7 @@ public final class Gen extends Scanner {
         }
 
         code.putPos(tree.pos);
-        result = new CondItem(code.addInstruction(opcode));
+        result = items.makeCond(code.addInstruction(opcode));
     }
 
     private void genNullCoalescing(BinaryOp tree) {
@@ -383,8 +385,8 @@ public final class Gen extends Scanner {
         int condPC = code.addInstruction(new Ifnonnull());
         code.addInstruction(Pop.INSTANCE);
         genExpr(tree.rhs).load();
-        resolveJump(condPC);
-        result = stackItem;
+        code.resolveJump(condPC);
+        result = items.makeStack();
     }
 
     @Override
@@ -401,7 +403,7 @@ public final class Gen extends Scanner {
             case VARIABLE:
                 Item varitem = genExpr(tree.var);
                 genExpr(tree.expr).load();
-                result = new AssignItem(tree.pos, varitem);
+                result = items.makeAssign(tree.pos, varitem);
                 break;
 
             default:
@@ -424,7 +426,7 @@ public final class Gen extends Scanner {
                 genExpr(tree.expr).load();
                 code.putPos(tree.pos);
                 code.addInstruction(InstructionUtils.fromUnaryOpTag(tree.tag));
-                result = stackItem;
+                result = items.makeStack();
         }
     }
 
@@ -457,18 +459,20 @@ public final class Gen extends Scanner {
         cond.resolveFalseJumps();
         code.curStackTop(a);
         genExpr(tree.elseexpr).load();
-        resolveJump(exiterPC);
+        code.resolveJump(exiterPC);
         assertStacktopEquality(limitstacktop + 1);
-        result = stackItem;
+        result = items.makeStack();
     }
 
     @Override
     public void visitVariable(Var tree) {
         Name name = tree.name;
         if (programLayout.hasConstant(name)) {
-            result = new ConstantItem(tree.pos, name);
+            code.putPos(tree.pos);
+            code.addInstruction(new Getconst(programLayout.tryFindConst(name)));
+            result = items.makeStack();
         } else {
-            result = new LocalItem(tree.pos, name);
+            result = items.makeLocal(tree.pos, name);
         }
     }
 
@@ -476,7 +480,7 @@ public final class Gen extends Scanner {
     public void visitMemberAccess(MemberAccess tree) {
         genExpr(tree.expr).load();
         emitPushString(tree.member.value);
-        result = new AccessItem(tree.pos);
+        result = items.makeAccess(tree.pos);
     }
 
     @Override
@@ -515,7 +519,7 @@ public final class Gen extends Scanner {
             if (infinitecond) {
                 genBranch(body);
                 flow.resolveCont(loopstartPC);
-                resolveJump(emitGoto(), loopstartPC);
+                code.resolveJump(emitGoto(), loopstartPC);
                 if (!flow.interrupted) code.dead(); // Подлинный вечный цикл.
             } else {
                 if (testFirst) {
@@ -524,7 +528,7 @@ public final class Gen extends Scanner {
                     genBranch(body);
                     visitOptionalExpressionList(steps);
                     flow.resolveCont(loopstartPC);
-                    resolveJump(emitGoto(), loopstartPC);
+                    code.resolveJump(emitGoto(), loopstartPC);
                     condItem.resolveFalseJumps();
                 } else {
                     genBranch(body);
@@ -542,7 +546,7 @@ public final class Gen extends Scanner {
                 loopstartPC = code.currentIP();
                 genBranch(body);
                 if (steps != null) steps.forEach(expr -> genExpr(expr).drop());
-                resolveJump(skipBodyPC);
+                code.resolveJump(skipBodyPC);
             } else {
                 loopstartPC = code.currentIP();
                 genBranch(body);
@@ -550,7 +554,7 @@ public final class Gen extends Scanner {
             }
             flow.resolveCont();
             if (infinitecond) {
-                resolveJump(emitGoto(), loopstartPC);
+                code.resolveJump(emitGoto(), loopstartPC);
                 if (!flow.interrupted) code.dead(); // Подлинный вечный цикл.
             } else {
                 CondItem condItem = genCond(cond).negate();
@@ -609,17 +613,17 @@ public final class Gen extends Scanner {
             varitem.store();
             int sp2 = code.curStackTop();
             int ePC = emitGoto();
-            resolveJump(cPC);
+            code.resolveJump(cPC);
             code.curStackTop(sp1);
             varitem.drop();
-            resolveJump(ePC);
+            code.resolveJump(ePC);
             assertStacktopEquality(sp2);
-            result = new Item() {
+            result = items.new Item() {
                 @Override
                 Item load() {
                     code.addInstruction(new Vload(code.resolveLocal(tmp)));
                     drop();
-                    return stackItem;
+                    return items.makeStack();
                 }
 
                 @Override
@@ -633,13 +637,13 @@ public final class Gen extends Scanner {
             varitem.load();
             genExpr(tree.src).load();
             code.addInstruction(fromBinaryAsgOpTag(tree.tag));
-            result = new AssignItem(tree.pos, varitem);
+            result = items.makeAssign(tree.pos, varitem);
         }
     }
 
     @Override
     public void visitLiteral(Literal tree) {
-        result = new LiteralItem(tree.pos, tree.type);
+        result = items.makeLiteral(tree.pos, tree.type);
     }
 
 
@@ -662,7 +666,7 @@ public final class Gen extends Scanner {
                 boolean inc = tree.hasTag(Tag.POSTINC) || tree.hasTag(Tag.PREINC);
 
                 if (varitem instanceof LocalItem) {
-                    result = new Item() {
+                    result = items.new Item() {
                         final LocalItem localitem = (LocalItem) varitem;
 
                         @Override
@@ -674,7 +678,7 @@ public final class Gen extends Scanner {
                                 drop();
                                 localitem.load();
                             }
-                            return stackItem;
+                            return items.makeStack();
                         }
 
                         @Override
@@ -691,7 +695,7 @@ public final class Gen extends Scanner {
                 } else {
                     varitem.duplicate();
                     varitem.load();
-                    result = new Item() {
+                    result = items.new Item() {
                         @Override
                         Item load() {
                             if (post) {
@@ -700,16 +704,16 @@ public final class Gen extends Scanner {
                             } else {
                                 code.putPos(tree.pos);
                                 code.addInstruction(fromUnaryOpTag(tree.tag));
-                                new AssignItem(tree.pos, varitem).load();
+                                items.makeAssign(tree.pos, varitem).load();
                             }
-                            return stackItem;
+                            return items.makeStack();
                         }
 
                         @Override
                         void drop() {
                             code.putPos(tree.pos);
                             code.addInstruction(fromUnaryOpTag(tree.tag));
-                            new AssignItem(tree.pos, varitem).drop();
+                            items.makeAssign(tree.pos, varitem).drop();
                         }
                     };
                 }
@@ -778,318 +782,6 @@ public final class Gen extends Scanner {
         return genExpr(tree).toCond();
     }
 
-    abstract class Item {
-
-        Item load() {
-            throw new AssertionError(this);
-        }
-
-        void store() {
-            throw new AssertionError(this);
-        }
-
-        void drop() {
-            throw new AssertionError(this);
-        }
-
-        void duplicate() {
-            throw new AssertionError(this);
-        }
-
-        void stash() {
-            throw new AssertionError(this);
-        }
-
-        CondItem toCond() {
-            load();
-            return new CondItem(code.addInstruction(new Ifz()));
-        }
-
-        int constantIndex() {
-            throw new AssertionError(this);
-        }
-    }
-
-    /**
-     * Динамическое значение.
-     */
-    class StackItem extends Item {
-
-        @Override
-        Item load() {
-            return this;
-        }
-
-        @Override
-        void drop() {
-            load();
-            code.addInstruction(Pop.INSTANCE);
-        }
-
-        @Override
-        void duplicate() {
-            code.addInstruction(Dup.INSTANCE);
-        }
-
-        @Override
-        void stash() {
-            code.addInstruction(Dup.INSTANCE);
-        }
-    }
-
-    /**
-     * Литерал.
-     */
-    class LiteralItem extends Item {
-
-        final int pos;
-
-        final Type type;
-
-        LiteralItem(int pos, Type type) {
-            this.pos = pos;
-            this.type = type;
-        }
-
-        @Override
-        Item load() {
-            code.putPos(pos);
-            if (type.isLong()) {
-                emitPushLong(type.longValue());
-            } else if (type.isDouble()) {
-                emitPushDouble(type.doubleValue());
-            } else if (type.isBoolean()) {
-                if (type.booleanValue()) {
-                    code.addInstruction(ConstTrue.CONST_TRUE);
-                } else {
-                    code.addInstruction(ConstFalse.CONST_FALSE);
-                }
-            } else if (type.isString()) {
-                emitPushString(type.stringValue());
-            } else if (type.isNull()) {
-                code.addInstruction(ConstNull.INSTANCE);
-            } else {
-                throw new AssertionError(type);
-            }
-            return stackItem;
-        }
-
-        @Override
-        void drop() { /* no-op */ }
-
-        @Override
-        int constantIndex() {
-            return type.resolvePoolConstant(code);
-        }
-    }
-
-    /**
-     * Обращение к локальной переменной.
-     */
-    class LocalItem extends Item {
-
-        final int pos;
-        final Name name;
-
-        LocalItem(int pos, Name name) {
-            this.pos = pos;
-            this.name = name;
-        }
-
-        @Override
-        Item load() {
-            code.putPos(pos);
-            code.addInstruction(new Vload(code.resolveLocal(name.value)));
-            return stackItem;
-        }
-
-        @Override
-        void drop() {
-            load();
-            code.addInstruction(Pop.INSTANCE);
-        }
-
-        @Override
-        void duplicate() { /* no-op */ }
-
-        @Override
-        void store() {
-            code.addInstruction(new Vstore(code.resolveLocal(name.value)));
-        }
-
-        @Override
-        void stash() {
-            code.addInstruction(Dup.INSTANCE);
-        }
-
-        void inc() {
-            code.addInstruction(new Vinc(code.resolveLocal(name)));
-        }
-
-        void dec() {
-            code.addInstruction(new Vdec(code.resolveLocal(name)));
-        }
-    }
-
-    /**
-     * Обращение к элементу массива.
-     */
-    class AccessItem extends Item {
-
-        final int pos;
-
-        AccessItem(int pos) {
-            this.pos = pos;
-        }
-
-        @Override
-        Item load() {
-            code.putPos(pos);
-            code.addInstruction(Aload.INSTANCE);
-            return stackItem;
-        }
-
-        @Override
-        void store() {
-            code.addInstruction(Astore.INSTANCE);
-        }
-
-        @Override
-        void drop() {
-            code.addInstruction(Pop2.INSTANCE);
-        }
-
-        @Override
-        void duplicate() {
-            code.addInstruction(Dup2.INSTANCE);
-        }
-
-        @Override
-        void stash() {
-            code.addInstruction(Dup_x2.INSTANCE);
-        }
-    }
-
-    /**
-     * Обращение к рантайм константе.
-     */
-    class ConstantItem extends Item {
-
-        final int pos;
-        final Name name;
-
-        ConstantItem(int pos, Name name) {
-            this.pos = pos;
-            this.name = name;
-        }
-
-        @Override
-        Item load() {
-            code.putPos(pos);
-            code.addInstruction(new Getconst(programLayout.tryFindConst(name)));
-            return stackItem;
-        }
-    }
-
-    /**
-     * Присвоение.
-     */
-    class AssignItem extends Item {
-
-        final int pos;
-        final Item var;
-
-        AssignItem(int pos, Item var) {
-            this.pos = pos;
-            this.var = var;
-        }
-
-        @Override
-        Item load() {
-            var.stash();
-            code.putPos(pos);
-            var.store();
-            return stackItem;
-        }
-
-        @Override
-        void drop() {
-            code.putPos(pos);
-            var.store();
-        }
-
-        @Override
-        void stash() {
-            var.stash();
-        }
-    }
-
-    /**
-     * Условное разветвление.
-     */
-    class CondItem extends Item {
-
-        final int opcodePC;
-        final IntArrayList truejumps;
-        final IntArrayList falsejumps;
-
-        CondItem(int opcodePC) {
-            this(opcodePC, new IntArrayList(), new IntArrayList());
-        }
-
-        CondItem(int opcodePC, IntArrayList truejumps, IntArrayList falsejumps) {
-            this.opcodePC = opcodePC;
-            this.truejumps = truejumps;
-            this.falsejumps = falsejumps;
-
-            falsejumps.add(0, opcodePC);
-        }
-
-        @Override
-        Item load() {
-            resolveTrueJumps();
-            code.addInstruction(ConstTrue.CONST_TRUE);
-            int skipPC = emitGoto();
-            resolveFalseJumps();
-            code.addInstruction(ConstFalse.CONST_FALSE);
-            resolveJump(skipPC);
-            return stackItem;
-        }
-
-        @Override
-        void drop() {
-            load();
-            code.addInstruction(Pop.INSTANCE);
-        }
-
-        @Override
-        CondItem toCond() {
-            return this;
-        }
-
-        CondItem negate() {
-            code.setInstruction(opcodePC, code.getJump(opcodePC).negate());
-            CondItem condItem = new CondItem(opcodePC, falsejumps, truejumps);
-            condItem.truejumps.removeInt(0);
-            return condItem;
-        }
-
-        void resolveTrueJumps() {
-            resolveTrueJumps(code.currentIP());
-        }
-
-        void resolveTrueJumps(int pc) {
-            resolveChain(truejumps, pc);
-        }
-
-        void resolveFalseJumps() {
-            resolveFalseJumps(code.currentIP());
-        }
-
-        void resolveFalseJumps(int pc) {
-            resolveChain(falsejumps, pc);
-        }
-    }
 
     class FlowEnv {
 
@@ -1141,7 +833,7 @@ public final class Gen extends Scanner {
         }
 
         void resolveCont(int pc) {
-            resolveChain(contjumps, pc);
+            code.resolveChain(contjumps, pc);
         }
 
         void resolveExit() {
@@ -1149,19 +841,7 @@ public final class Gen extends Scanner {
         }
 
         void resolveExit(int pc) {
-            resolveChain(exitjumps, pc);
+            code.resolveChain(exitjumps, pc);
         }
-    }
-
-    void resolveChain(IntArrayList sequence, int pc) {
-        for (int jumpPC : sequence) resolveJump(jumpPC, pc);
-    }
-
-    void resolveJump(int jumpPC) {
-        resolveJump(jumpPC, code.currentIP());
-    }
-
-    void resolveJump(int jumpPC, int pc) {
-        code.getJump(jumpPC).offset = pc - jumpPC;
     }
 }

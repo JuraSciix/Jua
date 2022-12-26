@@ -685,7 +685,7 @@ fn print_bench(bench_name, itr_n, itr_c, measurements, quick_print = true) { // 
         best = measurements[0];
         worth = array_pop(measurements);
         avg = array_avg([worth, best]);
-        if (best - worth) < 0.000001 { // equals
+        if (best - worth) < 10 { // equals (nanos)
             measurements_str = 1E9 / avg + " op/sec";
         } else {
             a = array_avg([abs(worth - avg), abs(best - avg)]);
@@ -699,4 +699,4 @@ fn print_bench(bench_name, itr_n, itr_c, measurements, quick_print = true) { // 
     return str;
 }
 
-loop_bench(30);
+println("Hello!");

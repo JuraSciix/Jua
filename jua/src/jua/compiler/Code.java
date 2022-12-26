@@ -1,5 +1,6 @@
 package jua.compiler;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.shorts.Short2IntRBTreeMap;
@@ -318,5 +319,21 @@ public final class Code {
         public ConstantPool build() {
             return new ConstantPool(entries);
         }
+    }
+
+    public void resolveJump(int opcodePC) {
+        resolveJump(opcodePC, currentIP());
+    }
+
+    public void resolveJump(int opcodePC, int destPC) {
+        getJump(opcodePC).offset = currentIP() - destPC;
+    }
+
+    public void resolveChain(IntArrayList opcodePCs) {
+        resolveChain(opcodePCs, currentIP());
+    }
+
+    public void resolveChain(IntArrayList opcodePCs, int destPC) {
+        opcodePCs.forEach((int opcodePC) -> resolveJump(opcodePC, destPC));
     }
 }
