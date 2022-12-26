@@ -36,7 +36,7 @@ public final class Tokens {
         FALSE("false"),
         FLOATLITERAL(TokenKind.NUMERIC),
         FN("fn"),
-        FOR("for"),
+            FOR("for"),
         GT(">"),
         GTEQ(">="),
         GTGT(">>"),

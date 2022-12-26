@@ -112,17 +112,17 @@ public class Check extends Scanner {
     }
 
     @Override
+    public void visitDoLoop(DoLoop tree) {
+        scanLoopBody(tree.body);
+        scan(tree.cond);
+    }
+
+    @Override
     public void visitFor(ForLoop tree) {
         scan(tree.init);
         scan(tree.cond);
         scan(tree.step);
         scanLoopBody(tree.body);
-    }
-
-    @Override
-    public void visitDoLoop(DoLoop tree) {
-        scanLoopBody(tree.body);
-        scan(tree.cond);
     }
 
     private void scanLoopBody(Statement loopBodyStatement) {

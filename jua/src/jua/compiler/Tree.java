@@ -80,8 +80,8 @@ public interface Tree {
         void visitBlock(Block tree);
         void visitIf(If tree);
         void visitWhileLoop(WhileLoop tree);
-        void visitFor(ForLoop tree);
         void visitDoLoop(DoLoop tree);
+        void visitFor(ForLoop tree);
         void visitSwitch(Switch tree);
         void visitCase(Case tree);
         void visitBreak(Break tree);
@@ -123,10 +123,10 @@ public interface Tree {
         public void visitWhileLoop(WhileLoop tree) { visitTree(tree); }
 
         @Override
-        public void visitFor(ForLoop tree) { visitTree(tree); }
+        public void visitDoLoop(DoLoop tree) { visitTree(tree); }
 
         @Override
-        public void visitDoLoop(DoLoop tree) { visitTree(tree); }
+        public void visitFor(ForLoop tree) { visitTree(tree); }
 
         @Override
         public void visitSwitch(Switch tree) { visitTree(tree); }
@@ -244,17 +244,17 @@ public interface Tree {
         }
 
         @Override
+        public void visitDoLoop(DoLoop tree) {
+            scan(tree.body);
+            scan(tree.cond);
+        }
+
+        @Override
         public void visitFor(ForLoop tree) {
             scan(tree.init);
             scan(tree.cond);
             scan(tree.step);
             scan(tree.body);
-        }
-
-        @Override
-        public void visitDoLoop(DoLoop tree) {
-            scan(tree.body);
-            scan(tree.cond);
         }
 
         @Override
@@ -429,18 +429,18 @@ public interface Tree {
         }
 
         @Override
+        public void visitDoLoop(DoLoop tree) {
+            tree.body = translate(tree.body);
+            tree.cond = translate(tree.cond);
+            result = tree;
+        }
+
+        @Override
         public void visitFor(ForLoop tree) {
             tree.init = translate(tree.init);
             tree.cond = translate(tree.cond);
             tree.body = translate(tree.body);
             tree.step = translate(tree.step);
-            result = tree;
-        }
-
-        @Override
-        public void visitDoLoop(DoLoop tree) {
-            tree.body = translate(tree.body);
-            tree.cond = translate(tree.cond);
             result = tree;
         }
 
@@ -725,6 +725,25 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitWhileLoop(this); }
     }
 
+    final class DoLoop extends Statement {
+
+        public Statement body;
+
+        public Expression cond;
+
+        public DoLoop(int pos, Statement body, Expression cond) {
+            super(pos);
+            this.body = body;
+            this.cond = cond;
+        }
+
+        @Override
+        public Tag getTag() { return Tag.DOLOOP; }
+
+        @Override
+        public void accept(Visitor visitor) { visitor.visitDoLoop(this); }
+    }
+
     final class ForLoop extends Statement {
 
         public List<Expression> init;
@@ -748,25 +767,6 @@ public interface Tree {
 
         @Override
         public void accept(Visitor visitor) { visitor.visitFor(this); }
-    }
-
-    final class DoLoop extends Statement {
-
-        public Statement body;
-
-        public Expression cond;
-
-        public DoLoop(int pos, Statement body, Expression cond) {
-            super(pos);
-            this.body = body;
-            this.cond = cond;
-        }
-
-        @Override
-        public Tag getTag() { return Tag.DOLOOP; }
-
-        @Override
-        public void accept(Visitor visitor) { visitor.visitDoLoop(this); }
     }
 
     final class Switch extends Statement {
