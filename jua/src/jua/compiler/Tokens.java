@@ -19,7 +19,6 @@ public final class Tokens {
         CARETEQ("^="),
         CASE("case"),
         COL(":"),
-        COLCOL("::"),
         COMMA(","),
         CONST("const"),
         CONTINUE("continue"),
@@ -27,7 +26,6 @@ public final class Tokens {
         DEFAULT("default"),
         DO("do"),
         DOT("."),
-        ELLIPSIS("..."),
         ELSE("else"),
         EOF,
         EQ("="),
@@ -36,7 +34,7 @@ public final class Tokens {
         FALSE("false"),
         FLOATLITERAL(TokenKind.NUMERIC),
         FN("fn"),
-            FOR("for"),
+        FOR("for"),
         GT(">"),
         GTEQ(">="),
         GTGT(">>"),
@@ -49,13 +47,13 @@ public final class Tokens {
         LPAREN("("),
         LT("<"),
         LTEQ("<="),
+        LTGT("<>"),
         LTLT("<<"),
         LTLTEQ("<<="),
         MINUS("-"),
         MINUSEQ("-="),
         MINUSMINUS("--"),
         NULL("null"),
-        OF("of"),
         PERCENT("%"),
         PERCENTEQ("%="),
         PLUS("+"),
@@ -79,7 +77,9 @@ public final class Tokens {
         SWITCH("switch"),
         TILDE("~"),
         TRUE("true"),
-        WHILE("while");
+        VAR("var"),
+        WHILE("while"),
+        YIELD("yield");
 
         private static class Lookup extends HashMap<String, TokenType> {
             static final Lookup INSTANCE = new Lookup();
