@@ -163,9 +163,12 @@ public class Check extends Scanner {
             casedDefinedVars.add(lastScopeState.definedVars);
             if (!lastScopeState.dead) dead = false;
         }
-        Set<String> definedvarsintersection = new HashSet<>();
-        Collections.intersection(casedDefinedVars, definedvarsintersection);
-        scopeState.definedVars.addAll(definedvarsintersection);
+        boolean hasDefault = tree.cases.stream().anyMatch(case_ -> case_.labels == null);
+        if (hasDefault) {
+            Set<String> definedvarsintersection = new HashSet<>();
+            Collections.intersection(casedDefinedVars, definedvarsintersection);
+            scopeState.definedVars.addAll(definedvarsintersection);
+        }
         if (dead) scopeState.dead = true;
     }
 
@@ -220,6 +223,7 @@ public class Check extends Scanner {
             conditions |= C_ALLOW_BREAK;
             conditions |= C_ALLOW_FALLTHROUGH;
             scanScoped(caseBodyStatement);
+            scopeState.knownVars.addAll(lastScopeState.knownVars);
         } finally {
             conditions = prevConditions;
         }
