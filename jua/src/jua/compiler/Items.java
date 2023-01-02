@@ -1,7 +1,6 @@
 package jua.compiler;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntList;
 import jua.interpreter.instruction.*;
 
 import java.util.Objects;
@@ -122,16 +121,19 @@ public class Items {
 
         final int pos;
         final Tree.Name name;
+        final boolean definitelyExists;
 
-        LocalItem(int pos, Tree.Name name) {
+        LocalItem(int pos, Tree.Name name, boolean definitelyExists) {
             this.pos = pos;
             this.name = name;
+            this.definitelyExists = definitelyExists;
         }
 
         @Override
         Item load() {
             code.putPos(pos);
-            code.addInstruction(new Vload(code.resolveLocal(name.value)));
+            int id = code.resolveLocal(name.value);
+            code.addInstruction(definitelyExists ? new Vloadq(id) : new Vload(id));
             return stackItem;
         }
 
@@ -155,11 +157,13 @@ public class Items {
         }
 
         void inc() {
-            code.addInstruction(new Vinc(code.resolveLocal(name)));
+            int id = code.resolveLocal(name);
+            code.addInstruction(definitelyExists ? new Vincq(id) : new Vinc(id));
         }
 
         void dec() {
-            code.addInstruction(new Vdec(code.resolveLocal(name)));
+            int id = code.resolveLocal(name);
+            code.addInstruction(definitelyExists ? new Vdecq(id) : new Vdec(id));
         }
     }
 
@@ -310,8 +314,8 @@ public class Items {
         return new LiteralItem(pos, type);
     }
 
-    LocalItem makeLocal(int pos, Tree.Name name) { // todo: Передавать номер переменной вместо Tree.Name
-        return new LocalItem(pos, name);
+    LocalItem makeLocal(int pos, Tree.Name name, boolean definitelyExists) { // todo: Передавать номер переменной вместо Tree.Name
+        return new LocalItem(pos, name, definitelyExists);
     }
 
     AccessItem makeAccess(int pos) {

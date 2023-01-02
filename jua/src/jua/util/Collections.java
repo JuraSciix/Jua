@@ -3,10 +3,34 @@ package jua.util;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.function.BiConsumer;
 
 public class Collections {
+
+    public static <T> void intersection(
+            Iterable<? extends Collection<? extends T>> collections,
+            Collection<? super T> output
+    ) {
+        Iterator<? extends Collection<? extends T>> iterator = collections.iterator();
+        if (iterator.hasNext()) {
+            HashSet<T> buf = new HashSet<>(iterator.next());
+            while (iterator.hasNext()) {
+                buf.retainAll(iterator.next());
+            }
+            output.addAll(buf);
+        }
+    }
+
+    public static <T> void join(
+            Iterable<Collection<? extends T>> collections,
+            Collection<? super T> output
+    ) {
+        for (Collection<? extends T> collection : collections) {
+            output.addAll(collection);
+        }
+    }
 
     public static <T> void doubleForEach(Collection<? extends T> c1, Collection<? extends T> c2, BiConsumer<? super T, ? super T> action) {
         if (c1.size() != c2.size()) {

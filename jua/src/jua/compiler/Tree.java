@@ -947,6 +947,9 @@ public interface Tree {
 
         public final Name name;
 
+        /** helpful flag for analysis */
+        public boolean definitelyExists = false;
+
         public Var(int pos, Name name) {
             super(pos);
             this.name = name;

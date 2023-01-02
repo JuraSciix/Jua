@@ -1,9 +1,11 @@
 package jua.compiler;
 
 import jua.compiler.Tree.*;
+import jua.compiler.Tree.Scanner;
+import jua.util.Assert;
+import jua.util.Collections;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import static jua.compiler.TreeInfo.*;
 
@@ -26,7 +28,27 @@ public class Check extends Scanner {
 
     int conditions;
 
-    Set<String> vars = new HashSet<>();
+    ScopeState scopeState = new ScopeState() /* root-scope */, lastScopeState;
+
+    /**
+     * Скоуп - контекст тела цикла, условия, кейза
+     */
+    static class ScopeState {
+
+        ScopeState parent;
+
+        /** Явно определенные досягаемые переменные */
+        final Set<String> definedVars = new HashSet<>();
+
+        /** Переменные, которые упоминались где-либо (включая другие скоупы) */
+        final Set<String> knownVars = new HashSet<>();
+
+        /** Есть вероятность, что анализируемая часть дерева не выполнится */
+        boolean maybeInterrupted = false;
+
+        /** Код никогда не выполнится */
+        boolean dead = false;
+    }
 
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
@@ -70,16 +92,16 @@ public class Check extends Scanner {
             return;
         }
 
-        Set<String> prevVars = vars;
+        ScopeState rootScopeState = scopeState;
         try {
-            vars = new HashSet<>();
-
+            scopeState = new ScopeState(); // У функции свой, отдельный root-scope.
             for (FuncDef.Parameter param : tree.params) {
                 name = param.name;
-                if (!vars.add(name.value)) {
+                if (!scopeState.knownVars.add(name.value)) {
                     log.error(name.pos, "duplicate parameter");
                     continue;
                 }
+                scopeState.definedVars.add(name.value);
                 if (param.expr != null) {
                     Expression expr = stripParens(param.expr);
                     if (!isLiteral(expr)) {
@@ -90,7 +112,7 @@ public class Check extends Scanner {
 
             scan(tree.body);
         } finally {
-            vars = prevVars;
+            scopeState = rootScopeState;
         }
     }
 
@@ -106,14 +128,50 @@ public class Check extends Scanner {
     }
 
     @Override
+    public void visitIf(If tree) {
+        scan(tree.cond);
+        scanScoped(tree.thenbody);
+        ScopeState thenscope = lastScopeState;
+        if (tree.elsebody != null) {
+            scanScoped(tree.elsebody);
+            ScopeState elsescope = lastScopeState;
+            scopeState.knownVars.addAll(thenscope.knownVars);
+            scopeState.knownVars.addAll(elsescope.knownVars);
+            Set<String> definedvarsintersection = new HashSet<>();
+            Collections.intersection(Arrays.asList(thenscope.definedVars, elsescope.definedVars), definedvarsintersection);
+            scopeState.definedVars.addAll(definedvarsintersection);
+            scopeState.maybeInterrupted = thenscope.maybeInterrupted || elsescope.maybeInterrupted;
+        } else {
+            scopeState.knownVars.addAll(thenscope.knownVars);
+            scopeState.maybeInterrupted = thenscope.maybeInterrupted;
+        }
+    }
+
+    @Override
     public void visitWhileLoop(WhileLoop tree) {
         scan(tree.cond);
-        scanLoopBody(tree.body);
+        scanLoopBody(tree.body, true);
+    }
+
+    @Override
+    public void visitSwitch(Switch tree) {
+        scan(tree.expr);
+        ArrayList<Set<String>> casedDefinedVars = new ArrayList<>(tree.cases.size());
+        boolean dead = true;
+        for (Case case_ : tree.cases) {
+            scan(case_);
+            casedDefinedVars.add(lastScopeState.definedVars);
+            if (!lastScopeState.dead) dead = false;
+        }
+        Set<String> definedvarsintersection = new HashSet<>();
+        Collections.intersection(casedDefinedVars, definedvarsintersection);
+        scopeState.definedVars.addAll(definedvarsintersection);
+        if (dead) scopeState.dead = true;
     }
 
     @Override
     public void visitDoLoop(DoLoop tree) {
-        scanLoopBody(tree.body);
+        scanLoopBody(tree.body, false);
         scan(tree.cond);
     }
 
@@ -122,15 +180,22 @@ public class Check extends Scanner {
         scan(tree.init);
         scan(tree.cond);
         scan(tree.step);
-        scanLoopBody(tree.body);
+        scanLoopBody(tree.body, true);
     }
 
-    private void scanLoopBody(Statement loopBodyStatement) {
+    private void scanLoopBody(Statement body, boolean separateScope) {
         int prevConditions = conditions;
         try {
             conditions |= C_ALLOW_BREAK;
             conditions |= C_ALLOW_CONTINUE;
-            scan(loopBodyStatement);
+            if (separateScope) {
+                scanScoped(body);
+
+                scopeState.knownVars.addAll(lastScopeState.knownVars);
+            } else {
+                scan(body);
+                lastScopeState = scopeState;
+            }
         } finally {
             conditions = prevConditions;
         }
@@ -154,9 +219,22 @@ public class Check extends Scanner {
         try {
             conditions |= C_ALLOW_BREAK;
             conditions |= C_ALLOW_FALLTHROUGH;
-            scan(caseBodyStatement);
+            scanScoped(caseBodyStatement);
         } finally {
             conditions = prevConditions;
+        }
+    }
+
+    private void scanScoped(Statement body) {
+        ScopeState newState = new ScopeState();
+        newState.parent = scopeState;
+        scopeState = newState;
+        try {
+            scan(body);
+        } finally {
+            Assert.check(scopeState == newState);
+            scopeState = newState.parent;
+            lastScopeState = newState;
         }
     }
 
@@ -164,6 +242,8 @@ public class Check extends Scanner {
     public void visitBreak(Break tree) {
         if ((conditions & C_ALLOW_BREAK) == 0) {
             log.error(tree.pos, "break-statement is allowed only inside loop/switch-case");
+        } else {
+            scopeState.maybeInterrupted = true;
         }
     }
 
@@ -171,6 +251,8 @@ public class Check extends Scanner {
     public void visitContinue(Continue tree) {
         if ((conditions & C_ALLOW_CONTINUE) == 0) {
             log.error(tree.pos, "continue-statement is allowed only inside loop");
+        } else {
+            scopeState.maybeInterrupted = true;
         }
     }
 
@@ -178,17 +260,27 @@ public class Check extends Scanner {
     public void visitFallthrough(Fallthrough tree) {
         if ((conditions & C_ALLOW_FALLTHROUGH) == 0) {
             log.error(tree.pos, "fallthrough-statement is allowed only inside switch-case");
+        } else {
+            scopeState.maybeInterrupted = true;
         }
     }
 
     @Override
     public void visitVariable(Var tree) {
         Name name = tree.name;
-        if (!vars.contains(name.value) && !constants.contains(name.value)) {
-            log.error(name.pos, "attempt to refer to an undefined variable");
-            // Регистрируем переменную, чтобы идентичной ошибки больше не возникало
-            vars.add(name.value);
+        for (ScopeState scope = scopeState; scope != null; scope = scope.parent) {
+            if (scope.knownVars.contains(name.value)) {
+                tree.definitelyExists = scope.definedVars.contains(name.value);
+                return;
+            }
         }
+
+        log.error(name.pos, "attempt to refer to an undefined variable");
+
+        // Регистрируем переменную, чтобы идентичной ошибки больше не возникало
+        ScopeState upperScope = scopeState;
+        while (upperScope.parent != null) upperScope = upperScope.parent;
+        upperScope.knownVars.add(name.value);
     }
 
     @Override
@@ -225,6 +317,12 @@ public class Check extends Scanner {
     }
 
     @Override
+    public void visitReturn(Return tree) {
+        scan(tree.expr);
+        scopeState.dead = true;
+    }
+
+    @Override
     public void visitAssign(Assign tree) {
         Expression innerVar = stripParens(tree.var);
 
@@ -232,7 +330,10 @@ public class Check extends Scanner {
             log.error(innerVar.pos, "attempt to assign a value to a non-accessible expression");
         } else if (innerVar.hasTag(Tag.VARIABLE)) {
             Var varTree = (Var) innerVar;
-            vars.add(varTree.name.value);
+            scopeState.knownVars.add(varTree.name.value);
+            if (!scopeState.maybeInterrupted) {
+                scopeState.definedVars.add(varTree.name.value);
+            }
         } else {
             scan(tree.var);
         }

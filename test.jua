@@ -699,12 +699,12 @@ fn print_bench(bench_name, itr_n, itr_c, measurements, quick_print = true) { // 
     return str;
 }
 
-x = true;
-while true {
-    if x {
-        break;
-    }
-    y = 1;
+cond = false;
+
+if cond {
+    x = 1;
+} else {
+    x = 2;
 }
 
-println(y);
+println(x);

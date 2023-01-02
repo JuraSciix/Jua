@@ -472,7 +472,7 @@ public final class Gen extends Scanner {
             code.addInstruction(new Getconst(programLayout.tryFindConst(name)));
             result = items.makeStack();
         } else {
-            result = items.makeLocal(tree.pos, name);
+            result = items.makeLocal(tree.pos, name, tree.definitelyExists);
         }
     }
 

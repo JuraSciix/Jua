@@ -5,8 +5,7 @@ import jua.compiler.Tree.*;
 import java.util.HashMap;
 import java.util.Map;
 
-import static jua.compiler.TreeInfo.isLiteralNull;
-import static jua.compiler.TreeInfo.stripParens;
+import static jua.compiler.TreeInfo.*;
 import static jua.compiler.Types.*;
 
 public final class Lower extends Translator {
@@ -25,6 +24,18 @@ public final class Lower extends Translator {
         }
         
         result = tree;
+    }
+
+    @Override
+    public void visitWhileLoop(WhileLoop tree) {
+        tree.cond = translate(tree.cond);
+        tree.body = translate(tree.body);
+        if (isLiteralTrue(tree.cond)) {
+            // while true { ... } => do { ... } while true;
+            result = new DoLoop(tree.pos, tree.body, tree.cond);
+        } else {
+            result = tree;
+        }
     }
 
     @Override
