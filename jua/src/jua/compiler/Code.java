@@ -326,7 +326,7 @@ public final class Code {
     }
 
     public void resolveJump(int opcodePC, int destPC) {
-        getJump(opcodePC).offset = currentIP() - destPC;
+        getJump(opcodePC).offset = destPC - opcodePC;
     }
 
     public void resolveChain(IntArrayList opcodePCs) {
