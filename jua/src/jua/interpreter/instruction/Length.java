@@ -4,6 +4,7 @@ import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 import jua.runtime.heap.LongOperand;
 
+// todo: rename to Getsize (length -> getsize)
 public final class Length implements Instruction {
 
     public static final Length INSTANCE = new Length();

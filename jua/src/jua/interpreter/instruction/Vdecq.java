@@ -1,29 +1,27 @@
 package jua.interpreter.instruction;
 
-import jua.interpreter.InterpreterState;
-import jua.runtime.heap.Operand;
 import jua.compiler.CodePrinter;
+import jua.interpreter.InterpreterState;
 
-// todo: rename to Load (vload -> load)
-public final class Vload implements Instruction {
+public final class Vdecq implements Instruction {
 
     private final int id;
 
-    public Vload(int id) {
+    public Vdecq(int id) {
         this.id = id;
     }
 
     @Override
-    public int stackAdjustment() { return 1; }
+    public int stackAdjustment() { return 0; }
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName("vload");
+        printer.printName("vdecq");
         printer.printLocal(id);
     }
 
     @Override
     public void run(InterpreterState state) {
-        state.stackVLoad(id);
+        state.stack_quick_vdec(id);
     }
 }

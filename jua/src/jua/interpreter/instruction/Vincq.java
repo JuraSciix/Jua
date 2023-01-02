@@ -3,26 +3,23 @@ package jua.interpreter.instruction;
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
-// todo: rename to Store (vstore -> store)
-public final class Vstore implements Instruction {
+public class Vincq implements Instruction {
 
     private final int id;
 
-    public Vstore(int id) {
-        this.id = id;
-    }
+    public Vincq(int id) { this.id = id; }
 
     @Override
-    public int stackAdjustment() { return -1; }
+    public int stackAdjustment() { return 0; }
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName("vstore");
+        printer.printName("vincq");
         printer.printLocal(id);
     }
 
     @Override
     public void run(InterpreterState state) {
-        state.stackVStore(id);
+        state.stack_quick_vinc(id);
     }
 }

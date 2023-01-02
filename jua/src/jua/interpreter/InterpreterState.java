@@ -243,6 +243,10 @@ public final class InterpreterState {
         }
     }
 
+    public void stackCmp() {
+        // todo: implement comparison of two last stack elements and pushing result to back
+    }
+
     public void stackAnd() {
         if (second().and(first(), second())) {
             sp--;
@@ -572,6 +576,11 @@ public final class InterpreterState {
 
     /* ОПЕРАЦИИ С ПЕРЕМЕННЫМИ */
 
+    public void stack_quick_vdec(int id) {
+        locals[id].dec(locals[id]);
+        next();
+    }
+
     public void stackVDec(int id) {
         if (testLocal(id)) {
             locals[id].dec(locals[id]);
@@ -579,11 +588,21 @@ public final class InterpreterState {
         }
     }
 
+    public void stack_quick_vinc(int id) {
+        locals[id].inc(locals[id]);
+        next();
+    }
+
     public void stackVInc(int id) {
         if (testLocal(id)) {
             locals[id].inc(locals[id]);
             next();
         }
+    }
+
+    public void stack_quick_vload(int id) {
+        pushStack(locals[id]);
+        next();
     }
 
     public void stackVLoad(int id) {
