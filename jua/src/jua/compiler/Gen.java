@@ -34,6 +34,7 @@ public final class Gen extends Scanner {
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
         code = tree.code;
+        code.putPos(0);
         items = new Items(code);
         log = tree.source.getLog();
         scan(tree.stats);
@@ -285,6 +286,7 @@ public final class Gen extends Scanner {
     @Override
     public void visitFuncDef(FuncDef tree) {
         code = tree.code;
+        code.putPos(tree.pos);
         items = new Items(code);
         log = funcSource.getLog();
 
