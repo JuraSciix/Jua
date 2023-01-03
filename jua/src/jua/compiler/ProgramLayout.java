@@ -13,6 +13,8 @@ import jua.runtime.heap.StringHeap;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -159,6 +161,20 @@ public final class ProgramLayout {
                     args[1].doubleVal(buf);
                     double y = buf.getDouble();
                     returnAddress.set(Math.pow(x, y));
+                    return true;
+                }),
+
+                func("round", 1, 2, (thread, args, argc, returnAddress) -> {
+                    Address buf = thread.getTempAddress();
+                    args[0].doubleVal(buf);
+                    double x = buf.getDouble();
+                    if (argc == 1) {
+                        returnAddress.set(Math.round(x));
+                    } else {
+                        args[1].longVal(buf);
+                        int precision = (int) buf.getLong();
+                        returnAddress.set(new BigDecimal(x).round(new MathContext(precision)).doubleValue());
+                    }
                     return true;
                 })
         );
