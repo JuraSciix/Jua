@@ -1,23 +1,7 @@
-const FIB_ERROR = 0;
+fn fib_slow(n) = (n <= 2) ? 1 : fib_slow(n - 1) + fib_slow(n - 2);
 
-fn abs(n) = n < 0 ? -n : n;
-
-fn slow_fib(n) {
-    if n <= 2 {
-        if n <= 0 {
-            return FIB_ERROR;
-        }
-        return 1;
-    }
-    return slow_fib(n - 1) + slow_fib(n - 2);
-}
-
-fn fast_fib(n) {
-    if n <= 0 {
-        return FIB_ERROR;
-    }
-    q1 = 1;
-    q2 = 1;
+fn fib_fast(n) {
+    q1 = q2 = 1;
     for i = 2; i < n; i++ {
         qt = q1 + q2;
         q1 = q2;
@@ -26,9 +10,9 @@ fn fast_fib(n) {
     return q2;
 }
 
-fn sort(a) = qsort(a); // sort by default
-fn bsort(a) = bubble_sort(a); // alias
-fn qsort(a, lo = null, hi = null) {
+fn sort(a) = quick_sort(a); // default sort
+
+fn quick_sort(a, lo = null, hi = null) {
     i = lo ??= 0;
     j = hi ??= length(a) - 1;
     pivot = a[(i + j) >> 1];
@@ -42,8 +26,8 @@ fn qsort(a, lo = null, hi = null) {
             i++; j--;
         }
     } while (i <= j);
-    if (j > lo) qsort(a, lo, j);
-    if (i < hi) qsort(a, i, hi);
+    if (j > lo) quick_sort(a, lo, j);
+    if (i < hi) quick_sort(a, i, hi);
 }
 
 fn bubble_sort(a) {
@@ -59,31 +43,18 @@ fn bubble_sort(a) {
     }
 }
 
-fn test_bubble_sort() {
-    x = [5, 2, 7, 2, 9, 0, 1];
-    y = [0, 1, 2, 2, 5, 7, 9];
-
-    bubble_sort(x);
-    if x == y {
-        println("Test passed");
-    } else {
-        println("Test failed: x(" + print_list(bubble_sort(x), true) + ") != y(" + print_list(y, true) + ")");
-    }
-}
-
-fn print_list(l, keys = true) {
+fn stringify_list(l) {
     s = "";
-    b = false;
     for i = 0; i < length(l); i++ {
-        if b {
+        if s { // check if s not empty
             s += ", ";
         }
-        if keys {
-            s += i;
-            s += ": ";
-        }
-        s += typeof(l[i]) == 'map' ? print_list(l[i], keys) : l[i];
-        b = true;
+        if array_index_of(['map', 'array'], typeof(l[i])) >= 0
+            s += "<map>";
+        else if l[i] == l
+            s += "<self>";
+        else
+            s += stringify_list(l[i]);
     }
     return "[" + s + "]";
 }
@@ -98,12 +69,6 @@ fn pascal_triangle(height) {
         }
     }
     return cols;
-}
-
-fn test_pascal_triangle() {
-    for a = pascal_triangle(6), i = 0; i < length(a); i++ {
-        println(print_list(a[i], false));
-    }
 }
 
 fn range(from, to, step = 1) {
@@ -125,14 +90,14 @@ fn array_pop(arr) {
 }
 
 fn array_avg(arr) {
-    uarr = array_unique(arr);
-    if length(uarr) < 1
-        return uarr[0] ?? 0.0;
-    return array_sum(uarr) / length(uarr);
+    cleaned_arr = array_unique(arr);
+    if (len = length(cleaned_arr)) < 1
+        return cleaned_arr[0] ?? 0.0;
+    return array_sum(cleaned_arr) / len;
 }
 
 fn array_max(arr) {
-    m = -1 << 1;
+    m = (1 << 63); /* MIN_VALUE */
     for i = 0, l = length(arr); i < l; i++ {
         if (e = arr[i]) > m {
             m = e;
@@ -142,7 +107,7 @@ fn array_max(arr) {
 }
 
 fn array_min(arr) {
-    m = -1 >> 1;
+    m = ~(1 << 63); /* MAX_VALUE */
     for i = 0, l = length(arr); i < l; i++ {
         if (e = arr[i]) < m {
             m = e;
@@ -170,7 +135,7 @@ fn array_last_index_of(arr, elem, start = 0) {
 }
 
 fn array_unique(arr) {
-    if length(arr) < 1
+    if length(arr) <= 1
         return arr;
     result = [];
     for i = 0, l = length(arr); i < l; i++ {
@@ -179,14 +144,6 @@ fn array_unique(arr) {
         }
     }
     return result;
-}
-
-fn array_copy(arr) {
-    copy = [];
-    for i = 0, l = length(arr); i < l; i++ {
-        copy[i] = arr[i];
-    }
-    return copy;
 }
 
 fn array_sum(arr) {
@@ -209,14 +166,7 @@ fn join(pieces, separator) {
     return s;
 }
 
-fn test_arrays_and_join() {
-    lines = [];
-    array_push(lines, "Hi");
-    array_push(lines, "Dick");
-    array_pop(lines); // oops
-    array_push(lines, "Richard");
-    println(join(lines, " "));
-}
+fn abs(n) = (n < 0) ? -n : n;
 
 fn test_switch(x) {
     switch x {
@@ -651,16 +601,21 @@ fn bench_switch(max_itr = 15) {
             result = test_switch(v);
             m_end = ns_time();
             if result != param_seq[i][1] {
-                println("ERROR(" + i + "): " + print_list(param_seq[i], false) + " => " + result);
+                println("ERROR(" + i + "): " + stringify_list(param_seq[i], false) + " => " + result);
                 return;
             }
             array_push(m_parts, (m_end - m_start));
         }
-        print_bench("bench_switch", itr, max_itr, m_parts);
+        print_bench_data({
+            'name':   "bench_switch",
+            'i':      itr,
+            'c':      max_itr,
+            'scores': m_parts
+        });
     }
 }
 
-fn loop() {
+fn test_loop() {
     for i = 0; i < 1_000; i++ {
         for j = 0; j < 1_000; j++ {
             // no-op
@@ -668,42 +623,79 @@ fn loop() {
     }
 }
 
-fn loop_bench(itrc = 5) {
+fn bench_loop(itrc = 5) {
     for itr = 1; itr <= itrc; itr++ {
         m_start = ns_time();
-        loop();
+        test_loop();
         m_end = ns_time();
-        print_bench("loop_bench", itr, itrc, [m_end - m_start]);
+
+        print_bench_data({
+            'name': 'Loop bench',
+            'score': m_end - m_start,
+            'i':    itr,
+            'c':    itrc
+        });
     }
 }
 
-fn print_bench(bench_name, itr_n, itr_c, measurements, quick_print = true) { // measurements = array of nanos
-    if length(measurements) == 0 {
-        measurements_str = "[no measurements]";
-    } else {
-        sort(measurements);
-        best = measurements[0];
-        worth = array_pop(measurements);
-        avg = array_avg([worth, best]);
-        if (best - worth) < 10 { // equals (nanos)
-            measurements_str = 1E9 / avg + " op/sec";
-        } else {
-            a = array_avg([abs(worth - avg), abs(best - avg)]);
-            measurements_str = avg + "±" + a + " ns/op | " + 1E9 / array_avg(measurements) + " op/sec";
-        }
+fn print_bench_data(bench_data) {
+    name = bench_data.name ?? "<unknown>";
+    i    = bench_data.i ?? "?";
+    c    = bench_data.i ?? "?";
+    println("=== " + name + " (" + i + "/" + c + ") ===");
+
+    scores = bench_data.time ??
+                bench_data.times ??
+                bench_data.score ??
+                bench_data.scores ??
+                [];
+    if array_index_of(['map', 'array'], typeof(scores)) < 0 {
+        scores = [scores];
+    } else if length(scores) == 0 {
+        println("<there is no scores>");
+        return;
     }
-    str = bench_name + " (" + itr_n + "/" + itr_c + "): " + measurements_str;
-    if (quick_print) {
-        println(str);
-    }
-    return str;
+    score_b = 1E9 / array_min(scores);                            /* best */
+    score_w = 1E9 / array_max(scores);                            /* worst */
+    score_a = (score_b + score_w) / 2;                            /* average */
+    score_r = ((score_a - score_b) + (score_w - score_a)) / 2;    /* error rate */
+    println("score: " + round(score_a, 3) + "±" + round(score_r, 3) + " op/sec");
 }
 
-x = 3;
-
-switch x {
-    case 1: y = 9;
-    case 2: y = 2;
+fn round(n, precision = 0) {
+    l = pow(10, precision);
+    b = 1 / l;
+    r = n % b;
+    if r >= (5 / l) {
+        n += b;
+    }
+    return (n * l - r * l) / l; // для повышение точности
 }
 
-println(y);
+fn complex(r, i) = {
+    'r': r,
+    'i': i
+};
+
+fn complex_add(c1, c2) = complex(
+    (c1.r + c2.r),
+    (c1.i + c2.i)
+);
+
+fn complex_mul(c1, c2) = complex(
+    (c1.r * c2.r - c1.i * c2.i),
+    (c1.r * c2.i + c1.i * c2.r)
+);
+
+fn complex_div(c1, c2) = complex(
+    (c1.r * c2.r + c1.i * c2.i) / (c2.r * c2.r + c2.i * c2.i),
+    (c2.r * c1.i - c1.r * c2.i) / (c2.r * c2.r + c2.i * c2.i)
+);
+
+fn stringify_complex(z) = z.r + " + " + z.i + "i";
+
+println(round(2.765, 2));
+println(round(2.770, 2));
+println(round(2.501, 2));
+println(round(2.499, 1));
+println(round(2.500, 0));
