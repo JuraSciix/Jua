@@ -1,0 +1,32 @@
+fn sort(a) = quick_sort(a); // default sort
+
+fn quick_sort(a, lo = null, hi = null) {
+    i = lo ??= 0;
+    j = hi ??= length(a) - 1;
+    pivot = a[(i + j) >> 1];
+    do {
+        while (a[i] < pivot) i++;
+        while (a[j] > pivot) j--;
+        if (i <= j) {
+            tmp = a[i];
+            a[i] = a[j];
+            a[j] = tmp;
+            i++; j--;
+        }
+    } while (i <= j);
+    if (j > lo) quick_sort(a, lo, j);
+    if (i < hi) quick_sort(a, i, hi);
+}
+
+fn bubble_sort(a) {
+    for i = 0; i < length(a); i++ {
+        for j = 1; j < length(a) - i; j++ {
+            x = a[j - 1];
+            y = a[j];
+            if x > y {
+                a[j - 1] = y;
+                a[j] = x;
+            }
+        }
+    }
+}

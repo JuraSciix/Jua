@@ -1,0 +1,25 @@
+fn print_bench_data(bench_data) {
+    name = bench_data.name ?? "<unknown>";
+    i    = bench_data.i ?? "?";
+    c    = bench_data.i ?? "?";
+    println("=== " + name + " (" + i + "/" + c + ") ===");
+
+    scores = bench_data.time ??
+                bench_data.times ??
+                bench_data.score ??
+                bench_data.scores ??
+                [];
+    if array_index_of(['map', 'array'], typeof(scores)) < 0 {
+        scores = [scores];
+    } else if length(scores) == 0 {
+        println("<there is no scores>");
+        return;
+    }
+    score_b = array_min(scores);                                  /* best */
+    score_w = array_max(scores);                                  /* worst */
+    units_h = 1E9 / (score_b == 0 ? 1 : score_b);                 /* highest */
+    units_l = 1E9 / (score_w == 0 ? 1 : score_w);                 /* lowest */
+    units_a = (units_l + units_h) / 2;                            /* average */
+    units_r = ((units_a - units_l) + (units_h - units_a)) / 2;    /* error rate */
+    println("score: " + round(units_a, 3) + "±" + round(units_r, 3) + " op/sec");
+}

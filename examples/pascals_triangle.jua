@@ -1,0 +1,12 @@
+// Реализация алгоритма генерации треугольника Паскаля
+fn pascal_triangle(height) {
+    cols = [];
+    for i = 0; i <= height; i++ {
+        cols[i] = [];
+        cols[i][0] = cols[i][i] = 1;
+        for j = 1; j < i; j++ {
+            cols[i][j] = cols[i - 1][j - 1] + cols[i - 1][j];
+        }
+    }
+    return cols;
+}

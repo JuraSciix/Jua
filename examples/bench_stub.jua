@@ -1,0 +1,18 @@
+fn bench_stub() {
+    max = 1e9;
+    while true {
+        a = ns_time();
+        test_stub();
+        b = ns_time();
+        m = (b - a);
+        if m < max {
+            print_bench_data({
+                'name': 'Stub bench',
+                'score': m
+            });
+            max = m;
+        }
+    }
+}
+
+fn test_stub(i = 10) = i <= 0 ? null : stub(i - 1);
