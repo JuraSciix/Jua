@@ -220,8 +220,9 @@ public final class Lower extends Translator {
     public void visitUnaryOp(UnaryOp tree) {
         tree.expr = translate(tree.expr);
 
-        if (stripParens(tree.expr).hasTag(Tag.LITERAL)) {
-            Literal literalTree = (Literal) tree.expr;
+        Expression innerExpr = stripParens(tree.expr);
+        if (innerExpr.hasTag(Tag.LITERAL)) {
+            Literal literalTree = (Literal) innerExpr;
             Type resultType = foldUnaryOp(tree, literalTree.type);
 
             if (resultType != null) {
