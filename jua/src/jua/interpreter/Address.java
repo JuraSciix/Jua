@@ -11,30 +11,6 @@ import static jua.runtime.ValueType.*;
 
 public final class Address implements Comparable<Address> {
 
-    /**
-     * @deprecated Используйте {@link AddressUtils#allocateCopy(Address)}. Метод подлежит удалению в ближайшем будущем.
-     */
-    @Deprecated
-    public static Address allocateCopy(Address source) {
-        return AddressUtils.allocateCopy(source);
-    }
-
-    /**
-     * @deprecated Используйте {@link AddressUtils#allocateMemory(int, int)}. Метод подлежит удалению в ближайшем будущем.
-     */
-    @Deprecated
-    public static Address[] allocateMemory(int count, int start) {
-        return AddressUtils.allocateMemory(count, start);
-    }
-
-    /**
-     * @deprecated Используйте {@link AddressUtils#arraycopy(Address[], int, Address[], int, int)}. Метод подлежит удалению в ближайшем будущем.
-     */
-    @Deprecated
-    public static void arraycopy(Address[] src, int srcOffset, Address[] dst, int dstOffset, int count) {
-        AddressUtils.arraycopy(src, srcOffset, dst, dstOffset, count);
-    }
-
     /** Тип текущего значения. */
     private byte type;
 

@@ -1,6 +1,7 @@
 package jua.runtime.heap;
 
 import jua.interpreter.Address;
+import jua.interpreter.AddressUtils;
 import jua.runtime.ValueType;
 
 import java.util.*;
@@ -68,7 +69,7 @@ public final class MapHeap implements Heap, Iterable<Address> {
         if (storage != null) {
             storage.set(value);
         } else {
-            map.put(Address.allocateCopy(key), Address.allocateCopy(value));
+            map.put(AddressUtils.allocateCopy(key), AddressUtils.allocateCopy(value));
         }
     }
 
@@ -86,7 +87,7 @@ public final class MapHeap implements Heap, Iterable<Address> {
     public void push(Address value) {
         Address key = new Address();
         key.set(map.size());
-        map.put(key, Address.allocateCopy(value));
+        map.put(key, AddressUtils.allocateCopy(value));
     }
 
     public MapHeap keys() {

@@ -2,6 +2,7 @@ package jua.interpreter;
 
 import jua.interpreter.instruction.Instruction;
 import jua.runtime.ValueType;
+import jua.runtime.code.CodeSegment;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.heap.MapHeap;
 import jua.runtime.heap.Operand;
@@ -20,16 +21,11 @@ public final class InterpreterState {
 
     private final InterpreterThread thread;
 
-    // Trusting constructor.
-    InterpreterState(Instruction[] code,
-                     int maxStack,
-                     int maxLocals,
-                     ConstantPool constantPool,
-                     InterpreterThread thread) {
-        this.code = code;
-        this.stack = Address.allocateMemory(maxStack, 0);
-        this.locals = Address.allocateMemory(maxLocals, 0);
-        this.constantPool = constantPool;
+    InterpreterState(CodeSegment cs, InterpreterThread thread) {
+        this.code = cs.code();
+        this.stack = AddressUtils.allocateMemory(cs.maxStack(), 0);
+        this.locals = AddressUtils.allocateMemory(cs.maxLocals(), 0);
+        this.constantPool = cs.constantPool();
         this.thread = thread;
     }
 
@@ -50,7 +46,7 @@ public final class InterpreterState {
     }
 
     public int cp() {
-        return cp & 0xffff;
+        return cp;
     }
 
     public void set_cp(int cp) {
@@ -58,7 +54,7 @@ public final class InterpreterState {
     }
 
     public int sp() {
-        return sp & 0xffff;
+        return sp;
     }
 
     public void set_sp(int sp) {
@@ -66,7 +62,7 @@ public final class InterpreterState {
     }
 
     public int cp_advance() {
-        return cpAdvance & 0xffff;
+        return cpAdvance;
     }
 
     public void set_cp_advance(int cpAdvance) {

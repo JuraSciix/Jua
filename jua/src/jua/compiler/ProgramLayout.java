@@ -2,6 +2,7 @@ package jua.compiler;
 
 import jua.compiler.Tree.*;
 import jua.interpreter.Address;
+import jua.interpreter.AddressUtils;
 import jua.interpreter.InterpreterFrame;
 import jua.interpreter.InterpreterThread;
 import jua.interpreter.instruction.Getconst;
@@ -72,7 +73,7 @@ public final class ProgramLayout {
                         _args = new Address[args[2].getMapHeap().size()];
                         int i = 0;
                         for (Address a : args[2].getMapHeap()) {
-                            _args[i++] = Address.allocateCopy(a);
+                            _args[i++] = AddressUtils.allocateCopy(a);
                         }
                     } else {
                         _args = new Address[0];
@@ -139,7 +140,7 @@ public final class ProgramLayout {
                         _args = new Address[args[1].getMapHeap().size()];
                         int i = 0;
                         for (Address a : args[1].getMapHeap()) {
-                            _args[i++] = Address.allocateCopy(a);
+                            _args[i++] = AddressUtils.allocateCopy(a);
                         }
                     } else {
                         _args = new Address[0];

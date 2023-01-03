@@ -1,6 +1,5 @@
 package jua.interpreter;
 
-import jua.util.Options;
 import jua.runtime.JuaEnvironment;
 import jua.runtime.JuaFunction;
 import jua.runtime.RuntimeErrorException;
@@ -136,7 +135,7 @@ public final class InterpreterThread {
             state = null;
         } else {
             CodeSegment cs = function.codeSegment();
-            state = new InterpreterState(cs.code(), cs.maxStack(), cs.maxLocals(), cs.constantPool(), this);
+            state = new InterpreterState(cs, this);
         }
         return new InterpreterFrame(sender, function, state);
     }
@@ -252,7 +251,7 @@ public final class InterpreterThread {
     public boolean call(JuaFunction function, Address[] args, Address returnAddress) {
         set_msg(MSG_CALLING);
         set_frame_force(makeFrame(function));
-        Address.arraycopy(args, 0, argsTransfer, 0, args.length);
+        AddressUtils.arraycopy(args, 0, argsTransfer, 0, args.length);
         numArgs = args.length;
         run();
         if (isError()) {
