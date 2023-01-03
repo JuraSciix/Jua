@@ -712,6 +712,9 @@ public interface Tree {
 
         public Statement body;
 
+        /** Возможно ли выполнение кода после данного цикла */
+        public boolean _infinite; // helpful compiler flag
+
         public WhileLoop(int pos, Expression cond, Statement body) {
             super(pos);
             this.cond = cond;
@@ -730,6 +733,9 @@ public interface Tree {
         public Statement body;
 
         public Expression cond;
+
+        /** Возможно ли выполнение кода после данного цикла */
+        public boolean _infinite; // helpful compiler flag
 
         public DoLoop(int pos, Statement body, Expression cond) {
             super(pos);
@@ -754,6 +760,9 @@ public interface Tree {
 
         public Statement body;
 
+        /** Возможно ли выполнение кода после данного цикла */
+        public boolean _infinite; // helpful compiler flag
+
         public ForLoop(int pos, List<Expression> init, Expression cond, List<Expression> step, Statement body) {
             super(pos);
             this.init = init;
@@ -774,6 +783,9 @@ public interface Tree {
         public Expression expr;
 
         public List<Case> cases;
+        
+        /** Возможно ли выполнение кода после данного {@code switch}. */
+        public boolean _final; // helpful compiler flag
 
         public Switch(int pos, Expression expr, List<Case> cases) {
             super(pos);
@@ -947,8 +959,8 @@ public interface Tree {
 
         public final Name name;
 
-        /** helpful flag for analysis */
-        public boolean definitelyExists = false;
+        /** Уверены ли мы в том, что переменная была явно определена. */
+        public boolean _defined; // helpful compiler flag
 
         public Var(int pos, Name name) {
             super(pos);

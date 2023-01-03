@@ -106,7 +106,6 @@ public final class Gen extends Scanner {
         code.putPos(tree.pos);
         env.exitjumps.add(emitGoto());
         code.dead();
-        env.interrupted = true;
     }
 
     private int emitGoto() {
@@ -153,7 +152,7 @@ public final class Gen extends Scanner {
 
         flow.resolveExit();
 
-        if (!flow.interrupted) {
+        if (tree._final) {
             // Ни один кейз не был закрыт с помощью break.
             // Это значит, что после switch находится недостижимый код.
             code.dead();
@@ -181,7 +180,6 @@ public final class Gen extends Scanner {
         if (caseBodyAlive) {
             // Неявный break
             flow.exitjumps.add(emitGoto());
-            flow.interrupted = true;
         }
     }
 
@@ -203,7 +201,7 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitDoLoop(DoLoop tree) {
-        genLoop(tree, null, tree.cond, null, tree.body, false);
+        genLoop(tree._infinite, null, tree.cond, null, tree.body, false);
     }
 
     @Override
@@ -217,7 +215,7 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitForLoop(ForLoop tree) {
-        genLoop(tree, tree.init, tree.cond, tree.step, tree.body, true);
+        genLoop(tree._infinite, tree.init, tree.cond, tree.step, tree.body, true);
     }
 
     @Override
@@ -280,7 +278,7 @@ public final class Gen extends Scanner {
         args.forEach(argument -> genExpr(argument.expr).load());
     }
 
-    Source funcSource;
+    Source source;
 
     JuaFunction resultFunc;
 
@@ -289,7 +287,7 @@ public final class Gen extends Scanner {
         code = tree.code;
         code.putPos(tree.pos);
         items = new Items(code);
-        log = funcSource.getLog();
+        log = source.getLog();
 
         int nOptionals = 0;
         for (FuncDef.Parameter param : tree.params) {
@@ -320,7 +318,7 @@ public final class Gen extends Scanner {
                 tree.params.size() - nOptionals,
                 tree.params.size(),
                 code.buildCodeSegment(),
-                funcSource.name
+                source.name
         );
     }
 
@@ -475,7 +473,7 @@ public final class Gen extends Scanner {
             code.addInstruction(new Getconst(programLayout.tryFindConst(name)));
             result = items.makeStack();
         } else {
-            result = items.makeLocal(tree.pos, name, tree.definitelyExists);
+            result = items.makeLocal(tree.pos, name, tree._defined);
         }
     }
 
@@ -488,7 +486,7 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitWhileLoop(WhileLoop tree) {
-        genLoop(tree, null, tree.cond, null, tree.body, true);
+        genLoop(tree._infinite, null, tree.cond, null, tree.body, true);
     }
 
     FlowEnv flow;
@@ -504,7 +502,7 @@ public final class Gen extends Scanner {
     }
     
     private void genLoop(
-            Statement loop,
+            boolean _infinite,
             List<Expression> init,
             Expression cond,
             List<Expression> steps,
@@ -523,7 +521,7 @@ public final class Gen extends Scanner {
                 genBranch(body);
                 flow.resolveCont(loopstartPC);
                 code.resolveJump(emitGoto(), loopstartPC);
-                if (!flow.interrupted) code.dead(); // Подлинный вечный цикл.
+                if (_infinite) code.dead(); // Подлинный вечный цикл.
             } else {
                 if (testFirst) {
                     CondItem condItem = genCond(cond);
@@ -558,7 +556,7 @@ public final class Gen extends Scanner {
             flow.resolveCont();
             if (infinitecond) {
                 code.resolveJump(emitGoto(), loopstartPC);
-                if (!flow.interrupted) code.dead(); // Подлинный вечный цикл.
+                if (_infinite) code.dead(); // Подлинный вечный цикл.
             } else {
                 CondItem condItem = genCond(cond).negate();
                 condItem.resolveTrueJumps();
@@ -772,6 +770,7 @@ public final class Gen extends Scanner {
     Item result;
 
     Item genExpr(Expression tree) {
+        if (Code.USE_KOSTYL && !code.isAlive()) return items.makeStack();
         Item prevItem = result;
         try {
             tree.accept(this);
@@ -816,12 +815,6 @@ public final class Gen extends Scanner {
          * Указатель на точку входа в default-case
          */
         int switchDefaultOffset = -1;
-
-        /**
-         * Истинно, если в цикле присутствуют break. Нужно, чтобы определять вечные циклы
-         * Истинно, если в switch присутствует break. Нужно, чтобы определять живой код после switch.
-         */
-        boolean interrupted = false;
 
         FlowEnv(FlowEnv parent, boolean isSwitch) {
             this.parent = parent;

@@ -63,9 +63,26 @@ public final class Code {
         freeSyntheticNames.addFirst(name);
     }
 
-    public Code(Source source) {
+    static final Lower staticLower = new Lower();
+
+    public final ProgramLayout programLayout;
+    public final Lower lower;
+    public final Flow flow;
+    public final Check check;
+    public final Gen gen;
+
+
+    public Code(ProgramLayout programLayout, Source source) {
+        this.programLayout = programLayout;
         this.lineMap = source.getLineMap();
         log = source.getLog();
+        lower = staticLower;
+        flow = new Flow();
+        check = new Check(programLayout, log);
+        gen = new Gen(programLayout);
+        gen.code = this;
+        gen.log = log;
+        gen.source = source;
     }
 
     Instruction get(int pc) {
@@ -85,14 +102,19 @@ public final class Code {
     }
 
     public void setInstruction(int cp, Instruction instruction) {
+        if (USE_KOSTYL && cp == -1) return; // todo: исправить костыль
         instructions.set(cp, instruction);
     }
+
+    @Deprecated
+    static final boolean USE_KOSTYL = false; // todo: вырезать эту переменную
 
     public int addInstruction(Instruction instr) {
         return addInstruction0(instr);
     }
 
     private int addInstruction0(Instruction instruction) {
+        if (USE_KOSTYL && !isAlive()) return -1; // todo: исправить костыль
         int pc = instructions.size();
         // todo: Exception in thread "main" java.lang.AssertionError: 4
         //	at jua.compiler.Code.getJump(Code.java:110)
@@ -123,10 +145,8 @@ public final class Code {
         //	at jua.compiler.Code.getJump(Code.java:108)
         //	... 23 more
         //
-        if (true || isAlive()) {
-            this.instructions.add(instruction);
-            adjustStack(instruction.stackAdjustment());
-        }
+        this.instructions.add(instruction);
+        adjustStack(instruction.stackAdjustment());
         return pc;
     }
 
@@ -326,6 +346,7 @@ public final class Code {
     }
 
     public void resolveJump(int opcodePC, int destPC) {
+        if (USE_KOSTYL && opcodePC == -1) return; // todo: исправить костыль
         getJump(opcodePC).offset = destPC - opcodePC;
     }
 

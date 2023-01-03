@@ -285,6 +285,7 @@ public class Items {
         }
 
         CondItem negate() {
+            if (Code.USE_KOSTYL && opcodePC == -1) return this; // todo: исправить костыль
             code.setInstruction(opcodePC, code.getJump(opcodePC).negate());
             CondItem condItem = new CondItem(opcodePC, falsejumps, truejumps);
             condItem.truejumps.removeInt(0);

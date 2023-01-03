@@ -42,7 +42,7 @@ public final class TreeInfo {
         }
     }
 
-    public static boolean isAssignable(Expression tree) {
+    public static boolean isAccessible(Expression tree) {
         switch (stripParens(tree).getTag()) {
             case VARIABLE:
             case ARRAYACCESS:

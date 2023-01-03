@@ -235,15 +235,12 @@ public final class ProgramLayout {
 
     public int addFunction(String name) {
         if (functionMap.containsKey(name)) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException(name);
         }
         int id = functionMap.size();
         functionMap.put(name, id);
         return id;
     }
-
-    final Lower lower = new Lower();
-    final Check check = new Check();
 
     /**
      * Создает объект виртуальной машины из информации, собранной компилятором.
@@ -253,22 +250,15 @@ public final class ProgramLayout {
     }
 
     public Program buildProgram() {
-        Gen mainCodegen = new Gen(this);
 
         List<Statement> toRemove = new ArrayList<>();
 
-        topTree.code = mainCodegen.code = new Code(topTree.source);
+        topTree.code = new Code(this, topTree.source);
         mainSource = topTree.source;
 
         List<JuaFunction> builtinFunctions = builtinFunctions();
         Map<Integer, JuaFunction> a = builtinFunctions.stream()
                 .collect(Collectors.toMap(f -> addFunction(f.name()), f -> f));
-
-        // Регистрируем встроенные (нативные) функции.
-        builtinFunctions.forEach(bf -> check.functions.add(bf.name()));
-
-        topTree.accept(lower);
-        topTree.accept(check);
 
         List<FuncDef> funcDefs = topTree.stats.stream()
                 .filter(stmt -> stmt.hasTag(Tag.FUNCDEF))
@@ -302,6 +292,11 @@ public final class ProgramLayout {
 
         topTree.stats.removeAll(toRemove);
 
+        topTree.accept(topTree.code.lower);
+        topTree.accept(topTree.code.check);
+        topTree.accept(topTree.code.flow);
+        topTree.accept(topTree.code.gen);
+
         List<Address> constants = constantDefs.stream()
                 .map(def -> {
                     Expression expr = def.expr;
@@ -310,8 +305,8 @@ public final class ProgramLayout {
                         ArrayLiteral arrayLiteral = (ArrayLiteral) expr;
 
                         if (!arrayLiteral.entries.isEmpty()) {
-                            mainCodegen.code.addInstruction(new Getconst(tryFindConst(def.name)));
-                            mainCodegen.genArrayInitializr(arrayLiteral.entries).drop();
+                            topTree.code.gen.code.addInstruction(new Getconst(tryFindConst(def.name)));
+                            topTree.code.gen.genArrayInitializr(arrayLiteral.entries).drop();
                         }
 
                         address.set(new MapHeap());
@@ -330,19 +325,18 @@ public final class ProgramLayout {
 
         List<JuaFunction> functions = funcDefs.stream()
                 .map(fn -> {
-                    fn.code = new Code(mainSource);
-                    Gen codegen = new Gen(this);
-                    codegen.funcSource = mainSource;
-                    fn.accept(codegen);
-                    return codegen.resultFunc;
+                    fn.code = new Code(this, mainSource);
+                    fn.accept(fn.code.lower);
+                    fn.accept(fn.code.check);
+                    fn.accept(fn.code.flow);
+                    fn.accept(fn.code.gen);
+                    return fn.code.gen.resultFunc;
                 })
                 .collect(Collectors.toList());
 
         a.forEach(functions::add);
 
-        topTree.accept(mainCodegen);
-
-        return new Program(mainSource, mainCodegen.code.buildCodeSegment(),
+        return new Program(mainSource, topTree.code.gen.code.buildCodeSegment(),
                 functions.toArray(new JuaFunction[0]),
                 constants.toArray(new Address[0]));
     }
