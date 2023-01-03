@@ -21,7 +21,7 @@ public final class JuaCompiler {
         }
         Source source = new Source(file.getName(), filecontents);
 
-        if (Options.lint()) {
+        if (Options.isLintEnabled()) {
             Lexer tokenizer = new Tokenizer(source);
             for (Token token = tokenizer.nextToken();
                  token.type != TokenType.EOF;

@@ -10,9 +10,19 @@ import java.io.IOException;
 
 public class Main {
 
+    // todo: jua test.jua -p=examples
+
     public static final String NAME = "Jua";
     // todo: Разделить версию на мажорную и минорную
     public static final String VERSION = "1.95.209";
+
+    public static String binary() {
+        return NAME;
+    }
+
+    public static String version() {
+        return VERSION;
+    }
 
     // todo: Мне лень сейчас обработкой исключений заниматься..
     public static void main(String[] args) throws IOException {
@@ -30,11 +40,9 @@ public class Main {
         Program result = JuaCompiler.compileFile(file);
 
         if (result == null) return;
-        if (Options.disassembler()) {
+        if (Options.isShouldPrintCode()) {
             result.print();
-            if (Options.stop()) {
-                return;
-            }
+            return;
         }
         try {
             result.run();
@@ -45,7 +53,7 @@ public class Main {
     }
 
     private static File testTargetFile() {
-        String filename = Options.filename();
+        String filename = Options.firstFile();
 
         if (filename == null) {
             error("main file not specified.");

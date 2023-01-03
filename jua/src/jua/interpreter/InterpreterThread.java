@@ -38,18 +38,6 @@ public final class InterpreterThread {
     @Deprecated
     public static final byte MSG_HALTED = Messages.HALT;
 
-    @Deprecated
-    public static final int MAX_CALLSTACK_SIZE;
-
-    static {
-        // wtf?
-        int a = Options.callStackSize();
-
-        if (a < (1 << 10)) a = (1 << 10);
-        if (a > (Integer.MAX_VALUE >> 1)) a = (Integer.MAX_VALUE >> 1);
-        MAX_CALLSTACK_SIZE = a;
-    }
-
     private static final ThreadLocal<InterpreterThread> thread = new ThreadLocal<>();
 
     public static InterpreterThread currentThread() {
