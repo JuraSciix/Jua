@@ -2,16 +2,18 @@ package jua.runtime;
 
 import jua.runtime.code.CodeSegment;
 
-import java.net.URL;
+import java.util.Objects;
 
 public final class JuaFunction {
+
+    public static final int FLAG_NATIVE = 0x1;
 
     public static JuaFunction fromCode(String name,
                                        int minNumArgs,
                                        int maxNumArgs,
                                        CodeSegment code,
                                        String filename) {
-        return new JuaFunction(name, minNumArgs, maxNumArgs, code, null, filename);
+        return new JuaFunction(name, minNumArgs, maxNumArgs, code, filename, 0);
     }
 
     public static JuaFunction fromNativeHandler(String name,
@@ -19,75 +21,71 @@ public final class JuaFunction {
                                                 int maxNumArgs,
                                                 JuaNativeExecutor nativeExecutor,
                                                 String filename) {
-        return new JuaFunction(name, minNumArgs, maxNumArgs, null, nativeExecutor, filename);
+        return new JuaFunction(name, minNumArgs, maxNumArgs, nativeExecutor, filename, FLAG_NATIVE);
     }
-
 
     private final String name;
 
-    private final int minNumArgs;
+    private final int lonParams;
 
-    private final int maxNumArgs;
+    private final int hinParams;
 
-    private final CodeSegment codeSegment;
-
-    private final JuaNativeExecutor nativeExecutor;
+    private final Object handle;
 
     private final String filename;
 
+    private final int flags;
+
     private JuaFunction(String name,
-                        int minNumArgs,
-                        int maxNumArgs,
-                        CodeSegment codeSegment,
-                        JuaNativeExecutor nativeExecutor,
-                        String filename) {
-        this.name = name;
-        this.minNumArgs = minNumArgs;
-        this.maxNumArgs = maxNumArgs;
-        this.codeSegment = codeSegment;
-        this.nativeExecutor = nativeExecutor;
-        this.filename = filename;
+                        int lonParams,
+                        int hinParams,
+                        Object handle,
+                        String filename, int flags) {
+        this.name = Objects.requireNonNull(name);
+        this.lonParams = lonParams;
+        this.hinParams = hinParams;
+        this.handle = Objects.requireNonNull(handle);
+        this.filename = Objects.requireNonNull(filename);
+        this.flags = flags;
     }
 
-    public String name() {
-        return name;
-    }
+    public String name() { return name; }
 
-    public int minNumArgs() {
-        return minNumArgs;
-    }
+    /** Low number params */
+    public int lonParams() { return lonParams; }
 
-    public int maxNumArgs() {
-        return maxNumArgs;
-    }
+    /** High number params */
+    public int hinParams() { return hinParams; }
 
-    public boolean isNative() {
-        return codeSegment == null;
-    }
+    @Deprecated
+    public int minNumArgs() { return lonParams(); }
+
+    @Deprecated
+    public int maxNumArgs() { return hinParams(); }
+
+    public boolean isNative() { return (flags & FLAG_NATIVE) != 0; }
 
     public CodeSegment codeSegment() {
         ensureCodeSegment();
-        return codeSegment;
+        return (CodeSegment) handle;
     }
 
     private void ensureCodeSegment() {
-        if (codeSegment == null) {
+        if (isNative()) {
             throw new IllegalStateException("trying access to code segment of a native function");
         }
     }
 
     public JuaNativeExecutor nativeHandler() {
         ensureNativeHandler();
-        return nativeExecutor;
+        return (JuaNativeExecutor) handle;
     }
 
     private void ensureNativeHandler() {
-        if (nativeExecutor == null) {
+        if (!isNative()) {
             throw new IllegalStateException("trying access to native handler in non-native function");
         }
     }
 
-    public String filename() {
-        return filename;
-    }
+    public String filename() { return filename; }
 }

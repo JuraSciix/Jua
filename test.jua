@@ -97,8 +97,8 @@ fn array_avg(arr) {
 }
 
 fn array_max(arr) {
-    m = (1 << 63); /* MIN_VALUE */
-    for i = 0, l = length(arr); i < l; i++ {
+    m = arr[0];
+    for i = 1, l = length(arr); i < l; i++ {
         if (e = arr[i]) > m {
             m = e;
         }
@@ -107,8 +107,8 @@ fn array_max(arr) {
 }
 
 fn array_min(arr) {
-    m = ~(1 << 63); /* MAX_VALUE */
-    for i = 0, l = length(arr); i < l; i++ {
+    m = arr[0];
+    for i = 1, l = length(arr); i < l; i++ {
         if (e = arr[i]) < m {
             m = e;
         }
@@ -655,21 +655,13 @@ fn print_bench_data(bench_data) {
         println("<there is no scores>");
         return;
     }
-    score_b = 1E9 / array_min(scores);                            /* best */
-    score_w = 1E9 / array_max(scores);                            /* worst */
-    score_a = (score_b + score_w) / 2;                            /* average */
-    score_r = ((score_a - score_b) + (score_w - score_a)) / 2;    /* error rate */
-    println("score: " + round(score_a, 3) + "±" + round(score_r, 3) + " op/sec");
-}
-
-fn round(n, precision = 0) {
-    l = pow(10, precision);
-    b = 1 / l;
-    r = n % b;
-    if r >= (5 / l) {
-        n += b;
-    }
-    return (n * l - r * l) / l; // для повышение точности
+    score_b = array_min(scores);                                  /* best */
+    score_w = array_max(scores);                                  /* worst */
+    units_h = 1E9 / (score_b == 0 ? 1 : score_b);                 /* highest */
+    units_l = 1E9 / (score_w == 0 ? 1 : score_w);                 /* lowest */
+    units_a = (units_l + units_h) / 2;                            /* average */
+    units_r = ((units_a - units_l) + (units_h - units_a)) / 2;    /* error rate */
+    println("score: " + round(units_a, 3) + "±" + round(units_r, 3) + " op/sec");
 }
 
 fn complex(r, i) = {
@@ -694,8 +686,23 @@ fn complex_div(c1, c2) = complex(
 
 fn stringify_complex(z) = z.r + " + " + z.i + "i";
 
-println(round(2.765, 2));
-println(round(2.770, 2));
-println(round(2.501, 2));
-println(round(2.499, 1));
-println(round(2.500, 0));
+fn bench_stub() {
+    max = 1e9;
+    while true {
+        a = ns_time();
+        stub();
+        b = ns_time();
+        m = (b - a);
+        if m < max {
+            print_bench_data({
+                'name': 'Stub bench',
+                'score': m
+            });
+            max = m;
+        }
+    }
+}
+
+fn stub(i = 10) = i <= 0 ? null : stub(i - 1);
+
+bench_stub();
