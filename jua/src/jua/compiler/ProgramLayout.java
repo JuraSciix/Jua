@@ -143,21 +143,24 @@ public final class ProgramLayout {
                         _args = new Address[0];
                     }
                     return thread.call(function, _args, returnAddress);
-                })
+                }),
 
-//                func("length", 1, 1, (thread, args, argc, returnAddress) -> {
-//                    switch (args[0].getType()) {
-//                        case ValueType.STRING:
-//                            returnAddress.set(args[0].getStringHeap().length());
-//                            return true;
-//                        case ValueType.MAP:
-//                            returnAddress.set(args[0].getMapHeap().size());
-//                            return true;
-//                        default:
-//                            thread.error("%s has no length", args[0].getTypeName());
-//                            return false;
-//                    }
-//                })
+                func("sqrt", 1, 1, (thread, args, argc, returnAddress) -> {
+                    Address buf = thread.getTempAddress();
+                    args[0].doubleVal(buf);
+                    returnAddress.set(Math.sqrt(buf.getDouble()));
+                    return true;
+                }),
+
+                func("pow", 2, 2, (thread, args, argc, returnAddress) -> {
+                    Address buf = thread.getTempAddress();
+                    args[0].doubleVal(buf);
+                    double x = buf.getDouble();
+                    args[1].doubleVal(buf);
+                    double y = buf.getDouble();
+                    returnAddress.set(Math.pow(x, y));
+                    return true;
+                })
         );
     }
 
