@@ -5,8 +5,6 @@ import jua.interpreter.InterpreterState;
 
 public final class ConstTrue implements Instruction {
 
-    public static final ConstTrue CONST_TRUE = new ConstTrue();
-
     @Override
     public int stackAdjustment() { return 1; }
 

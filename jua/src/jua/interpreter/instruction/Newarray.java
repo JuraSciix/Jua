@@ -1,12 +1,9 @@
 package jua.interpreter.instruction;
 
-import jua.interpreter.InterpreterState;
-import jua.runtime.heap.ArrayOperand;
 import jua.compiler.CodePrinter;
+import jua.interpreter.InterpreterState;
 
 public final class Newarray implements Instruction {
-
-    public static final Newarray INSTANCE = new Newarray();
 
     @Override
     public int stackAdjustment() { return 1; }

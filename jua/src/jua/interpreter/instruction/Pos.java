@@ -5,8 +5,6 @@ import jua.interpreter.InterpreterState;
 
 public final class Pos implements Instruction {
 
-    public static final Pos INSTANCE = new Pos();
-
     @Override
     public int stackAdjustment() { return -1 + 1; }
 

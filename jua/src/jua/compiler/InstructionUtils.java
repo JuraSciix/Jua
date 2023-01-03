@@ -3,31 +3,33 @@ package jua.compiler;
 import jua.compiler.Tree.Tag;
 import jua.interpreter.instruction.*;
 
+import static jua.compiler.InstructionFactory.*;
+
 public class InstructionUtils {
 
     public static Instruction fromBinaryOpTag(Tag tag) {
         switch (tag) {
-            case ADD: return Add.INSTANCE;
-            case SUB: return Sub.INSTANCE;
-            case MUL: return Mul.INSTANCE;
-            case DIV: return Div.INSTANCE;
-            case REM: return Rem.INSTANCE;
-            case SL:  return Shl.INSTANCE;
-            case SR:  return Shr.INSTANCE;
-            case AND: return And.INSTANCE;
-            case OR:  return Or.INSTANCE;
-            case XOR: return Xor.INSTANCE;
+            case ADD: return add;
+            case SUB: return sub;
+            case MUL: return mul;
+            case DIV: return div;
+            case REM: return rem;
+            case SL:  return shl;
+            case SR:  return shr;
+            case AND: return and;
+            case OR:  return or;
+            case XOR: return xor;
             default:  throw new AssertionError(tag);
         }
     }
 
     public static Instruction fromUnaryOpTag(Tag tag) {
         switch (tag) {
-            case NEG:     return Neg.INSTANCE;
-            case POS:     return Pos.INSTANCE;
-            case INVERSE: return Not.INSTANCE;
-            case POSTINC: case PREINC: return Inc.INSTANCE;
-            case POSTDEC: case PREDEC: return Dec.INSTANCE;
+            case NEG:     return neg;
+            case POS:     return pos;
+            case INVERSE: return not;
+            case POSTINC: case PREINC: return inc;
+            case POSTDEC: case PREDEC: return dec;
             default: throw new AssertionError(tag);
         }
     }

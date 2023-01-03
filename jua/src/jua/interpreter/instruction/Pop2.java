@@ -5,8 +5,6 @@ import jua.interpreter.InterpreterState;
 
 public final class Pop2 implements Instruction {
 
-    public static final Pop2 INSTANCE = new Pop2();
-
     @Override
     public int stackAdjustment() { return -1 + -1; }
 

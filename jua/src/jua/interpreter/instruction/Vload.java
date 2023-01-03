@@ -1,8 +1,7 @@
 package jua.interpreter.instruction;
 
-import jua.interpreter.InterpreterState;
-import jua.runtime.heap.Operand;
 import jua.compiler.CodePrinter;
+import jua.interpreter.InterpreterState;
 
 // todo: rename to Load (vload -> load)
 public final class Vload implements Instruction {

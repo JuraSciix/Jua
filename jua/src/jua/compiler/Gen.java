@@ -10,6 +10,7 @@ import jua.util.Assert;
 
 import java.util.List;
 
+import static jua.compiler.InstructionFactory.*;
 import static jua.compiler.InstructionUtils.*;
 import static jua.compiler.TreeInfo.*;
 import static jua.util.Collections.mergeIntLists;
@@ -87,7 +88,7 @@ public final class Gen extends Scanner {
     }
 
     private void emitNewArray() {
-        code.addInstruction(Newarray.INSTANCE);
+        code.addInstruction(newarray);
     }
 
     private void genBinary(BinaryOp tree) {
@@ -246,7 +247,7 @@ public final class Gen extends Scanner {
 
                 genExpr(tree.args.get(0).expr).load();
                 code.putPos(tree.pos);
-                code.addInstruction(Length.INSTANCE);
+                code.addInstruction(length);
                 result = items.makeStack();
                 break;
 //
@@ -382,10 +383,10 @@ public final class Gen extends Scanner {
 
     private void genNullCoalescing(BinaryOp tree) {
         genExpr(tree.lhs).load();
-        code.addInstruction(Dup.INSTANCE);
+        code.addInstruction(dup);
         code.putPos(tree.pos);
         int condPC = code.addInstruction(new Ifnonnull());
-        code.addInstruction(Pop.INSTANCE);
+        code.addInstruction(pop);
         genExpr(tree.rhs).load();
         code.resolveJump(condPC);
         result = items.makeStack();
@@ -445,7 +446,7 @@ public final class Gen extends Scanner {
     }
 
     private void emitLeave() {
-        code.addInstruction(Leave.INSTANCE);
+        code.addInstruction(leave);
         code.dead();
     }
 
@@ -630,7 +631,7 @@ public final class Gen extends Scanner {
 
                 @Override
                 void drop() {
-                    code.addInstruction(ConstNull.INSTANCE);
+                    code.addInstruction(const_null);
                     code.addInstruction(new Vstore(code.resolveLocal(tmp)));
                     code.releaseSyntheticName(tmp);
                 }

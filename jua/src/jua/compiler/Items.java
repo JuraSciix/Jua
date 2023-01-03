@@ -5,6 +5,8 @@ import jua.interpreter.instruction.*;
 
 import java.util.Objects;
 
+import static jua.compiler.InstructionFactory.*;
+
 public class Items {
 
     private final Code code;
@@ -60,17 +62,17 @@ public class Items {
         @Override
         void drop() {
             load();
-            code.addInstruction(Pop.INSTANCE);
+            code.addInstruction(pop);
         }
 
         @Override
         void duplicate() {
-            code.addInstruction(Dup.INSTANCE);
+            code.addInstruction(dup);
         }
 
         @Override
         void stash() {
-            code.addInstruction(Dup.INSTANCE);
+            code.addInstruction(dup);
         }
     }
 
@@ -93,12 +95,12 @@ public class Items {
             code.putPos(pos);
             if (type.isBoolean()) {
                 if (type.booleanValue()) {
-                    code.addInstruction(ConstTrue.CONST_TRUE);
+                    code.addInstruction(const_true);
                 } else {
-                    code.addInstruction(ConstFalse.CONST_FALSE);
+                    code.addInstruction(const_false);
                 }
             } else if (type.isNull()) {
-                code.addInstruction(ConstNull.INSTANCE);
+                code.addInstruction(const_null);
             } else {
                 code.addInstruction(new Ldc(type.resolvePoolConstant(code)));
             }
@@ -140,7 +142,7 @@ public class Items {
         @Override
         void drop() {
             load();
-            code.addInstruction(Pop.INSTANCE);
+            code.addInstruction(pop);
         }
 
         @Override
@@ -153,7 +155,7 @@ public class Items {
 
         @Override
         void stash() {
-            code.addInstruction(Dup.INSTANCE);
+            code.addInstruction(dup);
         }
 
         void inc() {
@@ -181,28 +183,28 @@ public class Items {
         @Override
         Item load() {
             code.putPos(pos);
-            code.addInstruction(Aload.INSTANCE);
+            code.addInstruction(aload);
             return stackItem;
         }
 
         @Override
         void store() {
-            code.addInstruction(Astore.INSTANCE);
+            code.addInstruction(astore);
         }
 
         @Override
         void drop() {
-            code.addInstruction(Pop2.INSTANCE);
+            code.addInstruction(pop2);
         }
 
         @Override
         void duplicate() {
-            code.addInstruction(Dup2.INSTANCE);
+            code.addInstruction(dup2);
         }
 
         @Override
         void stash() {
-            code.addInstruction(Dup_x2.INSTANCE);
+            code.addInstruction(dup_x2);
         }
     }
 
@@ -263,10 +265,10 @@ public class Items {
         @Override
         Item load() {
             resolveTrueJumps();
-            code.addInstruction(ConstTrue.CONST_TRUE);
+            code.addInstruction(const_true);
             int skipPC = code.addInstruction(new Goto());
             resolveFalseJumps();
-            code.addInstruction(ConstFalse.CONST_FALSE);
+            code.addInstruction(const_false);
             code.resolveJump(skipPC);
             return stackItem;
         }
@@ -274,7 +276,7 @@ public class Items {
         @Override
         void drop() {
             load();
-            code.addInstruction(Pop.INSTANCE);
+            code.addInstruction(pop);
         }
 
         @Override

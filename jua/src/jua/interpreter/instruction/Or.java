@@ -1,12 +1,9 @@
 package jua.interpreter.instruction;
 
-import jua.interpreter.InterpreterState;
-import jua.runtime.heap.Operand;
 import jua.compiler.CodePrinter;
+import jua.interpreter.InterpreterState;
 
 public final class Or implements Instruction {
-
-    public static final Or INSTANCE = new Or();
 
     @Override
     public int stackAdjustment() { return -1 + -1 + 1; }

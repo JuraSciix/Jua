@@ -737,3 +737,17 @@ fn bench_stub() {
 }
 
 fn stub(i = 10) = i <= 0 ? null : stub(i - 1);
+
+/*
+
+return a[0]++;
+
+ 10: load a
+ 11: iconst_0
+ 12: dup2
+ 13: aload
+ 14: store tmp
+ 15: ainc
+ 16: load tmp
+
+*/

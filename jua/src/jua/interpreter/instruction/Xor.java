@@ -1,12 +1,9 @@
 package jua.interpreter.instruction;
 
-import jua.interpreter.InterpreterState;
-import jua.runtime.heap.Operand;
 import jua.compiler.CodePrinter;
+import jua.interpreter.InterpreterState;
 
 public final class Xor implements Instruction {
-
-    public static final Xor INSTANCE = new Xor();
 
     @Override
     public int stackAdjustment() { return -1 + -1 + 1; }

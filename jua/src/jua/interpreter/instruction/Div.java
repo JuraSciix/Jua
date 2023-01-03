@@ -5,8 +5,6 @@ import jua.interpreter.InterpreterState;
 
 public final class Div implements Instruction {
 
-    public static final Div INSTANCE = new Div();
-
     @Override
     public int stackAdjustment() { return -1 + -1 + 1; }
 

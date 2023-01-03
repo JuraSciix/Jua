@@ -2,7 +2,6 @@ package jua.interpreter.instruction;
 
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
-import jua.runtime.heap.LongOperand;
 
 // todo: Переименовать инструкцию в iconst
 public final class Push implements Instruction {

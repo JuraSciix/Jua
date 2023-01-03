@@ -5,8 +5,6 @@ import jua.interpreter.InterpreterState;
 
 public final class Dup implements Instruction {
 
-    public static final Dup INSTANCE = new Dup();
-
     @Override
     public int stackAdjustment() { return 1; }
 
