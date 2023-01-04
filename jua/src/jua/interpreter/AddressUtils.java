@@ -1,5 +1,7 @@
 package jua.interpreter;
 
+import jua.runtime.heap.StringHeap;
+
 /**
  * Утилитарный класс для работы с {@link Address регистрами}.
  */
@@ -45,7 +47,8 @@ public class AddressUtils {
      * @param count     Количество регистров, которые нужно перенести.
      * @param copyMode  Режим копирования.
      */
-    public static void arraycopy(Address[] src, int srcOffset, Address[] dst, int dstOffset, int count, int copyMode) {
+    public static void arraycopy(Address[] src, int srcOffset, Address[] dst, int dstOffset, int count,
+                                 @Deprecated int copyMode) {
         if (src == null) {
             throw new IllegalArgumentException("Source memory is null");
         }
@@ -89,17 +92,37 @@ public class AddressUtils {
     /**
      * Быстрый режим копирования - копировать ссылки.
      */
+    @Deprecated
     public static final int CM_QUICK_SET = 1;
     /**
      * Стандартный режим копироания - копировать скаляры.
      */
+    @Deprecated
     public static final int CM_DEFAULT = 2;
     /**
      * Медленный режим копироания - копировать все значения.
      */
+    @Deprecated
     public static final int CM_SLOW_SET = 3;
     /**
      * Целевой участок не инициализирован, заполнить его ссылками на регистры из исходного участка.
      */
+    @Deprecated
     public static final int CM_REFERRAL = 4;
+
+    public static void assignObject(Address address, Object o) {
+        if (o == null) {
+            address.setNull();
+        } else if (o.getClass() == Boolean.class) {
+            address.set((boolean) o);
+        } else if (o.getClass() == Long.class) {
+            address.set((long) o);
+        } else if (o.getClass() == Double.class) {
+            address.set((double) o);
+        } else if (o.getClass() == String.class) {
+            address.set(new StringHeap((String) o));
+        } else {
+            throw new IllegalArgumentException(o.getClass().getName());
+        }
+    }
 }

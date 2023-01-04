@@ -15,8 +15,6 @@ import jua.runtime.code.LocalTable;
 import jua.runtime.code.CodeSegment;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.LineNumberTable;
-import jua.runtime.heap.StringHeap;
-import jua.util.Assert;
 
 import java.util.*;
 
@@ -260,22 +258,7 @@ public final class Code {
         Object[] values = constantPoolWriter().toArray();
         Address[] addresses = AddressUtils.allocateMemory(values.length, 0);
         for (int i = 0; i < values.length; i++) {
-            Object value = values[i];
-            Address address = addresses[i];
-
-            if (value == null) {
-                address.setNull();
-            } else if (value.getClass() == Boolean.class) {
-                address.set((boolean) value);
-            } else if (value.getClass() == Long.class) {
-                address.set((long) value);
-            } else if (value.getClass() == Double.class) {
-                address.set((double) value);
-            } else if (value.getClass() == String.class) {
-                address.set(new StringHeap((String) value));
-            } else {
-                Assert.error(value);
-            }
+            AddressUtils.assignObject(addresses[i], values[i]);
         }
         return new ConstantPool(addresses);
     }
