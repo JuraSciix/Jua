@@ -30,6 +30,10 @@ public final class Gen extends Scanner {
     
     Items items;
 
+    Source source;
+
+    JuaFunction resultFunc;
+
     Gen(ProgramLayout programLayout) {
         this.programLayout = programLayout;
     }
@@ -237,62 +241,22 @@ public final class Gen extends Scanner {
 
         int nargs = tree.args.size();
 
-        switch (callee.value) {
-//            case "print":
-//                visitInvocationArgs(tree.args);
-//                code.putPos(tree.pos);
-//                code.addInstruction(new Print(nargs));
-//                result = emptyItem;
-//                break;
-//
-//            case "println":
-//                visitInvocationArgs(tree.args);
-//                code.putPos(tree.pos);
-//                code.addInstruction(new Println(nargs));
-//                result = emptyItem;
-//                break;
-//
-            case "length":
-            case "sizeof":
-
-                genExpr(tree.args.get(0).expr).load();
-                code.putPos(tree.pos);
-                code.addInstruction(length);
-                result = items.makeStack();
-                break;
-//
-//            case "gettype":
-//            case "typeof":
-//                require_nargs(tree, 1);
-//                genExpr(tree.args.get(0).expr).load();
-//                code.putPos(tree.pos);
-//                code.addInstruction(Gettype.INSTANCE);
-//                result = stackItem;
-//                break;
-//
-//            case "ns_time":
-//                require_nargs(tree, 0);
-//                code.putPos(tree.pos);
-//                code.addInstruction(NsTime.INSTANCE);
-//                result = stackItem;
-//                break;
-
-            default:
-                int fn_idx = programLayout.tryFindFunc(callee);
-                visitInvocationArgs(tree.args);
-                code.putPos(tree.pos);
-                code.addInstruction(new Call((short) fn_idx, (byte) nargs));
-                result = items.makeStack();
+        if ("length".equals(callee.value)) {
+            genExpr(tree.args.get(0).expr).load();
+            code.putPos(tree.pos);
+            code.addInstruction(length);
+        } else {
+            int fn_idx = programLayout.tryFindFunc(callee);
+            visitInvocationArgs(tree.args);
+            code.putPos(tree.pos);
+            code.addInstruction(new Call((short) fn_idx, (byte) nargs));
         }
+        result = items.makeStack();
     }
 
     private void visitInvocationArgs(List<Invocation.Argument> args) {
         args.forEach(argument -> genExpr(argument.expr).load());
     }
-
-    Source source;
-
-    JuaFunction resultFunc;
 
     @Override
     public void visitFuncDef(FuncDef tree) {
@@ -643,7 +607,7 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitLiteral(Literal tree) {
-        result = items.makeLiteral(tree.pos, tree.type);
+        result = items.makeLiteral(tree.type);
     }
 
     @Override
@@ -738,28 +702,11 @@ public final class Gen extends Scanner {
     }
 
     private void emitPushLong(long value) {
-        if (isShort(value)) {
-            code.addInstruction(new Push((short) value));
-        } else {
-            code.addInstruction(new Ldc(code.resolveLong(value)));
-        }
-    }
-
-    private void emitPushDouble(double value) {
-        code.addInstruction(new Ldc(code.resolveDouble(value)));
+        items.makeLiteral(new Types.LongType(value)).load();
     }
 
     private void emitPushString(String value) {
-        code.addInstruction(new Ldc(code.resolveString(value)));
-    }
-
-    private static boolean isShort(long value) {
-        return (value >>> 16) == 0;
-    }
-
-    @Deprecated
-    private void cError(int position, String message) {
-        log.error(position, message);
+        items.makeLiteral(new Types.StringType(value)).load();
     }
 
     Item result;

@@ -86,18 +86,14 @@ public class Items {
      */
     class LiteralItem extends Item {
 
-        final int pos;
-
         final Types.Type type;
 
-        LiteralItem(int pos, Types.Type type) {
-            this.pos = pos;
+        LiteralItem(Types.Type type) {
             this.type = type;
         }
 
         @Override
         Item load() {
-            code.putPos(pos);
             if (type.isBoolean()) {
                 if (type.booleanValue()) {
                     code.addInstruction(const_true);
@@ -355,8 +351,8 @@ public class Items {
         return stackItem;
     }
 
-    LiteralItem makeLiteral(int pos, Types.Type type) {
-        return new LiteralItem(pos, type);
+    LiteralItem makeLiteral(Types.Type type) {
+        return new LiteralItem(type);
     }
 
     LocalItem makeLocal(int pos, Tree.Name name, boolean definitelyExists) { // todo: Передавать номер переменной вместо Tree.Name
