@@ -70,8 +70,8 @@ public class Check extends Scanner {
     public void visitForLoop(ForLoop tree) {
         scan(tree.init);
         scan(tree.cond);
-        scan(tree.step);
         scanLoopBody(tree.body);
+        scan(tree.step);
     }
 
     private void scanLoopBody(Statement tree) {

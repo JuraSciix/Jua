@@ -253,8 +253,8 @@ public interface Tree {
         public void visitForLoop(ForLoop tree) {
             scan(tree.init);
             scan(tree.cond);
-            scan(tree.step);
             scan(tree.body);
+            scan(tree.step);
         }
 
         @Override

@@ -59,10 +59,10 @@ public class Flow extends Scanner {
             Set<String> definedvarsintersection = new HashSet<>();
             Collections.intersection(Arrays.asList(thenscope.definedVars, elsescope.definedVars), definedvarsintersection);
             scopeState.definedVars.addAll(definedvarsintersection);
-            scopeState.maybeInterrupted = thenscope.maybeInterrupted || elsescope.maybeInterrupted;
-            scopeState.dead = thenscope.dead && elsescope.dead;
+            scopeState.maybeInterrupted |= thenscope.maybeInterrupted || elsescope.maybeInterrupted;
+            scopeState.dead |= thenscope.dead && elsescope.dead;
         } else {
-            scopeState.maybeInterrupted = thenscope.maybeInterrupted;
+            scopeState.maybeInterrupted |= thenscope.maybeInterrupted;
         }
     }
 
@@ -71,8 +71,8 @@ public class Flow extends Scanner {
         scan(tree.cond);
         scanLoopBody(tree.body, true);
         if (isLiteralTrue(tree.cond)) {
-            if (lastScopeState.dead) scopeState.dead = true;
-            if (!lastScopeState.maybeInterrupted) tree._infinite = true;
+            scopeState.dead |= lastScopeState.dead;
+            tree._infinite = !lastScopeState.maybeInterrupted;
         }
     }
 
@@ -81,8 +81,8 @@ public class Flow extends Scanner {
         scanLoopBody(tree.body, false);
         scan(tree.cond);
         if (isLiteralTrue(tree.cond)) {
-            if (lastScopeState.dead) scopeState.dead = true;
-            if (!lastScopeState.maybeInterrupted) tree._infinite = true;
+            scopeState.dead |= lastScopeState.dead;
+            tree._infinite = !lastScopeState.maybeInterrupted;
         }
     }
 
@@ -90,12 +90,12 @@ public class Flow extends Scanner {
     public void visitForLoop(ForLoop tree) {
         scan(tree.init);
         scan(tree.cond);
-        scan(tree.step);
         scanLoopBody(tree.body, true);
         if (isLiteralTrue(tree.cond)) {
-            if (lastScopeState.dead) scopeState.dead = true;
-            if (!lastScopeState.maybeInterrupted) tree._infinite = true;
+            scopeState.dead |= lastScopeState.dead;
+            tree._infinite = !lastScopeState.maybeInterrupted;
         }
+        scan(tree.step);
     }
 
     private void scanLoopBody(Statement body, boolean separateScope) {
@@ -115,7 +115,7 @@ public class Flow extends Scanner {
         for (Case case_ : tree.cases) {
             scan(case_);
             casedDefinedVars.add(lastScopeState.definedVars);
-            if (!lastScopeState.dead) dead = false;
+            dead &= lastScopeState.dead;
         }
         boolean hasDefault = tree.cases.stream().anyMatch(case_ -> case_.labels == null);
         if (hasDefault) {
@@ -123,7 +123,7 @@ public class Flow extends Scanner {
             Collections.intersection(casedDefinedVars, definedvarsintersection);
             scopeState.definedVars.addAll(definedvarsintersection);
         }
-        if (dead) scopeState.dead = true;
+        scopeState.dead |= dead;
     }
 
     @Override

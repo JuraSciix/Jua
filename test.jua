@@ -1,1 +1,11 @@
-println("Hello, world!");
+x = false;
+y = true;
+while true {
+    if x {
+        break;
+    }
+    if y {
+        z = "Hello, world!";
+        println(z);
+    }
+}
