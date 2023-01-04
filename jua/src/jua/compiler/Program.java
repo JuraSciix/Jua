@@ -15,14 +15,14 @@ public final class Program {
 
     public final Source source;
 
-    public final CodeSegment main;
+    public final JuaFunction main;
 
     public final JuaFunction[] functions;
 
     public final Address[] constants;
 
     // Trusting constructor
-    Program(Source source, CodeSegment main, JuaFunction[] functions, Address[] constants) {
+    Program(Source source, JuaFunction main, JuaFunction[] functions, Address[] constants) {
         this.source = source;
         this.main = main;
         this.functions = functions;
@@ -34,29 +34,12 @@ public final class Program {
     }
 
     public void print() {
-        CodePrinter.print(this, main, 0);
+        CodePrinter.print(this, main.codeSegment(), 0);
         CodePrinter.printFunctions(this, new ArrayList<>(Arrays.asList(functions)));
-    }
-
-    @Deprecated
-    public InterpreterThread toThread() {
-        // jua thread
-        InterpreterThread j_thread = new InterpreterThread(Thread.currentThread(), createEnvironment());
-
-        // jua function
-        JuaFunction main_function = JuaFunction.fromCode("<main>", 0, 0, main, source.name);
-
-        // jua main frame
-        InterpreterFrame j_mainFrame = j_thread.makeFrame(main_function);
-
-        j_thread.set_frame_force(j_mainFrame);
-
-        return j_thread;
     }
 
     public void run() {
         InterpreterThread thread = new InterpreterThread(Thread.currentThread(), createEnvironment());
-        JuaFunction functionMain = JuaFunction.fromCode("<main>", 0, 0, main, source.name);
-        thread.call(functionMain, new Address[0], null);
+        thread.call(main, new Address[0], null);
     }
 }

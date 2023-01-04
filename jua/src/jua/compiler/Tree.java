@@ -6,9 +6,9 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
 
-public interface Tree {
+public abstract class Tree {
 
-    enum Tag {
+    public enum Tag {
         TOP,
         FUNCDEF,
         CONSTDEF,
@@ -73,7 +73,7 @@ public interface Tree {
         POSTDEC
     }
 
-    interface Visitor {
+    public interface Visitor {
         void visitCompilationUnit(CompilationUnit tree);
         void visitConstDef(ConstDef tree);
         void visitFuncDef(FuncDef tree);
@@ -103,7 +103,7 @@ public interface Tree {
         void visitUnaryOp(UnaryOp tree);
     }
 
-    abstract class AbstractVisitor implements Visitor {
+    public static abstract class AbstractVisitor implements Visitor {
         @Override
         public void visitCompilationUnit(CompilationUnit tree) { visitTree(tree); }
 
@@ -188,7 +188,7 @@ public interface Tree {
         public void visitTree(Tree tree) { throw new AssertionError(); }
     }
 
-    abstract class Scanner extends AbstractVisitor {
+    public static abstract class Scanner extends AbstractVisitor {
 
         public void scan(Tree tree) {
             if (tree != null) {
@@ -356,7 +356,7 @@ public interface Tree {
         }
     }
 
-    abstract class Translator extends AbstractVisitor {
+    public static abstract class Translator extends AbstractVisitor {
 
         public Tree result;
 
@@ -557,13 +557,19 @@ public interface Tree {
         }
     }
 
-    Tag getTag();
+    public final int pos;
+    
+    protected Tree(int pos) {
+        this.pos = pos;
+    }
+    
+    public abstract Tag getTag();
 
-    void accept(Visitor visitor);
+    public abstract void accept(Visitor visitor);
 
-    default boolean hasTag(Tag tag) { return getTag() == tag; }
+    public final boolean hasTag(Tag tag) { return getTag() == tag; }
 
-    final class Name {
+    public static class Name {
 
         public final String value;
 
@@ -575,17 +581,24 @@ public interface Tree {
         }
     }
 
-    final class CompilationUnit implements Tree {
+    public static class CompilationUnit extends Tree {
 
         public final Source source;
 
         public List<Statement> stats;
 
-        Code code;
+        public List<FuncDef> funcDefs;
 
-        public CompilationUnit(Source source, List<Statement> stats) {
+        public List<ConstDef> constDefs;
+
+        public Code code;
+
+        public CompilationUnit(int pos, Source source, List<Statement> stats, List<FuncDef> funcDefs, List<ConstDef> constDefs) {
+            super(pos);
             this.source = source;
             this.stats = stats;
+            this.funcDefs = funcDefs;
+            this.constDefs = constDefs;
         }
 
         @Override
@@ -595,18 +608,16 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitCompilationUnit(this); }
     }
 
-    abstract class Statement implements Tree {
-
-        public final int pos;
-
+    public static abstract class Statement extends Tree {
+        
         protected Statement(int pos) {
-            this.pos = pos;
+            super(pos);
         }
     }
 
-    final class ConstDef extends Statement {
+    public static class ConstDef extends Tree {
 
-        public static final class Definition {
+        public static class Definition {
 
             public final Name name;
 
@@ -632,9 +643,9 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitConstDef(this); }
     }
 
-    final class FuncDef extends Statement {
+    public static class FuncDef extends Tree {
 
-        public static final class Parameter {
+        public static class Parameter {
 
             public final Name name;
 
@@ -652,7 +663,7 @@ public interface Tree {
 
         public Statement body;
 
-        Code code;
+        public Code code;
 
         public FuncDef(int pos, Name name, List<Parameter> params, Statement body) {
             super(pos);
@@ -668,7 +679,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitFuncDef(this); }
     }
 
-    final class Block extends Statement {
+    public static class Block extends Statement {
 
         public List<Statement> stats;
 
@@ -684,7 +695,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitBlock(this); }
     }
 
-    final class If extends Statement {
+    public static class If extends Statement {
 
         public Expression cond;
 
@@ -706,7 +717,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitIf(this); }
     }
 
-    final class WhileLoop extends Statement {
+    public static class WhileLoop extends Statement {
 
         public Expression cond;
 
@@ -728,7 +739,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitWhileLoop(this); }
     }
 
-    final class DoLoop extends Statement {
+    public static class DoLoop extends Statement {
 
         public Statement body;
 
@@ -750,7 +761,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitDoLoop(this); }
     }
 
-    final class ForLoop extends Statement {
+    public static class ForLoop extends Statement {
 
         public List<Expression> init;
 
@@ -778,7 +789,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitForLoop(this); }
     }
 
-    final class Switch extends Statement {
+    public static class Switch extends Statement {
 
         public Expression expr;
 
@@ -800,7 +811,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitSwitch(this); }
     }
 
-    final class Case extends Statement {
+    public static class Case extends Statement {
 
         public List<Expression> labels;
 
@@ -819,7 +830,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitCase(this); }
     }
 
-    final class Break extends Statement {
+    public static class Break extends Statement {
 
         public Break(int pos) {
             super(pos);
@@ -832,7 +843,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitBreak(this); }
     }
 
-    final class Continue extends Statement {
+    public static class Continue extends Statement {
 
         public Continue(int pos) {
             super(pos);
@@ -845,7 +856,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitContinue(this); }
     }
 
-    final class Fallthrough extends Statement {
+    public static class Fallthrough extends Statement {
 
         public Fallthrough(int pos) {
             super(pos);
@@ -858,7 +869,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitFallthrough(this); }
     }
 
-    final class Return extends Statement {
+    public static class Return extends Statement {
 
         public Expression expr;
 
@@ -874,7 +885,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitReturn(this); }
     }
 
-    final class Discarded extends Statement {
+    public static class Discarded extends Statement {
 
         public Expression expr;
 
@@ -890,14 +901,14 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitDiscarded(this); }
     }
 
-    abstract class Expression extends Statement {
+    public static abstract class Expression extends Tree {
 
         protected Expression(int pos) {
             super(pos);
         }
     }
 
-    final class Literal extends Expression {
+    public static class Literal extends Expression {
 
         public final Type type;
 
@@ -926,9 +937,9 @@ public interface Tree {
         }
     }
 
-    final class ArrayLiteral extends Expression {
+    public static class ArrayLiteral extends Expression {
 
-        public static final class Entry {
+        public static class Entry {
 
             public final int pos;
 
@@ -955,7 +966,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitArrayLiteral(this); }
     }
 
-    final class Var extends Expression {
+    public static class Var extends Expression {
 
         public final Name name;
 
@@ -974,7 +985,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitVariable(this); }
     }
 
-    final class MemberAccess extends Expression {
+    public static class MemberAccess extends Expression {
 
         public Expression expr;
 
@@ -993,7 +1004,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitMemberAccess(this); }
     }
 
-    final class ArrayAccess extends Expression {
+    public static class ArrayAccess extends Expression {
 
         public Expression expr, index;
 
@@ -1010,9 +1021,9 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitArrayAccess(this); }
     }
 
-    final class Invocation extends Expression {
+    public static class Invocation extends Expression {
 
-        public static final class Argument {
+        public static class Argument {
 
             public final Name name; // todo: Значение этого поля всегда null, потому что не реализовано.
 
@@ -1041,7 +1052,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitInvocation(this); }
     }
 
-    final class Parens extends Expression {
+    public static class Parens extends Expression {
 
         public Expression expr;
 
@@ -1057,7 +1068,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitParens(this); }
     }
 
-    final class Assign extends Expression {
+    public static class Assign extends Expression {
 
         public Expression var, expr;
 
@@ -1074,7 +1085,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitAssign(this); }
     }
 
-    final class CompoundAssign extends Expression {
+    public static class CompoundAssign extends Expression {
 
         public final Tag tag;
 
@@ -1094,7 +1105,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitCompoundAssign(this); }
     }
 
-    final class TernaryOp extends Expression {
+    public static class TernaryOp extends Expression {
 
         public Expression cond, thenexpr, elseexpr;
 
@@ -1112,7 +1123,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitTernaryOp(this); }
     }
 
-    final class BinaryOp extends Expression {
+    public static class BinaryOp extends Expression {
 
         public final Tag tag;
 
@@ -1132,7 +1143,7 @@ public interface Tree {
         public void accept(Visitor visitor) { visitor.visitBinaryOp(this); }
     }
 
-    final class UnaryOp extends Expression {
+    public static class UnaryOp extends Expression {
 
         public final Tag tag;
 

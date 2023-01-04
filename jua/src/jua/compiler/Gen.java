@@ -40,6 +40,13 @@ public final class Gen extends Scanner {
         log = tree.source.getLog();
         scan(tree.stats);
         emitLeave();
+        resultFunc = JuaFunction.fromCode(
+                "<main>",
+                0,
+                0,
+                code.buildCodeSegment(),
+                source.name
+        );
     }
 
     private void genFlowAnd(BinaryOp tree) {
@@ -307,8 +314,8 @@ public final class Gen extends Scanner {
                 emitLeave();
             }
         } else {
-            Assert.check(tree.body instanceof Expression, "Function body neither block ner expression");
-            genExpr((Expression) tree.body).load();
+            Assert.check(tree.body.hasTag(Tag.DISCARDED), "Function body neither block ner expression");
+            genExpr(((Discarded) tree.body).expr).load();
             code.addInstruction(jua.interpreter.instruction.Return.RETURN);
             code.dead();
         }
@@ -714,8 +721,6 @@ public final class Gen extends Scanner {
      * Генерирует код оператора в дочерней ветке и возвращает жива ли она.
      */
     private boolean genBranch(Statement statement) {
-        Assert.check(!(statement instanceof Expression));
-
         int savedstacktop = code.curStackTop();
 
         try {

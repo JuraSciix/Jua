@@ -253,9 +253,6 @@ public final class ProgramLayout {
     }
 
     public Program buildProgram() {
-
-        List<Statement> toRemove = new ArrayList<>();
-
         topTree.code = new Code(this, topTree.source);
         mainSource = topTree.source;
 
@@ -263,11 +260,8 @@ public final class ProgramLayout {
         Map<Integer, JuaFunction> a = builtinFunctions.stream()
                 .collect(Collectors.toMap(f -> addFunction(f.name()), f -> f));
 
-        List<FuncDef> funcDefs = topTree.stats.stream()
-                .filter(stmt -> stmt.hasTag(Tag.FUNCDEF))
-                .map(fn -> (FuncDef) fn)
+        List<FuncDef> funcDefs = topTree.funcDefs.stream()
                 .peek(fn -> {
-                    toRemove.add(fn);
                     String fnName = fn.name.value;
                     if (functionMap.containsKey(fnName)) {
                         mainSource.getLog().error(fn.name.pos, "Function duplicate declaration");
@@ -277,12 +271,8 @@ public final class ProgramLayout {
                 })
                 .collect(Collectors.toList());
 
-        List<ConstDef.Definition> constantDefs = topTree.stats.stream()
-                .filter(stmt -> stmt.hasTag(Tag.CONSTDEF))
-                .flatMap(stmt -> {
-                    toRemove.add(stmt);
-                    return ((ConstDef) stmt).defs.stream();
-                })
+        List<ConstDef.Definition> constantDefs = topTree.constDefs.stream()
+                .flatMap(stmt -> stmt.defs.stream())
                 .peek(def -> {
                     String cName = def.name.value;
                     if (constantMap.containsKey(cName)) {
@@ -296,8 +286,6 @@ public final class ProgramLayout {
                     constantMap.put(cName, constantMap.size());
                 })
                 .collect(Collectors.toList());
-
-        topTree.stats.removeAll(toRemove);
 
         topTree.accept(topTree.code.lower);
         topTree.accept(topTree.code.check);
@@ -343,7 +331,7 @@ public final class ProgramLayout {
 
         a.forEach(functions::add);
 
-        return new Program(mainSource, topTree.code.gen.code.buildCodeSegment(),
+        return new Program(mainSource, topTree.code.gen.resultFunc,
                 functions.toArray(new JuaFunction[0]),
                 constants.toArray(new Address[0]));
     }

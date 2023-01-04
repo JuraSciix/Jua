@@ -43,15 +43,26 @@ public final class JuaParser implements Parser {
     @Override
     public CompilationUnit parseCompilationUnit() {
         List<Statement> stats = new LinkedList<>();
+        List<FuncDef> funcDefs = new LinkedList<>();
+        List<ConstDef> constDefs = new LinkedList<>();
         nextToken();
         while (!acceptToken(EOF)) {
             try {
+                int pos = token.pos;
+                if (acceptToken(FN)) {
+                    funcDefs.add(parseFunction(pos));
+                    continue;
+                }
+                if (acceptToken(CONST)) {
+                    constDefs.add(parseConst(pos));
+                    continue;
+                }
                 stats.add(parseStatement());
             } catch (ParseNodeExit e) {
                 source.getLog().error(e.pos, e.msg);
             }
         }
-        return new CompilationUnit(source, stats);
+        return new CompilationUnit(0, source, stats, funcDefs, constDefs);
     }
 
     @Override
@@ -69,7 +80,7 @@ public final class JuaParser implements Parser {
             }
             case CONST: {
                 nextToken();
-                return parseConst(position);
+                pError(position, "constant declaration is not allowed here");
             }
             case CONTINUE: {
                 nextToken();
@@ -97,7 +108,7 @@ public final class JuaParser implements Parser {
             }
             case FN: {
                 nextToken();
-                return parseFunction(position);
+                pError(position, "function declaration is not allowed here");
             }
             case FOR: {
                 nextToken();
@@ -136,7 +147,7 @@ public final class JuaParser implements Parser {
         return new Break(position);
     }
 
-    private Statement parseConst(int position) {
+    private ConstDef parseConst(int position) {
         List<ConstDef.Definition> definitions = new LinkedList<>();
 
         do {
@@ -214,7 +225,7 @@ public final class JuaParser implements Parser {
         if (acceptToken(EQ)) {
             Expression expr = parseExpression();
             expectToken(SEMI);
-            return expr;
+            return new Discarded(expr.pos, expr);
         }
         pError(pos, "Illegal function body");
         return null;
