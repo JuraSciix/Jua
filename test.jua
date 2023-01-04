@@ -4,8 +4,10 @@ while true {
     if x {
         break;
     }
+    z = "Hello, world!";
     if y {
-        z = "Hello, world!";
         println(z);
+        break;
     }
 }
+println(z);
