@@ -1,5 +1,6 @@
 package jua.compiler;
 
+@Deprecated
 public final class Target {
 
     private final Version version;

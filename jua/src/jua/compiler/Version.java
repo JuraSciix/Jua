@@ -1,5 +1,6 @@
 package jua.compiler;
 
+@Deprecated
 public enum Version {
 
     /**
