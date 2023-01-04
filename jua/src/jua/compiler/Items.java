@@ -107,6 +107,13 @@ public class Items {
             } else if (type.isNull()) {
                 code.addInstruction(const_null);
             } else {
+                if (type.isLong()) {
+                    long lv = type.longValue();
+                    if ((lv >>> 16) == 0L) {
+                        code.addInstruction(new Push((short) lv));
+                        return stackItem;
+                    }
+                }
                 code.addInstruction(new Ldc(type.resolvePoolConstant(code)));
             }
             return stackItem;
