@@ -62,7 +62,9 @@ public interface Types {
         public Operand toOperand() { return NullOperand.NULL; }
 
         @Override
-        public int resolvePoolConstant(Code code) { return code.resolveNull(); }
+        public int resolvePoolConstant(Code code) {
+            return code.constantPoolWriter().writeNull();
+        }
 
         @Override
         public int compareTo(Type o) {
@@ -112,7 +114,9 @@ public interface Types {
         public Operand toOperand() { return LongOperand.valueOf(value); }
 
         @Override
-        public int resolvePoolConstant(Code code) { return code.resolveLong(value); }
+        public int resolvePoolConstant(Code code) {
+            return code.constantPoolWriter().writeLong(value);
+        }
 
         @Override
         public int compareTo(Type o) {
@@ -155,7 +159,9 @@ public interface Types {
         public Operand toOperand() { return DoubleOperand.valueOf(value); }
 
         @Override
-        public int resolvePoolConstant(Code code) { return code.resolveDouble(value); }
+        public int resolvePoolConstant(Code code) {
+            return code.constantPoolWriter().writeDouble(value);
+        }
 
         @Override
         public int compareTo(Type o) {
@@ -198,7 +204,9 @@ public interface Types {
         public Operand toOperand() { return BooleanOperand.valueOf(value); }
 
         @Override
-        public int resolvePoolConstant(Code code) { return code.resolveBoolean(value); }
+        public int resolvePoolConstant(Code code) {
+            return value ? code.constantPoolWriter().writeTrue() : code.constantPoolWriter().writeFalse();
+        }
 
         @Override
         public int compareTo(Type o) {
@@ -235,7 +243,9 @@ public interface Types {
         public Operand toOperand() { return new StringOperand(value); }
 
         @Override
-        public int resolvePoolConstant(Code code) { return code.resolveString(value); }
+        public int resolvePoolConstant(Code code) {
+            return code.constantPoolWriter().writeString(value);
+        }
 
         @Override
         public int compareTo(Type o) {

@@ -29,4 +29,8 @@ public class Assert {
     public static void error() {
         throw new AssertionError();
     }
+
+    public static void error(Object o) {
+        throw new AssertionError(o);
+    }
 }

@@ -7,6 +7,7 @@ import it.unimi.dsi.fastutil.shorts.Short2IntRBTreeMap;
 import it.unimi.dsi.fastutil.shorts.Short2IntSortedMap;
 import jua.compiler.Tree.Name;
 import jua.interpreter.Address;
+import jua.interpreter.AddressUtils;
 import jua.interpreter.instruction.Binaryswitch;
 import jua.interpreter.instruction.Instruction;
 import jua.interpreter.instruction.JumpInstruction;
@@ -15,9 +16,9 @@ import jua.runtime.code.CodeSegment;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.LineNumberTable;
 import jua.runtime.heap.StringHeap;
+import jua.util.Assert;
 
 import java.util.*;
-import java.util.function.Supplier;
 
 public final class Code {
 
@@ -27,7 +28,7 @@ public final class Code {
 
     final Object2IntMap<String> localNames = new Object2IntLinkedOpenHashMap<>();
 
-    final ConstantPoolBuilder constant_pool_b = new ConstantPoolBuilder();
+    final ConstantPoolWriter constantPoolWriter = new ConstantPoolWriter();
 
     int nstack = 0;
 
@@ -211,11 +212,9 @@ public final class Code {
         }
     }
 
-    public int resolveNull() { return constant_pool_b.putNull(); }
-    public int resolveLong(long value) { return constant_pool_b.putLong(value); }
-    public int resolveDouble(double value) { return constant_pool_b.putDouble(value); }
-    public int resolveBoolean(boolean value) { return constant_pool_b.putBoolean(value); }
-    public int resolveString(String value) { return constant_pool_b.putString(value); }
+    public ConstantPoolWriter constantPoolWriter() {
+        return constantPoolWriter;
+    }
 
     public CodeSegment buildCodeSegment() {
         ConstantPool cp = buildConstantPool();
@@ -258,85 +257,33 @@ public final class Code {
     }
 
     private ConstantPool buildConstantPool() {
-        return this.constant_pool_b.build();
-    }
+        Object[] values = constantPoolWriter().toArray();
+        Address[] addresses = AddressUtils.allocateMemory(values.length, 0);
+        for (int i = 0; i < values.length; i++) {
+            Object value = values[i];
+            Address address = addresses[i];
 
-    @Deprecated
-    ConstantPoolBuilder get_cpb() {
-        return this.constant_pool_b;
+            if (value == null) {
+                address.setNull();
+            } else if (value.getClass() == Boolean.class) {
+                address.set((boolean) value);
+            } else if (value.getClass() == Long.class) {
+                address.set((long) value);
+            } else if (value.getClass() == Double.class) {
+                address.set((double) value);
+            } else if (value.getClass() == String.class) {
+                address.set(new StringHeap((String) value));
+            } else {
+                Assert.error(value);
+            }
+        }
+        return new ConstantPool(addresses);
     }
 
     private final Map<String, Integer> defaultPCIs = new HashMap<>();
 
     void setLocalDefaultPCI(Name name, int defaultPCI) {
         defaultPCIs.put(name.value, defaultPCI);
-    }
-
-    public static final class ConstantPoolBuilder {
-
-        final Map<Object, Integer> indexMap = new HashMap<>();
-
-        Address[] entries = new Address[1];
-
-        private int putLenient(Object key, Supplier<Address> addressSupplier) {
-            return indexMap.computeIfAbsent(key, _key -> {
-                int newIdx = indexMap.size();
-                if (newIdx >= entries.length) {
-                    if (newIdx > ConstantPool.MAX_SIZE) {
-                        throw new OutOfMemoryError(); // todo: Выбрасывать соответствующе исключение
-                    }
-                    entries = Arrays.copyOf(entries, entries.length << 1);
-                }
-                entries[newIdx] = addressSupplier.get();
-                return newIdx;
-            });
-        }
-
-        public int putNull() {
-            return putLenient(null, () -> {
-                Address a = new Address();
-                a.setNull();
-                return a;
-            });
-        }
-
-        public int putLong(long value) {
-            return putLenient(value, () -> {
-                Address a = new Address();
-                a.set(value);
-                return a;
-            });
-        }
-
-        public int putDouble(double value) {
-            return putLenient(value, () -> {
-                Address a = new Address();
-                a.set(value);
-                return a;
-            });
-        }
-
-        public int putBoolean(boolean value) {
-            return putLenient(value, () -> {
-                Address a = new Address();
-                a.set(value);
-                return a;
-            });
-        }
-
-        public int putString(String value) {
-            return putLenient(value, () -> {
-                Address a = new Address();
-                a.set(new StringHeap(value));
-                return a;
-            });
-        }
-
-        // todo: putMap
-
-        public ConstantPool build() {
-            return new ConstantPool(entries);
-        }
     }
 
     public void resolveJump(int opcodePC) {

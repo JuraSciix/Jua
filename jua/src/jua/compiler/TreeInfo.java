@@ -172,4 +172,24 @@ public final class TreeInfo {
                 throw new AssertionError(tag);
         }
     }
+
+    // my-file.jua => my_2d_file
+    public static String normalizeName(String name) {
+        int i = 0;
+        int j = name.lastIndexOf('.');
+        if (j < 0) j = name.length();
+        StringBuilder buffer = new StringBuilder(j);
+        while (i < j) {
+            int cp = name.codePointAt(i);
+            if (Character.isJavaIdentifierPart(cp)) {
+                buffer.appendCodePoint(cp);
+            } else {
+                buffer.append('_');
+                buffer.append(Integer.toHexString(cp));
+                buffer.append('_');
+            }
+            i += Character.charCount(cp);
+        }
+        return buffer.toString();
+    }
 }
