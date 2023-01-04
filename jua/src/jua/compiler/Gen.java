@@ -1,9 +1,11 @@
 package jua.compiler;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntList;
+import jua.compiler.Items.CondItem;
+import jua.compiler.Items.Item;
+import jua.compiler.Items.LocalItem;
+import jua.compiler.Items.TempItem;
 import jua.compiler.Tree.*;
-import jua.compiler.Items.*;
 import jua.interpreter.instruction.*;
 import jua.runtime.JuaFunction;
 import jua.util.Assert;
@@ -122,42 +124,43 @@ public final class Gen extends Scanner {
     @Override
     public void visitSwitch(Tree.Switch tree) {
         genExpr(tree.expr).load();
-        flow = new FlowEnv(flow, true);
-        flow.switchStartPC = code.currentIP();
+        SwitchEnv env = new SwitchEnv(flow);
+        flow = env;
+        env.switchStartPC = code.currentIP();
         code.putPos(tree.pos);
         code.addInstruction(new Fake(-1)); // Резервируем место под инструкцию
 
         for (Case c : tree.cases) {
             c.accept(this);
-            flow.resolveCont();
-            flow.contjumps.clear();
+            env.resolveCont();
+            env.contjumps.clear();
         }
 
-        if (flow.switchDefaultOffset == -1) {
+        if (env.switchDefaultOffset == -1) {
             // Явного default-case не было
-            flow.switchDefaultOffset = code.currentIP() - flow.switchStartPC;
+            env.switchDefaultOffset = code.currentIP() - env.switchStartPC;
         }
 
-        if (flow.caseLabelsConstantIndexes.size() <= 16) {
-            code.setInstruction(flow.switchStartPC,
+        if (env.caseLabelsConstantIndexes.size() <= 16) {
+            code.setInstruction(env.switchStartPC,
                     new Linearswitch(
-                            flow.caseLabelsConstantIndexes.toIntArray(),
-                            flow.switchCaseOffsets.toIntArray(),
-                            flow.switchDefaultOffset
+                            env.caseLabelsConstantIndexes.toIntArray(),
+                            env.switchCaseOffsets.toIntArray(),
+                            env.switchDefaultOffset
                     )
             );
         } else {
-            code.setInstruction(flow.switchStartPC,
+            code.setInstruction(env.switchStartPC,
                     new Binaryswitch(
-                            flow.caseLabelsConstantIndexes.toIntArray(),
-                            flow.switchCaseOffsets.toIntArray(),
-                            flow.switchDefaultOffset
+                            env.caseLabelsConstantIndexes.toIntArray(),
+                            env.switchCaseOffsets.toIntArray(),
+                            env.switchDefaultOffset
                     )
             );
         }
 
 
-        flow.resolveExit();
+        env.resolveExit();
 
         if (tree._final) {
             // Ни один кейз не был закрыт с помощью break.
@@ -165,20 +168,22 @@ public final class Gen extends Scanner {
             code.dead();
         }
 
-        flow = flow.parent;
+        flow = env.parent;
     }
 
     @Override
     public void visitCase(Case tree) {
+        Assert.check(flow instanceof SwitchEnv);
+        SwitchEnv env = (SwitchEnv) flow;
         if (tree.labels == null) {
-            // default
-            flow.switchDefaultOffset = code.currentIP() - flow.switchStartPC;
+            // default case
+            env.switchDefaultOffset = code.currentIP() - env.switchStartPC;
         } else {
             for (Expression label : tree.labels) {
-                flow.caseLabelsConstantIndexes.add(genExpr(label).constantIndex());
+                env.caseLabelsConstantIndexes.add(genExpr(label).constantIndex());
                 // Это не ошибка. Следующая строчка должна находиться именно в цикле
                 // Потому что инструкция switch ассоциирует значения к переходам в масштабе 1 к 1.
-                flow.switchCaseOffsets.add(code.currentIP() - flow.switchStartPC);
+                env.switchCaseOffsets.add(code.currentIP() - env.switchStartPC);
             }
         }
 
@@ -201,7 +206,7 @@ public final class Gen extends Scanner {
 
     private FlowEnv searchEnv(boolean isSwitch) {
         for (FlowEnv env = flow; env != null; env = env.parent)
-            if (env.isSwitch == isSwitch)
+            if ((env instanceof SwitchEnv) == isSwitch)
                 return env;
         return null;
     }
@@ -518,7 +523,7 @@ public final class Gen extends Scanner {
     ) {
         visitOptionalExpressionList(init);
 
-        flow = new FlowEnv(flow, false);
+        flow = new FlowEnv(flow);
 
         boolean infinitecond = isInfiniteLoopCond(cond);
 
@@ -778,56 +783,33 @@ public final class Gen extends Scanner {
     class FlowEnv {
 
         final FlowEnv parent;
-        final boolean isSwitch;
 
-        /**
-         * continue-прыжки, если isSwitch=true, то fallthrough
-         */
         final IntArrayList contjumps = new IntArrayList();
-        /**
-         * break-прыжки
-         */
         final IntArrayList exitjumps = new IntArrayList();
 
-        /**
-         * Указатель на инструкцию, где находится switch.
-         */
+        FlowEnv(FlowEnv parent) {
+            this.parent = parent;
+        }
+
+        void resolveCont() { code.resolveChain(contjumps); }
+        void resolveCont(int cp) { code.resolveChain(contjumps, cp); }
+        void resolveExit() { code.resolveChain(exitjumps); }
+        void resolveExit(int cp) { code.resolveChain(exitjumps, cp); }
+    }
+
+    class SwitchEnv extends FlowEnv {
+
+        /** Указатель на инструкцию, где находится switch. */
         int switchStartPC;
-        /**
-         * Индексы констант из ключей кейзов. Равно null когда isSwitch=false
-         */
-        final IntList caseLabelsConstantIndexes;
-        /**
-         * Точка входа (IP) для каждого кейза. Равно null когда isSwitch=false
-         */
-        final IntList switchCaseOffsets;
-        /**
-         * Указатель на точку входа в default-case
-         */
+        /** Индексы констант из ключей кейзов. Равно null когда isSwitch=false */
+        final IntArrayList caseLabelsConstantIndexes = new IntArrayList();
+        /** Точка входа (IP) для каждого кейза. Равно null когда isSwitch=false */
+        final IntArrayList switchCaseOffsets = new IntArrayList();
+        /** Указатель на точку входа в default-case */
         int switchDefaultOffset = -1;
 
-        FlowEnv(FlowEnv parent, boolean isSwitch) {
-            this.parent = parent;
-            this.isSwitch = isSwitch;
-
-            switchCaseOffsets = isSwitch ? new IntArrayList() : null;
-            caseLabelsConstantIndexes = isSwitch ? new IntArrayList() : null;
-        }
-
-        void resolveCont() {
-            resolveCont(code.currentIP());
-        }
-
-        void resolveCont(int pc) {
-            code.resolveChain(contjumps, pc);
-        }
-
-        void resolveExit() {
-            resolveExit(code.currentIP());
-        }
-
-        void resolveExit(int pc) {
-            code.resolveChain(exitjumps, pc);
+        SwitchEnv(FlowEnv parent) {
+            super(parent);
         }
     }
 }
