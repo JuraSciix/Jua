@@ -44,6 +44,11 @@ public class Items {
             return new CondItem(code.addInstruction(new Ifz()));
         }
 
+        CondItem nonNull() {
+            load();
+            return new CondItem(code.addInstruction(new Ifnonnull()));
+        }
+
         int constantIndex() {
             throw new AssertionError(this);
         }
@@ -309,6 +314,36 @@ public class Items {
         }
     }
 
+    /**
+     * Регистр для временного хранения некоторых данных
+     */
+    class TempItem extends Item {
+
+        final String name = code.acquireSyntheticName();
+
+        final int index = code.resolveLocal(name);
+
+        @Override
+        Item load() {
+            code.addInstruction(new Vloadq(index));
+            drop();
+            return stackItem;
+        }
+
+        @Override
+        void store() {
+            code.addInstruction(new Vstore(index));
+        }
+
+        @Override
+        void drop() {
+            // Очищаем регистр чтобы не было утечек памяти
+            code.addInstruction(const_null);
+            store();
+            code.releaseSyntheticName(name);
+        }
+    }
+
     StackItem makeStack() {
         return stackItem;
     }
@@ -335,5 +370,9 @@ public class Items {
 
     CondItem makeCond(int opcodePC, IntArrayList truejumps, IntArrayList falsejumps) {
         return new CondItem(opcodePC, truejumps, falsejumps);
+    }
+
+    TempItem makeTemp() {
+        return new TempItem();
     }
 }

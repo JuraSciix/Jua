@@ -380,13 +380,13 @@ public final class Gen extends Scanner {
     }
 
     private void genNullCoalescing(BinaryOp tree) {
-        genExpr(tree.lhs).load();
-        code.addInstruction(dup);
-        code.putPos(tree.pos);
-        int condPC = code.addInstruction(new Ifnonnull());
+        Item lhs = genExpr(tree.lhs).load();
+        lhs.duplicate();
+        CondItem nonNull = lhs.nonNull();
+        nonNull.resolveTrueJumps();
         code.addInstruction(pop);
         genExpr(tree.rhs).load();
-        code.resolveJump(condPC);
+        nonNull.resolveFalseJumps();
         result = items.makeStack();
     }
 
@@ -599,41 +599,28 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitCompoundAssign(CompoundAssign tree) {
-        Expression var = stripParens(tree.dst);
         Item varitem = genExpr(tree.dst);
         varitem.duplicate();
         if (tree.hasTag(Tag.ASG_NULLCOALESCE)) {
-            varitem.load().duplicate();
-            String tmp = code.acquireSyntheticName(); // synthetic0
-            code.addInstruction(new Vstore(code.resolveLocal(tmp)));
+            Item a = varitem.load();
+            a.duplicate();
+            TempItem tmp = items.makeTemp();
+            tmp.store();
             code.putPos(tree.pos);
-            int cPC = code.addInstruction(new Ifnonnull());
+            CondItem nonNull = a.nonNull();
+            nonNull.resolveTrueJumps();
             int sp1 = code.curStackTop();
             genExpr(tree.src).load().duplicate();
-            code.addInstruction(new Vstore(code.resolveLocal(tmp)));
+            tmp.store();
             varitem.store();
             int sp2 = code.curStackTop();
             int ePC = emitGoto();
-            code.resolveJump(cPC);
+            nonNull.resolveFalseJumps();
             code.curStackTop(sp1);
             varitem.drop();
             code.resolveJump(ePC);
             assertStacktopEquality(sp2);
-            result = items.new Item() {
-                @Override
-                Item load() {
-                    code.addInstruction(new Vload(code.resolveLocal(tmp)));
-                    drop();
-                    return items.makeStack();
-                }
-
-                @Override
-                void drop() {
-                    code.addInstruction(const_null);
-                    code.addInstruction(new Vstore(code.resolveLocal(tmp)));
-                    code.releaseSyntheticName(tmp);
-                }
-            };
+            result = tmp;
         } else {
             varitem.load();
             genExpr(tree.src).load();
@@ -646,7 +633,6 @@ public final class Gen extends Scanner {
     public void visitLiteral(Literal tree) {
         result = items.makeLiteral(tree.pos, tree.type);
     }
-
 
     @Override
     public void visitDiscarded(Discarded tree) {
@@ -684,11 +670,10 @@ public final class Gen extends Scanner {
 
                         @Override
                         void drop() {
+                            code.putPos(tree.pos);
                             if (inc) {
-                                code.putPos(tree.pos);
                                 localitem.inc();
                             } else {
-                                code.putPos(tree.pos);
                                 localitem.dec();
                             }
                         }
