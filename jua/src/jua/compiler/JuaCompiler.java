@@ -57,6 +57,9 @@ public final class JuaCompiler {
             if (!source.getLog().hasErrors()) {
                 return program;
             }
+        } catch (CompileException e) {
+            System.err.println("Compiler error occurred");
+            e.printStackTrace();
         } catch (CompileInterrupter ignore) {
         } finally {
             if (source.getLog().hasMessages()) {

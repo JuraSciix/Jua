@@ -19,6 +19,8 @@ public class ConstantPoolWriter {
         }
     }
 
+    private static final int MAX_SIZE = 65535;
+
     private Entry root = null;
 
     private int totalIndex = 0;
@@ -41,14 +43,14 @@ public class ConstantPoolWriter {
     private int write(Object value) {
         int hash = Objects.hashCode(value);
         if (root == null) {
-            root = new Entry(hash, value, totalIndex++);
+            root = new Entry(hash, value, updateTotalIndex());
             return root.index;
         }
         Entry entry = root;
         while (true) {
             if (hash < entry.hash) {
                 if (entry.left == null) {
-                    entry.left = new Entry(hash, value, totalIndex++);
+                    entry.left = new Entry(hash, value, updateTotalIndex());
                     return entry.left.index;
                 }
                 entry = entry.left;
@@ -57,12 +59,19 @@ public class ConstantPoolWriter {
                     return entry.index;
                 }
                 if (entry.right == null) {
-                    entry.right = new Entry(hash, value, totalIndex++);
+                    entry.right = new Entry(hash, value, updateTotalIndex());
                     return entry.right.index;
                 }
                 entry = entry.right;
             }
         }
+    }
+
+    private int updateTotalIndex() {
+        if (totalIndex >= MAX_SIZE) {
+            throw new CompileException("constant pool cannot contain greater than " + MAX_SIZE + " entries");
+        }
+        return totalIndex++;
     }
 
     public Object[] toArray() {
