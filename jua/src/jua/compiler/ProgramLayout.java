@@ -208,9 +208,11 @@ public final class ProgramLayout {
 
     CompilationUnit topTree;
 
-    private final Map<String, Integer> constantMap = new HashMap<>();
+    public final HashMap<String, Types.Type> constantLiterals = new HashMap<>();
 
-    private final Map<String, Integer> functionMap = new HashMap<>();
+    private final HashMap<String, Integer> constantMap = new HashMap<>();
+
+    private final HashMap<String, Integer> functionMap = new HashMap<>();
 
     public boolean hasConstant(Name name) {
         return constantMap.containsKey(name.value);
@@ -286,6 +288,10 @@ public final class ProgramLayout {
                     if (constantMap.containsKey(cName)) {
                         mainSource.getLog().error(def.name.pos, "Constant duplicate declaration");
                         return;
+                    }
+                    Expression innerExpr = TreeInfo.stripParens(def.expr);
+                    if (innerExpr.hasTag(Tag.LITERAL)) {
+                        constantLiterals.put(cName, ((Literal) innerExpr).type);
                     }
                     constantMap.put(cName, constantMap.size());
                 })

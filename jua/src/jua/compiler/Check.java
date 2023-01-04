@@ -130,7 +130,7 @@ public class Check extends Scanner {
     @Override
     public void visitVariable(Var tree) {
         Name name = tree.name;
-        if (knownVars.add(name.value)) {
+        if (!programLayout.hasConstant(name) && knownVars.add(name.value)) {
             log.error(name.pos, "attempt to refer to an undefined variable");
         }
     }

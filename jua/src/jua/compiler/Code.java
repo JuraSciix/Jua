@@ -63,8 +63,6 @@ public final class Code {
         freeSyntheticNames.addFirst(name);
     }
 
-    static final Lower staticLower = new Lower();
-
     public final ProgramLayout programLayout;
     public final Lower lower;
     public final Flow flow;
@@ -76,7 +74,7 @@ public final class Code {
         this.programLayout = programLayout;
         this.lineMap = source.getLineMap();
         log = source.getLog();
-        lower = staticLower;
+        lower = new Lower(programLayout);
         flow = new Flow();
         check = new Check(programLayout, log);
         gen = new Gen(programLayout);

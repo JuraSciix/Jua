@@ -4,26 +4,17 @@ import jua.compiler.Tree.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import static jua.compiler.TreeInfo.*;
 import static jua.compiler.Types.*;
 
 public final class Lower extends Translator {
     
-    private final Map<String, Type> constantLiterals = new HashMap<>();
+    private final ProgramLayout programLayout;
 
-    @Override
-    public void visitConstDef(ConstDef tree) {
-        for (ConstDef.Definition def : tree.defs) {
-            def.expr = translate(def.expr);
-            
-            if (stripParens(def.expr).hasTag(Tag.LITERAL)) {
-                Literal literalTree = (Literal) def.expr;
-                constantLiterals.put(def.name.value, literalTree.type);
-            }
-        }
-        
-        result = tree;
+    public Lower(ProgramLayout programLayout) {
+        this.programLayout = Objects.requireNonNull(programLayout);
     }
 
     @Override
@@ -41,8 +32,8 @@ public final class Lower extends Translator {
     @Override
     public void visitVariable(Var tree) {
         String nameString = tree.name.value;
-        if (constantLiterals.containsKey(nameString)) {
-            result = new Literal(tree.pos, constantLiterals.get(nameString));
+        if (programLayout.constantLiterals.containsKey(nameString)) {
+            result = new Literal(tree.pos, programLayout.constantLiterals.get(nameString));
         } else {
             result = tree;
         }
