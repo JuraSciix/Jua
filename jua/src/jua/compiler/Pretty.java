@@ -75,6 +75,7 @@ public class Pretty extends Scanner {
                 Discarded bodyTree = (Discarded) tree.body;
                 scan(bodyTree.expr);
                 printLine(";");
+                break;
             default:
                 throw illegalTagException(tree.body.getTag());
         }
@@ -111,7 +112,11 @@ public class Pretty extends Scanner {
     public void visitDoLoop(DoLoop tree) {
         print("do");
         printBody(tree.body);
-        print(" while ");
+        if (newLine) {
+            print("while ");
+        } else {
+            print(" while ");
+        }
         scan(tree.cond);
         printLine(";");
     }
@@ -131,7 +136,7 @@ public class Pretty extends Scanner {
     public void visitSwitch(Switch tree) {
         print("switch ");
         scan(tree.expr);
-        printLine("{");
+        printLine(" {");
         addTab();
         scan(tree.cases);
         subTab();
@@ -140,11 +145,14 @@ public class Pretty extends Scanner {
 
     @Override
     public void visitCase(Case tree) {
-        print("case ");
-        printSequence(tree.labels, this::scan);
-        print(": ");
+        if (tree.labels == null) {
+            print("default: ");
+        } else {
+            print("case ");
+            printSequence(tree.labels, this::scan);
+            print(": ");
+        }
         scan(tree.body);
-        printLine();
     }
 
     @Override
@@ -220,14 +228,9 @@ public class Pretty extends Scanner {
     @Override
     public void visitArrayAccess(ArrayAccess tree) {
         scan(tree.expr);
-        if (tree.index.getTag() == Tag.VARIABLE) {
-            print(".");
-            scan(tree.index);
-        } else {
-            print("[");
-            scan(tree.index);
-            print("]");
-        }
+        print("[");
+        scan(tree.index);
+        print("]");
     }
 
     @Override
@@ -284,12 +287,10 @@ public class Pretty extends Scanner {
     @Override
     public void visitTernaryOp(TernaryOp tree) {
         scan(tree.cond);
-        print(" if ");
+        print(" ? ");
         scan(tree.thenexpr);
-        if (tree.elseexpr != null) {
-            print(" else ");
-            scan(tree.elseexpr);
-        }
+        print(" : ");
+        scan(tree.elseexpr);
     }
 
     @Override

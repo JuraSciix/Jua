@@ -9,8 +9,7 @@ import jua.compiler.Tree.*;
 import jua.interpreter.instruction.*;
 import jua.runtime.JuaFunction;
 import jua.util.Assert;
-
-import java.util.List;
+import jua.util.List;
 
 import static jua.compiler.InstructionFactory.*;
 import static jua.compiler.InstructionUtils.*;
@@ -239,10 +238,10 @@ public final class Gen extends Scanner {
         Assert.check(tree.callee instanceof MemberAccess);
         Name callee = ((MemberAccess) tree.callee).member;
 
-        int nargs = tree.args.size();
+        int nargs = tree.args.count();
 
         if ("length".equals(callee.value)) {
-            genExpr(tree.args.get(0).expr).load();
+            genExpr(tree.args.first().expr).load();
             code.putPos(tree.pos);
             code.addInstruction(length);
         } else {
@@ -291,8 +290,8 @@ public final class Gen extends Scanner {
 
         resultFunc = JuaFunction.fromCode(
                 tree.name.value,
-                tree.params.size() - nOptionals,
-                tree.params.size(),
+                tree.params.count() - nOptionals,
+                tree.params.count(),
                 code.buildCodeSegment(),
                 source.name
         );

@@ -7,6 +7,7 @@ import jua.util.Options;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 
 public final class JuaCompiler {
 
@@ -53,6 +54,12 @@ public final class JuaCompiler {
 
             Parser parser = new JuaParser(source);
             programLayout.topTree = parser.parseCompilationUnit();
+            if (Options.isShouldPrettyTree()) {
+                PrintWriter writer = new PrintWriter(System.err);
+                programLayout.topTree.accept(new Pretty(writer));
+                writer.flush();
+                return null;
+            }
             Program program = programLayout.buildProgram();
             if (!source.getLog().hasErrors()) {
                 return program;

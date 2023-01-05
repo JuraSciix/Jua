@@ -76,6 +76,9 @@ public interface Types {
 
         @Override
         public boolean equals(Object o) { return this == o; }
+
+        @Override
+        public String toString() { return "null"; }
     }
 
     abstract class ScalarType extends Type {
@@ -133,6 +136,9 @@ public interface Types {
             LongType t = (LongType) o;
             return value == t.value;
         }
+
+        @Override
+        public String toString() { return Long.toString(value); }
     }
 
     class DoubleType extends NumberType {
@@ -178,6 +184,9 @@ public interface Types {
             DoubleType t = (DoubleType) o;
             return Double.compare(t.value, value) == 0;
         }
+
+        @Override
+        public String toString() { return Double.toString(value); }
     }
 
     class BooleanType extends ScalarType {
@@ -223,6 +232,9 @@ public interface Types {
             BooleanType t = (BooleanType) o;
             return value == t.value;
         }
+
+        @Override
+        public String toString() { return Boolean.toString(value); }
     }
 
     class StringType extends ScalarType {
@@ -262,5 +274,8 @@ public interface Types {
             StringType t = (StringType) o;
             return Objects.equals(value, t.value);
         }
+
+        @Override
+        public String toString() { return "\"" + value + "\""; }
     }
 }

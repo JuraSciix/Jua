@@ -147,7 +147,7 @@ public class Check extends Scanner {
         MemberAccess calleeTree = (MemberAccess) callee;
 
         if (calleeTree.member.value.equals("length")) {
-            if (tree.args.size() != 1) {
+            if (tree.args.count() != 1) {
                 log.error(tree.pos, "the function 'length' takes a single parameter");
                 return;
             }
@@ -157,7 +157,7 @@ public class Check extends Scanner {
 //                log.error(calleeTree.member.pos, "trying to call an undefined function");
                 return;
             }
-            if (tree.args.size() > 255) {
+            if (tree.args.count() > 255) {
                 log.error(tree.pos, "the number of call arguments cannot exceed 255");
                 return;
             }

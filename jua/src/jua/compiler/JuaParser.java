@@ -814,7 +814,7 @@ public final class JuaParser implements Parser {
     private Expression parseArray(int position, TokenType enclosing) {
         List<ArrayLiteral.Entry> entries = new List<>();
         boolean comma = false;
-        boolean isList = true;
+        boolean isList = enclosing == RBRACKET; // []
 
         while (!acceptToken(enclosing)) {
             if (acceptToken(EOF) || comma && !acceptToken(COMMA)) {

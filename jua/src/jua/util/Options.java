@@ -20,11 +20,13 @@ public final class Options {
     public static String firstFile() { return bound.files.stream().findFirst().orElse(null); }
     public static boolean isShouldPrintCode() { return bound.printCode; }
     public static boolean isLintEnabled() { return bound.enableLint; }
+    public static boolean isShouldPrettyTree() { return bound.prettyTree; }
     public static ArrayList<String> argv() { return bound.argv; }
 
     private final ArrayList<String> files = new ArrayList<>();
     private boolean printCode;
     private boolean enableLint;
+    private boolean prettyTree;
     private final ArrayList<String> argv = new ArrayList<>();
 
     private static class OptionIterator {
@@ -49,20 +51,24 @@ public final class Options {
         OptionIterator itr = new OptionIterator(args);
         while (itr.isNextOption()) {
             String option = itr.next();
-            if (option.startsWith("-h") || option.startsWith("--help")) {
+            if (option.equals("-h") || option.equals("--help")) {
                 print_help();
                 // UNREACHABLE
             }
-            if (option.startsWith("-v") || option.startsWith("--version")) {
+            if (option.equals("-v") || option.equals("--version")) {
                 print_version();
                 // UNREACHABLE
             }
-            if (option.startsWith("-l") || option.startsWith("--lint")) {
+            if (option.equals("-l") || option.equals("--lint")) {
                 enableLint = true;
                 continue;
             }
-            if (option.startsWith("-x")) {
+            if (option.equals("-x")) {
                 printCode = true;
+                continue;
+            }
+            if (option.equals("-p") || option.equals("--pretty")) {
+                prettyTree = true;
                 continue;
             }
             if (option.startsWith("-f")) {
