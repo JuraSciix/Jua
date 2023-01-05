@@ -1,10 +1,10 @@
 package jua.compiler;
 
 import jua.compiler.Types.*;
+import jua.util.List;
 
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Objects;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 public abstract class Tree {
 
@@ -197,7 +197,7 @@ public abstract class Tree {
         }
 
         public void scan(List<? extends Tree> trees) {
-            if (trees != null && !trees.isEmpty()) {
+            if (trees != null && trees.nonEmpty()) {
                 for (Tree tree : trees) {
                     // В списке не должно быть null-значений.
                     tree.accept(this);
@@ -207,6 +207,8 @@ public abstract class Tree {
 
         @Override
         public void visitCompilationUnit(CompilationUnit tree) {
+            scan(tree.constDefs);
+            scan(tree.funcDefs);
             scan(tree.stats);
         }
 
@@ -333,8 +335,8 @@ public abstract class Tree {
 
         @Override
         public void visitCompoundAssign(CompoundAssign tree) {
-            scan(tree.src);
-            scan(tree.dst);
+            scan(tree.expr);
+            scan(tree.var);
         }
 
         @Override
@@ -373,13 +375,12 @@ public abstract class Tree {
 
         @SuppressWarnings("unchecked")
         public <T extends Tree> List<T> translate(List<T> trees) {
-            if (trees != null && !trees.isEmpty()) {
-                ListIterator<T> treeIterator = trees.listIterator();
-                do {
-                    treeIterator.next().accept(this);
-                    treeIterator.set((T) result);
+            if (trees != null && trees.nonEmpty()) {
+                for (List.Node<T> node = trees.head(); node != null; node = node.next()) {
+                    node.value.accept(this);
+                    node.value = (T) result;
                     result = null;
-                } while (treeIterator.hasNext());
+                }
             }
             return trees;
         }
@@ -530,8 +531,8 @@ public abstract class Tree {
 
         @Override
         public void visitCompoundAssign(CompoundAssign tree) {
-            tree.dst = translate(tree.dst);
-            tree.src = translate(tree.src);
+            tree.var = translate(tree.var);
+            tree.expr = translate(tree.expr);
             result = tree;
         }
 
@@ -567,7 +568,9 @@ public abstract class Tree {
 
     public abstract void accept(Visitor visitor);
 
-    public final boolean hasTag(Tag tag) { return getTag() == tag; }
+    public boolean hasTag(Tag tag) {
+        return getTag() == tag;
+    }
 
     public static class Name {
 
@@ -922,19 +925,6 @@ public abstract class Tree {
 
         @Override
         public void accept(Visitor visitor) { visitor.visitLiteral(this); }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            Literal literal = (Literal) o;
-            return Objects.equals(type, literal.type);
-        }
-
-        @Override
-        public String toString() {
-            return String.valueOf(type.longValue());
-        }
     }
 
     public static class ArrayLiteral extends Expression {
@@ -953,6 +943,9 @@ public abstract class Tree {
         }
         
         public List<Entry> entries;
+
+        /** Является ли массив списком */
+        public boolean _isList = false; // helpful compiler analysis flag
 
         public ArrayLiteral(int pos, List<Entry> entries) {
             super(pos);
@@ -1089,13 +1082,13 @@ public abstract class Tree {
 
         public final Tag tag;
 
-        public Expression dst, src; // todo: Переименовать в var, expr соответственно.
+        public Expression var, expr; // todo: Переименовать в var, expr соответственно.
 
-        public CompoundAssign(int pos, Tag tag, Expression dst, Expression src) {
+        public CompoundAssign(int pos, Tag tag, Expression var, Expression expr) {
             super(pos);
             this.tag = tag;
-            this.dst = dst;
-            this.src = src;
+            this.var = var;
+            this.expr = expr;
         }
 
         @Override

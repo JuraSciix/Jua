@@ -191,14 +191,14 @@ public class Check extends Scanner {
 
     @Override
     public void visitCompoundAssign(CompoundAssign tree) {
-        Expression innerVar = stripParens(tree.dst);
+        Expression innerVar = stripParens(tree.var);
 
         if (!isAccessible(innerVar)) {
             log.error(innerVar.pos, "attempt to assign a value to a non-accessible expression");
         } else {
-            scan(tree.dst);
+            scan(tree.var);
         }
-        scan(tree.src);
+        scan(tree.expr);
     }
 
     @Override

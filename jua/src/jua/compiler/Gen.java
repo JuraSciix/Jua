@@ -575,7 +575,7 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitCompoundAssign(CompoundAssign tree) {
-        Item varitem = genExpr(tree.dst);
+        Item varitem = genExpr(tree.var);
         varitem.duplicate();
         if (tree.hasTag(Tag.ASG_NULLCOALESCE)) {
             Item a = varitem.load();
@@ -586,7 +586,7 @@ public final class Gen extends Scanner {
             CondItem nonNull = a.nonNull();
             nonNull.resolveTrueJumps();
             int sp1 = code.curStackTop();
-            genExpr(tree.src).load().duplicate();
+            genExpr(tree.expr).load().duplicate();
             tmp.store();
             varitem.store();
             int sp2 = code.curStackTop();
@@ -599,7 +599,7 @@ public final class Gen extends Scanner {
             result = tmp;
         } else {
             varitem.load();
-            genExpr(tree.src).load();
+            genExpr(tree.expr).load();
             code.addInstruction(fromBinaryAsgOpTag(tree.tag));
             result = items.makeAssign(tree.pos, varitem);
         }

@@ -101,7 +101,7 @@ public class Flow extends Scanner {
     @Override
     public void visitSwitch(Switch tree) {
         scan(tree.expr);
-        ArrayList<Set<String>> casesGlobalVars = new ArrayList<>(tree.cases.size());
+        ArrayList<Set<String>> casesGlobalVars = new ArrayList<>(tree.cases.count());
         boolean dead = true;
         for (Case case_ : tree.cases) {
             scan(case_.labels);
