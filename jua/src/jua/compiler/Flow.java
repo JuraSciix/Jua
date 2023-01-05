@@ -41,7 +41,9 @@ public class Flow extends Scanner {
     ScopeState scopeState = new ScopeState() /* root-scope */;
 
     @Override
-    public void visitConstDef(ConstDef tree) { Assert.error(); }
+    public void visitCompilationUnit(CompilationUnit tree) {
+        scan(tree.stats);
+    }
 
     @Override
     public void visitFuncDef(FuncDef tree) {

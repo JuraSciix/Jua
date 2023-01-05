@@ -11,6 +11,7 @@ import jua.runtime.JuaNativeExecutor;
 import jua.runtime.VirtualMachine;
 import jua.runtime.heap.MapHeap;
 import jua.runtime.heap.StringHeap;
+import jua.util.Assert;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -260,65 +261,60 @@ public final class ProgramLayout {
         Map<Integer, JuaFunction> a = builtinFunctions.stream()
                 .collect(Collectors.toMap(f -> addFunction(f.name()), f -> f));
 
-        List<FuncDef> funcDefs = topTree.funcDefs.stream()
-                .peek(fn -> {
+        topTree.funcDefs.stream()
+                .forEach(fn -> {
                     String fnName = fn.name.value;
                     if (functionMap.containsKey(fnName)) {
                         mainSource.getLog().error(fn.name.pos, "Function duplicate declaration");
                         return;
                     }
                     functionMap.put(fnName, functionMap.size());
-                })
-                .collect(Collectors.toList());
+                });
 
-        List<ConstDef.Definition> constantDefs = topTree.constDefs.stream()
+        topTree.constDefs.stream()
                 .flatMap(stmt -> stmt.defs.stream())
-                .peek(def -> {
+                .forEach(def -> {
                     String cName = def.name.value;
                     if (constantMap.containsKey(cName)) {
                         mainSource.getLog().error(def.name.pos, "Constant duplicate declaration");
                         return;
                     }
-                    Expression innerExpr = TreeInfo.stripParens(def.expr);
-                    if (innerExpr.hasTag(Tag.LITERAL)) {
-                        constantLiterals.put(cName, ((Literal) innerExpr).type);
-                    }
                     constantMap.put(cName, constantMap.size());
-                })
-                .collect(Collectors.toList());
+                });
 
         topTree.accept(topTree.code.lower);
         topTree.accept(topTree.code.check);
         topTree.accept(topTree.code.flow);
         topTree.accept(topTree.code.gen);
 
-        List<Address> constants = constantDefs.stream()
+        List<Address> constants = topTree.constDefs.stream()
+                .flatMap(constDef -> constDef.defs.stream())
                 .map(def -> {
-                    Expression expr = def.expr;
+                    Expression expr = TreeInfo.stripParens(def.expr);
                     Address address = new Address();
-                    if (expr.getTag() == Tag.ARRAYLITERAL) {
+                    if (expr.hasTag(Tag.ARRAYLITERAL)) {
                         ArrayLiteral arrayLiteral = (ArrayLiteral) expr;
 
                         if (!arrayLiteral.entries.isEmpty()) {
-                            topTree.code.gen.code.addInstruction(new Getconst(tryFindConst(def.name)));
+                            topTree.code.addInstruction(new Getconst(tryFindConst(def.name)));
                             topTree.code.gen.genArrayInitializr(arrayLiteral.entries).drop();
                         }
 
                         address.set(new MapHeap());
 //                        return new ArrayOperand();
-                    } else if (expr.getTag() == Tag.LITERAL) {
+                    } else if (expr.hasTag(Tag.LITERAL)) {
                         Literal literal = (Literal) expr;
 //                        return literal.type.toOperand();
                         literal.type.toOperand().writeToAddress(address);
                     } else {
-                        mainSource.getLog().error(expr.pos, "Literal expected");
+                        Assert.error(expr.getTag());
                         return null;
                     }
                     return address;
                 })
                 .collect(Collectors.toList());
 
-        List<JuaFunction> functions = funcDefs.stream()
+        List<JuaFunction> functions = topTree.funcDefs.stream()
                 .map(fn -> {
                     fn.code = new Code(this, mainSource);
                     fn.accept(fn.code.lower);

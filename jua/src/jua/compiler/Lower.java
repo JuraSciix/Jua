@@ -2,8 +2,6 @@ package jua.compiler;
 
 import jua.compiler.Tree.*;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
 import static jua.compiler.TreeInfo.*;
@@ -15,6 +13,27 @@ public final class Lower extends Translator {
 
     public Lower(ProgramLayout programLayout) {
         this.programLayout = Objects.requireNonNull(programLayout);
+    }
+
+    @Override
+    public void visitCompilationUnit(CompilationUnit tree) {
+        tree.constDefs = translate(tree.constDefs);
+        tree.stats = translate(tree.stats);
+        result = tree;
+    }
+
+    @Override
+    public void visitConstDef(ConstDef tree) {
+        for (ConstDef.Definition def : tree.defs) {
+            def.expr = translate(def.expr);
+
+            Expression inner_expr = stripParens(def.expr);
+            if (inner_expr.hasTag(Tag.LITERAL)) {
+                Literal literal_tree = (Literal) inner_expr;
+                programLayout.constantLiterals.put(def.name.value, literal_tree.type);
+            }
+        }
+        result = tree;
     }
 
     @Override
@@ -159,13 +178,13 @@ public final class Lower extends Translator {
                 
             case SL:
                 if (lhs.isLong() && rhs.isLong()) {
-                    return new LongType(lhs.longValue() >> rhs.longValue());
+                    return new LongType(lhs.longValue() << rhs.longValue());
                 }
                 break;
 
             case SR:
                 if (lhs.isLong() && rhs.isLong()) {
-                    return new LongType(lhs.longValue() << rhs.longValue());
+                    return new LongType(lhs.longValue() >> rhs.longValue());
                 }
                 break;
 

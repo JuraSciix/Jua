@@ -1,6 +1,7 @@
 package jua.compiler;
 
 import jua.compiler.Tree.*;
+import jua.util.Assert;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -27,15 +28,25 @@ public class Check extends Scanner {
     }
 
     @Override
+    public void visitCompilationUnit(CompilationUnit tree) {
+        scan(tree.stats);
+    }
+
+    @Override
     public void visitConstDef(ConstDef tree) {
-        log.error(tree.pos, "constant declaration is not allowed here");
+        for (ConstDef.Definition def : tree.defs) {
+            if (!isLiteral(def.expr)) {
+                log.error(def.expr.pos, "literal expected");
+            }
+        }
     }
 
     @Override
     public void visitFuncDef(FuncDef tree) {
         if (inFunction) {
-            log.error(tree.pos, "function declaration is not allowed here");
-            return;
+//            log.error(tree.pos, "function declaration is not allowed here");
+//            return;
+            Assert.error();
         }
 
         for (FuncDef.Parameter param : tree.params) {

@@ -387,6 +387,8 @@ public abstract class Tree {
 
         @Override
         public void visitCompilationUnit(CompilationUnit tree) {
+            tree.constDefs = translate(tree.constDefs);
+            tree.funcDefs = translate(tree.funcDefs);
             tree.stats = translate(tree.stats);
             result = tree;
         }
