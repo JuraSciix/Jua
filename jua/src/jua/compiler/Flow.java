@@ -41,6 +41,28 @@ public class Flow extends Scanner {
     ScopeState scopeState = new ScopeState() /* root-scope */;
 
     @Override
+    public void visitTernaryOp(TernaryOp tree) {
+        scan(tree.cond);
+        scanScoped(tree.thenexpr, true);
+        scanScoped(tree.elseexpr, true);
+    }
+
+    @Override
+    public void visitBinaryOp(BinaryOp tree) {
+        switch (tree.tag) {
+            case FLOW_AND:
+            case FLOW_OR:
+            case NULLCOALESCE:
+                scan(tree.lhs);
+                scanScoped(tree.rhs, true);
+                break;
+            default:
+                scan(tree.lhs);
+                scan(tree.rhs);
+        }
+    }
+
+    @Override
     public void visitCompilationUnit(CompilationUnit tree) {
         scan(tree.stats);
     }
@@ -57,9 +79,9 @@ public class Flow extends Scanner {
     @Override
     public void visitIf(If tree) {
         scan(tree.cond);
-        ScopeState thenscope = scanScoped(tree.thenbody);
+        ScopeState thenscope = scanScoped(tree.thenbody, false);
         if (tree.elsebody != null) {
-            ScopeState elsescope = scanScoped(tree.elsebody);
+            ScopeState elsescope = scanScoped(tree.elsebody, false);
             HashSet<String> definedvarsintersection = new HashSet<>();
             Collections.intersection(Arrays.asList(thenscope.globalVars, elsescope.globalVars), definedvarsintersection);
             defineVars(definedvarsintersection);
@@ -73,12 +95,12 @@ public class Flow extends Scanner {
     @Override
     public void visitWhileLoop(WhileLoop tree) {
         scan(tree.cond);
-        scanScoped(tree.body);
+        scanScoped(tree.body, false);
     }
 
     @Override
     public void visitDoLoop(DoLoop tree) {
-        ScopeState body_scope = scanScoped(tree.body);
+        ScopeState body_scope = scanScoped(tree.body, false);
         scan(tree.cond);
         if (isLiteralTrue(tree.cond)) {
             scopeState.dead |= body_scope.dead;
@@ -91,7 +113,7 @@ public class Flow extends Scanner {
     public void visitForLoop(ForLoop tree) {
         scan(tree.init);
         scan(tree.cond);
-        ScopeState body_scope = scanScoped(tree.body);
+        ScopeState body_scope = scanScoped(tree.body, false);
         if (isLiteralTrue(tree.cond)) {
             scopeState.dead |= body_scope.dead;
             tree._infinite = !body_scope.maybeInterrupted;
@@ -107,7 +129,7 @@ public class Flow extends Scanner {
         boolean dead = true;
         for (Case case_ : tree.cases) {
             scan(case_.labels);
-            ScopeState case_scope = scanScoped(case_.body);
+            ScopeState case_scope = scanScoped(case_.body, false);
             casesGlobalVars.add(case_scope.globalVars);
             dead &= case_scope.dead;
         }
@@ -170,6 +192,16 @@ public class Flow extends Scanner {
         scan(tree.expr);
     }
 
+    @Override
+    public void visitCompoundAssign(CompoundAssign tree) {
+        scan(tree.var);
+        if (tree.hasTag(Tag.ASG_NULLCOALESCE)) {
+            scanScoped(tree.expr, true);
+        } else {
+            scan(tree.expr);
+        }
+    }
+
     private void defineVar(Name name) {
         scopeState.definedVars.add(name.value);
         if (!scopeState.maybeInterrupted) {
@@ -184,9 +216,10 @@ public class Flow extends Scanner {
         }
     }
 
-    private ScopeState scanScoped(Statement body) {
+    private ScopeState scanScoped(Tree body, boolean initiallyInterrupted) {
         ScopeState newState = new ScopeState();
         newState.parent = scopeState;
+        newState.maybeInterrupted = initiallyInterrupted;
         scopeState = newState;
         try {
             scan(body);
