@@ -105,7 +105,7 @@ public class Items {
             } else {
                 if (type.isLong()) {
                     long lv = type.longValue();
-                    if ((lv >>> 16) == 0L) {
+                    if (-32768L <= lv && lv <= 32767L) {
                         code.addInstruction(new Push((short) lv));
                         return stackItem;
                     }
