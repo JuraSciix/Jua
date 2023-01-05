@@ -23,9 +23,9 @@ public final class TreeInfo {
             case ASG_REM: return Tag.REM;
             case ASG_SL:  return Tag.SL;
             case ASG_SR:  return Tag.SR;
-            case ASG_AND: return Tag.AND;
-            case ASG_OR:  return Tag.OR;
-            case ASG_XOR: return Tag.XOR;
+            case ASG_BIT_AND: return Tag.BIT_AND;
+            case ASG_BIT_OR:  return Tag.BIT_OR;
+            case ASG_BIT_XOR: return Tag.BIT_XOR;
             default: throw new AssertionError(tag);
         }
     }
@@ -130,22 +130,22 @@ public final class TreeInfo {
         switch (tag) {
             case ASSIGN: case ASG_ADD: case ASG_SUB:
             case ASG_MUL: case ASG_DIV: case ASG_REM:
-            case ASG_SL: case ASG_SR: case ASG_AND:
-            case ASG_OR: case ASG_XOR:
+            case ASG_SL: case ASG_SR: case ASG_BIT_AND:
+            case ASG_BIT_OR: case ASG_BIT_XOR:
                 return 1;
-            case NULLCOALESCE:
+            case NULLCOALSC:
                 return 2;
             case TERNARY:
                 return 3;
-            case FLOW_OR:
-                return 4;
-            case FLOW_AND:
-                return 5;
             case OR:
-                return 6;
-            case XOR:
-                return 7;
+                return 4;
             case AND:
+                return 5;
+            case BIT_OR:
+                return 6;
+            case BIT_XOR:
+                return 7;
+            case BIT_AND:
                 return 8;
             case EQ: case NE:
                 return 9;
@@ -158,7 +158,7 @@ public final class TreeInfo {
             case MUL: case DIV: case REM:
                 return 13;
             case POS: case NEG: case NOT:
-            case INVERSE: case PREINC: case PREDEC:
+            case BIT_INV: case PREINC: case PREDEC:
                 return 14;
             case POSTINC: case POSTDEC:
                 return 15;

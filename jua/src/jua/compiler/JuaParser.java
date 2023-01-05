@@ -5,7 +5,6 @@ import jua.compiler.Tokens.TokenType;
 import jua.compiler.Tree.*;
 import jua.util.List;
 
-import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import static jua.compiler.Tokens.TokenType.*;
@@ -365,15 +364,15 @@ public final class JuaParser implements Parser {
         switch (token.type) {
             case AMPEQ: {
                 nextToken();
-                return new CompoundAssign(position, Tag.ASG_AND, expr, parseAssignment());
+                return new CompoundAssign(position, Tag.ASG_BIT_AND, expr, parseAssignment());
             }
             case BAREQ: {
                 nextToken();
-                return new CompoundAssign(position, Tag.ASG_OR, expr, parseAssignment());
+                return new CompoundAssign(position, Tag.ASG_BIT_OR, expr, parseAssignment());
             }
             case CARETEQ: {
                 nextToken();
-                return new CompoundAssign(position, Tag.XOR, expr, parseAssignment());
+                return new CompoundAssign(position, Tag.BIT_XOR, expr, parseAssignment());
             }
             case EQ: {
                 nextToken();
@@ -401,7 +400,7 @@ public final class JuaParser implements Parser {
             }
             case QUESQUESEQ: {
                 nextToken();
-                return new CompoundAssign(position, Tag.ASG_NULLCOALESCE, expr, parseAssignment());
+                return new CompoundAssign(position, Tag.ASG_NULLCOALSC, expr, parseAssignment());
             }
             case SLASHEQ: {
                 nextToken();
@@ -422,7 +421,7 @@ public final class JuaParser implements Parser {
             int position = token.pos;
 
             if (acceptToken(QUESQUES)) {
-                expr = new BinaryOp(position, Tag.NULLCOALESCE, expr, parseTernary());
+                expr = new BinaryOp(position, Tag.NULLCOALSC, expr, parseTernary());
             } else {
                 return expr;
             }
@@ -454,7 +453,7 @@ public final class JuaParser implements Parser {
         int position = token.pos;
 
         while (acceptToken(BARBAR)) {
-            expr = new BinaryOp(position, Tag.FLOW_OR, expr, parseAnd());
+            expr = new BinaryOp(position, Tag.OR, expr, parseAnd());
             position = token.pos;
         }
         return expr;
@@ -467,7 +466,7 @@ public final class JuaParser implements Parser {
             int position = token.pos;
 
             if (acceptToken(AMPAMP)) {
-                expr = new BinaryOp(position, Tag.FLOW_AND, expr, parseEquality());
+                expr = new BinaryOp(position, Tag.AND, expr, parseEquality());
             } else {
                 return expr;
             }
@@ -482,7 +481,7 @@ public final class JuaParser implements Parser {
             int position = token.pos;
 
             if (acceptToken(BAR)) {
-                expr = new BinaryOp(position, Tag.OR, expr, parseBitXor());
+                expr = new BinaryOp(position, Tag.BIT_OR, expr, parseBitXor());
             } else {
                 return expr;
             }
@@ -496,7 +495,7 @@ public final class JuaParser implements Parser {
             int position = token.pos;
 
             if (acceptToken(CARET)) {
-                expr = new BinaryOp(position, Tag.XOR, expr, parseBitAnd());
+                expr = new BinaryOp(position, Tag.BIT_XOR, expr, parseBitAnd());
             } else {
                 return expr;
             }
@@ -510,7 +509,7 @@ public final class JuaParser implements Parser {
             int position = token.pos;
 
             if (acceptToken(AMP)) {
-                expr = new BinaryOp(position, Tag.AND, expr, parseEquality());
+                expr = new BinaryOp(position, Tag.BIT_AND, expr, parseEquality());
             } else {
                 return expr;
             }
@@ -622,7 +621,7 @@ public final class JuaParser implements Parser {
             return new UnaryOp(position, Tag.PREINC, parseUnary());
         }
         if (acceptToken(TILDE)) {
-            return new UnaryOp(position, Tag.INVERSE, parseUnary());
+            return new UnaryOp(position, Tag.BIT_INV, parseUnary());
         }
         return parsePost();
     }

@@ -545,10 +545,10 @@ public final class Gen extends Scanner {
 
     public void visitBinaryOp(BinaryOp tree) {
         switch (tree.tag) {
-            case FLOW_AND:
+            case AND:
                 genFlowAnd(tree);
                 break;
-            case FLOW_OR:
+            case OR:
                 genFlowOr(tree);
                 break;
             case EQ:
@@ -559,7 +559,7 @@ public final class Gen extends Scanner {
             case LE:
                 genCmp(tree);
                 break;
-            case NULLCOALESCE:
+            case NULLCOALSC:
                 genNullCoalescing(tree);
                 break;
             default:
@@ -576,7 +576,7 @@ public final class Gen extends Scanner {
     public void visitCompoundAssign(CompoundAssign tree) {
         Item varitem = genExpr(tree.var);
         varitem.duplicate();
-        if (tree.hasTag(Tag.ASG_NULLCOALESCE)) {
+        if (tree.hasTag(Tag.ASG_NULLCOALSC)) {
             Item a = varitem.load();
             a.duplicate();
             TempItem tmp = items.makeTemp();

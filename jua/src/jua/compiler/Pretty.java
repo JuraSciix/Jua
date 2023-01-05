@@ -272,10 +272,10 @@ public class Pretty extends Scanner {
             case ASG_REM:          operator = " %= ";  break;
             case ASG_SL:           operator = " <<= "; break;
             case ASG_SR:           operator = " >>= "; break;
-            case ASG_AND:          operator = " &= ";  break;
-            case ASG_OR:           operator = " |= ";  break;
-            case ASG_XOR:          operator = " ^= ";  break;
-            case ASG_NULLCOALESCE: operator = " ??= "; break;
+            case ASG_BIT_AND:      operator = " &= ";  break;
+            case ASG_BIT_OR:       operator = " |= ";  break;
+            case ASG_BIT_XOR:      operator = " ^= ";  break;
+            case ASG_NULLCOALSC: operator = " ??= "; break;
             default: throw illegalTagException(tree.tag);
         }
 
@@ -297,25 +297,25 @@ public class Pretty extends Scanner {
     public void visitBinaryOp(BinaryOp tree) {
         String operator;
         switch (tree.tag) {
-            case NULLCOALESCE: operator = " ?? "; break;
-            case FLOW_OR:      operator = " || "; break;
-            case FLOW_AND:     operator = " && "; break;
-            case EQ:           operator = " == "; break;
-            case NE:           operator = " != "; break;
-            case GT:           operator = " > ";  break;
-            case GE:           operator = " >= "; break;
-            case LT:           operator = " < ";  break;
-            case LE:           operator = " <= "; break;
-            case ADD:          operator = " + ";  break;
-            case SUB:          operator = " - ";  break;
-            case MUL:          operator = " * ";  break;
-            case DIV:          operator = " / ";  break;
-            case REM:          operator = " % ";  break;
-            case SL:           operator = " << "; break;
-            case SR:           operator = " >> "; break;
-            case AND:          operator = " & ";  break;
-            case OR:           operator = " | ";  break;
-            case XOR:          operator = " ^ ";  break;
+            case NULLCOALSC: operator = " ?? "; break;
+            case OR:      operator = " || "; break;
+            case AND:     operator = " && "; break;
+            case EQ:      operator = " == "; break;
+            case NE:      operator = " != "; break;
+            case GT:      operator = " > ";  break;
+            case GE:      operator = " >= "; break;
+            case LT:      operator = " < ";  break;
+            case LE:      operator = " <= "; break;
+            case ADD:     operator = " + ";  break;
+            case SUB:     operator = " - ";  break;
+            case MUL:     operator = " * ";  break;
+            case DIV:     operator = " / ";  break;
+            case REM:     operator = " % ";  break;
+            case SL:      operator = " << "; break;
+            case SR:      operator = " >> "; break;
+            case BIT_AND: operator = " & ";  break;
+            case BIT_OR:  operator = " | ";  break;
+            case BIT_XOR: operator = " ^ ";  break;
             default: throw illegalTagException(tree.tag);
         }
 
@@ -331,7 +331,7 @@ public class Pretty extends Scanner {
             case NEG:                   operator = "-";  break;
             case POS:                   operator = "+";  break;
             case NOT:                   operator = "!";  break;
-            case INVERSE:               operator = "~";  break;
+            case BIT_INV:               operator = "~";  break;
             case PREINC: case POSTINC:  operator = "++"; break;
             case PREDEC: case POSTDEC:  operator = "--"; break;
             default: throw illegalTagException(tree.tag);

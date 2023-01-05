@@ -1,3 +1,7 @@
-x = null;
-x ??= (y = 1);
+x = true;
+
+while x {
+    y = 10;
+}
+
 println(y);

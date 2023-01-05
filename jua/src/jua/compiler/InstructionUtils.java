@@ -16,9 +16,9 @@ public class InstructionUtils {
             case REM: return rem;
             case SL:  return shl;
             case SR:  return shr;
-            case AND: return and;
-            case OR:  return or;
-            case XOR: return xor;
+            case BIT_AND: return and;
+            case BIT_OR:  return or;
+            case BIT_XOR: return xor;
             default:  throw new AssertionError(tag);
         }
     }
@@ -27,7 +27,7 @@ public class InstructionUtils {
         switch (tag) {
             case NEG:     return neg;
             case POS:     return pos;
-            case INVERSE: return not;
+            case BIT_INV: return not;
             case POSTINC: case PREINC: return inc;
             case POSTDEC: case PREDEC: return dec;
             default: throw new AssertionError(tag);

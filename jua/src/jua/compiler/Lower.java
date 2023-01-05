@@ -82,8 +82,8 @@ public final class Lower extends Translator {
 
             case ADD: case SUB: case MUL:
             case DIV: case REM: case SL:
-            case SR: case AND: case OR:
-            case XOR: case EQ: case NE:
+            case SR: case BIT_AND: case BIT_OR:
+            case BIT_XOR: case EQ: case NE:
             case GT: case GE: case LT:
             case LE:
                 Expression innerLhs = stripParens(tree.lhs);
@@ -103,7 +103,7 @@ public final class Lower extends Translator {
                 }
                 break;
 
-            case NULLCOALESCE:
+            case NULLCOALSC:
                 result = isLiteralNull(tree.lhs) ? tree.rhs : tree;
                 return;
         }
@@ -188,7 +188,7 @@ public final class Lower extends Translator {
                 }
                 break;
 
-            case AND:
+            case BIT_AND:
                 if (lhs.isLong() && rhs.isLong()) {
                     return new LongType(lhs.longValue() & rhs.longValue());
                 }
@@ -197,7 +197,7 @@ public final class Lower extends Translator {
                 }
                 break;
 
-            case OR:
+            case BIT_OR:
                 if (lhs.isLong() && rhs.isLong()) {
                     return new LongType(lhs.longValue() | rhs.longValue());
                 }
@@ -206,7 +206,7 @@ public final class Lower extends Translator {
                 }
                 break;
 
-            case XOR:
+            case BIT_XOR:
                 if (lhs.isLong() && rhs.isLong()) {
                     return new LongType(lhs.longValue() ^ rhs.longValue());
                 }
@@ -274,7 +274,7 @@ public final class Lower extends Translator {
             case NOT:
                 return ofBoolean(!type.booleanValue());
 
-            case INVERSE:
+            case BIT_INV:
                 if (type.isLong()) {
                     return new LongType(~type.longValue());
                 }

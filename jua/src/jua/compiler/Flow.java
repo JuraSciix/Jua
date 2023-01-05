@@ -18,43 +18,47 @@ import static jua.compiler.TreeInfo.stripParens;
  */
 public class Flow extends Scanner {
 
-    /**
-     * Скоуп - контекст тела цикла, условия, кейза
-     */
-    static class ScopeState {
+    private static class Scope {
 
-        ScopeState parent;
+        final Scope parent;
 
         /** Явно определенные досягаемые переменные */
-        final HashSet<String> definedVars = new HashSet<>();
+        final HashSet<String> aVars = new HashSet<>();
 
         /** Переменные, которые гарантированно будут доступны во внешнем скоупе */
-        final HashSet<String> globalVars = new HashSet<>();
+        final HashSet<String> bVars = new HashSet<>();
 
         /** Есть вероятность, что анализируемая часть дерева не выполнится */
-        boolean maybeInterrupted = false;
+        boolean mustBeExecuted = true;
+
+        /** Присутствуют ли в цикле операторы {@code break, continue, fallthrough} */
+        boolean hasBreaks = false;
 
         /** Код в этом участке никогда не выполнится */
         boolean dead = false;
+
+        Scope(Scope parent) {
+            this.parent = parent;
+        }
     }
 
-    ScopeState scopeState = new ScopeState() /* root-scope */;
+    Scope curScope = new Scope(null);
 
     @Override
     public void visitTernaryOp(TernaryOp tree) {
         scan(tree.cond);
-        scanScoped(tree.thenexpr, true);
-        scanScoped(tree.elseexpr, true);
+        scanScoped(tree.thenexpr, false);
+        scanScoped(tree.elseexpr, false);
     }
 
     @Override
     public void visitBinaryOp(BinaryOp tree) {
         switch (tree.tag) {
-            case FLOW_AND:
-            case FLOW_OR:
-            case NULLCOALESCE:
+            case AND:
+            case OR:
+            case NULLCOALSC:
                 scan(tree.lhs);
-                scanScoped(tree.rhs, true);
+                scanScoped(tree.rhs, false);
                 break;
             default:
                 scan(tree.lhs);
@@ -64,6 +68,8 @@ public class Flow extends Scanner {
 
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
+        // Анализировать функции и константы не нужно.
+        // Функции анализируются отдельно
         scan(tree.stats);
     }
 
@@ -71,7 +77,8 @@ public class Flow extends Scanner {
     public void visitFuncDef(FuncDef tree) {
         for (FuncDef.Parameter param : tree.params) {
             // На этом этапе нет смысла добавлять переменные в globalVars
-            scopeState.definedVars.add(param.name.value);
+            curScope.aVars.add(param.name.value);
+            scan(param.expr);
         }
         scan(tree.body);
     }
@@ -79,47 +86,57 @@ public class Flow extends Scanner {
     @Override
     public void visitIf(If tree) {
         scan(tree.cond);
-        ScopeState thenscope = scanScoped(tree.thenbody, false);
+        Scope thenScope = scanScoped(tree.thenbody);
+        curScope.hasBreaks |= thenScope.hasBreaks;
+        curScope.mustBeExecuted &= thenScope.mustBeExecuted;
         if (tree.elsebody != null) {
-            ScopeState elsescope = scanScoped(tree.elsebody, false);
-            HashSet<String> definedvarsintersection = new HashSet<>();
-            Collections.intersection(Arrays.asList(thenscope.globalVars, elsescope.globalVars), definedvarsintersection);
-            defineVars(definedvarsintersection);
-            scopeState.maybeInterrupted |= thenscope.maybeInterrupted || elsescope.maybeInterrupted;
-            scopeState.dead |= thenscope.dead && elsescope.dead;
-        } else {
-            scopeState.maybeInterrupted |= thenscope.maybeInterrupted;
+            Scope elseScope = scanScoped(tree.elsebody);
+            HashSet<String> outVisibleVars = new HashSet<>();
+            Collections.intersection(
+                    Arrays.asList(thenScope.bVars, elseScope.bVars),
+                    outVisibleVars
+            );
+            defineVars(outVisibleVars);
+            curScope.hasBreaks |= elseScope.hasBreaks;
+            curScope.mustBeExecuted &= elseScope.mustBeExecuted;
+            curScope.dead |= thenScope.dead && elseScope.dead;
         }
     }
 
     @Override
     public void visitWhileLoop(WhileLoop tree) {
         scan(tree.cond);
-        scanScoped(tree.body, false);
+        scanScoped(tree.body);
     }
 
     @Override
     public void visitDoLoop(DoLoop tree) {
-        ScopeState body_scope = scanScoped(tree.body, false);
+        Scope bodyScope = scanScoped(tree.body, true);
+        defineVars(bodyScope.bVars);
+        curScope.dead |= bodyScope.dead;
+        curScope.mustBeExecuted &= !bodyScope.dead;
         scan(tree.cond);
-        if (isLiteralTrue(tree.cond)) {
-            scopeState.dead |= body_scope.dead;
-            tree._infinite = !body_scope.maybeInterrupted;
-        }
-        defineVars(body_scope.globalVars);
+
+        tree._infinite = isLiteralTrue(tree.cond) && !bodyScope.hasBreaks;
     }
 
     @Override
     public void visitForLoop(ForLoop tree) {
         scan(tree.init);
         scan(tree.cond);
-        ScopeState body_scope = scanScoped(tree.body, false);
-        if (isLiteralTrue(tree.cond)) {
-            scopeState.dead |= body_scope.dead;
-            tree._infinite = !body_scope.maybeInterrupted;
-            defineVars(body_scope.globalVars);
+        Scope loopScope = scanScoped(tree.body);
+
+        boolean isCondTrue = (tree.cond == null) || isLiteralTrue(tree.cond);
+
+        if (isCondTrue) {
+            defineVars(loopScope.bVars);
+            curScope.dead |= loopScope.dead;
+            curScope.mustBeExecuted &= !loopScope.dead;
         }
+
         scan(tree.step);
+
+        tree._infinite = isCondTrue && !loopScope.hasBreaks;
     }
 
     @Override
@@ -129,8 +146,8 @@ public class Flow extends Scanner {
         boolean dead = true;
         for (Case case_ : tree.cases) {
             scan(case_.labels);
-            ScopeState case_scope = scanScoped(case_.body, false);
-            casesGlobalVars.add(case_scope.globalVars);
+            Scope case_scope = scanScoped(case_.body, false);
+            casesGlobalVars.add(case_scope.bVars);
             dead &= case_scope.dead;
         }
         boolean hasDefault = tree.cases.stream().anyMatch(case_ -> case_.labels == null);
@@ -139,7 +156,7 @@ public class Flow extends Scanner {
             Collections.intersection(casesGlobalVars, definedvarsintersection);
             defineVars(definedvarsintersection);
         }
-        scopeState.dead |= dead;
+        curScope.dead |= dead;
     }
 
     @Override
@@ -149,30 +166,30 @@ public class Flow extends Scanner {
 
     @Override
     public void visitBreak(Break tree) {
-        scopeState.maybeInterrupted = true;
+        curScope.hasBreaks = true;
     }
 
     @Override
     public void visitContinue(Continue tree) {
-        scopeState.maybeInterrupted = true;
+        curScope.hasBreaks = true;
     }
 
     @Override
     public void visitFallthrough(Fallthrough tree) {
-        scopeState.maybeInterrupted = true;
+        curScope.hasBreaks = true;
     }
 
     @Override
     public void visitReturn(Return tree) {
         scan(tree.expr);
-        scopeState.dead = true;
+        curScope.dead = true;
     }
 
     @Override
     public void visitVariable(Var tree) {
-        Name name = tree.name;
-        for (ScopeState scope = scopeState; scope != null; scope = scope.parent) {
-            if (scope.definedVars.contains(name.value)) {
+        String nameString = tree.name.value;
+        for (Scope scope = curScope; scope != null; scope = scope.parent) {
+            if (scope.aVars.contains(nameString)) {
                 tree._defined = true;
                 break;
             }
@@ -181,52 +198,55 @@ public class Flow extends Scanner {
 
     @Override
     public void visitAssign(Assign tree) {
-        Expression innerVar = stripParens(tree.var);
+        Expression inner_var = stripParens(tree.var);
 
-        if (innerVar.hasTag(Tag.VARIABLE)) {
-            Var varTree = (Var) innerVar;
+        if (inner_var.hasTag(Tag.VARIABLE)) {
+            Var varTree = (Var) inner_var;
             defineVar(varTree.name);
+        } else {
+            scan(tree.var);
         }
-
-        scan(tree.var);
         scan(tree.expr);
     }
 
     @Override
     public void visitCompoundAssign(CompoundAssign tree) {
         scan(tree.var);
-        if (tree.hasTag(Tag.ASG_NULLCOALESCE)) {
-            scanScoped(tree.expr, true);
+        if (tree.hasTag(Tag.ASG_NULLCOALSC)) {
+            scanScoped(tree.expr, false);
         } else {
             scan(tree.expr);
         }
     }
 
     private void defineVar(Name name) {
-        scopeState.definedVars.add(name.value);
-        if (!scopeState.maybeInterrupted) {
-            scopeState.globalVars.add(name.value);
+        curScope.aVars.add(name.value);
+        if (curScope.mustBeExecuted) {
+            curScope.bVars.add(name.value);
         }
     }
 
     private void defineVars(HashSet<String> names) {
-        scopeState.definedVars.addAll(names);
-        if (!scopeState.maybeInterrupted) {
-            scopeState.globalVars.addAll(names);
+        curScope.aVars.addAll(names);
+        if (curScope.mustBeExecuted) {
+            curScope.bVars.addAll(names);
         }
     }
 
-    private ScopeState scanScoped(Tree body, boolean initiallyInterrupted) {
-        ScopeState newState = new ScopeState();
-        newState.parent = scopeState;
-        newState.maybeInterrupted = initiallyInterrupted;
-        scopeState = newState;
+    private Scope scanScoped(Tree tree) {
+        return scanScoped(tree, false);
+    }
+
+    private Scope scanScoped(Tree tree, boolean mustBeExecuted) {
+        Scope newScope = new Scope(curScope);
+        newScope.mustBeExecuted = mustBeExecuted;
+        curScope = newScope;
         try {
-            scan(body);
+            scan(tree);
         } finally {
-            Assert.check(scopeState == newState);
-            scopeState = newState.parent;
+            Assert.check(curScope == newScope);
+            curScope = newScope.parent;
         }
-        return newState;
+        return newScope;
     }
 }
