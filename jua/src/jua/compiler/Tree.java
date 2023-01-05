@@ -572,6 +572,13 @@ public abstract class Tree {
         return getTag() == tag;
     }
 
+    @Override
+    public String toString() {
+        StringWriter writer = new StringWriter();
+        accept(new Pretty(new PrintWriter(writer)));
+        return writer.toString();
+    }
+
     public static class Name {
 
         public final String value;
