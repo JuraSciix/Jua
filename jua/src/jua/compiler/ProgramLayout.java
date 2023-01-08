@@ -8,6 +8,7 @@ import jua.interpreter.InterpreterThread;
 import jua.interpreter.instruction.Getconst;
 import jua.runtime.JuaFunction;
 import jua.runtime.JuaNativeExecutor;
+import jua.runtime.StackTraceElement;
 import jua.runtime.VirtualMachine;
 import jua.runtime.heap.MapHeap;
 import jua.runtime.heap.StringHeap;
@@ -100,28 +101,34 @@ public final class ProgramLayout {
                     return true;
                 }),
 
-                func("get_stack_trace", 0, 0, (thread, args, argc, returnAddress) -> {
-                    MapHeap stackTraceElements = new MapHeap();
+                func("get_stack_trace", 0, 1, (thread, args, argc, returnAddress) -> {
+                    MapHeap stackTrace_jua = new MapHeap();
 
                     Address tmp1 = new Address();
                     Address tmp2 = new Address();
 
-                    for (InterpreterFrame frame = thread.currentFrame(); frame != null; frame = frame.callingFrame()) {
-                        MapHeap stackTraceElement = new MapHeap();
-                        tmp1.set(new StringHeap("file"));
-                        tmp2.set(new StringHeap(frame.owningFunction().filename()));
-                        stackTraceElement.put(tmp1, tmp2);
-                        tmp1.set(new StringHeap("line"));
-                        tmp2.set(new StringHeap().append(frame.currentLineNumber()));
-                        stackTraceElement.put(tmp1, tmp2);
-                        tmp1.set(new StringHeap("function"));
-                        tmp2.set(new StringHeap(frame.owningFunction().name()));
-                        stackTraceElement.put(tmp1, tmp2);
-                        tmp1.set(stackTraceElement);
-                        stackTraceElements.push(tmp1);
+                    int limit = 0;
+                    if (argc == 1) {
+                        args[0].longVal(args[0]);
+                        limit = (int) args[0].getLong();
                     }
 
-                    returnAddress.set(stackTraceElements);
+                    for (StackTraceElement element : thread.getStackTrace(limit)) {
+                        MapHeap element_jua = new MapHeap();
+                        tmp1.set(new StringHeap("function"));
+                        tmp2.set(new StringHeap(element.getFunction()));
+                        element_jua.put(tmp1, tmp2);
+                        tmp1.set(new StringHeap("file"));
+                        tmp2.set(new StringHeap(element.getFileName()));
+                        element_jua.put(tmp1, tmp2);
+                        tmp1.set(new StringHeap("line"));
+                        tmp2.set(new StringHeap().append(element.getLineNumber()));
+                        element_jua.put(tmp1, tmp2);
+                        tmp1.set(element_jua);
+                        stackTrace_jua.push(tmp1);
+                    }
+
+                    returnAddress.set(stackTrace_jua);
                     return true;
                 }),
 
@@ -137,7 +144,7 @@ public final class ProgramLayout {
                         return false;
                     }
                     Address[] _args;
-                    if (args[1].isValid()) {
+                    if (argc == 2 && args[1].isValid()) {
                         _args = new Address[args[1].getMapHeap().size()];
                         int i = 0;
                         for (Address a : args[1].getMapHeap()) {

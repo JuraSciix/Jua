@@ -1,7 +1,20 @@
-x = true;
+fn test(limit = 0) = print_stack_trace(limit);
 
-while x {
-    y = 10;
+invoke("test", [1]);
+invoke("test");
+
+fn print_stack_trace(limit = 0) {
+    stack_trace = get_stack_trace(limit);
+
+    if limit == 0
+        println("stack trace");
+    else
+        println("stack trace limited to " + limit + " entries");
+
+    for i = 0; i < length(stack_trace); i++ {
+        file = stack_trace[i].file;
+        line = stack_trace[i].line;
+        func = stack_trace[i].function;
+        println('\t#' + i + ' ' + func + '(' + file + ':' + line + ')');
+    }
 }
-
-println(y);

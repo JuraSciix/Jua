@@ -3,13 +3,17 @@ package jua.interpreter;
 import jua.runtime.JuaEnvironment;
 import jua.runtime.JuaFunction;
 import jua.runtime.RuntimeErrorException;
+import jua.runtime.StackTraceElement;
 import jua.runtime.code.CodeSegment;
 import jua.runtime.heap.*;
 
+import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Objects;
 
 public final class InterpreterThread {
 
+    @Deprecated
     public interface Messages {
         byte VIRGIN = 0;
         byte RUNNING = 1;
@@ -19,23 +23,12 @@ public final class InterpreterThread {
         byte HALT = 5;
     }
 
-    @Deprecated
-    public static final int MSG_CREATED = Messages.VIRGIN;
-
-    @Deprecated
-    public static final byte MSG_RUNNING = Messages.RUNNING;
-
-    @Deprecated
-    public static final byte MSG_CALLING = Messages.CALL;
-
-    @Deprecated
-    public static final byte MSG_POPPING = Messages.RETURN;
-
-    @Deprecated
-    public static final byte MSG_CRASHED = Messages.FALLEN;
-
-    @Deprecated
-    public static final byte MSG_HALTED = Messages.HALT;
+    public static final byte MSG_CREATED = 0;
+    public static final byte MSG_RUNNING = 1;
+    public static final byte MSG_CALLING = 2;
+    public static final byte MSG_POPPING = 3;
+    public static final byte MSG_CRASHED = 4;
+    public static final byte MSG_HALTED  = 5;
 
     private static final ThreadLocal<InterpreterThread> thread = new ThreadLocal<>();
 
@@ -105,6 +98,7 @@ public final class InterpreterThread {
 
     private final Address returnAddress = new Address();
 
+    @Deprecated
     public InterpreterFrame currentFrame() {
         return current_frame;
     }
@@ -222,6 +216,7 @@ public final class InterpreterThread {
         set_frame_force(newCP);
     }
 
+    @Deprecated
     public void set_frame_force(InterpreterFrame frame) {
         current_frame = frame;
     }
@@ -264,6 +259,47 @@ public final class InterpreterThread {
         return true;
     }
 
+
+    public StackTraceElement[] getStackTrace() {
+        return getStackTrace(0);
+    }
+
+    public StackTraceElement[] getStackTrace(int limit) {
+        if (limit < 0) {
+            throw new IllegalArgumentException("Limit must be non negative");
+        }
+
+        if (limit == 0) limit = 1024;
+
+        ArrayList<StackTraceElement> stackTrace = new ArrayList<>(limit);
+
+        InterpreterFrame frame = current_frame;
+        int i = 0;
+
+        while (frame != null && i < limit) {
+            stackTrace.add(new StackTraceElement(
+                    frame.owningFunction().name(),
+                    frame.owningFunction().filename(),
+                    frame.currentLineNumber()
+            ));
+            frame = frame.callingFrame();
+            i++;
+        }
+
+        return stackTrace.toArray(new StackTraceElement[0]);
+    }
+
+    public void printStackTrace() {
+        printStackTrace(System.err);
+    }
+
+    public void printStackTrace(PrintStream output) {
+        output.printf("Stack trace for thread \"%s\" %n", javaThread.getName());
+        for (StackTraceElement element : getStackTrace()) {
+            output.println("\t" + element);
+        }
+    }
+
     public void run() {
         while (true) {
 
@@ -271,15 +307,7 @@ public final class InterpreterThread {
 
                 case MSG_CRASHED: {
                     // todo: Сделать нормальный вывод ошибок
-                    {
-                        InterpreterFrame rf = current_frame;
-                        System.err.printf("Stack trace for thread %s%n", javaThread.getName());
-                        while (current_frame != null) {
-                            System.err.printf("\t%s(%s:%d) %n", currentFunction(), current_location(), current_line_number());
-                            current_frame = current_frame.callingFrame();
-                        }
-                        current_frame = rf;
-                    }
+                    printStackTrace();
                     throw new RuntimeErrorException(error_msg);
                 }
 
@@ -376,15 +404,7 @@ public final class InterpreterThread {
 
                     case MSG_CRASHED: {
                         // todo: Сделать нормальный вывод ошибок
-                        {
-                            InterpreterFrame rf = current_frame;
-                            System.err.printf("Stack trace for thread %s%n", javaThread.getName());
-                            while (current_frame != null) {
-                                System.err.printf("\t%s(%s:%d) %n", currentFunction(), current_location(), current_line_number());
-                                current_frame = current_frame.callingFrame();
-                            }
-                            current_frame = rf;
-                        }
+                        printStackTrace();
                         throw new RuntimeErrorException(error_msg);
                     }
 
@@ -401,14 +421,17 @@ public final class InterpreterThread {
         }
     }
 
+    @Deprecated
     public String current_location() {
         return current_frame.owningFunction().filename();
     }
 
+    @Deprecated
     public int current_line_number() {
         return currentFrame().currentLineNumber();
     }
 
+    @Deprecated
     public String currentFunction() {
         return currentFrame().owningFunction().name();
     }
@@ -423,6 +446,6 @@ public final class InterpreterThread {
     }
 
     public boolean isError() {
-        return msg == Messages.FALLEN;
+        return msg == MSG_CRASHED;
     }
 }
