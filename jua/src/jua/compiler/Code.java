@@ -99,49 +99,15 @@ public final class Code {
     }
 
     public void setInstruction(int cp, Instruction instruction) {
-        if (USE_KOSTYL && cp == -1) return; // todo: исправить костыль
         instructions.set(cp, instruction);
     }
-
-    @Deprecated
-    static final boolean USE_KOSTYL = false; // todo: вырезать эту переменную
 
     public int addInstruction(Instruction instr) {
         return addInstruction0(instr);
     }
 
     private int addInstruction0(Instruction instruction) {
-        if (USE_KOSTYL && !isAlive()) return -1; // todo: исправить костыль
         int pc = instructions.size();
-        // todo: Exception in thread "main" java.lang.AssertionError: 4
-        //	at jua.compiler.Code.getJump(Code.java:110)
-        //	at jua.compiler.MinorGen.resolveJump(MinorGen.java:1669)
-        //	at jua.compiler.MinorGen.resolveJump(MinorGen.java:1665)
-        //	at jua.compiler.MinorGen.genLoop(MinorGen.java:803)
-        //	at jua.compiler.MinorGen.visitFor(MinorGen.java:325)
-        //	at jua.compiler.Tree$ForLoop.accept(Tree.java:749)
-        //	at jua.compiler.Tree$Scanner.scan(Tree.java:204)
-        //	at jua.compiler.Tree$Scanner.visitBlock(Tree.java:231)
-        //	at jua.compiler.Tree$Block.accept(Tree.java:683)
-        //	at jua.compiler.MinorGen.genBranch(MinorGen.java:1678)
-        //	at jua.compiler.MinorGen.generateBranch(MinorGen.java:1187)
-        //	at jua.compiler.MinorGen.visitFuncDef(MinorGen.java:438)
-        //	at jua.compiler.Tree$FuncDef.accept(Tree.java:667)
-        //	at jua.compiler.ProgramLayout.lambda$buildProgram$10(ProgramLayout.java:98)
-        //	at java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:193)
-        //	at java.util.Spliterators$ArraySpliterator.forEachRemaining(Spliterators.java:948)
-        //	at java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:482)
-        //	at java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:472)
-        //	at java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:546)
-        //	at java.util.stream.AbstractPipeline.evaluateToArrayNode(AbstractPipeline.java:260)
-        //	at java.util.stream.ReferencePipeline.toArray(ReferencePipeline.java:505)
-        //	at jua.compiler.ProgramLayout.buildProgram(ProgramLayout.java:101)
-        //	at jua.compiler.JuaCompiler.compileFile(JuaCompiler.java:28)
-        //	at jua.Main.main(Main.java:29)
-        //Caused by: java.lang.ClassCastException: jua.interpreter.instruction.Vinc cannot be cast to jua.interpreter.instruction.JumpInstruction
-        //	at jua.compiler.Code.getJump(Code.java:108)
-        //	... 23 more
-        //
         this.instructions.add(instruction);
         adjustStack(instruction.stackAdjustment());
         return pc;
@@ -274,7 +240,6 @@ public final class Code {
     }
 
     public void resolveJump(int opcodePC, int destPC) {
-        if (USE_KOSTYL && opcodePC == -1) return; // todo: исправить костыль
         getJump(opcodePC).offset = destPC - opcodePC;
     }
 

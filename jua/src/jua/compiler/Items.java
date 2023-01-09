@@ -129,19 +129,16 @@ public class Items {
      */
     class LocalItem extends Item {
 
-        final int pos;
         final Tree.Name name;
         final boolean definitelyExists;
 
-        LocalItem(int pos, Tree.Name name, boolean definitelyExists) {
-            this.pos = pos;
+        LocalItem(Tree.Name name, boolean definitelyExists) {
             this.name = name;
             this.definitelyExists = definitelyExists;
         }
 
         @Override
         Item load() {
-            code.putPos(pos);
             int id = code.resolveLocal(name.value);
             code.addInstruction(definitelyExists ? new Vloadq(id) : new Vload(id));
             return stackItem;
@@ -182,15 +179,9 @@ public class Items {
      */
     class AccessItem extends Item {
 
-        final int pos;
-
-        AccessItem(int pos) {
-            this.pos = pos;
-        }
 
         @Override
         Item load() {
-            code.putPos(pos);
             code.addInstruction(aload);
             return stackItem;
         }
@@ -221,25 +212,21 @@ public class Items {
      */
     class AssignItem extends Item {
 
-        final int pos;
         final Item var;
 
-        AssignItem(int pos, Item var) {
-            this.pos = pos;
+        AssignItem(Item var) {
             this.var = var;
         }
 
         @Override
         Item load() {
             var.stash();
-            code.putPos(pos);
             var.store();
             return stackItem;
         }
 
         @Override
         void drop() {
-            code.putPos(pos);
             var.store();
         }
 
@@ -293,7 +280,6 @@ public class Items {
         }
 
         CondItem negate() {
-            if (Code.USE_KOSTYL && opcodePC == -1) return this; // todo: исправить костыль
             code.setInstruction(opcodePC, code.getJump(opcodePC).negate());
             CondItem condItem = new CondItem(opcodePC, falsejumps, truejumps);
             condItem.truejumps.removeInt(0);
@@ -319,25 +305,21 @@ public class Items {
 
     class CallItem extends Item {
 
-        final int pos;
         final int index, nargs;
 
-        CallItem(int pos, int index, int nargs) {
-            this.pos = pos;
+        CallItem(int index, int nargs) {
             this.index = index;
             this.nargs = nargs;
         }
 
         @Override
         Item load() {
-            code.putPos(pos);
             code.addInstruction(new Call((short) index, (byte) nargs));
             return stackItem;
         }
 
         @Override
         void drop() {
-            code.putPos(pos);
             code.addInstruction(new CallPop((short) index, (byte) nargs));
             code.addInstruction(pop);
         }
@@ -381,16 +363,16 @@ public class Items {
         return new LiteralItem(type);
     }
 
-    LocalItem makeLocal(int pos, Tree.Name name, boolean definitelyExists) { // todo: Передавать номер переменной вместо Tree.Name
-        return new LocalItem(pos, name, definitelyExists);
+    LocalItem makeLocal(Tree.Name name, boolean definitelyExists) { // todo: Передавать номер переменной вместо Tree.Name
+        return new LocalItem(name, definitelyExists);
     }
 
-    AccessItem makeAccess(int pos) {
-        return new AccessItem(pos);
+    AccessItem makeAccess() {
+        return new AccessItem();
     }
 
-    AssignItem makeAssign(int pos, Item var) {
-        return new AssignItem(pos, var);
+    AssignItem makeAssign(Item var) {
+        return new AssignItem(var);
     }
 
     CondItem makeCond(int opcodePC) {
@@ -401,8 +383,8 @@ public class Items {
         return new CondItem(opcodePC, truejumps, falsejumps);
     }
 
-    CallItem makeCall(int pos, int index, int nargs) {
-        return new CallItem(pos, index, nargs);
+    CallItem makeCall(int index, int nargs) {
+        return new CallItem(index, nargs);
     }
 
     TempItem makeTemp() {

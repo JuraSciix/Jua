@@ -72,7 +72,8 @@ public final class Gen extends Scanner {
     public void visitArrayAccess(ArrayAccess tree) {
         genExpr(tree.expr).load();
         genExpr(tree.index).load();
-        result = items.makeAccess(tree.pos);
+        code.putPos(tree.pos);
+        result = items.makeAccess();
     }
 
     @Override
@@ -94,7 +95,8 @@ public final class Gen extends Scanner {
                 genExpr(entry.key).load();
             }
             genExpr(entry.value).load();
-            items.makeAccess(entry.pos).store();
+            code.putPos(entry.pos);
+            items.makeAccess().store();
         }
         return item;
     }
@@ -246,7 +248,8 @@ public final class Gen extends Scanner {
         } else {
             int fn_idx = programLayout.tryFindFunc(callee);
             visitInvocationArgs(tree.args);
-            result = items.makeCall(tree.pos, (short) fn_idx, (byte) tree.args.count());
+            code.putPos(tree.pos);
+            result = items.makeCall(fn_idx, tree.args.count());
         }
     }
 
@@ -376,7 +379,8 @@ public final class Gen extends Scanner {
             case VARIABLE:
                 Item varitem = genExpr(tree.var);
                 genExpr(tree.expr).load();
-                result = items.makeAssign(tree.pos, varitem);
+                code.putPos(tree.pos);
+                result = items.makeAssign(varitem);
                 break;
 
             default:
@@ -445,7 +449,8 @@ public final class Gen extends Scanner {
             code.addInstruction(new Getconst(programLayout.tryFindConst(name)));
             result = items.makeStack();
         } else {
-            result = items.makeLocal(tree.pos, name, tree._defined);
+            code.putPos(tree.pos);
+            result = items.makeLocal(name, tree._defined);
         }
     }
 
@@ -453,7 +458,8 @@ public final class Gen extends Scanner {
     public void visitMemberAccess(MemberAccess tree) {
         genExpr(tree.expr).load();
         emitPushString(tree.member.value);
-        result = items.makeAccess(tree.pos);
+        code.putPos(tree.pos);
+        result = items.makeAccess();
     }
 
     @Override
@@ -597,7 +603,8 @@ public final class Gen extends Scanner {
             varitem.load();
             genExpr(tree.expr).load();
             code.addInstruction(fromBinaryAsgOpTag(tree.tag));
-            result = items.makeAssign(tree.pos, varitem);
+            code.putPos(tree.pos);
+            result = items.makeAssign(varitem);
         }
     }
 
@@ -662,7 +669,8 @@ public final class Gen extends Scanner {
                             } else {
                                 code.putPos(tree.pos);
                                 code.addInstruction(fromUnaryOpTag(tree.tag));
-                                items.makeAssign(tree.pos, varitem).load();
+                                code.putPos(tree.pos);
+                                items.makeAssign(varitem).load();
                             }
                             return items.makeStack();
                         }
@@ -671,7 +679,8 @@ public final class Gen extends Scanner {
                         void drop() {
                             code.putPos(tree.pos);
                             code.addInstruction(fromUnaryOpTag(tree.tag));
-                            items.makeAssign(tree.pos, varitem).drop();
+                            code.putPos(tree.pos);
+                            items.makeAssign(varitem).drop();
                         }
                     };
                 }
@@ -708,7 +717,6 @@ public final class Gen extends Scanner {
     Item result;
 
     Item genExpr(Expression tree) {
-        if (Code.USE_KOSTYL && !code.isAlive()) return items.makeStack();
         Item prevItem = result;
         try {
             tree.accept(this);
