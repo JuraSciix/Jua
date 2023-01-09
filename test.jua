@@ -1,1 +1,1 @@
-return b = (a = b);
+return b = (a = true);

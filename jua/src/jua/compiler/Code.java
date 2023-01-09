@@ -20,47 +20,28 @@ import java.util.*;
 
 public final class Code {
 
-    final List<Instruction> instructions = new ArrayList<>();
+    private final ArrayList<Instruction> instructions = new ArrayList<>();
 
-    final Short2IntSortedMap lineTable = new Short2IntRBTreeMap();
+    private final Short2IntRBTreeMap lineTable = new Short2IntRBTreeMap();
 
-    final Object2IntMap<String> localNames = new Object2IntLinkedOpenHashMap<>();
+    private final Object2IntLinkedOpenHashMap<String> localNames = new Object2IntLinkedOpenHashMap<>();
 
-    final ConstantPoolWriter constantPoolWriter = new ConstantPoolWriter();
+    private final ConstantPoolWriter constantPoolWriter = new ConstantPoolWriter();
 
-    int nstack = 0;
+    private int nstack = 0;
 
-    int nlocals = 0;
+    private int nlocals = 0;
 
-    int current_nstack = 0;
+    private int current_nstack = 0;
 
-    int current_lineNumber = 0;
+    private int current_lineNumber = 0;
 
-    boolean alive = true;
+    private boolean alive = true;
 
-    private final Deque<String> freeSyntheticNames = new ArrayDeque<>();
+    private final ArrayDeque<String> freeSyntheticNames = new ArrayDeque<>();
     private int syntheticLimit = 0;
 
-    Log log;
-
-    int lastLineNum() {
-        return current_lineNumber;
-    }
-
-    String acquireSyntheticName() {
-        if (freeSyntheticNames.isEmpty()) {
-            String s = "s$" + syntheticLimit++;
-            if (localNames.containsKey(s)) {
-                log.error("synthetic member conflict: " + s);
-            }
-            return s;
-        }
-        return freeSyntheticNames.pollFirst();
-    }
-
-    void releaseSyntheticName(String name) {
-        freeSyntheticNames.addFirst(name);
-    }
+    private Log log;
 
     public final ProgramLayout programLayout;
     public final Lower lower;
@@ -68,6 +49,7 @@ public final class Code {
     public final Check check;
     public final Gen gen;
 
+    private LineMap lineMap;
 
     public Code(ProgramLayout programLayout, Source source) {
         this.programLayout = programLayout;
@@ -82,11 +64,30 @@ public final class Code {
         gen.source = source;
     }
 
-    Instruction get(int pc) {
+    public int lastLineNum() {
+        return current_lineNumber;
+    }
+
+    public String acquireSyntheticName() {
+        if (freeSyntheticNames.isEmpty()) {
+            String s = "s$" + syntheticLimit++;
+            while (localNames.containsKey(s)) {
+                s += "_";
+            }
+            return s;
+        }
+        return freeSyntheticNames.pollFirst();
+    }
+
+    public void releaseSyntheticName(String name) {
+        freeSyntheticNames.addFirst(name);
+    }
+
+    public Instruction get(int pc) {
         return instructions.get(pc);
     }
 
-    JumpInstruction getJump(int pc) {
+    public JumpInstruction getJump(int pc) {
         try {
             return (JumpInstruction) instructions.get(pc);
         } catch (ClassCastException e) {
@@ -112,8 +113,6 @@ public final class Code {
         adjustStack(instruction.stackAdjustment());
         return pc;
     }
-
-    private LineMap lineMap;
 
     public void putPos(int pos) {
         int line = lineMap.getLineNumber(pos);
