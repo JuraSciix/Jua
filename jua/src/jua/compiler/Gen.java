@@ -357,7 +357,7 @@ public final class Gen extends Scanner {
     private void genNullCoalescing(BinaryOp tree) {
         Item lhs = genExpr(tree.lhs).load();
         lhs.duplicate();
-        CondItem nonNull = lhs.nonNull();
+        CondItem nonNull = lhs.isNull();
         nonNull.resolveTrueJumps();
         code.addInstruction(pop);
         genExpr(tree.rhs).load();
@@ -450,7 +450,7 @@ public final class Gen extends Scanner {
             result = items.makeStack();
         } else {
             code.putPos(tree.pos);
-            result = items.makeLocal(name, tree._defined);
+            result = items.makeLocal(code.resolveLocal(name), tree._defined);
         }
     }
 
@@ -585,7 +585,7 @@ public final class Gen extends Scanner {
             TempItem tmp = items.makeTemp();
             tmp.store();
             code.putPos(tree.pos);
-            CondItem nonNull = a.nonNull();
+            CondItem nonNull = a.isNull();
             nonNull.resolveTrueJumps();
             int sp1 = code.curStackTop();
             genExpr(tree.expr).load().duplicate();
@@ -727,7 +727,7 @@ public final class Gen extends Scanner {
     }
 
     CondItem genCond(Expression tree) {
-        return genExpr(tree).toCond();
+        return genExpr(tree).isTrue();
     }
 
 

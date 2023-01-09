@@ -23,10 +23,6 @@ public class Items {
             throw new AssertionError(this);
         }
 
-        void store() {
-            throw new AssertionError(this);
-        }
-
         void drop() {
             throw new AssertionError(this);
         }
@@ -39,12 +35,16 @@ public class Items {
             throw new AssertionError(this);
         }
 
-        CondItem toCond() {
+        void store() {
+            throw new AssertionError(this);
+        }
+
+        CondItem isTrue() {
             load();
             return new CondItem(code.addInstruction(new Ifz()));
         }
 
-        CondItem nonNull() {
+        CondItem isNull() {
             load();
             return new CondItem(code.addInstruction(new Ifnonnull()));
         }
@@ -129,18 +129,17 @@ public class Items {
      */
     class LocalItem extends Item {
 
-        final Tree.Name name;
+        final int index;
         final boolean definitelyExists;
 
-        LocalItem(Tree.Name name, boolean definitelyExists) {
-            this.name = name;
+        LocalItem(int index, boolean definitelyExists) {
+            this.index = index;
             this.definitelyExists = definitelyExists;
         }
 
         @Override
         Item load() {
-            int id = code.resolveLocal(name.value);
-            code.addInstruction(definitelyExists ? new Vloadq(id) : new Vload(id));
+            code.addInstruction(definitelyExists ? new Vloadq(index) : new Vload(index));
             return stackItem;
         }
 
@@ -155,7 +154,7 @@ public class Items {
 
         @Override
         void store() {
-            code.addInstruction(new Vstore(code.resolveLocal(name.value)));
+            code.addInstruction(new Vstore(index));
         }
 
         @Override
@@ -164,13 +163,11 @@ public class Items {
         }
 
         void inc() {
-            int id = code.resolveLocal(name);
-            code.addInstruction(definitelyExists ? new Vincq(id) : new Vinc(id));
+            code.addInstruction(definitelyExists ? new Vincq(index) : new Vinc(index));
         }
 
         void dec() {
-            int id = code.resolveLocal(name);
-            code.addInstruction(definitelyExists ? new Vdecq(id) : new Vdec(id));
+            code.addInstruction(definitelyExists ? new Vdecq(index) : new Vdec(index));
         }
     }
 
@@ -178,7 +175,6 @@ public class Items {
      * Обращение к элементу массива.
      */
     class AccessItem extends Item {
-
 
         @Override
         Item load() {
@@ -275,7 +271,7 @@ public class Items {
         }
 
         @Override
-        CondItem toCond() {
+        CondItem isTrue() {
             return this;
         }
 
@@ -363,8 +359,8 @@ public class Items {
         return new LiteralItem(type);
     }
 
-    LocalItem makeLocal(Tree.Name name, boolean definitelyExists) { // todo: Передавать номер переменной вместо Tree.Name
-        return new LocalItem(name, definitelyExists);
+    LocalItem makeLocal(int index, boolean definitelyExists) {
+        return new LocalItem(index, definitelyExists);
     }
 
     AccessItem makeAccess() {
