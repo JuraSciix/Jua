@@ -204,6 +204,7 @@ public final class Address implements Comparable<Address> {
         a = m;
     }
 
+    @Deprecated
     public void quickSet(Address source) {
         type = source.type;
         l = source.l;
@@ -236,28 +237,33 @@ public final class Address implements Comparable<Address> {
         }
     }
 
+    @Deprecated
     public void slowSet(Address source) {
-        switch (source.type) {
-            case NULL:
-                setNull();
-                return;
+        source.clone(this);
+    }
+
+    public void clone(Address receptor) {
+        switch (type) {
             case LONG:
-                set(source.getLong());
-                return;
+                receptor.set(getLong());
+                break;
             case DOUBLE:
-                set(source.getDouble());
-                return;
+                receptor.set(getDouble());
+                break;
             case BOOLEAN:
-                set(source.getBoolean());
-                return;
+                receptor.set(getBoolean());
+                break;
             case STRING:
-                set(source.getStringHeap().deepCopy());
-                return;
+                receptor.set(getStringHeap().copy());
+                break;
             case MAP:
-                set(source.getMapHeap().deepCopy());
-                return;
+                receptor.set(getStringHeap().deepCopy());
+                break;
+            case NULL:
+                receptor.setNull();
+                break;
             default:
-                throw new AssertionError(source.type);
+                throw new AssertionError(type);
         }
     }
 

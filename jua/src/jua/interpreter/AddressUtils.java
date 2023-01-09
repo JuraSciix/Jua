@@ -8,7 +8,7 @@ import jua.runtime.heap.StringHeap;
 public class AddressUtils {
 
     /**
-     * Аллоцирует, инициализирует и возвращает копию переданного регистра.
+     * Производит аллокацию нового регистра, инициализирует его значением из {@code source} и возвращает.
      */
     public static Address allocateCopy(Address source) {
         Address copy = new Address();
@@ -17,7 +17,7 @@ public class AddressUtils {
     }
 
     /**
-     * Аллоцирует и возвращает массив регистров в памяти.
+     * Производит аллокацию массива регистров и возвращает его.
      */
     public static Address[] allocateMemory(int count, int start) {
         if (!(0xFFFF >= count && count >= start && start >= 0)) {
@@ -33,10 +33,6 @@ public class AddressUtils {
         return memory;
     }
 
-    public static void arraycopy(Address[] src, int srcOffset, Address[] dst, int dstOffset, int count) {
-        AddressUtils.arraycopy(src, srcOffset, dst, dstOffset, count, CM_DEFAULT);
-    }
-
     /**
      * Копирует данные из исходного участка в памяти в целевой.
      *
@@ -45,10 +41,8 @@ public class AddressUtils {
      * @param dst       Целевой участок памяти.
      * @param dstOffset Смещение, начиная с которого нужно вставлять данные в целевом участке.
      * @param count     Количество регистров, которые нужно перенести.
-     * @param copyMode  Режим копирования.
      */
-    public static void arraycopy(Address[] src, int srcOffset, Address[] dst, int dstOffset, int count,
-                                 @Deprecated int copyMode) {
+    public static void arraycopy(Address[] src, int srcOffset, Address[] dst, int dstOffset, int count) {
         if (src == null) {
             throw new IllegalArgumentException("Source memory is null");
         }
@@ -65,50 +59,10 @@ public class AddressUtils {
             throw new IllegalArgumentException(message);
         }
 
-        switch (copyMode) {
-            case CM_QUICK_SET:
-                for (int i = 0; i < count; i++) {
-                    dst[srcOffset + i].quickSet(src[dstOffset + i]);
-                }
-                break;
-            case CM_DEFAULT:
-                for (int i = 0; i < count; i++) {
-                    dst[srcOffset + i].set(src[dstOffset + i]);
-                }
-                break;
-            case CM_SLOW_SET:
-                for (int i = 0; i < count; i++) {
-                    dst[srcOffset + i].slowSet(src[dstOffset + i]);
-                }
-                break;
-            case CM_REFERRAL:
-                System.arraycopy(src, dstOffset, dst, srcOffset, count);
-                break;
-            default:
-                throw new IllegalArgumentException("Illegal copy mode: " + copyMode);
+        for (int i = 0; i < count; i++) {
+            dst[srcOffset + i].set(src[dstOffset + i]);
         }
     }
-
-    /**
-     * Быстрый режим копирования - копировать ссылки.
-     */
-    @Deprecated
-    public static final int CM_QUICK_SET = 1;
-    /**
-     * Стандартный режим копироания - копировать скаляры.
-     */
-    @Deprecated
-    public static final int CM_DEFAULT = 2;
-    /**
-     * Медленный режим копироания - копировать все значения.
-     */
-    @Deprecated
-    public static final int CM_SLOW_SET = 3;
-    /**
-     * Целевой участок не инициализирован, заполнить его ссылками на регистры из исходного участка.
-     */
-    @Deprecated
-    public static final int CM_REFERRAL = 4;
 
     public static void assignObject(Address address, Object o) {
         if (o == null) {
@@ -121,6 +75,8 @@ public class AddressUtils {
             address.set((double) o);
         } else if (o.getClass() == String.class) {
             address.set(new StringHeap((String) o));
+        } else if (o.getClass() == Address.class) {
+            address.set((Address) o);
         } else {
             throw new IllegalArgumentException(o.getClass().getName());
         }

@@ -150,7 +150,7 @@ public final class InterpreterThread {
         if (argsTransfer.length < argc) {
             // Расширяем массив без лишних аллокаций
             Address[] grownArgs = AddressUtils.allocateMemory(argc, argsTransfer.length);
-            AddressUtils.arraycopy(argsTransfer, 0, grownArgs, 0, argsTransfer.length, AddressUtils.CM_REFERRAL);
+            AddressUtils.arraycopy(argsTransfer, 0, grownArgs, 0, argsTransfer.length);
             argsTransfer = grownArgs;
         }
         for (int i = argc - 1; i >= 0; i--) {
