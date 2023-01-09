@@ -186,18 +186,20 @@ public class Check extends Scanner {
 
     @Override
     public void visitAssign(Assign tree) {
-        Expression innerVar = stripParens(tree.var);
-        if (isAccessible(tree.var)) {
-            if (innerVar.hasTag(Tag.VARIABLE)) {
-                Var varTree = (Var) innerVar;
-                knownVars.add(varTree.name.value);
-            }
-            scan(tree.var);
-        } else {
-            log.error(innerVar.pos, "attempt to assign a value to a non-accessible expression");
-        }
+        Expression inner_var = stripParens(tree.var);
 
-        scan(tree.expr);
+        if (inner_var.hasTag(Tag.VARIABLE)) {
+            scan(tree.expr);
+            Var varTree = (Var) inner_var;
+            knownVars.add(varTree.name.value);
+        } else {
+            if (!isAccessible(tree.var)) {
+                log.error(inner_var.pos, "attempt to assign a value to a non-accessible expression");
+            } else {
+                scan(tree.var);
+            }
+            scan(tree.expr);
+        }
     }
 
     @Override

@@ -201,12 +201,13 @@ public class Flow extends Scanner {
         Expression inner_var = stripParens(tree.var);
 
         if (inner_var.hasTag(Tag.VARIABLE)) {
+            scan(tree.expr);
             Var varTree = (Var) inner_var;
             defineVar(varTree.name);
         } else {
             scan(tree.var);
+            scan(tree.expr);
         }
-        scan(tree.expr);
     }
 
     @Override
