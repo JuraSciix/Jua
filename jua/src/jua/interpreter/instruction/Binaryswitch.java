@@ -90,7 +90,7 @@ public final class Binaryswitch extends JumpInstruction {
         int h = literals.length - 1;
 
         Address sel = state.popStack();           /* selector */
-        Address tmp = state.getTemporalAddress(); /* buffer   */
+        Address tmp = new Address(); /* buffer   */
 
         // Не скалярные значения семантически запрещены
         if (sel.isScalar()) {

@@ -15,7 +15,6 @@ public final class Leave implements Instruction {
 
     @Override
     public void run(InterpreterState state) {
-        state.thread().getReturnAddress().setNull();
-        state.thread().set_returnee();
+        state.thread().leave();
     }
 }

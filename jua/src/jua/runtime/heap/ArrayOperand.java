@@ -1,10 +1,8 @@
 package jua.runtime.heap;
 
 import jua.interpreter.Address;
-import jua.interpreter.InterpreterError;
 import jua.interpreter.InterpreterThread;
 
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -70,7 +68,7 @@ public final class ArrayOperand extends Operand {
     @Override
     public void put(Operand key, Operand value) {
         if (!key.type().isScalar()) {
-            InterpreterThread.getInstance().error("Trying to write element to array with non-scalar key");
+            InterpreterThread.currentThread().error("Trying to write element to array with non-scalar key");
             return;
         }
         map.put(key, value);
@@ -79,7 +77,7 @@ public final class ArrayOperand extends Operand {
     @Override
     public Operand get(Operand key) {
         if (!key.type().isScalar()) {
-            InterpreterThread.getInstance().error("Trying to write element to array with non-scalar key");
+            InterpreterThread.currentThread().error("Trying to write element to array with non-scalar key");
             return null;
         }
         return map.get(key);

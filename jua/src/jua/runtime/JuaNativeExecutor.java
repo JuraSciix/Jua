@@ -1,9 +1,9 @@
 package jua.runtime;
 
 import jua.interpreter.Address;
-import jua.interpreter.InterpreterThread;
 
+@FunctionalInterface
 public interface JuaNativeExecutor {
 
-    boolean execute(InterpreterThread thread, Address[] args, int argc, Address returnAddress);
+    boolean execute(Address[] args, int argc, Address returnAddress);
 }

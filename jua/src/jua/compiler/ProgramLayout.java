@@ -3,7 +3,6 @@ package jua.compiler;
 import jua.compiler.Tree.*;
 import jua.interpreter.Address;
 import jua.interpreter.AddressUtils;
-import jua.interpreter.InterpreterFrame;
 import jua.interpreter.InterpreterThread;
 import jua.interpreter.instruction.Getconst;
 import jua.runtime.JuaFunction;
@@ -84,7 +83,7 @@ public final class ProgramLayout {
                         @Override
                         public void run() {
                             new InterpreterThread(this, thread.environment())
-                                    .call(function, _args, null);
+                                    .callAndWait(function, _args, null);
                         }
                     };
                     if (!args[0].isNull()) {
@@ -153,18 +152,18 @@ public final class ProgramLayout {
                     } else {
                         _args = new Address[0];
                     }
-                    return thread.call(function, _args, returnAddress);
+                    return thread.callAndWait(function, _args, returnAddress);
                 }),
 
                 func("sqrt", 1, 1, (thread, args, argc, returnAddress) -> {
-                    Address buf = thread.getTempAddress();
+                    Address buf = new Address();
                     args[0].doubleVal(buf);
                     returnAddress.set(Math.sqrt(buf.getDouble()));
                     return true;
                 }),
 
                 func("pow", 2, 2, (thread, args, argc, returnAddress) -> {
-                    Address buf = thread.getTempAddress();
+                    Address buf = new Address();
                     args[0].doubleVal(buf);
                     double x = buf.getDouble();
                     args[1].doubleVal(buf);
@@ -174,7 +173,7 @@ public final class ProgramLayout {
                 }),
 
                 func("round", 1, 2, (thread, args, argc, returnAddress) -> {
-                    Address buf = thread.getTempAddress();
+                    Address buf = new Address();
                     args[0].doubleVal(buf);
                     double x = buf.getDouble();
                     if (argc == 1) {
@@ -190,7 +189,7 @@ public final class ProgramLayout {
     }
 
     private static boolean nativePrint(InterpreterThread thread, Address[] args, int argc, Address returnAddress) {
-        Address tmp = thread.getTempAddress();
+        Address tmp = new Address();
         PrintWriter writer = new PrintWriter(System.out);
         for (int i = 0; i < argc; i++) {
             if (!args[i].stringVal(tmp)) {
@@ -208,8 +207,21 @@ public final class ProgramLayout {
         return true;
     }
 
-    private static JuaFunction func(String name, int fromargc, int toargc, JuaNativeExecutor body) {
-        return JuaFunction.fromNativeHandler(name, fromargc, toargc, body, "ProgramLayout.java");
+    @FunctionalInterface
+    public interface JuaNativeExecutorLegacy {
+
+        boolean execute(InterpreterThread thread, Address[] args, int argc, Address returnAddress);
+    }
+
+    private static JuaFunction func(String name, int fromargc, int toargc, JuaNativeExecutorLegacy body) {
+        return JuaFunction.fromNativeHandler(
+                name, 
+                fromargc,
+                toargc, 
+                (args, argc, returnAddress) -> 
+                        body.execute(InterpreterThread.currentThread(), args, argc, returnAddress),
+                "ProgramLayout.java"
+        );
     }
 
     Source mainSource;

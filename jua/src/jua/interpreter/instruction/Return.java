@@ -17,7 +17,6 @@ public final class Return implements Instruction {
 
     @Override
     public void run(InterpreterState state) {
-        state.thread().getReturnAddress().set(state.popStack());
-        state.thread().set_returnee();
+        state.thread().doReturn(state.popStack());
     }
 }

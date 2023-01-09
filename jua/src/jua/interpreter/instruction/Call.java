@@ -1,7 +1,9 @@
 package jua.interpreter.instruction;
 
 import jua.compiler.CodePrinter;
+import jua.interpreter.Address;
 import jua.interpreter.InterpreterState;
+import jua.interpreter.InterpreterThread;
 
 public final class Call implements Instruction {
 
@@ -30,8 +32,24 @@ public final class Call implements Instruction {
 
     @Override
     public void run(InterpreterState state) {
+        prepareThreadCall(state, index, nargs, true);
+    }
+
+    // Accessed for CallPop
+    static void prepareThreadCall(InterpreterState state, short index, byte nargs, boolean returnResult) {
+        int functionIndex = index & 0xffff;
+        int argc = nargs & 0xff;               /* args count */
+
+        Address[] args = new Address[argc];
+
+        int i = argc;
+        while (--i >= 0) {
+            args[i] = state.popStack();
+        }
+
+        Address returnAddress = returnResult ? state.top() : state.thread().getTempAddress();
+        state.thread().prepareCall(functionIndex, args, argc, returnAddress);
+        state.cleanupStack();
         state.set_cp_advance(1);
-        state.thread().set_callee(index, nargs);
-        // I'll be back...
     }
 }

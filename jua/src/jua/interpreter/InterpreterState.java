@@ -14,7 +14,7 @@ public final class InterpreterState {
 
     public final Address[] stack, locals;
 
-    private final ConstantPool constantPool;
+    private final CodeSegment cs;
 
     // todo: This fields should be typed with short
     private int cp, sp, cpAdvance;
@@ -25,7 +25,7 @@ public final class InterpreterState {
         this.code = cs.code();
         this.stack = AddressUtils.allocateMemory(cs.maxStack(), 0);
         this.locals = AddressUtils.allocateMemory(cs.maxLocals(), 0);
-        this.constantPool = cs.constantPool();
+        this.cs = cs;
         this.thread = thread;
     }
 
@@ -33,7 +33,7 @@ public final class InterpreterState {
         return code[cp];
     }
 
-    public void runDiscretely() {
+    public void executeTick() {
         currentInstruction().run(this);
     }
 
@@ -77,17 +77,8 @@ public final class InterpreterState {
         cp += offset;
     }
 
-    @Deprecated
-    public byte getMsg() {
-        return thread.msg();
-    }
-
-    public void setMsg(byte msg) {
-        thread.set_msg(msg);
-    }
-
     public ConstantPool constant_pool() {
-        return constantPool;
+        return cs.constantPool();
     }
 
     public void advance() {
@@ -100,18 +91,8 @@ public final class InterpreterState {
         next();
     }
 
-    @Deprecated
-    public Address getConstantById(int id) {
-        throw new UnsupportedOperationException();
-    }
-
     public void pushStack(long value) {
         top().set(value);
-    }
-
-    @Deprecated
-    public void pushStack(Operand value) {
-        value.writeToAddress(top());
     }
 
     public void pushStack(Address address) {
@@ -126,14 +107,12 @@ public final class InterpreterState {
         return stack[sp++];
     }
 
-
     public Address peekStack() {
         return first();
     }
 
-    @Deprecated
     public void cleanupStack() {
-        for (int i = stack.length - 1; i >= sp; i--)
+        for (int i = stack.length - 1; i > sp; i--)
             stack[i].reset();
     }
 
@@ -149,7 +128,7 @@ public final class InterpreterState {
     public void load(int index) {
         if (locals[index] == null) {
             thread.error("accessing an undefined variable '" +
-                    thread().currentFrame().owningFunction().codeSegment().localTable().getLocalName(index) + "'.");
+                    cs.localTable().getLocalName(index) + "'.");
             return;
         }
         peekStack().set(locals[index]);
@@ -616,7 +595,7 @@ public final class InterpreterState {
     private boolean testLocal(int id) {
         if (locals[id].getType() == ValueType.UNDEFINED) {
             thread.error("Access to undefined variable: " +
-                    thread.currentFrame().owningFunction().codeSegment().localTable().getLocalName(id));
+                    cs.localTable().getLocalName(id));
             return false;
         }
         return true;

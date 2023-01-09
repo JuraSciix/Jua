@@ -1,28 +1,39 @@
 package jua.interpreter;
 
 import jua.runtime.JuaFunction;
+import jua.runtime.StackTraceElement;
 
 public final class InterpreterFrame {
 
-    private final InterpreterFrame callingFrame;
+    public final InterpreterFrame prev;
 
-    private final JuaFunction owningFunction;
+    public final JuaFunction owner;
 
-    private final InterpreterState state;
+    public final InterpreterState state;
 
-    // Trusting constructor.
-    InterpreterFrame(InterpreterFrame callingFrame, JuaFunction owningFunction, InterpreterState state) {
-        this.callingFrame = callingFrame;
-        this.owningFunction = owningFunction;
+    public final Address returnAddress;
+
+    InterpreterFrame(InterpreterFrame prev, JuaFunction owner, InterpreterState state, Address returnAddress) {
+        // Trusting constructor
+        this.prev = prev;
+        this.owner = owner;
         this.state = state;
+        this.returnAddress = returnAddress;
     }
 
-    public InterpreterFrame callingFrame() { return callingFrame; }
-    public JuaFunction owningFunction()    { return owningFunction; }
-    public InterpreterState state()  { return state; }
+    public InterpreterFrame prev() { return prev; }
+    public JuaFunction owner() { return owner; }
+    public InterpreterState state() { return state; }
+    public Address returnAddress() { return returnAddress; }
 
-    public int currentLineNumber() {
-        if (owningFunction().isNative()) return -1;
-        return owningFunction().codeSegment().lineNumberTable().getLineNumber(state.cp());
+    /** Возвращает номер строки, которая сейчас выполняется. */
+    int executingLineNumber() {
+        if (state == null) return -1; // native function
+        int cp = state.cp();
+        return owner.codeSegment().lineNumberTable().getLineNumber(cp);
+    }
+
+    StackTraceElement toStackTraceElement() {
+        return new StackTraceElement(owner.name(), owner.filename(), executingLineNumber());
     }
 }

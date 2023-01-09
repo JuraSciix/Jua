@@ -317,7 +317,6 @@ public class Items {
         @Override
         void drop() {
             code.addInstruction(new CallPop((short) index, (byte) nargs));
-            code.addInstruction(pop);
         }
     }
 

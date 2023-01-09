@@ -5,7 +5,6 @@ import jua.runtime.JuaFunction;
 import jua.runtime.RuntimeErrorException;
 import jua.runtime.StackTraceElement;
 import jua.runtime.code.CodeSegment;
-import jua.runtime.heap.*;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -13,35 +12,21 @@ import java.util.Objects;
 
 public final class InterpreterThread {
 
-    @Deprecated
-    public interface Messages {
-        byte VIRGIN = 0;
-        byte RUNNING = 1;
-        byte CALL = 2;
-        byte RETURN = 3;
-        byte FALLEN = 4;
-        byte HALT = 5;
-    }
+    private static final int MSG_UNSTARTED         = 0; /* Поток создан, но не запущен */
+    private static final int MSG_RUNNING_FRAME     = 1; /* Поток выполняет фрейм */
+    private static final int MSG_CALLING_FRAME     = 2; /* Поток вызывает фрейм */
+    private static final int MSG_POPPING_FRAME     = 4; /* Поток возвращает фрейм */
+    private static final int MSG_CRASHED           = 6; /* В потоке произошла ошибка */
+    private static final int MSG_HALTED            = 7; /* Поток прерван */
 
-    public static final byte MSG_CREATED = 0;
-    public static final byte MSG_RUNNING = 1;
-    public static final byte MSG_CALLING = 2;
-    public static final byte MSG_POPPING = 3;
-    public static final byte MSG_CRASHED = 4;
-    public static final byte MSG_HALTED  = 5;
-
-    private static final ThreadLocal<InterpreterThread> thread = new ThreadLocal<>();
+    private static final ThreadLocal<InterpreterThread> THREADED_INSTANCE = new ThreadLocal<>();
 
     public static InterpreterThread currentThread() {
-        if (thread.get() == null) {
-            throw new IllegalStateException("No thread present");
+        InterpreterThread result = THREADED_INSTANCE.get();
+        if (result == null) {
+            throw new IllegalStateException("No thread was bound to the current JVM thread");
         }
-        return thread.get();
-    }
-
-    @Deprecated
-    public static InterpreterThread getInstance() {
-        return currentThread();
+        return result;
     }
 
     public static void threadError(String message) {
@@ -52,74 +37,52 @@ public final class InterpreterThread {
         currentThread().error(message, args);
     }
 
-    @Deprecated
-    public static void aError(String message) {
-        threadError(message);
-    }
-
-    @Deprecated
-    public static void aError(String message, Object... args) {
-        threadError(message, args);
-    }
-
-    @Deprecated
-    public static InterpreterThread copy(InterpreterThread thread) {
-        return new InterpreterThread(thread.javaThread, thread.environment);
-    }
-
-    // todo: Ну тут и так понятно что надо сделать
-
-    private final Thread javaThread;
+    private final Thread jvmThread;
 
     private final JuaEnvironment environment;
 
-    private InterpreterFrame current_frame = null;
+    private InterpreterFrame executingFrame = null;
 
     private int calleeId;
 
     private int numArgs;
 
+    @Deprecated
     private final Address tempAddress = new Address();
 
-    public Address getTempAddress() {
-        return tempAddress;
-    }
-
-    /**
-     * Временное хранилище для аргументов вызовов функций.
-     * Массив расширяется по мере нарастания числа аргументов за весь цикл работы программы.
-     * Максимальный размер - 255. Это ограничение на число аргументов на уровне модели языка.
-     */
-    private Address[] argsTransfer = AddressUtils.allocateMemory(0, 0);
+    private Address[] args;
 
     private String error_msg;
 
-    private byte msg = MSG_CREATED;
+    private int msg = MSG_UNSTARTED;
 
-    private final Address returnAddress = new Address();
+    private Address returnAddress;
 
-    @Deprecated
-    public InterpreterFrame currentFrame() {
-        return current_frame;
+    public InterpreterThread(Thread jvmThread, JuaEnvironment environment) {
+        Objects.requireNonNull(jvmThread, "JVM thread");
+        Objects.requireNonNull(environment, "environment");
+        bind();
+        this.jvmThread = jvmThread;
+        this.environment = environment;
     }
 
-    public InterpreterThread(Thread javaThread, JuaEnvironment environment) {
-        Objects.requireNonNull(javaThread, "Java thread");
-        Objects.requireNonNull(environment, "Environment");
-        if (thread.get() != null) {
+    private void bind() {
+        if (THREADED_INSTANCE.get() != null) {
             throw new IllegalStateException("Thread already present");
         }
-        thread.set(this);
-        this.javaThread = javaThread;
-        this.environment = environment;
+        THREADED_INSTANCE.set(this);
+    }
+
+    public Thread getNativeThread() {
+        return jvmThread;
     }
 
     public JuaEnvironment environment() {
         return environment;
     }
 
-    public InterpreterFrame makeFrame(JuaFunction function) {
-        InterpreterFrame sender = current_frame;
+    private InterpreterFrame makeFrame(JuaFunction function, Address returnAddress) {
+        InterpreterFrame sender = executingFrame;
         InterpreterState state;
         if (function.isNative()) {
             // Нативные функции выполняются непосредственно на JVM.
@@ -131,176 +94,145 @@ public final class InterpreterThread {
             CodeSegment cs = function.codeSegment();
             state = new InterpreterState(cs, this);
         }
-        return new InterpreterFrame(sender, function, state);
+        return new InterpreterFrame(sender, function, state, returnAddress);
     }
 
-    public void joinFrame(JuaFunction callee, int argc) {
-        Objects.requireNonNull(callee, "callee");
-
-        if (((callee.maxNumArgs() - argc) | (argc - callee.minNumArgs())) < 0) {
-            error((argc > callee.maxNumArgs()) ?
-                    "too many arguments. (total " + callee.maxNumArgs() + ", got " + argc + ")" :
-                    "too few arguments. (required " + callee.minNumArgs() + ", got " + argc + ")");
+    private void joinFrame(JuaFunction callee, int argc) {
+        if (argc < callee.minNumArgs()) {
+            error("too few arguments: %d required, %d passed", callee.minNumArgs(), argc);
+            return;
+        }
+        if (argc > callee.maxNumArgs()) {
+            error("too many arguments: total %d, passed %d", callee.maxNumArgs(), argc);
             return;
         }
 
-        InterpreterFrame sender = current_frame;
-        current_frame = makeFrame(callee);
-
-        if (argsTransfer.length < argc) {
-            // Расширяем массив без лишних аллокаций
-            Address[] grownArgs = AddressUtils.allocateMemory(argc, argsTransfer.length);
-            AddressUtils.arraycopy(argsTransfer, 0, grownArgs, 0, argsTransfer.length);
-            argsTransfer = grownArgs;
-        }
-        for (int i = argc - 1; i >= 0; i--) {
-            argsTransfer[i].set(sender.state().popStack());
-        }
-
-//        msg = MSG_RUNNING; // Переходим в состояние выполнения
+        executingFrame = makeFrame(callee, returnAddress);
     }
 
-    public byte msg() {
+    private int msg() {
         return msg;
     }
 
-    // Не рекомендуется использовать
-    public void set_msg(byte msg) {
+    private void set_msg(int msg) {
         this.msg = msg;
     }
 
-    public void returnFrame() {
-        InterpreterFrame uf = current_frame;
-        InterpreterFrame uf1 = uf.callingFrame();
+    private void returnFrame() {
+        InterpreterFrame uf = executingFrame;
+        InterpreterFrame uf1 = uf.prev();
         if (uf1 == null) {
             interrupt(); // Выполнять более нечего
             return;
         }
-        current_frame = uf1;
+        executingFrame = uf1;
+    }
+
+    public void prepareCall(int functionIndex, Address[] args, int argc, Address returnAddress) {
+        calleeId = functionIndex;
+        numArgs = argc;
+        this.args = args;
+        this.returnAddress = returnAddress;
+        set_msg(MSG_CALLING_FRAME);
     }
 
     @Deprecated
-    public void enterCall(InterpreterFrame p) {
-
+    public Address getTempAddress() {
+        return tempAddress;
     }
 
-    @Deprecated
-    public void exitCall(Operand returnValue) {
-
+    public void doReturn(Address result) {
+        executingFrame.returnAddress().set(result);
+        set_msg(MSG_POPPING_FRAME);
     }
 
-    public Thread java_thread() {
-        return getNativeThread();
-    }
-
-    public Thread getNativeThread() {
-        return javaThread;
-    }
-
-    public void set_callee(short calleeId, byte numArgs) {
-        this.calleeId = calleeId & 0xffff;
-        this.numArgs = numArgs & 0xff;
-        msg = MSG_CALLING;
-    }
-
-    public Address getReturnAddress() {
-        return returnAddress;
-    }
-
-    public void set_returnee() {
-        this.msg = MSG_POPPING;
-    }
-
-    @Deprecated
-    public void setProgram(InterpreterFrame newCP) {
-        set_frame_force(newCP);
-    }
-
-    @Deprecated
-    public void set_frame_force(InterpreterFrame frame) {
-        current_frame = frame;
+    public void leave() {
+        executingFrame.returnAddress().setNull();
+        set_msg(MSG_POPPING_FRAME);
     }
 
     public void interrupt() {
-        javaThread.interrupt();
+        jvmThread.interrupt();
         msg = MSG_HALTED;
-        current_frame = null;
-    }
-
-    public void start() {
-        set_msg(MSG_RUNNING);
+        executingFrame = null;
     }
 
     public boolean isActive() {
-        return javaThread.isAlive() && !javaThread.isInterrupted() && isRunning();
+        return jvmThread.isAlive() && !jvmThread.isInterrupted() && isRunning();
     }
 
     public boolean isRunning() {
-        return msg == MSG_RUNNING;
+        return msg() == MSG_RUNNING_FRAME;
     }
 
     /**
      * Вызывает указанную функцию и ждет завершения ее выполнения.
      * Возвращает {@code true}, если ошибок не произошло, иначе {@code false}.
      */
-    public boolean call(JuaFunction function, Address[] args, Address returnAddress) {
-        set_msg(MSG_CALLING);
-        set_frame_force(makeFrame(function));
-        AddressUtils.arraycopy(args, 0, argsTransfer, 0, args.length);
+    public boolean callAndWait(JuaFunction function, Address[] args, Address returnAddress) {
+        set_msg(MSG_CALLING_FRAME);
+        executingFrame = makeFrame(function, returnAddress);
+        this.args = args;
         numArgs = args.length;
+        this.returnAddress = returnAddress;
         run();
-        if (isError()) {
-            return false;
-        }
-        if (returnAddress != null && this.returnAddress.isValid()) {
-            returnAddress.set(this.returnAddress);
-        }
-        if (returnAddress != this.returnAddress) this.returnAddress.reset();
-        return true;
+        return !isCrashed();
     }
-
 
     public StackTraceElement[] getStackTrace() {
         return getStackTrace(0);
     }
 
     public StackTraceElement[] getStackTrace(int limit) {
-        if (limit < 0) {
+        if (limit == 0) {
+            limit = 1024;
+        } else if (limit < 0) {
             throw new IllegalArgumentException("Limit must be non negative");
         }
 
-        if (limit == 0) limit = 1024;
-
         ArrayList<StackTraceElement> stackTrace = new ArrayList<>(limit);
 
-        InterpreterFrame frame = current_frame;
-        int i = 0;
+        InterpreterFrame frame = executingFrame;
+        int i = limit;
 
-        while (frame != null && i < limit) {
-            stackTrace.add(new StackTraceElement(
-                    frame.owningFunction().name(),
-                    frame.owningFunction().filename(),
-                    frame.currentLineNumber()
-            ));
-            frame = frame.callingFrame();
-            i++;
+        while (frame != null && i > 0) {
+            stackTrace.add(frame.toStackTraceElement());
+            frame = frame.prev();
+            i--;
         }
 
         return stackTrace.toArray(new StackTraceElement[0]);
     }
 
     public void printStackTrace() {
-        printStackTrace(System.err);
+        doPrintStackTrace(System.err, getStackTrace());
     }
 
     public void printStackTrace(PrintStream output) {
-        output.printf("Stack trace for thread \"%s\" %n", javaThread.getName());
-        for (StackTraceElement element : getStackTrace()) {
+        doPrintStackTrace(output, getStackTrace());
+    }
+
+    public void printStackTrace(int limit) {
+        doPrintStackTrace(System.err, getStackTrace(limit));
+    }
+
+    public void printStackTrace(PrintStream output, int limit) {
+        doPrintStackTrace(output, getStackTrace(limit));
+    }
+
+    private void doPrintStackTrace(PrintStream output, StackTraceElement[] stackTrace) {
+        Objects.requireNonNull(output, "output");
+        output.printf("Stack trace for thread \"%s\" %n", jvmThread.getName());
+        for (StackTraceElement element : stackTrace) {
             output.println("\t" + element);
         }
     }
 
-    public void run() {
+    public boolean isCrashed() {
+        return msg() == MSG_CRASHED;
+    }
+
+    private void run() {
         while (true) {
 
             switch (msg()) {
@@ -311,8 +243,8 @@ public final class InterpreterThread {
                     throw new RuntimeErrorException(error_msg);
                 }
 
-                case MSG_CALLING:
-                case MSG_POPPING:
+                case MSG_CALLING_FRAME:
+                case MSG_POPPING_FRAME:
                     break;
 
                 case MSG_HALTED:
@@ -322,38 +254,38 @@ public final class InterpreterThread {
                     throw new AssertionError(msg());
             }
 
-            InterpreterFrame frame = currentFrame();
+            InterpreterFrame frame = executingFrame;
 
             try {
 
                 try {
 
-                    if (frame.owningFunction().isNative()) {
+                    if (frame.owner().isNative()) {
                         switch (msg()) {
-                            case MSG_CALLING:
-                                set_msg(MSG_RUNNING);
-                                boolean success = frame.owningFunction().nativeHandler().execute(this, argsTransfer.clone(), numArgs, returnAddress);
-                                if (success && !isError()) {
-                                    set_returnee();
+                            case MSG_CALLING_FRAME:
+                                set_msg(MSG_RUNNING_FRAME);
+                                boolean success = frame.owner().nativeHandler().execute(args, numArgs, returnAddress);
+                                if (success && !isCrashed()) {
+                                    set_msg(MSG_POPPING_FRAME);
                                 }
                                 break;
-                            case MSG_POPPING:
+                            case MSG_POPPING_FRAME:
                                 return;
                         }
                     } else {
                         InterpreterState state = frame.state();
 
                         switch (msg()) {
-                            case MSG_CALLING:
+                            case MSG_CALLING_FRAME:
                                 // Инициализируем стейт
 
                                 for (int i = 0; i < numArgs; i++) {
-                                    state.store(i, argsTransfer[i]);
+                                    state.store(i, args[i]);
                                 }
 
-                                for (int i = numArgs; i < frame.owningFunction().maxNumArgs(); i++) {
+                                for (int i = numArgs; i < frame.owner().maxNumArgs(); i++) {
                                     state.constant_pool().load(
-                                            frame.owningFunction().codeSegment().localTable().getLocalDefaultPCI(i),
+                                            frame.owner().codeSegment().localTable().getLocalDefaultPCI(i),
                                             state.locals[i]
                                     );
                                 }
@@ -362,20 +294,15 @@ public final class InterpreterThread {
                                 numArgs = 0;
                                 break;
 
-                            case MSG_POPPING:
+                            case MSG_POPPING_FRAME:
                                 state.advance();
-                                if (!returnAddress.isValid()) {
-                                    throw new IllegalStateException("No return value received");
-                                }
-                                state.pushStack(returnAddress);
-                                returnAddress.reset();
                                 break;
                         }
 
-                        set_msg(MSG_RUNNING);
+                        set_msg(MSG_RUNNING_FRAME);
 
                         while (isRunning()) {
-                            state.runDiscretely();
+                            state.executeTick();
                         }
                     }
                 } catch (Throwable t) {
@@ -389,16 +316,17 @@ public final class InterpreterThread {
                 }
 
                 switch (msg) {
-                    case MSG_RUNNING:
+                    case MSG_RUNNING_FRAME:
                         continue;
 
-                    case MSG_CALLING: {
+                    case MSG_CALLING_FRAME: {
                         joinFrame(environment.getFunction(calleeId), numArgs);
                         break;
                     }
 
-                    case MSG_POPPING: {
+                    case MSG_POPPING_FRAME: {
                         returnFrame();
+                        getTempAddress().reset();
                         break;
                     }
 
@@ -410,7 +338,7 @@ public final class InterpreterThread {
 
                     case MSG_HALTED:
                         // Поток поток подлежит завершению.
-                        javaThread.interrupt();
+                        jvmThread.interrupt();
                         return;
                 }
             } catch (RuntimeErrorException e) {
@@ -421,21 +349,6 @@ public final class InterpreterThread {
         }
     }
 
-    @Deprecated
-    public String current_location() {
-        return current_frame.owningFunction().filename();
-    }
-
-    @Deprecated
-    public int current_line_number() {
-        return currentFrame().currentLineNumber();
-    }
-
-    @Deprecated
-    public String currentFunction() {
-        return currentFrame().owningFunction().name();
-    }
-
     public void error(String msg) {
         this.msg = MSG_CRASHED;
         error_msg = msg;
@@ -443,9 +356,5 @@ public final class InterpreterThread {
 
     public void error(String fmt, Object... args) {
         error(String.format(fmt, args));
-    }
-
-    public boolean isError() {
-        return msg == MSG_CRASHED;
     }
 }

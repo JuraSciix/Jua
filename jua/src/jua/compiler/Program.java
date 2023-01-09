@@ -1,12 +1,9 @@
 package jua.compiler;
 
 import jua.interpreter.Address;
-import jua.interpreter.InterpreterFrame;
 import jua.interpreter.InterpreterThread;
 import jua.runtime.JuaEnvironment;
 import jua.runtime.JuaFunction;
-import jua.runtime.code.CodeSegment;
-import jua.runtime.heap.Operand;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,6 +37,6 @@ public final class Program {
 
     public void run() {
         InterpreterThread thread = new InterpreterThread(Thread.currentThread(), createEnvironment());
-        thread.call(main, new Address[0], null);
+        thread.callAndWait(main, new Address[0], null);
     }
 }

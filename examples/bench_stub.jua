@@ -15,4 +15,4 @@ fn bench_stub() {
     }
 }
 
-fn test_stub(i = 10) = i <= 0 ? null : stub(i - 1);
+fn test_stub(i = 10) = i <= 0 ? null : test_stub(i - 1);
