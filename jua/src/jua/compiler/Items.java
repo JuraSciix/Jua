@@ -317,6 +317,32 @@ public class Items {
         }
     }
 
+    class CallItem extends Item {
+
+        final int pos;
+        final int index, nargs;
+
+        CallItem(int pos, int index, int nargs) {
+            this.pos = pos;
+            this.index = index;
+            this.nargs = nargs;
+        }
+
+        @Override
+        Item load() {
+            code.putPos(pos);
+            code.addInstruction(new Call((short) index, (byte) nargs));
+            return stackItem;
+        }
+
+        @Override
+        void drop() {
+            code.putPos(pos);
+            code.addInstruction(new CallPop((short) index, (byte) nargs));
+            code.addInstruction(pop);
+        }
+    }
+
     /**
      * Регистр для временного хранения некоторых данных
      */
@@ -373,6 +399,10 @@ public class Items {
 
     CondItem makeCond(int opcodePC, IntArrayList truejumps, IntArrayList falsejumps) {
         return new CondItem(opcodePC, truejumps, falsejumps);
+    }
+
+    CallItem makeCall(int pos, int index, int nargs) {
+        return new CallItem(pos, index, nargs);
     }
 
     TempItem makeTemp() {

@@ -238,19 +238,16 @@ public final class Gen extends Scanner {
         Assert.check(tree.callee instanceof MemberAccess);
         Name callee = ((MemberAccess) tree.callee).member;
 
-        int nargs = tree.args.count();
-
         if ("length".equals(callee.value)) {
             genExpr(tree.args.first().expr).load();
             code.putPos(tree.pos);
             code.addInstruction(length);
+            result = items.makeStack();
         } else {
             int fn_idx = programLayout.tryFindFunc(callee);
             visitInvocationArgs(tree.args);
-            code.putPos(tree.pos);
-            code.addInstruction(new Call((short) fn_idx, (byte) nargs));
+            result = items.makeCall(tree.pos, (short) fn_idx, (byte) tree.args.count());
         }
-        result = items.makeStack();
     }
 
     private void visitInvocationArgs(List<Invocation.Argument> args) {
