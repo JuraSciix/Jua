@@ -23,20 +23,6 @@ public final class Lower extends Translator {
     }
 
     @Override
-    public void visitConstDef(ConstDef tree) {
-        for (ConstDef.Definition def : tree.defs) {
-            def.expr = translate(def.expr);
-
-            Expression inner_expr = stripParens(def.expr);
-            if (inner_expr.hasTag(Tag.LITERAL)) {
-                Literal literal_tree = (Literal) inner_expr;
-                programLayout.constantLiterals.put(def.name.value, literal_tree.type);
-            }
-        }
-        result = tree;
-    }
-
-    @Override
     public void visitWhileLoop(WhileLoop tree) {
         tree.cond = translate(tree.cond);
         tree.body = translate(tree.body);
@@ -50,12 +36,14 @@ public final class Lower extends Translator {
 
     @Override
     public void visitVariable(Var tree) {
-        String nameString = tree.name.value;
-        if (programLayout.constantLiterals.containsKey(nameString)) {
-            result = new Literal(tree.pos, programLayout.constantLiterals.get(nameString));
-        } else {
-            result = tree;
+        if (programLayout.hasConstant(tree.name)) {
+            ProgramLayout.ConstData cd = programLayout.tryFindConst(tree.name);
+            if (cd.type != null) {
+                result = new Literal(tree.pos, cd.type);
+                return;
+            }
         }
+        result = tree;
     }
 
     @Override

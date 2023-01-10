@@ -246,10 +246,10 @@ public final class Gen extends Scanner {
             code.addInstruction(length);
             result = items.makeStack();
         } else {
-            int fn_idx = programLayout.tryFindFunc(callee);
+            int fn_idx = programLayout.tryFindFunc(callee).id;
             visitInvocationArgs(tree.args);
             code.putPos(tree.pos);
-            result = items.makeCall(fn_idx, tree.args.count());
+            result = items.makeCall(fn_idx, tree.args.count(), tree._safe);
         }
     }
 
@@ -446,7 +446,7 @@ public final class Gen extends Scanner {
         Name name = tree.name;
         if (programLayout.hasConstant(name)) {
             code.putPos(tree.pos);
-            code.addInstruction(new Getconst(programLayout.tryFindConst(name)));
+            code.addInstruction(new Getconst(programLayout.tryFindConst(name).id));
             result = items.makeStack();
         } else {
             code.putPos(tree.pos);

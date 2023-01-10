@@ -1,13 +1,13 @@
 package jua.interpreter.instruction;
 
 import jua.compiler.CodePrinter;
+import jua.interpreter.Address;
 import jua.interpreter.InterpreterState;
-import jua.interpreter.InterpreterThread;
 
 /**
- * Вызов функции без сохранения результата на стеке. Пока что полностью эквивалентно инструкции {@code call}
+ * Быстрый вызов функции, без сверки числа аргументов.
  */
-public final class CallPop implements Instruction {
+public final class CallPopq implements Instruction {
 
     private final short index;
 
@@ -17,7 +17,7 @@ public final class CallPop implements Instruction {
      * @param index Индекс функции.
      * @param nargs Количество аргументов.
      */
-    public CallPop(short index, byte nargs) {
+    public CallPopq(short index, byte nargs) {
         this.index = index;
         this.nargs = nargs;
     }
@@ -27,13 +27,13 @@ public final class CallPop implements Instruction {
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName("callpop");
+        printer.printName("callpopq");
         printer.printFunctionRef(index & 0xffff);
         printer.print(nargs & 0xff);
     }
 
     @Override
     public void run(InterpreterState state) {
-        Call.prepareThreadCall(state, index, nargs, false, true);
+        Call.prepareThreadCall(state, index, nargs, false, false);
     }
 }

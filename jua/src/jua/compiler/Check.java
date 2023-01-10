@@ -157,31 +157,52 @@ public class Check extends Scanner {
 
         MemberAccess calleeTree = (MemberAccess) callee;
 
+        int argc = tree.args.count();
         if (calleeTree.member.value.equals("length")) {
-            if (tree.args.count() != 1) {
+            if (argc != 1) {
                 log.error(tree.pos, "the function 'length' takes a single parameter");
                 return;
             }
-        } else {
-            if (programLayout.tryFindFunc(calleeTree.member) == -1) {
-                // todo: .tryFindFunc уже бросает ошибку - исправить это
-//                log.error(calleeTree.member.pos, "trying to call an undefined function");
-                return;
+            if (tree.args.first().name != null) {
+                log.error(tree.args.first().name.pos, "undefined function param name");
             }
-            if (tree.args.count() > 255) {
-                log.error(tree.pos, "the number of call arguments cannot exceed 255");
-                return;
-            }
+            return;
         }
+        ProgramLayout.FuncData fd;
+        if ((fd = programLayout.tryFindFunc(calleeTree.member)) == null) {
+            log.error(calleeTree.member.pos, "trying to call an undefined function");
+            return;
+        }
+        // fd.maxargs always less than 256
+//            if (argc > 255) {
+//                log.error(tree.pos, "the number of call arguments cannot exceed 255");
+//                return;
+//            }
+        if (argc < fd.minargs) {
+            log.error(calleeTree.pos, "too few arguments: %d required, %d passed", fd.minargs, argc);
+            return;
+        }
+        if (argc > fd.maxargs) {
+            log.error(calleeTree.pos, "too many arguments: %d total, %d passed", fd.maxargs, argc);
+            return;
+        }
+        boolean safe = true;
 
         for (Invocation.Argument a : tree.args) {
             Name name = a.name;
             if (name != null) {
+                if (!fd.paramnames.contains(name.value)) {
+                    log.error(name.pos, "undefined function param name");
+                    safe = false;
+                    continue;
+                }
                 log.error(name.pos, "named arguments not yet supported");
                 continue;
             }
             scan(a.expr);
         }
+
+        tree._safe = safe;
     }
 
     @Override

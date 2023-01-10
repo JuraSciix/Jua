@@ -2,9 +2,7 @@ fn bench_stub() {
     max = 1e9;
     while true {
         a = ns_time();
-        for i = 0; i < 1_000_000; i++ {
-            test_stub();
-        }
+        test_stub();
         b = ns_time();
         m = (b - a);
         if m < max {

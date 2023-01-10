@@ -32,11 +32,11 @@ public final class Call implements Instruction {
 
     @Override
     public void run(InterpreterState state) {
-        prepareThreadCall(state, index, nargs, true);
+        prepareThreadCall(state, index, nargs, true, true);
     }
 
     // Accessed for CallPop
-    static void prepareThreadCall(InterpreterState state, short index, byte nargs, boolean returnResult) {
+    static void prepareThreadCall(InterpreterState state, short index, byte nargs, boolean returnResult, boolean checkArgc) {
         int functionIndex = index & 0xffff;
         int argc = nargs & 0xff;               /* args count */
 
@@ -48,7 +48,7 @@ public final class Call implements Instruction {
         }
 
         Address returnAddress = returnResult ? state.top() : state.thread().getTempAddress();
-        state.thread().prepareCall(functionIndex, args, argc, returnAddress);
+        state.thread().prepareCall(functionIndex, args, argc, returnAddress, checkArgc);
         state.cleanupStack();
         state.set_cp_advance(1);
     }

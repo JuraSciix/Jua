@@ -37,6 +37,6 @@ public final class Program {
 
     public void run() {
         InterpreterThread thread = new InterpreterThread(Thread.currentThread(), createEnvironment());
-        thread.callAndWait(main, new Address[0], null);
+        thread.callAndWait(main, new Address[0], thread.getTempAddress());
     }
 }

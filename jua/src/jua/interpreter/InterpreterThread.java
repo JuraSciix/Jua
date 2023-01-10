@@ -57,6 +57,7 @@ public final class InterpreterThread {
     private int msg = MSG_UNSTARTED;
 
     private Address returnAddress;
+    private boolean checkArgc  = true;
 
     public InterpreterThread(Thread jvmThread, JuaEnvironment environment) {
         Objects.requireNonNull(jvmThread, "JVM thread");
@@ -98,13 +99,16 @@ public final class InterpreterThread {
     }
 
     private void joinFrame(JuaFunction callee, int argc) {
-        if (argc < callee.minNumArgs()) {
-            error("too few arguments: %d required, %d passed", callee.minNumArgs(), argc);
-            return;
-        }
-        if (argc > callee.maxNumArgs()) {
-            error("too many arguments: total %d, passed %d", callee.maxNumArgs(), argc);
-            return;
+        if (checkArgc) {
+            if (argc < callee.minNumArgs()) {
+                error("too few arguments: %d required, %d passed", callee.minNumArgs(), argc);
+                return;
+            }
+            if (argc > callee.maxNumArgs()) {
+                error("too many arguments: total %d, passed %d", callee.maxNumArgs(), argc);
+                return;
+            }
+            checkArgc = false;
         }
 
         executingFrame = makeFrame(callee, returnAddress);
@@ -128,11 +132,12 @@ public final class InterpreterThread {
         executingFrame = uf1;
     }
 
-    public void prepareCall(int functionIndex, Address[] args, int argc, Address returnAddress) {
+    public void prepareCall(int functionIndex, Address[] args, int argc, Address returnAddress, boolean checkArgc) {
         calleeId = functionIndex;
         numArgs = argc;
         this.args = args;
         this.returnAddress = returnAddress;
+        this.checkArgc = checkArgc;
         set_msg(MSG_CALLING_FRAME);
     }
 

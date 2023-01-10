@@ -302,21 +302,25 @@ public class Items {
     class CallItem extends Item {
 
         final int index, nargs;
+        final boolean safe;
 
-        CallItem(int index, int nargs) {
+        CallItem(int index, int nargs, boolean safe) {
             this.index = index;
             this.nargs = nargs;
+            this.safe = safe;
         }
 
         @Override
         Item load() {
-            code.addInstruction(new Call((short) index, (byte) nargs));
+            code.addInstruction(safe ? new Callq((short) index, (byte) nargs) :
+                    new Call((short) index, (byte) nargs));
             return stackItem;
         }
 
         @Override
         void drop() {
-            code.addInstruction(new CallPop((short) index, (byte) nargs));
+            code.addInstruction(safe ? new CallPopq((short) index, (byte) nargs) :
+                    new CallPop((short) index, (byte) nargs));
         }
     }
 
@@ -378,8 +382,8 @@ public class Items {
         return new CondItem(opcodePC, truejumps, falsejumps);
     }
 
-    CallItem makeCall(int index, int nargs) {
-        return new CallItem(index, nargs);
+    CallItem makeCall(int index, int nargs, boolean safe) {
+        return new CallItem(index, nargs, safe);
     }
 
     TempItem makeTemp() {

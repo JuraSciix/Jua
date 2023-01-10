@@ -1041,6 +1041,9 @@ public abstract class Tree {
 
         public List<Argument> args;
 
+        /** Безопасный вызов: число аргументов совпадает, функция заведомо существует и т.д. */
+        public boolean _safe = false; // helpful compiler analysis flag
+
         public Invocation(int pos, Expression callee, List<Argument> args) {
             super(pos);
             this.callee = callee;

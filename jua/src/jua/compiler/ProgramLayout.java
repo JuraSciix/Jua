@@ -9,6 +9,7 @@ import jua.runtime.VirtualMachine;
 import jua.runtime.heap.MapHeap;
 import jua.util.Assert;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,48 +21,98 @@ public final class ProgramLayout {
 
     CompilationUnit topTree;
 
-    public final HashMap<String, Types.Type> constantLiterals = new HashMap<>();
+    public static class FuncData {
 
-    private final HashMap<String, Integer> constantMap = new HashMap<>();
+        final String name;
+        final int id;
+        final int minargs, maxargs;
+        final ArrayList<String> paramnames; // null if tree is null
+        final FuncDef tree; // null if function is native
 
-    private final HashMap<String, Integer> functionMap = new HashMap<>();
+        FuncData(String name, int id, int minargs, int maxargs, ArrayList<String> paramnames, FuncDef tree) {
+            this.name = name;
+            this.id = id;
+            this.minargs = minargs;
+            this.maxargs = maxargs;
+            this.paramnames = paramnames;
+            this.tree = tree;
+        }
+    }
+
+    public static class ConstData {
+
+        final String name;
+        final int id;
+        final Types.Type type; // null if tree.expr isn't Tree.Literal
+        final ConstDef.Definition tree;
+
+        ConstData(String name, int id, Types.Type type, ConstDef.Definition tree) {
+            this.name = name;
+            this.id = id;
+            this.type = type;
+            this.tree = tree;
+        }
+    }
+
+    private final HashMap<String, ConstData> constantMap = new HashMap<>();
+
+    private final HashMap<String, FuncData> functionMap = new HashMap<>();
 
     public boolean hasConstant(Name name) {
         return constantMap.containsKey(name.value);
     }
 
-    public int tryFindFunc(Name name) {
-//        System.out.println(functionMap); // DEBUG
-        if (name == null) {
-            return -1;
-        }
-        return functionMap.computeIfAbsent(name.value, _name -> {
-            mainSource.getLog().error(name.pos, "Trying to call an undefined function");
-            return -1;
-        });
+    public FuncData tryFindFunc(Name name) {
+        return functionMap.get(name.value);
     }
 
-    public int tryFindConst(Name name) {
-        return constantMap.computeIfAbsent(name.value, _name -> {
-            mainSource.getLog().error(name.pos, "Trying to access an undefined constant");
-            return -1;
-        });
+    public ConstData tryFindConst(Name name) {
+        return constantMap.get(name.value);
     }
 
-    public int addFunction(String name) {
-        if (functionMap.containsKey(name)) {
-            throw new IllegalArgumentException(name);
+    public int addConstant(String name, ConstDef.Definition tree) {
+        if (constantMap.containsKey(name)) {
+            mainSource.getLog().error(tree.name.pos, "Constant duplicate declaration");
+            return -1;
         }
-        int id = functionMap.size();
-        functionMap.put(name, id);
+        int id = constantMap.size();
+        Types.Type type = null;
+        Expression inner_expr = TreeInfo.stripParens(tree.expr);
+        if (inner_expr.hasTag(Tag.LITERAL))
+            type = ((Literal) inner_expr).type;
+        constantMap.put(name, new ConstData(name, id, type, tree));
         return id;
     }
 
-    /**
-     * Создает объект виртуальной машины из информации, собранной компилятором.
-     */
-    public VirtualMachine createVM() {
-        throw new UnsupportedOperationException("Not yet implemented"); // todo
+    public int addFunction(String name, FuncDef tree, JuaFunction function) {
+        if (functionMap.containsKey(name)) {
+            if (tree != null) {
+                mainSource.getLog().error(tree.name.pos, "Function duplicate declaration");
+            } else {
+                mainSource.getLog().error("Native function duplicate: " + name);
+            }
+            return -1;
+        }
+        int minargs, maxargs;
+        ArrayList<String> paramnames = null;
+        if (tree != null) {
+            minargs = tree.params.count();
+            maxargs = 0;
+            paramnames = new ArrayList<>();
+            for (FuncDef.Parameter param : tree.params) {
+                paramnames.add(param.name.value);
+                if (param.expr != null && minargs > maxargs) {
+                    minargs = maxargs;
+                }
+                maxargs++;
+            }
+        } else {
+            minargs = function.minNumArgs();
+            maxargs = function.maxNumArgs();
+        }
+        int id = functionMap.size();
+        functionMap.put(name, new FuncData(name, id, minargs, maxargs, paramnames, tree));
+        return id;
     }
 
     public Program buildProgram() {
@@ -70,28 +121,14 @@ public final class ProgramLayout {
 
         List<JuaFunction> builtinFunctions = NativeLib.getNativeFunctions();
         Map<Integer, JuaFunction> a = builtinFunctions.stream()
-                .collect(Collectors.toMap(f -> addFunction(f.name()), f -> f));
+                .collect(Collectors.toMap(f -> addFunction(f.name(), null, f), f -> f));
 
         topTree.funcDefs.stream()
-                .forEach(fn -> {
-                    String fnName = fn.name.value;
-                    if (functionMap.containsKey(fnName)) {
-                        mainSource.getLog().error(fn.name.pos, "Function duplicate declaration");
-                        return;
-                    }
-                    functionMap.put(fnName, functionMap.size());
-                });
+                .forEach(fn -> addFunction(fn.name.value, fn, null));
 
         topTree.constDefs.stream()
                 .flatMap(stmt -> stmt.defs.stream())
-                .forEach(def -> {
-                    String cName = def.name.value;
-                    if (constantMap.containsKey(cName)) {
-                        mainSource.getLog().error(def.name.pos, "Constant duplicate declaration");
-                        return;
-                    }
-                    constantMap.put(cName, constantMap.size());
-                });
+                .forEach(def -> addConstant(def.name.value, def));
 
         topTree.accept(topTree.code.lower);
         topTree.accept(topTree.code.check);
@@ -107,7 +144,7 @@ public final class ProgramLayout {
                         ArrayLiteral arrayLiteral = (ArrayLiteral) expr;
 
                         if (!arrayLiteral.entries.isEmpty()) {
-                            topTree.code.addInstruction(new Getconst(tryFindConst(def.name)));
+                            topTree.code.addInstruction(new Getconst(tryFindConst(def.name).id));
                             topTree.code.gen.genArrayInitializr(arrayLiteral.entries).drop();
                         }
 
@@ -141,5 +178,12 @@ public final class ProgramLayout {
         return new Program(mainSource, topTree.code.gen.resultFunc,
                 functions.toArray(new JuaFunction[0]),
                 constants.toArray(new Address[0]));
+    }
+
+    /**
+     * Создает объект виртуальной машины из информации, собранной компилятором.
+     */
+    public VirtualMachine createVM() {
+        throw new UnsupportedOperationException("Not yet implemented"); // todo
     }
 }
