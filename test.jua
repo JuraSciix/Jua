@@ -1,4 +1,3 @@
-var a = 1, b, c = null;
-
+var a, b = 1;
 println(a);
 println(b);

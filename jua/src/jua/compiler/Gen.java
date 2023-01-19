@@ -236,13 +236,13 @@ public final class Gen extends Scanner {
             // Эта строчка находится вне условия специально
             // Переменная должна регистрироваться независимо от того,
             // сразу она инициализируется или нет.
-            int index = code.resolveLocal(def.name);
-            if (def.init != null) {
-                Item varitem = items.makeLocal(index, true);
+            Item var_item = items.makeLocal(code.resolveLocal(def.name), true);
+            if (def.init == null) {
+                items.makeLiteral(Types.TYPE_NULL).load();
+            } else {
                 genExpr(def.init).load();
-                code.putPos(tree.pos);
-                items.makeAssign(varitem).drop();
             }
+            items.makeAssign(var_item).drop();
         }
     }
 
