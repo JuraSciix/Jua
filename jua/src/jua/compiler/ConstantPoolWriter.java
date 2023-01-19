@@ -1,29 +1,13 @@
 package jua.compiler;
 
-import java.util.Objects;
+import jua.runtime.code.ConstantPool;
+import jua.util.Pool;
 
 public class ConstantPoolWriter {
 
-    private static class Entry {
+    private static final int MAX_SIZE = ConstantPool.MAX_SIZE;
 
-        final int hash;
-        final Object value;
-        final int index;
-
-        Entry left, right;
-
-        Entry(int hash, Object value, int index) {
-            this.hash = hash;
-            this.value = value;
-            this.index = index;
-        }
-    }
-
-    private static final int MAX_SIZE = 65535;
-
-    private Entry root = null;
-
-    private int totalIndex = 0;
+    private final Pool<Object> pool = new Pool<>();
 
     public int writeLong(long l) { return write(l); }
 
@@ -41,54 +25,17 @@ public class ConstantPoolWriter {
     public int writeNull() { return write(null); }
 
     private int write(Object value) {
-        int hash = Objects.hashCode(value);
-        if (root == null) {
-            root = new Entry(hash, value, updateTotalIndex());
-            return root.index;
-        }
-        Entry entry = root;
-        while (true) {
-            if (hash < entry.hash) {
-                if (entry.left == null) {
-                    entry.left = new Entry(hash, value, updateTotalIndex());
-                    return entry.left.index;
-                }
-                entry = entry.left;
-            } else {
-                if (hash == entry.hash && Objects.equals(value, entry.value)) {
-                    return entry.index;
-                }
-                if (entry.right == null) {
-                    entry.right = new Entry(hash, value, updateTotalIndex());
-                    return entry.right.index;
-                }
-                entry = entry.right;
-            }
-        }
+        checkOverflow();
+        return pool.lookup(value);
     }
 
-    private int updateTotalIndex() {
-        if (totalIndex >= MAX_SIZE) {
+    private void checkOverflow() {
+        if (pool.count() >= MAX_SIZE) {
             throw new CompileException("constant pool cannot contain greater than " + MAX_SIZE + " entries");
         }
-        return totalIndex++;
     }
 
     public Object[] toArray() {
-        Object[] values = new Object[totalIndex];
-        if (root != null) {
-            toArray(values, root);
-        }
-        return values;
-    }
-
-    private void toArray(Object[] values, Entry entry) {
-        if (entry.left != null) {
-            toArray(values, entry.left);
-        }
-        if (entry.right != null) {
-            toArray(values, entry.right);
-        }
-        values[entry.index] = entry.value;
+        return pool.toArray(new Object[0]);
     }
 }
