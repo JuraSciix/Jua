@@ -4,7 +4,10 @@ import jua.interpreter.Address;
 import jua.interpreter.AddressUtils;
 import jua.runtime.ValueType;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.StringJoiner;
 
 public final class MapHeap implements Heap, Iterable<Address> {
 

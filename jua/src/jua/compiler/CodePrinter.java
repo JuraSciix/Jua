@@ -1,9 +1,9 @@
 package jua.compiler;
 
 import jua.interpreter.Address;
-import jua.runtime.code.CodeSegment;
 import jua.interpreter.instruction.Instruction;
 import jua.runtime.JuaFunction;
+import jua.runtime.code.CodeSegment;
 import jua.runtime.heap.Operand;
 
 import java.util.ArrayList;

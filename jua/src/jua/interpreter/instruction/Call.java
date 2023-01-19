@@ -3,7 +3,6 @@ package jua.interpreter.instruction;
 import jua.compiler.CodePrinter;
 import jua.interpreter.Address;
 import jua.interpreter.InterpreterState;
-import jua.interpreter.InterpreterThread;
 
 public final class Call implements Instruction {
 

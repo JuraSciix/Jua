@@ -1,7 +1,7 @@
 package jua.interpreter;
 
-import jua.runtime.heap.Operand;
 import jua.runtime.RuntimeErrorException;
+import jua.runtime.heap.Operand;
 
 @Deprecated
 public class InterpreterError extends RuntimeException {

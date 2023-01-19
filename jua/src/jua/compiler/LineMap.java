@@ -3,8 +3,6 @@ package jua.compiler;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 
-import java.io.IOException;
-
 public final class LineMap {
 
     private final int[] lineStartPoints;

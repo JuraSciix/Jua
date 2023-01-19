@@ -1,6 +1,6 @@
 package jua.compiler;
 
-import jua.compiler.Types.*;
+import jua.compiler.Types.Type;
 import jua.util.List;
 
 import java.io.PrintWriter;

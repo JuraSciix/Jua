@@ -1,7 +1,7 @@
 package jua;
 
-import jua.compiler.Program;
 import jua.compiler.JuaCompiler;
+import jua.compiler.Program;
 import jua.runtime.RuntimeErrorException;
 import jua.util.Options;
 
