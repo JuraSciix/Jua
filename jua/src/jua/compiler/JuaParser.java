@@ -64,76 +64,91 @@ public final class JuaParser implements Parser {
 
     @Override
     public Statement parseStatement() {
-        int position = token.pos;
+        int pos = token.pos;
 
         switch (token.type) {
             case BREAK: {
                 nextToken();
-                return parseBreak(position);
+                return parseBreak(pos);
             }
             case CASE: {
                 nextToken();
-                pError(position, "'case' is not allowed outside of switch.");
+                pError(pos, "'case' is not allowed outside of switch.");
             }
             case CONST: {
                 nextToken();
-                pError(position, "constant declaration is not allowed here");
+                pError(pos, "constant declaration is not allowed here");
             }
             case CONTINUE: {
                 nextToken();
-                return parseContinue(position);
+                return parseContinue(pos);
             }
             case DEFAULT: {
                 nextToken();
-                pError(position, "'default' is not allowed outside of switch.");
+                pError(pos, "'default' is not allowed outside of switch.");
             }
             case DO: {
                 nextToken();
-                return parseDo(position);
+                return parseDo(pos);
             }
             case ELSE: {
                 nextToken();
-                pError(position, "'else' is not allowed without if-statement.");
+                pError(pos, "'else' is not allowed without if-statement.");
             }
             case EOF: {
                 nextToken();
-                pError(position, "missing expected statement.");
+                pError(pos, "missing expected statement.");
             }
             case FALLTHROUGH: {
                 nextToken();
-                return parseFallthrough(position);
+                return parseFallthrough(pos);
             }
             case FN: {
                 nextToken();
-                pError(position, "function declaration is not allowed here");
+                pError(pos, "function declaration is not allowed here");
             }
             case FOR: {
                 nextToken();
-                return parseFor(position);
+                return parseFor(pos);
             }
             case IF: {
                 nextToken();
-                return parseIf(position);
+                return parseIf(pos);
             }
             case LBRACE: {
                 nextToken();
-                return parseBlock(position);
+                return parseBlock(pos);
             }
             case RETURN: {
                 nextToken();
-                return parseReturn(position);
+                return parseReturn(pos);
             }
             case SEMI: {
                 nextToken();
-                return new Block(position, new List<>());
+                return new Block(pos, new List<>());
             }
             case SWITCH: {
                 nextToken();
-                return parseSwitch(position);
+                return parseSwitch(pos);
+            }
+            case VAR: {
+                nextToken();
+                List<VarDef.Definition> defs = new List<>();
+                do {
+                    Token name = token;
+                    expectToken(IDENTIFIER);
+                    Expression init = null;
+                    if (acceptToken(EQ)) {
+                        init = parseExpression();
+                    }
+                    defs.add(new VarDef.Definition(name.toName(), init));
+                } while (acceptToken(COMMA));
+                expectToken(SEMI);
+                return new VarDef(pos, defs);
             }
             case WHILE: {
                 nextToken();
-                return new WhileLoop(position, parseExpression(), parseStatement());
+                return new WhileLoop(pos, parseExpression(), parseStatement());
             }
             default: return parseUnusedExpression();
         }

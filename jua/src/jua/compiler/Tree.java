@@ -22,6 +22,7 @@ public abstract class Tree {
         BREAK,
         CONTINUE,
         FALLTHROUGH,
+        VARDEF,
         RETURN,
         DISCARDED,
         LITERAL,
@@ -87,6 +88,7 @@ public abstract class Tree {
         void visitBreak(Break tree);
         void visitContinue(Continue tree);
         void visitFallthrough(Fallthrough tree);
+        void visitVarDef(VarDef tree);
         void visitReturn(Return tree);
         void visitDiscarded(Discarded tree);
         void visitLiteral(Literal tree);
@@ -142,6 +144,9 @@ public abstract class Tree {
 
         @Override
         public void visitFallthrough(Fallthrough tree) { visitTree(tree); }
+
+        @Override
+        public void visitVarDef(VarDef tree) { visitTree(tree); }
 
         @Override
         public void visitReturn(Return tree) { visitTree(tree); }
@@ -279,6 +284,13 @@ public abstract class Tree {
 
         @Override
         public void visitFallthrough(Fallthrough tree) {}
+
+        @Override
+        public void visitVarDef(VarDef tree) {
+            for (VarDef.Definition def : tree.defs) {
+                scan(def.init);
+            }
+        }
 
         @Override
         public void visitReturn(Return tree) {
@@ -469,6 +481,14 @@ public abstract class Tree {
 
         @Override
         public void visitFallthrough(Fallthrough tree) { result = tree; }
+
+        @Override
+        public void visitVarDef(VarDef tree) {
+            for (VarDef.Definition def : tree.defs) {
+                def.init = translate(def.init);
+            }
+            result = tree;
+        }
 
         @Override
         public void visitReturn(Return tree) {
@@ -881,6 +901,34 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitFallthrough(this); }
     }
 
+    public static class VarDef extends Statement {
+
+        public static class Definition {
+
+            public final Name name;
+
+            public Expression init;
+
+            public Definition(Name name, Expression init) {
+                this.name = name;
+                this.init = init;
+            }
+        }
+
+        public List<Definition> defs;
+
+        public VarDef(int pos, List<Definition> defs) {
+            super(pos);
+            this.defs = defs;
+        }
+
+        @Override
+        public Tag getTag() { return Tag.VARDEF; }
+
+        @Override
+        public void accept(Visitor visitor) { visitor.visitVarDef(this); }
+    }
+
     public static class Return extends Statement {
 
         public Expression expr;
@@ -973,7 +1021,7 @@ public abstract class Tree {
         public final Name name;
 
         /** Уверены ли мы в том, что переменная была явно определена. */
-        public boolean _defined; // helpful compiler flag
+        @Deprecated public boolean _defined; // helpful compiler flag
 
         public Var(int pos, Name name) {
             super(pos);
@@ -1042,7 +1090,7 @@ public abstract class Tree {
         public List<Argument> args;
 
         /** Безопасный вызов: число аргументов совпадает, функция заведомо существует и т.д. */
-        public boolean _safe = false; // helpful compiler analysis flag
+        @Deprecated public boolean _safe = false; // helpful compiler analysis flag
 
         public Invocation(int pos, Expression callee, List<Argument> args) {
             super(pos);

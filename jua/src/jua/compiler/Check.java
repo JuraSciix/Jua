@@ -1,10 +1,8 @@
 package jua.compiler;
 
 import jua.compiler.Tree.*;
-import jua.util.Assert;
 
 import java.util.HashSet;
-import java.util.Objects;
 
 import static jua.compiler.TreeInfo.*;
 
@@ -14,17 +12,13 @@ public class Check extends Scanner {
 
     private final Log log;
 
-    private final HashSet<String> knownVars = new HashSet<>();
+    private boolean allowsBreak, allowsContinue, allowsFallthrough;
 
-    private boolean inFunction = false;
-
-    private boolean inLoop = false;
-
-    private boolean inSwitchCase = false;
+    private HashSet<String> scopedVars = new HashSet<>();
 
     public Check(ProgramLayout programLayout, Log log) {
-        this.programLayout = Objects.requireNonNull(programLayout);
-        this.log = Objects.requireNonNull(log);
+        this.programLayout = programLayout;
+        this.log = log;
     }
 
     @Override
@@ -36,33 +30,37 @@ public class Check extends Scanner {
     public void visitConstDef(ConstDef tree) {
         for (ConstDef.Definition def : tree.defs) {
             if (!isLiteral(def.expr)) {
-                log.error(def.expr.pos, "literal expected");
+                log.error(stripParens(def.expr).pos, "literal expected");
             }
         }
     }
 
     @Override
     public void visitFuncDef(FuncDef tree) {
-        if (inFunction) {
-//            log.error(tree.pos, "function declaration is not allowed here");
-//            return;
-            Assert.error();
-        }
-
         for (FuncDef.Parameter param : tree.params) {
-            Name name = param.name;
-            if (!knownVars.add(name.value)) {
-                log.error(name.pos, "duplicate function parameter");
+            boolean duplicate = !scopedVars.add(param.name.value);
+            if (duplicate) {
+                log.error(param.name.pos, "duplicate function parameter");
                 continue;
             }
             if (param.expr != null && !isLiteral(param.expr)) {
-                log.error(stripParens(param.expr).pos,
-                        "only literals are allowed as the default parameter value expression");
+                log.error(stripParens(param.expr).pos, "only literals are allowed as the default parameter value expression");
             }
         }
 
-        inFunction = true;
         scan(tree.body);
+    }
+
+    @Override
+    public void visitBlock(Block tree) {
+        // Переменные из внешнего scope видны во внутренних scope
+        // При этом переменные из внутренних scope не видны во внешних
+        HashSet<String> scopedVarsCopy = new HashSet<>(scopedVars);
+        try {
+            scan(tree.stats);
+        } finally {
+            scopedVars = scopedVarsCopy;
+        }
     }
 
     @Override
@@ -86,12 +84,15 @@ public class Check extends Scanner {
     }
 
     private void scanLoopBody(Statement tree) {
-        boolean prevInLoop = inLoop;
-        inLoop = true;
+        boolean prevAllowsBreak = allowsBreak;
+        boolean prevAllowsContinue = allowsContinue;
+        allowsBreak = true;
+        allowsContinue = true;
         try {
-            scan(tree);
+            scanAtInnerScope(tree);
         } finally {
-            inLoop = prevInLoop;
+            allowsBreak = prevAllowsBreak;
+            allowsContinue = prevAllowsContinue;
         }
     }
 
@@ -108,42 +109,68 @@ public class Check extends Scanner {
     }
 
     private void scanCaseBody(Statement tree) {
-        boolean prevInSwitchCase = inSwitchCase;
-        inSwitchCase = true;
+        boolean prevAllowsBreak = allowsBreak;
+        boolean prevAllowsFallthrough = allowsFallthrough;
+        allowsBreak = true;
+        allowsFallthrough = true;
+        try {
+            scanAtInnerScope(tree);
+        } finally {
+            allowsBreak = prevAllowsBreak;
+            allowsFallthrough = prevAllowsFallthrough;
+        }
+    }
+
+    private void scanAtInnerScope(Tree tree) {
+        // Переменные из внешнего scope видны во внутренних scope
+        // При этом переменные из внутренних scope не видны во внешних
+        HashSet<String> scopedVarsCopy = new HashSet<>(scopedVars);
         try {
             scan(tree);
         } finally {
-            inSwitchCase = prevInSwitchCase;
+            scopedVars = scopedVarsCopy;
         }
     }
 
     @Override
     public void visitBreak(Break tree) {
-        if (!inLoop && !inSwitchCase) {
+        if (!allowsBreak) {
             log.error(tree.pos, "break-statement is allowed only inside loop/switch-case");
         }
     }
 
     @Override
     public void visitContinue(Continue tree) {
-        if (!inLoop) {
+        if (!allowsContinue) {
             log.error(tree.pos, "continue-statement is allowed only inside loop");
         }
     }
 
     @Override
     public void visitFallthrough(Fallthrough tree) {
-        if (!inSwitchCase) {
+        if (!allowsFallthrough) {
             log.error(tree.pos, "fallthrough-statement is allowed only inside switch-case");
+        }
+    }
+
+    @Override
+    public void visitVarDef(VarDef tree) {
+        for (VarDef.Definition def : tree.defs) {
+            boolean duplicate = !scopedVars.add(def.name.value);
+            if (duplicate) {
+                log.error(def.name.pos, "duplicate variable definition");
+            }
+            scan(def.init);
         }
     }
 
     @Override
     public void visitVariable(Var tree) {
         Name name = tree.name;
-        if (!programLayout.hasConstant(name) && knownVars.add(name.value)) {
+        if (!programLayout.hasConstant(name) && scopedVars.add(name.value)) {
             log.error(name.pos, "attempt to refer to an undefined variable");
         }
+        // todo: проверять инициализацию переменных, убрав проверку из рантайма
     }
 
     @Override
@@ -209,18 +236,12 @@ public class Check extends Scanner {
     public void visitAssign(Assign tree) {
         Expression inner_var = stripParens(tree.var);
 
-        if (inner_var.hasTag(Tag.VARIABLE)) {
-            scan(tree.expr);
-            Var varTree = (Var) inner_var;
-            knownVars.add(varTree.name.value);
+        if (!isAccessible(inner_var)) {
+            log.error(inner_var.pos, "attempt to assign a value to a non-accessible expression");
         } else {
-            if (!isAccessible(tree.var)) {
-                log.error(inner_var.pos, "attempt to assign a value to a non-accessible expression");
-            } else {
-                scan(tree.var);
-            }
-            scan(tree.expr);
+            scan(tree.var);
         }
+        scan(tree.expr);
     }
 
     @Override
@@ -240,10 +261,10 @@ public class Check extends Scanner {
         switch (tree.getTag()) {
             case POSTINC: case POSTDEC:
             case PREINC: case PREDEC:
-                Expression expr = stripParens(tree.expr);
-                if (!isAccessible(expr)) {
-                    log.error(expr.pos, "the increment operation is allowed only on accessible expressions");
-                    break;
+                Expression inner_expr = stripParens(tree.expr);
+                if (!isAccessible(inner_expr)) {
+                    log.error(inner_expr.pos, "the increment operation is allowed only on accessible expressions");
+                    return;
                 }
         }
         scan(tree.expr);

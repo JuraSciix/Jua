@@ -130,6 +130,7 @@ public class Items {
     class LocalItem extends Item {
 
         final int index;
+        @Deprecated
         final boolean definitelyExists;
 
         LocalItem(int index, boolean definitelyExists) {
@@ -139,7 +140,7 @@ public class Items {
 
         @Override
         Item load() {
-            code.addInstruction(definitelyExists ? new Vloadq(index) : new Vload(index));
+            code.addInstruction(new Vload(index));
             return stackItem;
         }
 
@@ -163,11 +164,11 @@ public class Items {
         }
 
         void inc() {
-            code.addInstruction(definitelyExists ? new Vincq(index) : new Vinc(index));
+            code.addInstruction(new Vinc(index));
         }
 
         void dec() {
-            code.addInstruction(definitelyExists ? new Vdecq(index) : new Vdec(index));
+            code.addInstruction(new Vdec(index));
         }
     }
 
@@ -302,6 +303,7 @@ public class Items {
     class CallItem extends Item {
 
         final int index, nargs;
+        @Deprecated
         final boolean safe;
 
         CallItem(int index, int nargs, boolean safe) {
@@ -312,15 +314,15 @@ public class Items {
 
         @Override
         Item load() {
-            code.addInstruction(safe ? new Callq((short) index, (byte) nargs) :
-                    new Call((short) index, (byte) nargs));
+            code.addInstruction(new Call((short) index, (byte) nargs));
             return stackItem;
         }
 
         @Override
         void drop() {
-            code.addInstruction(safe ? new CallPopq((short) index, (byte) nargs) :
-                    new CallPop((short) index, (byte) nargs));
+//            code.addInstruction(safe ? new CallPopq((short) index, (byte) nargs) :
+//                    new CallPop((short) index, (byte) nargs));
+            load().drop();
         }
     }
 
@@ -335,7 +337,7 @@ public class Items {
 
         @Override
         Item load() {
-            code.addInstruction(new Vloadq(index));
+            code.addInstruction(new Vload(index));
             drop();
             return stackItem;
         }

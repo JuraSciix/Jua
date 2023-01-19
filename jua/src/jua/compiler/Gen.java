@@ -231,6 +231,22 @@ public final class Gen extends Scanner {
     }
 
     @Override
+    public void visitVarDef(VarDef tree) {
+        for (VarDef.Definition def : tree.defs) {
+            // Эта строчка находится вне условия специально
+            // Переменная должна регистрироваться независимо от того,
+            // сразу она инициализируется или нет.
+            int index = code.resolveLocal(def.name);
+            if (def.init != null) {
+                Item varitem = items.makeLocal(index, true);
+                genExpr(def.init).load();
+                code.putPos(tree.pos);
+                items.makeAssign(varitem).drop();
+            }
+        }
+    }
+
+    @Override
     public void visitForLoop(ForLoop tree) {
         genLoop(tree._infinite, tree.init, tree.cond, tree.step, tree.body, true);
     }
