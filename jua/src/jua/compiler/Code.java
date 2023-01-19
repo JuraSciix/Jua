@@ -3,7 +3,6 @@ package jua.compiler;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.shorts.Short2IntRBTreeMap;
-import jua.compiler.Tree.Name;
 import jua.interpreter.Address;
 import jua.interpreter.AddressUtils;
 import jua.interpreter.instruction.Binaryswitch;

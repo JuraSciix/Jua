@@ -601,18 +601,6 @@ public abstract class Tree {
         return writer.toString();
     }
 
-    public static class Name {
-
-        public final String value;
-
-        public final int pos;
-
-        public Name(String value, int pos) {
-            this.value = value;
-            this.pos = pos;
-        }
-    }
-
     public static class CompilationUnit extends Tree {
 
         public final Source source;

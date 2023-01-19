@@ -138,7 +138,7 @@ public final class Tokens {
             this.pos = pos;
         }
 
-        public Tree.Name toName() { throw unsupportedOperationException(); }
+        public Name toName() { throw unsupportedOperationException(); }
 
         public Types.Type toType() { throw unsupportedOperationException(); }
 
@@ -163,7 +163,7 @@ public final class Tokens {
         }
 
         @Override
-        public Tree.Name toName() { return new Tree.Name(name, pos); }
+        public Name toName() { return new Name(name, pos); }
 
         @Override
         public String name() { return name; }
