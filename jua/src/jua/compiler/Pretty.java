@@ -171,6 +171,19 @@ public class Pretty extends Scanner {
     }
 
     @Override
+    public void visitVarDef(VarDef tree) {
+        print("var ");
+        printSequence(tree.defs, def -> {
+            print(def.name);
+            if (def.init != null) {
+                print(" = ");
+                scan(def.init);
+            }
+        });
+        printLine(";");
+    }
+
+    @Override
     public void visitReturn(Return tree) {
         if (tree.expr == null) {
             printLine("return;");
