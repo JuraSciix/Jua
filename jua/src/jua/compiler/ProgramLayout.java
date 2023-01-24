@@ -7,7 +7,7 @@ import jua.runtime.JuaFunction;
 import jua.runtime.NativeLib;
 import jua.runtime.VirtualMachine;
 import jua.runtime.heap.MapHeap;
-import jua.util.Assert;
+import jua.util.Assertions;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -155,7 +155,7 @@ public final class ProgramLayout {
 //                        return literal.type.toOperand();
                         literal.type.toOperand().writeToAddress(address);
                     } else {
-                        Assert.error(expr.getTag());
+                        Assertions.error(expr.getTag());
                         return null;
                     }
                     return address;

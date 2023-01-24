@@ -1,13 +1,9 @@
 package jua.compiler;
 
 import jua.compiler.Tree.*;
-import jua.util.Assert;
-import jua.util.Collections;
+import jua.util.Assertions;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Set;
 
 import static jua.compiler.TreeInfo.isLiteralTrue;
 import static jua.compiler.TreeInfo.stripParens;
@@ -91,11 +87,8 @@ public class Flow extends Scanner {
         curScope.mustBeExecuted &= thenScope.mustBeExecuted;
         if (tree.elsebody != null) {
             Scope elseScope = scanScoped(tree.elsebody);
-            HashSet<String> outVisibleVars = new HashSet<>();
-            Collections.intersection(
-                    Arrays.asList(thenScope.bVars, elseScope.bVars),
-                    outVisibleVars
-            );
+            HashSet<String> outVisibleVars = new HashSet<>(thenScope.bVars);
+            outVisibleVars.retainAll(elseScope.bVars);
             defineVars(outVisibleVars);
             curScope.hasBreaks |= elseScope.hasBreaks;
             curScope.mustBeExecuted &= elseScope.mustBeExecuted;
@@ -142,26 +135,28 @@ public class Flow extends Scanner {
     @Override
     public void visitSwitch(Switch tree) {
         scan(tree.expr);
-        ArrayList<Set<String>> casesGlobalVars = new ArrayList<>(tree.cases.count());
+        HashSet<String> casesGlobalVars = null;
         boolean dead = true;
         for (Case case_ : tree.cases) {
             scan(case_.labels);
             Scope case_scope = scanScoped(case_.body, false);
-            casesGlobalVars.add(case_scope.bVars);
+            if (casesGlobalVars == null) {
+                casesGlobalVars = new HashSet<>(case_scope.bVars);
+            } else {
+                casesGlobalVars.retainAll(case_scope.bVars);
+            }
             dead &= case_scope.dead;
         }
         boolean hasDefault = tree.cases.stream().anyMatch(case_ -> case_.labels == null);
         if (hasDefault) {
-            HashSet<String> definedvarsintersection = new HashSet<>();
-            Collections.intersection(casesGlobalVars, definedvarsintersection);
-            defineVars(definedvarsintersection);
+            defineVars(casesGlobalVars);
         }
         curScope.dead |= dead;
     }
 
     @Override
     public void visitCase(Case tree) {
-        Assert.error();
+        Assertions.error();
     }
 
     @Override
@@ -245,7 +240,7 @@ public class Flow extends Scanner {
         try {
             scan(tree);
         } finally {
-            Assert.check(curScope == newScope);
+            Assertions.require(curScope == newScope);
             curScope = newScope.parent;
         }
         return newScope;

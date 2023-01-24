@@ -22,7 +22,5 @@ public final class IOUtils {
         }
     }
 
-    private IOUtils() {
-        throw new UnsupportedOperationException();
-    }
+    private IOUtils() { Assertions.error(); }
 }

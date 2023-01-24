@@ -26,5 +26,5 @@ public final class Conversions {
 
     public static int unsigned(short s) { return s & 0xffff; }
 
-    private Conversions() { throw new UnsupportedOperationException(); }
+    private Conversions() { Assertions.error(); }
 }
