@@ -1,3 +1,5 @@
-var a, b = 1;
-println(a);
-println(b);
+var a;
+
+println(a == a);
+println(a == null);
+println(null == a);

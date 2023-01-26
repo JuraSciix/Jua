@@ -348,28 +348,20 @@ public final class Gen extends Scanner {
     }
 
     private void genCmp(BinaryOp tree) {
-        JumpInstruction opcode;
-
-        if (isLiteralShort(tree.lhs)) {
-            genExpr(tree.rhs).load();
-            opcode = fromConstComparisonOpTag(tree.tag, getLiteralShort(tree.lhs));
-        } else if (isLiteralShort(tree.rhs)) {
-            genExpr(tree.lhs).load();
-            opcode = fromConstComparisonOpTag(tree.tag, getLiteralShort(tree.rhs));
-        } else if (isLiteralNull(tree.lhs)) {
-            genExpr(tree.rhs).load();
-            opcode = new Ifnonnull();
+        if (isLiteralNull(tree.lhs)) {
+            Item expr = genExpr(tree.rhs).load();
+            code.putPos(tree.pos);
+            result = expr.isNull();
         } else if (isLiteralNull(tree.rhs)) {
-            genExpr(tree.lhs).load();
-            opcode = new Ifnonnull();
+            Item expr = genExpr(tree.lhs).load();
+            code.putPos(tree.pos);
+            result = expr.isNull();
         } else {
             genExpr(tree.lhs).load();
             genExpr(tree.rhs).load();
-            opcode = fromComparisonOpTag(tree.tag);
+            code.putPos(tree.pos);
+            result = items.makeCond(code.addInstruction(fromComparisonOpTag(tree.tag)));
         }
-
-        code.putPos(tree.pos);
-        result = items.makeCond(code.addInstruction(opcode));
     }
 
     private void genNullCoalescing(BinaryOp tree) {

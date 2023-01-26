@@ -38,18 +38,6 @@ public class InstructionUtils {
         return fromBinaryOpTag(TreeInfo.stripAsgTag(tag));
     }
 
-    public static JumpInstruction fromConstComparisonOpTag(Tag tag, short comparing) {
-        switch (tag) {
-            case EQ: return new ifconstne(comparing);
-            case NE: return new ifconsteq(comparing);
-            case GT: return new ifconstle(comparing);
-            case GE: return new ifconstlt(comparing);
-            case LT: return new ifconstge(comparing);
-            case LE: return new ifconstgt(comparing);
-            default: throw new AssertionError(tag);
-        }
-    }
-
     public static JumpInstruction fromComparisonOpTag(Tag tag) {
         switch (tag) {
             case EQ: return new Ifne();

@@ -311,54 +311,6 @@ public final class InterpreterState {
         }
     }
 
-    public void ifconsteq(short value, int offset) {
-        if (popStack().quickConstCompare(value, 1) == 0) {
-            offset(offset);
-        } else {
-            next();
-        }
-    }
-
-    public void ifconstne(short value, int offset) {
-        if (popStack().quickConstCompare(value, 0) != 0) {
-            offset(offset);
-        } else {
-            next();
-        }
-    }
-
-    public void ifconstgt(short value, int offset) {
-        if (popStack().quickConstCompare(value, 0) > 0) {
-            offset(offset);
-        } else {
-            next();
-        }
-    }
-
-    public void ifconstge(short value, int offset) {
-        if (popStack().quickConstCompare(value, -1) >= 0) {
-            offset(offset);
-        } else {
-            next();
-        }
-    }
-
-    public void ifconstlt(short value, int offset) {
-        if (popStack().quickConstCompare(value, 0) < 0) {
-            offset(offset);
-        } else {
-            next();
-        }
-    }
-
-    public void ifconstle(short value, int offset) {
-        if (popStack().quickConstCompare(value, 1) <= 0) {
-            offset(offset);
-        } else {
-            next();
-        }
-    }
-
     public void ifnull(int offset) {
         if (popStack().isNull()) {
             offset(offset);
