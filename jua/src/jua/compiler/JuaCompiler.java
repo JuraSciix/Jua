@@ -56,7 +56,7 @@ public final class JuaCompiler {
             programLayout.topTree = parser.parseCompilationUnit();
             if (Options.isShouldPrettyTree()) {
                 PrintWriter writer = new PrintWriter(System.err);
-                programLayout.topTree.accept(new Pretty(writer));
+                programLayout.topTree.accept(new Pretty(System.err));
                 writer.flush();
                 return null;
             }
