@@ -3,9 +3,6 @@ package jua.compiler;
 import jua.compiler.Types.Type;
 import jua.utils.List;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-
 public abstract class Tree {
 
     public enum Tag {
@@ -590,16 +587,10 @@ public abstract class Tree {
 
     public abstract void accept(Visitor visitor);
 
-    public boolean hasTag(Tag tag) {
-        return getTag() == tag;
-    }
+    public boolean hasTag(Tag tag) { return getTag() == tag; }
 
     @Override
-    public String toString() {
-        StringWriter writer = new StringWriter();
-        accept(new Pretty(new PrintWriter(writer)));
-        return writer.toString();
-    }
+    public String toString() { return Pretty.stringifyTree(this); }
 
     public static class CompilationUnit extends Tree {
 

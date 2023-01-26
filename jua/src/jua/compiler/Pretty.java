@@ -1,17 +1,25 @@
 package jua.compiler;
 
 import jua.compiler.Tree.*;
+import jua.utils.Assert;
 import jua.utils.List;
 
-import java.io.PrintWriter;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 public class Pretty extends Scanner {
 
-    private final PrintWriter writer;
+    /** @see Tree#toString() */
+    static String stringifyTree(Tree tree) {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream(1024);
+        tree.accept(new Pretty(new PrintStream(buffer)));
+        return buffer.toString();
+    }
+
+    private final PrintStream output;
 
     private final int tabIndent;
 
@@ -19,12 +27,18 @@ public class Pretty extends Scanner {
 
     private int nTabs = 0;
 
-    public Pretty(PrintWriter writer) {
-        this(writer, 2);
+    public Pretty(PrintStream output) {
+        this(output, 2);
     }
 
-    public Pretty(PrintWriter writer, int tabIndent) {
-        this.writer = Objects.requireNonNull(writer, "Writer is null");
+    public Pretty(PrintStream output, int tabIndent) {
+        if (output == null) {
+            throw new IllegalArgumentException("the output should not be null");
+        }
+        if (tabIndent < 0) {
+            throw new IllegalArgumentException("the tabIndent should not be negative");
+        }
+        this.output = output;
         this.tabIndent = tabIndent;
     }
 
@@ -43,7 +57,7 @@ public class Pretty extends Scanner {
     public void visitConstDef(ConstDef tree) {
         print("const ");
 
-        printSequence(tree.defs, def -> {
+        printEnumeration(tree.defs, def -> {
             print(def.name);
             print(" = ");
             scan(def.expr);
@@ -57,7 +71,7 @@ public class Pretty extends Scanner {
         print("fn ");
         print(tree.name);
         print("(");
-        printSequence(tree.params, param -> {
+        printEnumeration(tree.params, param -> {
             print(param.name);
             if (param.expr != null) {
                 print(" = ");
@@ -124,11 +138,11 @@ public class Pretty extends Scanner {
     @Override
     public void visitForLoop(ForLoop tree) {
         print("for ");
-        printSequence(tree.init, this::scan);
+        printEnumeration(tree.init, this::scan);
         print("; ");
         scan(tree.cond);
         print("; ");
-        printSequence(tree.step, this::scan);
+        printEnumeration(tree.step, this::scan);
         printBody(tree.body);
     }
 
@@ -149,7 +163,7 @@ public class Pretty extends Scanner {
             print("default: ");
         } else {
             print("case ");
-            printSequence(tree.labels, this::scan);
+            printEnumeration(tree.labels, this::scan);
             print(": ");
         }
         scan(tree.body);
@@ -173,7 +187,7 @@ public class Pretty extends Scanner {
     @Override
     public void visitVarDef(VarDef tree) {
         print("var ");
-        printSequence(tree.defs, def -> {
+        printEnumeration(tree.defs, def -> {
             print(def.name);
             if (def.init != null) {
                 print(" = ");
@@ -209,11 +223,11 @@ public class Pretty extends Scanner {
     public void visitArrayLiteral(ArrayLiteral tree) {
         if (tree._isList) {
             print("[");
-            printSequence(tree.entries, entry -> scan(entry.value));
+            printEnumeration(tree.entries, entry -> scan(entry.value));
             print("]");
         } else {
             print("{");
-            printSequence(tree.entries, entry -> {
+            printEnumeration(tree.entries, entry -> {
                 if (entry.key != null) {
                     scan(entry.key);
                     print(": ");
@@ -250,7 +264,7 @@ public class Pretty extends Scanner {
     public void visitInvocation(Invocation tree) {
         scan(tree.callee);
         print("(");
-        printSequence(tree.args, arg -> {
+        printEnumeration(tree.args, arg -> {
             if (arg.name != null) {
                 print(arg.name);
                 print(": ");
@@ -365,7 +379,7 @@ public class Pretty extends Scanner {
             return;
         }
         print(" ");
-        if (tree.getTag() == Tag.BLOCK) {
+        if (tree.hasTag(Tag.BLOCK)) {
             scan(tree);
         } else {
             printLine();
@@ -387,14 +401,14 @@ public class Pretty extends Scanner {
         if (newLine) {
             char[] indent = new char[nTabs * tabIndent];
             Arrays.fill(indent, ' ');
-            writer.print(indent);
+            output.print(indent);
             newLine = false;
         }
-        writer.print(value);
+        output.print(value);
     }
 
-    public <T> void printSequence(List<? extends T> sequence, Consumer<? super T> printer) {
-        Iterator<? extends T> itr = sequence.iterator();
+    public <T> void printEnumeration(List<? extends T> enumeration, Consumer<? super T> printer) {
+        Iterator<? extends T> itr = enumeration.iterator();
 
         if (itr.hasNext()) {
             printer.accept(itr.next());
@@ -411,6 +425,7 @@ public class Pretty extends Scanner {
     }
 
     public void subTab() {
+        Assert.ensure(nTabs > 0);
         nTabs--;
     }
 
@@ -420,7 +435,7 @@ public class Pretty extends Scanner {
     }
 
     public void printLine() {
-        writer.print('\n');
+        output.print('\n');
         newLine = true;
     }
 
