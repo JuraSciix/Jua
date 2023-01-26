@@ -1,4 +1,4 @@
-package jua.util;
+package jua.utils;
 
 import jua.Main;
 

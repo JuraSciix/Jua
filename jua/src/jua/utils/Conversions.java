@@ -1,4 +1,4 @@
-package jua.util;
+package jua.utils;
 
 public final class Conversions {
 
@@ -26,5 +26,5 @@ public final class Conversions {
 
     public static int unsigned(short s) { return s & 0xffff; }
 
-    private Conversions() { Assertions.error(); }
+    private Conversions() { Assert.error(); }
 }

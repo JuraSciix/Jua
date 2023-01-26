@@ -1,4 +1,4 @@
-package jua.util;
+package jua.utils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -22,5 +22,5 @@ public final class IOUtils {
         }
     }
 
-    private IOUtils() { Assertions.error(); }
+    private IOUtils() { Assert.error(); }
 }

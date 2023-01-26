@@ -1,7 +1,7 @@
 package jua.compiler;
 
 import jua.runtime.heap.*;
-import jua.util.Conversions;
+import jua.utils.Conversions;
 
 import java.util.Objects;
 

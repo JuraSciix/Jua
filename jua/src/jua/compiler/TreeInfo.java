@@ -1,7 +1,7 @@
 package jua.compiler;
 
 import jua.compiler.Tree.*;
-import jua.util.Assertions;
+import jua.utils.Assert;
 
 public final class TreeInfo {
 
@@ -91,11 +91,11 @@ public final class TreeInfo {
 
     public static short getLiteralShort(Expression tree) {
         Expression innerTree = stripParens(tree);
-        Assertions.require(innerTree.hasTag(Tag.LITERAL));
+        Assert.ensure(innerTree.hasTag(Tag.LITERAL));
         Literal literalTree = (Literal) innerTree;
-        Assertions.require(literalTree.type.isLong());
+        Assert.ensure(literalTree.type.isLong());
         long longVal = literalTree.type.longValue();
-        Assertions.require((longVal >>> 16) == 0);
+        Assert.ensure((longVal >>> 16) == 0);
         return (short) longVal;
     }
 

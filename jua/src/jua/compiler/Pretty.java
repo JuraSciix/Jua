@@ -1,7 +1,7 @@
 package jua.compiler;
 
 import jua.compiler.Tree.*;
-import jua.util.List;
+import jua.utils.List;
 
 import java.io.PrintWriter;
 import java.util.Arrays;

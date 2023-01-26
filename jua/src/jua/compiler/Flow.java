@@ -1,7 +1,7 @@
 package jua.compiler;
 
 import jua.compiler.Tree.*;
-import jua.util.Assertions;
+import jua.utils.Assert;
 
 import java.util.HashSet;
 
@@ -156,7 +156,7 @@ public class Flow extends Scanner {
 
     @Override
     public void visitCase(Case tree) {
-        Assertions.error();
+        Assert.error();
     }
 
     @Override
@@ -240,7 +240,7 @@ public class Flow extends Scanner {
         try {
             scan(tree);
         } finally {
-            Assertions.require(curScope == newScope);
+            Assert.ensure(curScope == newScope);
             curScope = newScope.parent;
         }
         return newScope;

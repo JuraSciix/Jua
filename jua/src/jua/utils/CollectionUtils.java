@@ -1,4 +1,4 @@
-package jua.util;
+package jua.utils;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 
@@ -11,5 +11,5 @@ public final class CollectionUtils {
         return sum;
     }
 
-    private CollectionUtils() { Assertions.error(); }
+    private CollectionUtils() { Assert.error(); }
 }

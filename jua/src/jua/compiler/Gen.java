@@ -8,13 +8,13 @@ import jua.compiler.Items.TempItem;
 import jua.compiler.Tree.*;
 import jua.interpreter.instruction.*;
 import jua.runtime.JuaFunction;
-import jua.util.Assertions;
-import jua.util.List;
+import jua.utils.Assert;
+import jua.utils.List;
 
 import static jua.compiler.InstructionFactory.*;
 import static jua.compiler.InstructionUtils.*;
 import static jua.compiler.TreeInfo.*;
-import static jua.util.CollectionUtils.mergeIntLists;
+import static jua.utils.CollectionUtils.mergeIntLists;
 
 public final class Gen extends Scanner {
 
@@ -116,7 +116,7 @@ public final class Gen extends Scanner {
     @Override
     public void visitBreak(Break tree) {
         FlowEnv env = flow;
-        Assertions.notNull((Object) env);
+        Assert.notNull((Object) env);
         code.putPos(tree.pos);
         env.exitjumps.add(emitGoto());
         code.dead();
@@ -179,7 +179,7 @@ public final class Gen extends Scanner {
     @Override
     public void visitCase(Case tree) {
         boolean cond = flow instanceof SwitchEnv;
-        Assertions.require(cond);
+        Assert.ensure(cond);
         SwitchEnv env = (SwitchEnv) flow;
         if (tree.labels == null) {
             // default case
@@ -204,7 +204,7 @@ public final class Gen extends Scanner {
     @Override
     public void visitContinue(Continue tree) {
         FlowEnv env = searchEnv(false);
-        Assertions.notNull((Object) env);
+        Assert.notNull((Object) env);
         code.putPos(tree.pos);
         env.contjumps.add(emitGoto());
         code.dead();
@@ -225,7 +225,7 @@ public final class Gen extends Scanner {
     @Override
     public void visitFallthrough(Fallthrough tree) {
         FlowEnv env = searchEnv(true);
-        Assertions.notNull((Object) env);
+        Assert.notNull((Object) env);
         code.putPos(tree.pos);
         env.contjumps.add(emitGoto());
         code.dead();
@@ -255,7 +255,7 @@ public final class Gen extends Scanner {
     @Override
     public void visitInvocation(Invocation tree) {
         boolean cond = tree.callee instanceof MemberAccess;
-        Assertions.require(cond);
+        Assert.ensure(cond);
         Name callee = ((MemberAccess) tree.callee).member;
 
         if ("length".equals(callee.value)) {
@@ -300,7 +300,7 @@ public final class Gen extends Scanner {
                 emitLeave();
             }
         } else {
-            Assertions.require(tree.body.hasTag(Tag.DISCARDED), "Function body neither block ner expression");
+            Assert.ensure(tree.body.hasTag(Tag.DISCARDED), "Function body neither block ner expression");
             genExpr(((Discarded) tree.body).expr).load();
             code.addInstruction(jua.interpreter.instruction.Return.RETURN);
             code.dead();
@@ -340,7 +340,7 @@ public final class Gen extends Scanner {
     }
 
     private void assertStacktopEquality(int limitstacktop) {
-        Assertions.require(code.curStackTop() == limitstacktop, "limitstacktop mismatch (" +
+        Assert.ensure(code.curStackTop() == limitstacktop, "limitstacktop mismatch (" +
                 "before: " + limitstacktop + ", " +
                 "after: " + code.curStackTop() + ", " +
                 "code line num: " + code.lastLineNum() +
@@ -402,7 +402,7 @@ public final class Gen extends Scanner {
                 break;
 
             default:
-                Assertions.error();
+                Assert.error();
         }
     }
 
@@ -705,7 +705,7 @@ public final class Gen extends Scanner {
                 break;
 
             default:
-                Assertions.error();
+                Assert.error();
         }
     }
 

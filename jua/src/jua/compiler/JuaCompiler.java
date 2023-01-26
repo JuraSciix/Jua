@@ -2,8 +2,8 @@ package jua.compiler;
 
 import jua.compiler.Tokens.Token;
 import jua.compiler.Tokens.TokenType;
-import jua.util.IOUtils;
-import jua.util.Options;
+import jua.utils.IOUtils;
+import jua.utils.Options;
 
 import java.io.File;
 import java.io.IOException;

@@ -1,6 +1,6 @@
 package jua.runtime.code;
 
-import jua.util.Conversions;
+import jua.utils.Conversions;
 
 public final class LineNumberTable {
 
