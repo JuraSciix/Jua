@@ -735,6 +735,7 @@ public abstract class Tree {
         public Statement body;
 
         /** Возможно ли выполнение кода после данного цикла */
+        @Deprecated // todo: flow-analysis обратно в Gen
         public boolean _infinite; // helpful compiler flag
 
         public WhileLoop(int pos, Expression cond, Statement body) {
@@ -757,6 +758,7 @@ public abstract class Tree {
         public Expression cond;
 
         /** Возможно ли выполнение кода после данного цикла */
+        @Deprecated // todo: flow-analysis обратно в Gen
         public boolean _infinite; // helpful compiler flag
 
         public DoLoop(int pos, Statement body, Expression cond) {
@@ -783,6 +785,7 @@ public abstract class Tree {
         public Statement body;
 
         /** Возможно ли выполнение кода после данного цикла */
+        @Deprecated // todo: flow-analysis обратно в Gen
         public boolean _infinite; // helpful compiler flag
 
         public ForLoop(int pos, List<Expression> init, Expression cond, List<Expression> step, Statement body) {
@@ -807,6 +810,7 @@ public abstract class Tree {
         public List<Case> cases;
         
         /** Возможно ли выполнение кода после данного {@code switch}. */
+        @Deprecated // todo: flow-analysis обратно в Gen
         public boolean _final; // helpful compiler flag
 
         public Switch(int pos, Expression expr, List<Case> cases) {
@@ -999,9 +1003,6 @@ public abstract class Tree {
 
         public final Name name;
 
-        /** Уверены ли мы в том, что переменная была явно определена. */
-        @Deprecated public boolean _defined; // helpful compiler flag
-
         public Var(int pos, Name name) {
             super(pos);
             this.name = name;
@@ -1067,9 +1068,6 @@ public abstract class Tree {
         public final Expression callee;
 
         public List<Argument> args;
-
-        /** Безопасный вызов: число аргументов совпадает, функция заведомо существует и т.д. */
-        @Deprecated public boolean _safe = false; // helpful compiler analysis flag
 
         public Invocation(int pos, Expression callee, List<Argument> args) {
             super(pos);

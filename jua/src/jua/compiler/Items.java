@@ -130,12 +130,8 @@ public class Items {
     class LocalItem extends Item {
 
         final int index;
-        @Deprecated
-        final boolean definitelyExists;
-
-        LocalItem(int index, boolean definitelyExists) {
+        LocalItem(int index) {
             this.index = index;
-            this.definitelyExists = definitelyExists;
         }
 
         @Override
@@ -303,13 +299,10 @@ public class Items {
     class CallItem extends Item {
 
         final int index, nargs;
-        @Deprecated
-        final boolean safe;
 
-        CallItem(int index, int nargs, boolean safe) {
+        CallItem(int index, int nargs) {
             this.index = index;
             this.nargs = nargs;
-            this.safe = safe;
         }
 
         @Override
@@ -364,8 +357,8 @@ public class Items {
         return new LiteralItem(type);
     }
 
-    LocalItem makeLocal(int index, boolean definitelyExists) {
-        return new LocalItem(index, definitelyExists);
+    LocalItem makeLocal(int index) {
+        return new LocalItem(index);
     }
 
     AccessItem makeAccess() {
@@ -384,8 +377,8 @@ public class Items {
         return new CondItem(opcodePC, truejumps, falsejumps);
     }
 
-    CallItem makeCall(int index, int nargs, boolean safe) {
-        return new CallItem(index, nargs, safe);
+    CallItem makeCall(int index, int nargs) {
+        return new CallItem(index, nargs);
     }
 
     TempItem makeTemp() {

@@ -228,8 +228,6 @@ public class Check extends Scanner {
             }
             scan(a.expr);
         }
-
-        tree._safe = safe;
     }
 
     @Override

@@ -181,17 +181,6 @@ public class Flow extends Scanner {
     }
 
     @Override
-    public void visitVariable(Var tree) {
-        String nameString = tree.name.value;
-        for (Scope scope = curScope; scope != null; scope = scope.parent) {
-            if (scope.aVars.contains(nameString)) {
-                tree._defined = true;
-                break;
-            }
-        }
-    }
-
-    @Override
     public void visitAssign(Assign tree) {
         Expression inner_var = stripParens(tree.var);
 

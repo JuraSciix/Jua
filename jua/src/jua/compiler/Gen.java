@@ -237,7 +237,7 @@ public final class Gen extends Scanner {
             // Эта строчка находится вне условия специально
             // Переменная должна регистрироваться независимо от того,
             // сразу она инициализируется или нет.
-            Item var_item = items.makeLocal(code.resolveLocal(def.name), true);
+            Item var_item = items.makeLocal(code.resolveLocal(def.name));
             if (def.init == null) {
                 items.makeLiteral(Types.TYPE_NULL).load();
             } else {
@@ -267,7 +267,7 @@ public final class Gen extends Scanner {
             int fn_idx = programLayout.tryFindFunc(callee).id;
             visitInvocationArgs(tree.args);
             code.putPos(tree.pos);
-            result = items.makeCall(fn_idx, tree.args.count(), tree._safe);
+            result = items.makeCall(fn_idx, tree.args.count());
         }
     }
 
@@ -468,7 +468,7 @@ public final class Gen extends Scanner {
             result = items.makeStack();
         } else {
             code.putPos(tree.pos);
-            result = items.makeLocal(code.resolveLocal(name), tree._defined);
+            result = items.makeLocal(code.resolveLocal(name));
         }
     }
 
