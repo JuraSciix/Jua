@@ -267,8 +267,8 @@ public final class JuaParser implements Parser {
                 init.addAll(parseExpressions().map(expr -> new Discarded(expr.pos, expr)));
             } catch (ParseNodeExit e) {
                 source.getLog().error(e.pos, "invalid statement");
-                expectToken(SEMI);
             }
+            expectToken(SEMI);
         }
 
         return init;
