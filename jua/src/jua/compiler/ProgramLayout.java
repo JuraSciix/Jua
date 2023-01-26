@@ -21,6 +21,8 @@ public final class ProgramLayout {
 
     CompilationUnit topTree;
 
+    private final Enter enter = new Enter();
+
     public static class FuncData {
 
         final String name;
@@ -130,6 +132,7 @@ public final class ProgramLayout {
                 .flatMap(stmt -> stmt.defs.stream())
                 .forEach(def -> addConstant(def.name.value, def));
 
+        topTree.accept(enter);
         topTree.accept(topTree.code.lower);
         topTree.accept(topTree.code.check);
         topTree.accept(topTree.code.flow);
