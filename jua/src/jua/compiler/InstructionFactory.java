@@ -39,14 +39,14 @@ public interface InstructionFactory {
     Pop2 pop2              = new Pop2();
     Rem rem                = new Rem();
     Not not                = new Not();
-    Vload0 vload0          = new Vload0();
-    Vload1 vload1          = new Vload1();
-    Vload2 vload2          = new Vload2();
-    Vstore0 vstore0        = new Vstore0();
-    Vstore1 vstore1        = new Vstore1();
-    Vstore2 vstore2        = new Vstore2();
+    Load0 load_0           = new Load0();
+    Load1 load_1           = new Load1();
+    Load2 load_2           = new Load2();
+    Store0 store_0         = new Store0();
+    Store1 store_1         = new Store1();
+    Store2 store_2         = new Store2();
 
-    Instruction[] vloadx   = {vload0, vload1, vload2};
-    Instruction[] vstorex  = {vstore0, vstore1, vstore2};
+    Instruction[] load_x = {load_0, load_1, load_2};
+    Instruction[] store_x = {store_0, store_1, store_2};
     Instruction[] const_ix = {const_im1, const_i0, const_i1};
 }

@@ -5,10 +5,10 @@ import jua.interpreter.InterpreterState;
 
 public final class Dec implements Instruction {
 
-    private final int index;
+    private final int id;
 
-    public Dec(int index) {
-        this.index = index;
+    public Dec(int id) {
+        this.id = id;
     }
 
     @Override
@@ -17,11 +17,11 @@ public final class Dec implements Instruction {
     @Override
     public void print(CodePrinter printer) {
         printer.printName("dec");
-        printer.printLocal(index);
+        printer.printLocal(id);
     }
 
     @Override
     public void run(InterpreterState state) {
-        state.stackDec(index);
+        state.stackVDec(id);
     }
 }

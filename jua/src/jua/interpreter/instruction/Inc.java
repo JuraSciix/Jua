@@ -3,13 +3,11 @@ package jua.interpreter.instruction;
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
-public final class Inc implements Instruction {
+public class Inc implements Instruction {
 
-    private final int index;
+    private final int id;
 
-    public Inc(int index) {
-        this.index = index;
-    }
+    public Inc(int id) { this.id = id; }
 
     @Override
     public int stackAdjustment() { return 0; }
@@ -17,11 +15,11 @@ public final class Inc implements Instruction {
     @Override
     public void print(CodePrinter printer) {
         printer.printName("inc");
-        printer.printLocal(index);
+        printer.printLocal(id);
     }
 
     @Override
     public void run(InterpreterState state) {
-        state.stackInc(index);
+        state.stackVInc(id);
     }
 }

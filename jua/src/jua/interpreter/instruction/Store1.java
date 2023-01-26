@@ -3,23 +3,18 @@ package jua.interpreter.instruction;
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
-public class Vinc implements Instruction {
-
-    private final int id;
-
-    public Vinc(int id) { this.id = id; }
+public final class Store1 implements Instruction {
 
     @Override
-    public int stackAdjustment() { return 0; }
+    public int stackAdjustment() { return -1; }
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName("vinc");
-        printer.printLocal(id);
+        printer.printName("store_1");
     }
 
     @Override
     public void run(InterpreterState state) {
-        state.stackVInc(id);
+        state.stackVStore(1);
     }
 }

@@ -136,7 +136,7 @@ public class Items {
 
         @Override
         Item load() {
-            code.addInstruction((index <= 2) ? vloadx[index] : new Vload(index));
+            code.addInstruction((index <= 2) ? load_x[index] : new Load(index));
             return stackItem;
         }
 
@@ -151,7 +151,7 @@ public class Items {
 
         @Override
         void store() {
-            code.addInstruction((index <= 2) ? vstorex[index] : new Vstore(index));
+            code.addInstruction((index <= 2) ? store_x[index] : new Store(index));
         }
 
         @Override
@@ -160,11 +160,11 @@ public class Items {
         }
 
         void inc() {
-            code.addInstruction(new Vinc(index));
+            code.addInstruction(new Inc(index));
         }
 
         void dec() {
-            code.addInstruction(new Vdec(index));
+            code.addInstruction(new Dec(index));
         }
     }
 
@@ -330,14 +330,14 @@ public class Items {
 
         @Override
         Item load() {
-            code.addInstruction(new Vload(index));
+            code.addInstruction(new Load(index));
             drop();
             return stackItem;
         }
 
         @Override
         void store() {
-            code.addInstruction(new Vstore(index));
+            code.addInstruction(new Store(index));
         }
 
         @Override

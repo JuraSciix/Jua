@@ -3,12 +3,11 @@ package jua.interpreter.instruction;
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
-// todo: rename to Load (vload -> load)
-public final class Vload implements Instruction {
+public final class Load implements Instruction {
 
     private final int id;
 
-    public Vload(int id) {
+    public Load(int id) {
         this.id = id;
     }
 
@@ -17,7 +16,7 @@ public final class Vload implements Instruction {
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName("vload");
+        printer.printName("load");
         printer.printLocal(id);
     }
 
