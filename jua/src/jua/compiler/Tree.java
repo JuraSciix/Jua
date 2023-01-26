@@ -776,11 +776,11 @@ public abstract class Tree {
 
     public static class ForLoop extends Statement {
 
-        public List<Expression> init;
+        public List<Statement> init;
 
         public Expression cond;
 
-        public List<Expression> step;
+        public List<Discarded> step;
 
         public Statement body;
 
@@ -788,7 +788,7 @@ public abstract class Tree {
         @Deprecated // todo: flow-analysis обратно в Gen
         public boolean _infinite; // helpful compiler flag
 
-        public ForLoop(int pos, List<Expression> init, Expression cond, List<Expression> step, Statement body) {
+        public ForLoop(int pos, List<Statement> init, Expression cond, List<Discarded> step, Statement body) {
             super(pos);
             this.init = init;
             this.cond = cond;

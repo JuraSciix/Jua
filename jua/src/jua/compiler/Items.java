@@ -105,8 +105,8 @@ public class Items {
             } else {
                 if (type.isLong()) {
                     long lv = type.longValue();
-                    if (-32768L <= lv && lv <= 32767L) {
-                        code.addInstruction(new Push((short) lv));
+                    if (-1L <= lv && lv <= 1L) {
+                        code.addInstruction(const_ix[(int) lv + 1]);
                         return stackItem;
                     }
                 }
@@ -136,7 +136,7 @@ public class Items {
 
         @Override
         Item load() {
-            code.addInstruction(new Vload(index));
+            code.addInstruction((index <= 2) ? vloadx[index] : new Vload(index));
             return stackItem;
         }
 
@@ -151,7 +151,7 @@ public class Items {
 
         @Override
         void store() {
-            code.addInstruction(new Vstore(index));
+            code.addInstruction((index <= 2) ? vstorex[index] : new Vstore(index));
         }
 
         @Override

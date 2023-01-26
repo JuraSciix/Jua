@@ -1,7 +1,6 @@
 package jua.interpreter;
 
 import jua.interpreter.instruction.Instruction;
-import jua.runtime.ValueType;
 import jua.runtime.code.CodeSegment;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.heap.MapHeap;
@@ -229,6 +228,11 @@ public final class InterpreterState {
         }
     }
 
+    public void constInt(long value) {
+        top().set(value);
+        next();
+    }
+
     public void constFalse() {
         top().set(false);
         next();
@@ -244,14 +248,32 @@ public final class InterpreterState {
         next();
     }
 
-    public void stackInc() {
-        if (peekStack().inc(peekStack())) {
+    public void stackInc(int index) {
+        if (testLocal(index) && locals[index].inc(locals[index])) {
             next();
         }
     }
 
-    public void stackDec() {
-        if (peekStack().dec(peekStack())) {
+    public void stack_ainc() {
+        Address key = popStack();
+        Address arr = popStack();
+        arr.mapValue(arr);
+        if (arr.getMapHeap().increment(key, top())) {
+            next();
+        }
+    }
+
+    public void stack_adec() {
+        Address key = popStack();
+        Address arr = popStack();
+        arr.mapValue(arr);
+        if (arr.getMapHeap().decrement(key, top())) {
+            next();
+        }
+    }
+
+    public void stackDec(int index) {
+        if (testLocal(index) && locals[index].dec(locals[index])) {
             next();
         }
     }
@@ -545,11 +567,11 @@ public final class InterpreterState {
     }
 
     private boolean testLocal(int id) {
-        if (locals[id].getType() == ValueType.UNDEFINED) {
-            thread.error("Access to undefined variable: " +
-                    cs.localTable().getLocalName(id));
-            return false;
-        }
+//        if (locals[id].getType() == ValueType.UNDEFINED) {
+//            thread.error("Access to undefined variable: " +
+//                    cs.localTable().getLocalName(id));
+//            return false;
+//        }
         return true;
     }
 }

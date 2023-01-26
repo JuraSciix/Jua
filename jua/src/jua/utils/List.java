@@ -1,6 +1,7 @@
 package jua.utils;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -57,6 +58,10 @@ public class List<E> implements Iterable<E> {
             }
             owner.count--;
         }
+    }
+
+    public static <E> List<E> empty() {
+        return new List<>();
     }
 
     @SafeVarargs
@@ -251,6 +256,26 @@ public class List<E> implements Iterable<E> {
             }
         }
         return modCount;
+    }
+
+    public <U> List<U> map(Function<? super E, ? extends U> mapper) {
+        List<U> mappedList = new List<>();
+
+        for (E element : this) {
+            mappedList.add(mapper.apply(element));
+        }
+
+        return mappedList;
+    }
+
+    public <U> List<U> flatMap(Function<? super E, ? extends List<U>> mapper) {
+        List<U> mappedList = new List<>();
+
+        for (E element : this) {
+            mappedList.addAll(mapper.apply(element));
+        }
+
+        return mappedList;
     }
 
     @Override

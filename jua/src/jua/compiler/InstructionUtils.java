@@ -28,8 +28,8 @@ public class InstructionUtils {
             case NEG:     return neg;
             case POS:     return pos;
             case BIT_INV: return not;
-            case POSTINC: case PREINC: return inc;
-            case POSTDEC: case PREDEC: return dec;
+//            case POSTINC: case PREINC: return ainc;
+//            case POSTDEC: case PREDEC: return adec;
             default: throw new AssertionError(tag);
         }
     }

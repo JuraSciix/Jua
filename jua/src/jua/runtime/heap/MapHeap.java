@@ -2,6 +2,7 @@ package jua.runtime.heap;
 
 import jua.interpreter.Address;
 import jua.interpreter.AddressUtils;
+import jua.interpreter.InterpreterThread;
 import jua.runtime.ValueType;
 
 import java.util.HashMap;
@@ -111,6 +112,28 @@ public final class MapHeap implements Heap, Iterable<Address> {
 
     public boolean containsKey(Address key) {
         return map.containsKey(key);
+    }
+
+    public boolean increment(Address key, Address oldValueReceptor) {
+        ensureScalarKey(key);
+        ensureKeyPresent(key);
+        Address value = map.get(key);
+        oldValueReceptor.set(value);
+        return value.inc(value);
+    }
+
+    public boolean decrement(Address key, Address oldValueReceptor) {
+        ensureScalarKey(key);
+        ensureKeyPresent(key);
+        Address value = map.get(key);
+        oldValueReceptor.set(value);
+        return value.dec(value);
+    }
+
+    public void ensureKeyPresent(Address key) {
+        if (!map.containsKey(key)) {
+            InterpreterThread.threadError("access to undefined element");
+        }
     }
 
     @Override

@@ -1,10 +1,7 @@
 package jua.compiler;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import jua.compiler.Items.CondItem;
-import jua.compiler.Items.Item;
-import jua.compiler.Items.LocalItem;
-import jua.compiler.Items.TempItem;
+import jua.compiler.Items.*;
 import jua.compiler.Tree.*;
 import jua.interpreter.instruction.*;
 import jua.runtime.JuaFunction;
@@ -400,10 +397,8 @@ public final class Gen extends Scanner {
 
     private void generateUnary(UnaryOp tree) {
         switch (tree.tag) {
-            case POSTDEC:
-            case PREDEC:
-            case POSTINC:
-            case PREINC:
+            case POSTDEC: case PREDEC:
+            case POSTINC: case PREINC:
                 genIncrease(tree);
                 break;
             case NOT:
@@ -479,25 +474,19 @@ public final class Gen extends Scanner {
 
     FlowEnv flow;
 
-    private void visitOptionalExpressionList(List<Expression> trees) {
-        if (trees != null) {
-            trees.forEach(tree -> genExpr(tree).drop());
-        }
-    }
-
     private static boolean isInfiniteLoopCond(Expression tree) {
         return tree == null || isLiteralTrue(tree);
     }
-    
+
     private void genLoop(
             boolean _infinite,
-            List<Expression> init,
+            List<Statement> init,
             Expression cond,
-            List<Expression> steps,
+            List<Discarded> update,
             Statement body,
             boolean testFirst
     ) {
-        visitOptionalExpressionList(init);
+        scan(init);
 
         flow = new FlowEnv(flow);
 
@@ -515,13 +504,13 @@ public final class Gen extends Scanner {
                     CondItem condItem = genCond(cond);
                     condItem.resolveTrueJumps();
                     genBranch(body);
-                    visitOptionalExpressionList(steps);
+                    scan(update);
                     flow.resolveCont(loopstartPC);
                     code.resolveJump(emitGoto(), loopstartPC);
                     condItem.resolveFalseJumps();
                 } else {
                     genBranch(body);
-                    visitOptionalExpressionList(steps);
+                    scan(update);
                     flow.resolveCont();
                     CondItem condItem = genCond(cond).negate();
                     condItem.resolveTrueJumps();
@@ -534,12 +523,12 @@ public final class Gen extends Scanner {
                 int skipBodyPC = emitGoto();
                 loopstartPC = code.currentIP();
                 genBranch(body);
-                if (steps != null) steps.forEach(expr -> genExpr(expr).drop());
+                scan(update);
                 code.resolveJump(skipBodyPC);
             } else {
                 loopstartPC = code.currentIP();
                 genBranch(body);
-                if (steps != null) steps.forEach(expr -> genExpr(expr).drop());
+                scan(update);
             }
             flow.resolveCont();
             if (infinitecond) {
@@ -629,75 +618,64 @@ public final class Gen extends Scanner {
     }
 
     private void genIncrease(UnaryOp tree) {
-        Expression var = stripParens(tree.expr);
-
-        // todo: Делать нормально уже лень. Рефакторинг
-
-        switch (var.getTag()) {
-            case MEMACCESS:
-            case ARRAYACCESS:
-            case VARIABLE:
-                Item varitem = genExpr(tree.expr);
-                boolean post = tree.hasTag(Tag.POSTINC) || tree.hasTag(Tag.POSTDEC);
-                boolean inc = tree.hasTag(Tag.POSTINC) || tree.hasTag(Tag.PREINC);
-
-                if (varitem instanceof LocalItem) {
-                    result = items.new Item() {
-                        final LocalItem localitem = (LocalItem) varitem;
-
-                        @Override
-                        Item load() {
-                            if (post) {
-                                localitem.load();
-                                drop();
-                            } else {
-                                drop();
-                                localitem.load();
-                            }
-                            return items.makeStack();
+        Item item = genExpr(tree.expr);
+        if (item instanceof LocalItem) {
+            LocalItem localItem = (LocalItem) item;
+            result = items.new Item() {
+                @Override
+                Item load() {
+                    if (tree.hasTag(Tag.POSTINC) || tree.hasTag(Tag.POSTDEC)) {
+                        localItem.load();
+                        if (tree.hasTag(Tag.POSTINC)) {
+                            localItem.inc();
+                        } else {
+                            localItem.dec();
                         }
-
-                        @Override
-                        void drop() {
-                            code.putPos(tree.pos);
-                            if (inc) {
-                                localitem.inc();
-                            } else {
-                                localitem.dec();
-                            }
+                    } else {
+                        if (tree.hasTag(Tag.PREINC)) {
+                            localItem.inc();
+                        } else {
+                            localItem.dec();
                         }
-                    };
-                } else {
-                    varitem.duplicate();
-                    varitem.load();
-                    result = items.new Item() {
-                        @Override
-                        Item load() {
-                            if (post) {
-                                varitem.stash();
-                                drop();
-                            } else {
-                                code.putPos(tree.pos);
-                                code.addInstruction(fromUnaryOpTag(tree.tag));
-                                code.putPos(tree.pos);
-                                items.makeAssign(varitem).load();
-                            }
-                            return items.makeStack();
-                        }
-
-                        @Override
-                        void drop() {
-                            code.putPos(tree.pos);
-                            code.addInstruction(fromUnaryOpTag(tree.tag));
-                            code.putPos(tree.pos);
-                            items.makeAssign(varitem).drop();
-                        }
-                    };
+                        localItem.load();
+                    }
+                    return items.makeStack();
                 }
-                break;
 
-            default:
-                Assert.error();
+                @Override
+                void drop() {
+                    if (tree.hasTag(Tag.POSTINC) || tree.hasTag(Tag.PREINC)) {
+                        localItem.inc();
+                    } else {
+                        localItem.dec();
+                    }
+                }
+            };
+        } else {
+            Assert.ensure(item instanceof AccessItem);
+            result = items.new Item() {
+                @Override
+                Item load() {
+                    if (tree.hasTag(Tag.POSTINC)||tree.hasTag(Tag.POSTDEC)) {
+                        code.addInstruction(
+                                tree.hasTag(Tag.POSTINC) || tree.hasTag(Tag.PREINC) ? ainc : adec);
+                    } else {
+                        item.duplicate();
+                        code.addInstruction(
+                                tree.hasTag(Tag.POSTINC) || tree.hasTag(Tag.PREINC) ? ainc : adec);
+                        code.addInstruction(pop);
+                        item.load();
+                    }
+                    return items.makeStack();
+                }
+
+                @Override
+                void drop() {
+                    code.addInstruction(
+                            tree.hasTag(Tag.POSTINC) || tree.hasTag(Tag.PREINC) ? ainc : adec);
+                    code.addInstruction(pop);
+                }
+            };
         }
     }
 

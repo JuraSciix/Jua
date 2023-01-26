@@ -133,18 +133,7 @@ public final class JuaParser implements Parser {
             }
             case VAR: {
                 nextToken();
-                List<VarDef.Definition> defs = new List<>();
-                do {
-                    Token name = token;
-                    expectToken(IDENTIFIER);
-                    Expression init = null;
-                    if (acceptToken(EQ)) {
-                        init = parseExpression();
-                    }
-                    defs.add(new VarDef.Definition(name.toName(), init));
-                } while (acceptToken(COMMA));
-                expectToken(SEMI);
-                return new VarDef(pos, defs);
+                return parseVar(pos);
             }
             case WHILE: {
                 nextToken();
@@ -152,6 +141,21 @@ public final class JuaParser implements Parser {
             }
             default: return parseUnusedExpression();
         }
+    }
+
+    private VarDef parseVar(int pos) {
+        List<VarDef.Definition> defs = new List<>();
+        do {
+            Token name = token;
+            expectToken(IDENTIFIER);
+            Expression init = null;
+            if (acceptToken(EQ)) {
+                init = parseExpression();
+            }
+            defs.add(new VarDef.Definition(name.toName(), init));
+        } while (acceptToken(COMMA));
+        expectToken(SEMI);
+        return new VarDef(pos, defs);
     }
 
     private Statement parseBreak(int position) {
@@ -243,29 +247,52 @@ public final class JuaParser implements Parser {
         return null;
     }
 
+    private List<Statement> parseStatements() {
+        List<Statement> expressions = new List<>();
+
+        do {
+            expressions.add(parseStatement());
+        } while (acceptToken(COMMA));
+
+        return expressions;
+    }
+
+    private List<Statement> parseForInit() {
+        List<Statement> init = List.empty();
+        int pos = token.pos;
+        if (acceptToken(VAR)) {
+            init.add(parseVar(pos));
+        } else {
+            try {
+                init.addAll(parseExpressions().map(expr -> new Discarded(expr.pos, expr)));
+            } catch (ParseNodeExit e) {
+                source.getLog().error(e.pos, "invalid statement");
+                expectToken(SEMI);
+            }
+        }
+
+        return init;
+    }
+
     private Statement parseFor(int position) {
         boolean parens = acceptToken(LPAREN);
-        List<Expression> init = null;
+        List<Statement> init = acceptToken(SEMI) ? List.empty() : parseForInit();
 
-        if (!acceptToken(SEMI)) {
-            init = parseExpressions();
-            expectToken(SEMI);
-        }
         Expression cond = null;
 
         if (!acceptToken(SEMI)) {
             cond = parseExpression();
             expectToken(SEMI);
         }
-        List<Expression> step = null;
+        List<Discarded> step = null;
 
         if (parens) {
             if (!acceptToken(RPAREN)) {
-                step = parseExpressions();
+                step = parseExpressions().map(expr -> new Discarded(expr.pos, expr));
                 expectToken(RPAREN);
             }
         } else {
-            step = parseExpressions();
+            step = parseExpressions().map(expr -> new Discarded(expr.pos, expr));
         }
         return new ForLoop(position, init, cond, step, parseStatement());
     }
@@ -927,7 +954,7 @@ public final class JuaParser implements Parser {
     }
 
     private void unexpected(Token foundToken, List<TokenType> expectedTypes) {
-        pError(token.pos, "unexpected " +
+        pError(foundToken.pos, "unexpected " +
                 token2string(foundToken) +
                 ", expected instead: " +
                 expectedTypes.stream().map(JuaParser::type2string).collect(Collectors.joining(", ")));
