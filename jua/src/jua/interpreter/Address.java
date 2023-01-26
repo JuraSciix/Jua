@@ -35,11 +35,13 @@ public final class Address implements Comparable<Address> {
 
     public double getDouble() { return d; }
 
-    public boolean getBoolean() { return Conversions.l2b(l); }
+    public boolean getBoolean() { return Conversions.l2b(getLong()); }
 
-    public StringHeap getStringHeap() { return (StringHeap) a; }
+    public Heap getHeap() { return a; }
 
-    public MapHeap getMapHeap() { return (MapHeap) a; }
+    public StringHeap getStringHeap() { return (StringHeap) getHeap(); }
+
+    public MapHeap getMapHeap() { return (MapHeap) getHeap(); }
 
     /* * * * * * * * * * * * * * * * * * * *
      *           ПРЕОБРАЗОВАНИЯ            *
@@ -58,7 +60,7 @@ public final class Address implements Comparable<Address> {
                 dst.set((long) getDouble());
                 return true;
             case BOOLEAN:
-                dst.set(l & 1L);
+                dst.set(getLong() & 1L);
                 return true;
             default:
                 badTypeConversion(LONG);
@@ -79,7 +81,7 @@ public final class Address implements Comparable<Address> {
                 dst.set(getDouble());
                 return true;
             case BOOLEAN:
-                dst.set((double) (l & 1L));
+                dst.set((double) (getLong() & 1L));
                 return true;
             default:
                 badTypeConversion(DOUBLE);
@@ -207,9 +209,9 @@ public final class Address implements Comparable<Address> {
     @Deprecated
     public void quickSet(Address source) {
         type = source.type;
-        l = source.l;
-        d = source.d;
-        a = source.a;
+        l = source.getLong();
+        d = source.getDouble();
+        a = source.getHeap();
     }
 
     public void set(Address source) {
@@ -569,7 +571,7 @@ public final class Address implements Comparable<Address> {
 
     public boolean not(Address result) { // ~x
         if (type == LONG) {
-            result.set(~l);
+            result.set(~getLong());
             return true;
         }
 
@@ -701,10 +703,10 @@ public final class Address implements Comparable<Address> {
 
     public int quickConstCompare(short value, int except) {
         if (type == LONG) {
-            return Long.compare(l, value);
+            return Long.compare(getLong(), value);
         }
         if (type == DOUBLE) {
-            return Double.compare(d, value);
+            return Double.compare(getDouble(), value);
         }
         return except;
     }
