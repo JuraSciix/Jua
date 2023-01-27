@@ -47,8 +47,24 @@ public class Pretty extends Scanner {
         printLine("/* the begin of the code */");
         printLine();
 
-        super.visitCompilationUnit(tree);
+        for (ConstDef constDef : tree.constDefs) {
+            scan(constDef);
+            printLine();
+        }
+        
+        printLine();
 
+        for (FuncDef funcDef : tree.funcDefs) {
+            scan(funcDef);
+            printLine();
+            printLine();
+        }
+        
+        for (Statement stmt : tree.stats) {
+            scan(stmt);
+            printLine();
+        }
+        
         printLine();
         printLine("/* the end of the code */");
     }
