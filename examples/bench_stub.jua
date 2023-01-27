@@ -1,10 +1,10 @@
 fn bench_stub() {
-    max = 1e9;
+    var max = 1e9;
     while true {
-        a = ns_time();
+        var a = ns_time();
         test_stub();
-        b = ns_time();
-        m = (b - a);
+        var b = ns_time();
+        var m = (b - a);
         if m < max {
             print_bench_data({
                 'name': 'Stub bench',

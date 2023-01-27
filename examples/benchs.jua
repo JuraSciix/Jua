@@ -1,10 +1,10 @@
 fn print_bench_data(bench_data) {
-    name = bench_data.name ?? "<unknown>";
-    i    = bench_data.i ?? "?";
-    c    = bench_data.i ?? "?";
+    var name = bench_data.name ?? "<unknown>";
+    var i    = bench_data.i ?? "?";
+    var c    = bench_data.c ?? "?";
     println("=== " + name + " (" + i + "/" + c + ") ===");
 
-    scores = bench_data.time ??
+    var scores = bench_data.time ??
                 bench_data.times ??
                 bench_data.score ??
                 bench_data.scores ??
@@ -15,11 +15,11 @@ fn print_bench_data(bench_data) {
         println("<there is no scores>");
         return;
     }
-    score_b = array_min(scores);                                  /* best */
-    score_w = array_max(scores);                                  /* worst */
-    units_h = 1E9 / (score_b == 0 ? 1 : score_b);                 /* highest */
-    units_l = 1E9 / (score_w == 0 ? 1 : score_w);                 /* lowest */
-    units_a = (units_l + units_h) / 2;                            /* average */
-    units_r = ((units_a - units_l) + (units_h - units_a)) / 2;    /* error rate */
+    var score_b = array_min(scores);                                  /* best */
+    var score_w = array_max(scores);                                  /* worst */
+    var units_h = (score_b == 0) ? 1E9 : 1E9 / score_b;               /* highest */
+    var units_l = (score_w == 0) ? 1E9 : 1E9 / score_w;               /* lowest */
+    var units_a = (units_l + units_h) / 2;                            /* average */
+    var units_r = units_l - units_a;                                  /* error rate */
     println("score: " + round(units_a, 3) + "±" + round(units_r, 3) + " op/sec");
 }

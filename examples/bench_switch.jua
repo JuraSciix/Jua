@@ -343,7 +343,7 @@ fn test_switch(x) {
 }
 
 fn bench_switch(max_itr = 15) {
-    param_seq = [
+    var param_seq = [
         ['sd', 11500], ['mp', 12208], ['xg', 12360], ['ok', 11877], ['ut', 13572], ['dz', 12200], ['cn', 10890], ['oa', 10767], ['yl', 13068],
         ['sq', 12995], ['gk', 11021], ['qe', 11413], ['cd', 9900], ['mq', 12317], ['up', 13104], ['hk', 11128], ['rs', 13110], ['nn', 12100],
         ['hg', 10712], ['ke', 10807], ['cl', 10692], ['qc', 11187], ['gi', 10815], ['ui', 12285], ['hd', 10400], ['ti', 12180], ['rt', 13224],
@@ -422,16 +422,16 @@ fn bench_switch(max_itr = 15) {
         ['ak', 10379]
     ];
 
-    for itr = 1; itr <= max_itr; itr++ {
+    for var itr = 1; itr <= max_itr; itr++ {
         println("bench_switch: iteration " + itr + " of " + max_itr + "...");
-        m_parts = [];
-        for i = 0, l = length(param_seq); i < l; i++ {
-            v = param_seq[i][0];
-            m_start = ns_time();
-            result = test_switch(v);
-            m_end = ns_time();
+        var m_parts = [];
+        for var i = 0, l = length(param_seq); i < l; i++ {
+            var v = param_seq[i][0];
+            var m_start = ns_time();
+            var result = test_switch(v);
+            var m_end = ns_time();
             if result != param_seq[i][1] {
-                println("ERROR(" + i + "): " + stringify_list(param_seq[i], false) + " => " + result);
+                println("ERROR(" + i + "): " + stringify_list(param_seq[i]) + " => " + result);
                 return;
             }
             array_push(m_parts, (m_end - m_start));

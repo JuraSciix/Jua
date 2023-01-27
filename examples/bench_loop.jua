@@ -1,16 +1,16 @@
 fn test_loop() {
-    for i = 0; i < 1_000; i++ {
-        for j = 0; j < 1_000; j++ {
+    for var i = 0; i < 1_000; i++ {
+        for var j = 0; j < 1_000; j++ {
             // no-op
         }
     }
 }
 
 fn bench_loop(itrc = 5) {
-    for itr = 1; itr <= itrc; itr++ {
-        m_start = ns_time();
+    for var itr = 1; itr <= itrc; itr++ {
+        var m_start = ns_time();
         test_loop();
-        m_end = ns_time();
+        var m_end = ns_time();
 
         print_bench_data({
             'name': 'Loop bench',
