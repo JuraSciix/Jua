@@ -150,10 +150,13 @@ public class Enter extends Scanner {
 
     @Override
     public void visitForLoop(ForLoop tree) {
-        Scope initScope = scanInnerScope(scope, tree.init);
+        Scope parentScope = scope;
+        Scope initScope = scanInnerScope(parentScope, tree.init);
         scanInnerScope(initScope, List.of(tree.cond));
         scanBody(initScope, tree.body);
         scanInnerScope(initScope, tree.step);
+        ensureScopeChainUnaffected(parentScope);
+        scope = initScope.parent;
     }
 
     @Override
