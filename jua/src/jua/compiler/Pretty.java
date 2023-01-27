@@ -63,7 +63,7 @@ public class Pretty extends Scanner {
             scan(def.expr);
         });
 
-        printLine(";");
+        print(";");
     }
 
     @Override
@@ -88,7 +88,7 @@ public class Pretty extends Scanner {
                 print("= ");
                 Discarded bodyTree = (Discarded) tree.body;
                 scan(bodyTree.expr);
-                printLine(";");
+                print(";");
                 break;
             default:
                 throw illegalTagException(tree.body.getTag());
@@ -99,7 +99,12 @@ public class Pretty extends Scanner {
     public void visitBlock(Block tree) {
         printLine("{");
         addTab();
-        scan(tree.stats);
+        for (Statement stmt : tree.stats) {
+            scan(stmt);
+            if (!isNewLine()) {
+                printLine();
+            }
+        }
         subTab();
         printLine("}");
     }
@@ -110,8 +115,16 @@ public class Pretty extends Scanner {
         scan(tree.cond);
         printBody(tree.thenbody);
         if (tree.elsebody != null) {
-            print(" else");
-            printBody(tree.elsebody);
+            if (!isNewLine()) {
+                print(" ");
+            }
+            print("else");
+            if (tree.elsebody.hasTag(Tag.IF)) {
+                print(" ");
+                scan(tree.elsebody);
+            } else {
+                printBody(tree.elsebody);
+            }
         }
     }
 
@@ -132,17 +145,17 @@ public class Pretty extends Scanner {
             print(" while ");
         }
         scan(tree.cond);
-        printLine(";");
+        print(";");
     }
 
     @Override
     public void visitForLoop(ForLoop tree) {
         print("for ");
         printEnumeration(tree.init, this::scan);
-        print("; ");
+        print(" ");
         scan(tree.cond);
         print("; ");
-        printEnumeration(tree.step, this::scan);
+        printEnumeration(tree.step, update -> scan(update.expr));
         printBody(tree.body);
     }
 
@@ -171,17 +184,17 @@ public class Pretty extends Scanner {
 
     @Override
     public void visitBreak(Break tree) {
-        printLine("break;");
+        print("break;");
     }
 
     @Override
     public void visitContinue(Continue tree) {
-        printLine("continue;");
+        print("continue;");
     }
 
     @Override
     public void visitFallthrough(Fallthrough tree) {
-        printLine("fallthrough;");
+        print("fallthrough;");
     }
 
     @Override
@@ -194,24 +207,24 @@ public class Pretty extends Scanner {
                 scan(def.init);
             }
         });
-        printLine(";");
+        print(";");
     }
 
     @Override
     public void visitReturn(Return tree) {
         if (tree.expr == null) {
-            printLine("return;");
+            print("return;");
         } else {
             print("return ");
             scan(tree.expr);
-            printLine(";");
+            print(";");
         }
     }
 
     @Override
     public void visitDiscarded(Discarded tree) {
         scan(tree.expr);
-        printLine(";");
+        print(";");
     }
 
     @Override
@@ -375,7 +388,7 @@ public class Pretty extends Scanner {
 
     public void printBody(Tree tree) {
         if (tree == null) {
-            printLine(";");
+            print(";");
             return;
         }
         print(" ");
@@ -386,6 +399,7 @@ public class Pretty extends Scanner {
             addTab();
             scan(tree);
             subTab();
+            printLine();
         }
     }
 
@@ -437,6 +451,10 @@ public class Pretty extends Scanner {
     public void printLine() {
         output.print('\n');
         newLine = true;
+    }
+
+    public boolean isNewLine() {
+        return newLine;
     }
 
     private static IllegalArgumentException illegalTagException(Tag tag) {
