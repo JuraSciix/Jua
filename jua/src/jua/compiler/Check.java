@@ -3,8 +3,6 @@ package jua.compiler;
 import jua.compiler.ProgramScope.FunctionSymbol;
 import jua.compiler.Tree.*;
 
-import java.util.HashSet;
-
 import static jua.compiler.TreeInfo.*;
 
 public class Check extends Scanner {
@@ -15,8 +13,6 @@ public class Check extends Scanner {
 
     private boolean allowsBreak, allowsContinue, allowsFallthrough;
 
-    private HashSet<String> scopedVars = new HashSet<>();
-
     public Check(ProgramScope programScope, Log log) {
         this.programScope = programScope;
         this.log = log;
@@ -24,44 +20,25 @@ public class Check extends Scanner {
 
     @Override
     public void visitImport(Import tree) {
-        log.error(tree.pos, "the 'use' statement not supported yet");
+        log.error(tree.pos, "'use' statements are not supported yet");
     }
 
     @Override
     public void visitConstDef(ConstDef tree) {
         for (ConstDef.Definition def : tree.defs) {
-            if (!isLiteral(def.expr)) {
-                log.error(stripParens(def.expr).pos, "literal expected");
-            }
+            requireLiteralTree(def.expr);
         }
     }
 
     @Override
     public void visitFuncDef(FuncDef tree) {
         for (FuncDef.Parameter param : tree.params) {
-            boolean duplicate = !scopedVars.add(param.name.value);
-            if (duplicate) {
-                log.error(param.name.pos, "duplicate function parameter");
-                continue;
-            }
-            if (param.expr != null && !isLiteral(param.expr)) {
-                log.error(stripParens(param.expr).pos, "only literals are allowed as the default parameter value expression");
+            if (param.expr != null) {
+                requireLiteralTree(param.expr);
             }
         }
 
         scan(tree.body);
-    }
-
-    @Override
-    public void visitBlock(Block tree) {
-        // Переменные из внешнего scope видны во внутренних scope
-        // При этом переменные из внутренних scope не видны во внешних
-        HashSet<String> scopedVarsCopy = new HashSet<>(scopedVars);
-        try {
-            scan(tree.stats);
-        } finally {
-            scopedVars = scopedVarsCopy;
-        }
     }
 
     @Override
@@ -90,7 +67,7 @@ public class Check extends Scanner {
         allowsBreak = true;
         allowsContinue = true;
         try {
-            scanAtInnerScope(tree);
+            scan(tree);
         } finally {
             allowsBreak = prevAllowsBreak;
             allowsContinue = prevAllowsContinue;
@@ -115,21 +92,10 @@ public class Check extends Scanner {
         allowsBreak = true;
         allowsFallthrough = true;
         try {
-            scanAtInnerScope(tree);
+            scan(tree);
         } finally {
             allowsBreak = prevAllowsBreak;
             allowsFallthrough = prevAllowsFallthrough;
-        }
-    }
-
-    private void scanAtInnerScope(Tree tree) {
-        // Переменные из внешнего scope видны во внутренних scope
-        // При этом переменные из внутренних scope не видны во внешних
-        HashSet<String> scopedVarsCopy = new HashSet<>(scopedVars);
-        try {
-            scan(tree);
-        } finally {
-            scopedVars = scopedVarsCopy;
         }
     }
 
@@ -155,28 +121,8 @@ public class Check extends Scanner {
     }
 
     @Override
-    public void visitVarDef(VarDef tree) {
-        for (VarDef.Definition def : tree.defs) {
-            boolean duplicate = !scopedVars.add(def.name.value);
-            if (duplicate) {
-                log.error(def.name.pos, "duplicate variable definition");
-            }
-            scan(def.init);
-        }
-    }
-
-    @Override
-    public void visitVariable(Var tree) {
-        Name name = tree.name;
-        if (!programScope.isConstantDefined(name) && scopedVars.add(name.value)) {
-            log.error(name.pos, "attempt to refer to an undefined variable");
-        }
-        // todo: проверять инициализацию переменных, убрав проверку из рантайма
-    }
-
-    @Override
     public void visitInvocation(Invocation tree) {
-        // Я не вызываю ниже stripParens потому что так надо
+        // Заметка: Я не вызываю ниже stripParens потому что так надо
         Expression callee = tree.callee;
         if (!callee.hasTag(Tag.MEMACCESS) || ((MemberAccess) callee).expr != null) {
             log.error(stripParens(callee).pos, "only function calls are allowed");
@@ -187,25 +133,24 @@ public class Check extends Scanner {
         FunctionSymbol calleeSym = programScope.lookupFunction(calleeName);
 
         if (calleeSym == null) {
-            log.error(tree.pos, "trying to call an undefined function");
+            log.error(tree.pos, "trying to call an undeclared function");
             return;
         }
 
         if (tree.args.count() > calleeSym.maxargs) {
-            log.error(tree.pos, "too many arguments: %d total, %d passed", calleeSym.maxargs, tree.args.count());
+            log.error(tree.pos, "cannot call function %s: too many arguments: %d total, %d passed", calleeSym.name, calleeSym.maxargs, tree.args.count());
             return;
         }
 
         if (tree.args.count() < calleeSym.minargs) {
-            log.error(tree.pos, "too few arguments: %d required, %d passed", calleeSym.minargs, tree.args.count());
+            log.error(tree.pos, "cannot call function %s: too few arguments: %d required, %d passed", calleeSym.name, calleeSym.minargs, tree.args.count());
             return;
         }
 
         for (Invocation.Argument a : tree.args) {
             if (a.name != null) {
                 if (calleeSym.paramnames != null && !calleeSym.paramnames.contains(a.name.value)) {
-                    // todo: У нативных функций пока нет именованных аргументов.
-                    log.error(a.name.pos, "undefined function parameter name");
+                    log.error(a.name.pos, "cannot call function %s: unrecognized function parameter name", calleeSym.name);
                     continue;
                 }
                 log.error(a.name.pos, "named arguments not yet supported");
@@ -217,11 +162,7 @@ public class Check extends Scanner {
 
     @Override
     public void visitAssign(Assign tree) {
-        Expression inner_var = stripParens(tree.var);
-
-        if (!isAccessible(inner_var)) {
-            log.error(inner_var.pos, "attempt to assign a value to a non-accessible expression");
-        } else {
+        if (requireAccessibleTree(tree.var)) {
             scan(tree.var);
         }
         scan(tree.expr);
@@ -229,11 +170,7 @@ public class Check extends Scanner {
 
     @Override
     public void visitCompoundAssign(CompoundAssign tree) {
-        Expression innerVar = stripParens(tree.var);
-
-        if (!isAccessible(innerVar)) {
-            log.error(innerVar.pos, "attempt to assign a value to a non-accessible expression");
-        } else {
+        if (requireAccessibleTree(tree.var)) {
             scan(tree.var);
         }
         scan(tree.expr);
@@ -244,12 +181,28 @@ public class Check extends Scanner {
         switch (tree.getTag()) {
             case POSTINC: case POSTDEC:
             case PREINC: case PREDEC:
-                Expression inner_expr = stripParens(tree.expr);
-                if (!isAccessible(inner_expr)) {
-                    log.error(inner_expr.pos, "the increment operation is allowed only on accessible expressions");
-                    return;
+                if (requireAccessibleTree(tree.expr)) {
+                    scan(tree.expr);
                 }
+                break;
+            default:
+                scan(tree.expr);
         }
-        scan(tree.expr);
+    }
+
+    private boolean requireLiteralTree(Expression tree) {
+        if (isLiteral(tree)) {
+            return true;
+        }
+        log.error(stripParens(tree).pos, "only a literal values can be applied here");
+        return false;
+    }
+
+    private boolean requireAccessibleTree(Expression tree) {
+        if (isAccessible(tree)) {
+            return true;
+        }
+        log.error(stripParens(tree).pos, "only an accessible values can be applied here");
+        return false;
     }
 }

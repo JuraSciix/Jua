@@ -1,16 +1,12 @@
-// Выделение массива с 3 элементами.
-var a = [1, 2, 3];
-// Обращение к элементу по индексу x, при x < 0 U length(a) <= x, приведет к ошибке: index x out of the list bounds: length(a)
-// Выделение массива с 10 нулевыми элементами
-var b = list(10);
-// list(x) при x < 0 U 2³¹ < x приведет к ошибке: illegal list size: x
-// Выделение пустой ассоциативной карты
-var c = {};
-// Выделение непустой ассоциативной карты
-var d = {
-    text_field: 'string value',
-    [50 * 2]:   'one hundred'
-};
-println(d.text_field); // string value
-println(d[100]); // one hundred
-println(d['вы кто такие?']); // runtime error: undefined map key "вы кто такие?"
+fn array_swap(map, x, y) {
+    var tmp = map[x];
+    map[x] = map[y];
+    map[y] = tmp;
+}
+
+var x = 1;
+var y = 2;
+
+var tmp = x;
+x = y;
+y = tmp;

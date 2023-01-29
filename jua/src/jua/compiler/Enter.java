@@ -23,37 +23,31 @@ public class Enter extends Scanner {
         }
 
         /** Декларирует переменную, проверя дубликаты. */
-        void declare(Name local) {
-            if (globalScope.isConstantDefined(local)) {
-                log.error(local.pos, "constant assignment");
-                return;
-            }
+        boolean duplicate(Name local) {
             int nextId = 0;
             for (Scope scope = this; scope != null; scope = scope.parent) {
                 if (scope.localIds.containsKey(local.value)) {
-                    log.error(local.pos, "variable redeclaration");
-                    return;
+                    return true;
                 }
                 nextId += scope.localIds.size();
             }
             localIds.put(local.value, local.id = nextId);
+            return false;
         }
 
         /** Ищет переменную, проверяя ее существование. */
-        void lookup(Name local) {
-            if (globalScope.isConstantDefined(local)) return;
+        boolean undeclared(Name local) {
             int nextId = 0;
             for (Scope scope = this; scope != null; scope = scope.parent) {
                 if (scope.localIds.containsKey(local.value)) {
                     local.id = scope.localIds.getInt(local.value);
-                    return;
+                    return false;
                 }
                 nextId += scope.localIds.size();
             }
-            log.error(local.pos, "undeclared variable");
             localIds.put(local.value, local.id = nextId);
+            return true;
         }
-
     }
 
     private final ProgramScope globalScope;
@@ -136,7 +130,9 @@ public class Enter extends Scanner {
         scope = new Scope(null);
 
         for (FuncDef.Parameter param : tree.params) {
-            scope.declare(param.name);
+            if (scope.duplicate(param.name)) {
+                log.error(param.name.pos, "duplicated function parameter");
+            }
             // Сканировать param.expr не нужно, поскольку это должен быть литерал.
         }
 
@@ -203,13 +199,16 @@ public class Enter extends Scanner {
     @Override
     public void visitVarDef(VarDef tree) {
         for (VarDef.Definition def : tree.defs) {
-            scope.declare(def.name);
+            scope.duplicate(def.name);
             scan(def.init);
         }
     }
 
     @Override
     public void visitVariable(Var tree) {
-        scope.lookup(tree.name);
+        Name name = tree.name;
+        if (scope.undeclared(name) && !globalScope.isConstantDefined(name)) {
+            log.error(name.pos, "undeclared variable");
+        }
     }
 }
