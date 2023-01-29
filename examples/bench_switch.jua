@@ -424,12 +424,12 @@ fn bench_switch(max_itr = 15) {
 
     for var itr = 1; itr <= max_itr; itr++ {
         println("bench_switch: iteration " + itr + " of " + max_itr + "...");
-        var m_parts = [];
+        var m_parts = list(length(param_seq));
         for var i = 0, l = length(param_seq); i < l; i++ {
             var v = param_seq[i][0];
-            var m_start = ns_time();
+            var m_start = time();
             var result = test_switch(v);
-            var m_end = ns_time();
+            var m_end = time();
             if result != param_seq[i][1] {
                 println("ERROR(" + i + "): " + stringify_list(param_seq[i]) + " => " + result);
                 return;

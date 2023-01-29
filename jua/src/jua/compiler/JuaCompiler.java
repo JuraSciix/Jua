@@ -54,6 +54,10 @@ public final class JuaCompiler {
         try {
             Parser parser = new JuaParser(source);
             Tree.CompilationUnit compilationUnit = parser.parseCompilationUnit();
+            if (Options.isShouldPrettyTree()) {
+                compilationUnit.accept(new Pretty(System.err));
+                return null;
+            }
             ProgramScope programScope = new ProgramScope();
 
             compilationUnit.code = new Code(programScope, source);

@@ -2,6 +2,7 @@ package jua.interpreter;
 
 import jua.runtime.ValueType;
 import jua.runtime.heap.Heap;
+import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.MapHeap;
 import jua.runtime.heap.StringHeap;
 import jua.utils.Conversions;
@@ -42,6 +43,8 @@ public final class Address implements Comparable<Address> {
     public StringHeap getStringHeap() { return (StringHeap) getHeap(); }
 
     public MapHeap getMapHeap() { return (MapHeap) getHeap(); }
+
+    public ListHeap getListHeap() { return (ListHeap) getHeap(); }
 
     /* * * * * * * * * * * * * * * * * * * *
      *           ПРЕОБРАЗОВАНИЯ            *
@@ -206,6 +209,11 @@ public final class Address implements Comparable<Address> {
         a = m;
     }
 
+    public void set(ListHeap l) {
+        type = LIST;
+        a = l;
+    }
+
     @Deprecated
     public void quickSet(Address source) {
         type = source.type;
@@ -234,6 +242,9 @@ public final class Address implements Comparable<Address> {
             case MAP:
                 set(source.getMapHeap().copy());
                 return;
+            case LIST:
+                set(source.getListHeap().copy());
+                return;
             default:
                 throw new AssertionError(source.type);
         }
@@ -261,6 +272,8 @@ public final class Address implements Comparable<Address> {
             case MAP:
                 receptor.set(getStringHeap().deepCopy());
                 break;
+            case LIST:
+                receptor.set(getListHeap().deepCopy());
             case NULL:
                 receptor.setNull();
                 break;
@@ -578,32 +591,74 @@ public final class Address implements Comparable<Address> {
         return unaryOperatorError("~");
     }
 
-    public boolean inc(Address result) { // ++x
+    public boolean inc() {
         if (type == LONG) {
-            result.set(getLong() + 1L);
+            l++;
             return true;
         }
 
         if (type == DOUBLE) {
-            result.set(getDouble() + 1.0);
+            d++;
             return true;
         }
 
         return unaryOperatorError("++");
     }
 
-    public boolean dec(Address result) { // --x
+    public boolean dec() {
         if (type == LONG) {
-            result.set(getLong() - 1L);
+            l--;
             return true;
         }
 
         if (type == DOUBLE) {
-            result.set(getDouble() - 1.0);
+            d--;
             return true;
         }
 
         return unaryOperatorError("--");
+    }
+
+    public boolean arrayInc(Address key, Address oldValueReceptor) {
+        if (type == LIST) {
+            int index = validateIndex(key);
+            if (index >= 0) {
+                Address element = getListHeap().get(index);
+                oldValueReceptor.set(element);
+                return element.inc();
+            }
+            return false;
+        }
+        if (type == MAP) {
+            if (validateKey(key, true)) {
+                Address element = getMapHeap().get(key);
+                oldValueReceptor.set(element);
+                return element.inc();
+            }
+            return false;
+        }
+        return false;
+    }
+
+    public boolean arrayDec(Address key, Address oldValueReceptor) {
+        if (type == LIST) {
+            int index = validateIndex(key);
+            if (index >= 0) {
+                Address element = getListHeap().get(index);
+                oldValueReceptor.set(element);
+                return element.dec();
+            }
+            return false;
+        }
+        if (type == MAP) {
+            if (validateKey(key, true)) {
+                Address element = getMapHeap().get(key);
+                oldValueReceptor.set(element);
+                return element.dec();
+            }
+            return false;
+        }
+        return false;
     }
 
     private boolean unaryOperatorError(String operator) {
@@ -613,40 +668,64 @@ public final class Address implements Comparable<Address> {
     }
 
     public boolean store(Address key, Address value) {
-        if (type != MAP) {
-            threadError("trying to store array-element to %s", getTypeName());
+        if (type == LIST) {
+            int index = validateIndex(key);
+            if (index >= 0) {
+                getListHeap().set(index, value, null);
+                return true;
+            }
             return false;
         }
-
-        if (!key.isScalar()) {
-            threadError("trying to store array-element by non-scalar key of type " + key.getTypeName());
+        if (type == MAP) {
+            if (validateKey(key, false)) {
+                getMapHeap().put(key, value);
+                return true;
+            }
             return false;
         }
-
-        getMapHeap().put(key, value);
-        return true;
+        return false;
     }
 
     public boolean load(Address key, Address receptor) {
-        if (type != MAP) {
-            threadError("trying to load array-element from %s", getTypeName());
+        if (type == LIST) {
+            int index = validateIndex(key);
+            if (index >= 0) {
+                receptor.set(getListHeap().get(index));
+                return true;
+            }
             return false;
         }
-
-        if (!key.isScalar()) {
-            threadError("trying to load array-element by non-scalar key of type " + key.getTypeName());
+        if (type == MAP) {
+            if (validateKey(key, true)) {
+                receptor.set(getMapHeap().get(key));
+                return true;
+            }
             return false;
         }
+        return false;
+    }
 
-        MapHeap map = getMapHeap();
+    private int validateIndex(Address indexAddress) {
+        if (indexAddress.testType(LONG)) {
+            long longIndex = indexAddress.getLong();
+            if (longIndex >= 0 && longIndex < getListHeap().length()) {
+                return (int) longIndex;
+            }
+            threadError("index %d out of the list bounds %d", longIndex, getListHeap().length());
+        }
+        return -1;
+    }
 
-        if (map.containsKey(key)) {
-            receptor.set(map.get(key));
+    private boolean validateKey(Address keyAddress, boolean checkContaining) {
+        if (keyAddress.isScalar()) {
+            if (!checkContaining || getMapHeap().containsKey(keyAddress)) {
+                return true;
+            }
+            threadError("undefined map key: %s", keyAddress.toString());
         } else {
-            receptor.setNull();
+            threadError("trying to access a map with non-scalar key of type %s", keyAddress.getTypeName());
         }
-
-        return true;
+        return false;
     }
 
     public boolean length(Address receptor) {
@@ -660,11 +739,16 @@ public final class Address implements Comparable<Address> {
             return true;
         }
 
+        if (type == LIST) {
+            receptor.set(getListHeap().length());
+            return true;
+        }
+
         threadError("trying to calculate the length of %s", getTypeName());
         return false;
     }
 
-    public int quickCompare(Address rhs, int except) {
+    public int weakCompare(Address rhs, int except) {
         int union = getTypeUnion(type, rhs.type);
 
         if (getTypeUnion(LONG, LONG) == union) {
@@ -692,6 +776,10 @@ public final class Address implements Comparable<Address> {
 
         if (getTypeUnion(MAP, MAP) == union) {
             return getMapHeap().compare(rhs.getMapHeap(), except);
+        }
+
+        if (getTypeUnion(LIST, LIST) == union) {
+            return getListHeap().compare(rhs.getListHeap(), except);
         }
 
         if (getTypeUnion(NULL, NULL) == union) {
@@ -758,6 +846,7 @@ public final class Address implements Comparable<Address> {
             case DOUBLE:  return Double.hashCode(getDouble());
             case STRING:  return getStringHeap().hashCode();
             case MAP:     return getMapHeap().hashCode();
+            case LIST:    return getListHeap().hashCode();
             default:      throw new AssertionError(type);
         }
     }
@@ -766,7 +855,7 @@ public final class Address implements Comparable<Address> {
     public boolean equals(Object o) {
         if (this == o) return true; // Очень маловероятно
         if (o == null || getClass() != o.getClass()) return false;
-        return quickCompare((Address) o, Integer.MIN_VALUE) == 0;
+        return weakCompare((Address) o, Integer.MIN_VALUE) == 0;
     }
 
     @Override
@@ -777,8 +866,9 @@ public final class Address implements Comparable<Address> {
             case LONG:    return Long.toString(getLong());
             case DOUBLE:  return Double.toString(getDouble());
             case BOOLEAN: return Boolean.toString(getBoolean());
-            case STRING:  return getStringHeap().toString();
+            case STRING:  return '"' + getStringHeap().toString() + '"';
             case MAP:     return getMapHeap().toString();
+            case LIST:    return getListHeap().toString();
             default:      throw new AssertionError(type);
         }
     }

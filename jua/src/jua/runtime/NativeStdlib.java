@@ -4,6 +4,7 @@ import jua.compiler.Types;
 import jua.interpreter.Address;
 import jua.runtime.NativeSupport.NativeFunctionPresent;
 import jua.runtime.NativeSupport.ParamsData;
+import jua.runtime.heap.StringHeap;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,11 +14,14 @@ import java.util.stream.Collectors;
 
 public class NativeStdlib {
 
-    private static final ArrayList<NativeFunctionPresent> nativeFunctionPresents = new ArrayList<>();
+    /** nativeFunctionPresents */
+    private static final ArrayList<NativeFunctionPresent> nfp = new ArrayList<>();
 
     static {
-        nativeFunctionPresents.add(new PrintFunction());
-        nativeFunctionPresents.add(new PrintlnFunction());
+        nfp.add(new PrintFunction());
+        nfp.add(new PrintlnFunction());
+        nfp.add(new TypeofFunction());
+        nfp.add(new TimeFunction());
     }
 
     static class PrintFunction extends NativeFunctionPresent {
@@ -54,11 +58,37 @@ public class NativeStdlib {
         }
     }
 
+    static class TypeofFunction extends NativeFunctionPresent {
+
+        TypeofFunction() {
+            super("typeof", ParamsData.create().add("value"));
+        }
+
+        @Override
+        public boolean execute(Address[] args, int argc, Address returnAddress) {
+            returnAddress.set(new StringHeap(args[0].getTypeName()));
+            return true;
+        }
+    }
+
+    static class TimeFunction extends NativeFunctionPresent {
+
+        TimeFunction() {
+            super("time", ParamsData.create());
+        }
+
+        @Override
+        public boolean execute(Address[] args, int argc, Address returnAddress) {
+            returnAddress.set(System.nanoTime() / 1E9);
+            return true;
+        }
+    }
+
     public static Map<String, Types.Type> getNativeConstants() {
         return Collections.emptyMap();
     }
 
     public static List<Function> getNativeFunctions() {
-        return nativeFunctionPresents.stream().map(NativeFunctionPresent::build).collect(Collectors.toList());
+        return nfp.stream().map(NativeFunctionPresent::build).collect(Collectors.toList());
     }
 }

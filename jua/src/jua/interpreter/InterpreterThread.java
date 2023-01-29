@@ -101,11 +101,11 @@ public final class InterpreterThread {
     private void joinFrame(Function callee, int argc) {
         if (checkArgc) {
             if (argc < callee.minArgc) {
-                error("too few arguments: %d required, %d passed", callee.minArgc, argc);
+                error("%s: too few arguments: %d required, %d passed", callee.name, callee.minArgc, argc);
                 return;
             }
             if (argc > callee.maxArgc) {
-                error("too many arguments: total %d, passed %d", callee.maxArgc, argc);
+                error("%s: too many arguments: total %d, passed %d", callee.name, callee.maxArgc, argc);
                 return;
             }
             checkArgc = false;

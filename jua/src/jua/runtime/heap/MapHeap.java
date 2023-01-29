@@ -55,9 +55,9 @@ public final class MapHeap implements Heap, Iterable<Address> {
         while (i1.hasNext() && i2.hasNext()) {
             Map.Entry<Address, Address> e1 = i1.next();
             Map.Entry<Address, Address> e2 = i2.next();
-            int cmp1 = e1.getKey().quickCompare(e2.getKey(), except);
+            int cmp1 = e1.getKey().weakCompare(e2.getKey(), except);
             if (cmp1 != 0) return cmp1;
-            int cmp2 = e1.getValue().quickCompare(e2.getValue(), except);
+            int cmp2 = e1.getValue().weakCompare(e2.getValue(), except);
             if (cmp2 != 0) return cmp2;
         }
         return m1.size() - m2.size();
@@ -119,7 +119,8 @@ public final class MapHeap implements Heap, Iterable<Address> {
         ensureKeyPresent(key);
         Address value = map.get(key);
         oldValueReceptor.set(value);
-        return value.inc(value);
+        // ++x
+        return value.inc();
     }
 
     public boolean decrement(Address key, Address oldValueReceptor) {
@@ -127,7 +128,8 @@ public final class MapHeap implements Heap, Iterable<Address> {
         ensureKeyPresent(key);
         Address value = map.get(key);
         oldValueReceptor.set(value);
-        return value.dec(value);
+        // --x
+        return value.dec();
     }
 
     public void ensureKeyPresent(Address key) {

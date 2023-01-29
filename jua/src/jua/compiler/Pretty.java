@@ -280,22 +280,35 @@ public class Pretty extends Scanner {
     }
 
     @Override
-    public void visitArrayLiteral(ArrayLiteral tree) {
-        if (tree._isList) {
-            print("[");
-            printEnumeration(tree.entries, entry -> scan(entry.value));
-            print("]");
-        } else {
-            print("{");
-            printEnumeration(tree.entries, entry -> {
-                if (entry.key != null) {
-                    scan(entry.key);
-                    print(": ");
-                }
-                scan(entry.value);
-            });
-            print("}");
+    public void visitListInit(ListInit tree) {
+        print("[");
+        printEnumeration(tree.entries, this::scan);
+        print("]");
+    }
+
+    @Override
+    public void visitMapInit(MapInit tree) {
+        if (tree.entries.isEmpty()) {
+            print("{}");
+            return;
         }
+        printLine("{");
+        addTab();
+        printEnumeration(tree.entries, entry -> {
+            if (entry.field) {
+                Literal key = (Literal) entry.key;
+                print(key.type.stringValue());
+            } else {
+                print("[");
+                scan(entry.key);
+                print("]");
+            }
+            print(": ");
+            scan(entry.value);
+            printLine();
+        });
+        subTab();
+        print("}");
     }
 
     @Override

@@ -20,7 +20,7 @@ public class AddressUtils {
      * Производит аллокацию массива регистров и возвращает его.
      */
     public static Address[] allocateMemory(int count, int start) {
-        if (!(0xFFFF >= count && count >= start && start >= 0)) {
+        if (!(count >= start && start >= 0)) {
             throw new IllegalArgumentException("count: " + count + ", start: " + start);
         }
 

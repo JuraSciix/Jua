@@ -1,9 +1,9 @@
 fn bench_stub() {
     var max = 1e9;
     while true {
-        var a = ns_time();
+        var a = time();
         test_stub();
-        var b = ns_time();
+        var b = time();
         var m = (b - a);
         if m < max {
             print_bench_data({

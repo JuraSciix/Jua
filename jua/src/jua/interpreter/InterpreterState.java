@@ -1,8 +1,10 @@
 package jua.interpreter;
 
 import jua.interpreter.instruction.Instruction;
+import jua.runtime.ValueType;
 import jua.runtime.code.CodeData;
 import jua.runtime.code.ConstantPool;
+import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.MapHeap;
 import jua.runtime.heap.Operand;
 import jua.runtime.heap.StringHeap;
@@ -239,31 +241,33 @@ public final class InterpreterState {
     }
 
     public void stackInc(int index) {
-        if (testLocal(index) && locals[index].inc(locals[index])) {
+        // ++x
+        if (testLocal(index) && locals[index].inc()) {
             next();
         }
     }
 
     public void stack_ainc() {
         Address key = popStack();
-        Address arr = popStack();
-        arr.mapValue(arr);
-        if (arr.getMapHeap().increment(key, top())) {
+        Address val = popStack();
+
+        if (val.arrayInc(key, top())) {
             next();
         }
     }
 
     public void stack_adec() {
         Address key = popStack();
-        Address arr = popStack();
-        arr.mapValue(arr);
-        if (arr.getMapHeap().decrement(key, top())) {
+        Address val = popStack();
+
+        if (val.arrayDec(key, top())) {
             next();
         }
     }
 
     public void stackDec(int index) {
-        if (testLocal(index) && locals[index].dec(locals[index])) {
+        // --x
+        if (testLocal(index) && locals[index].dec()) {
             next();
         }
     }
@@ -366,7 +370,7 @@ public final class InterpreterState {
     }
 
     public boolean stackCmpeq() {
-        int cmp = second().quickCompare(first(), 1);
+        int cmp = second().weakCompare(first(), 1);
         sp -= 2;
         return cmp == 0;
     }
@@ -376,25 +380,25 @@ public final class InterpreterState {
     }
 
     public boolean stackCmpge() {
-        int cmp = second().quickCompare(first(), -1);
+        int cmp = second().weakCompare(first(), -1);
         sp -= 2;
         return cmp >= 0;
     }
 
     public boolean stackCmpgt() {
-        int cmp = second().quickCompare(first(), -1);
+        int cmp = second().weakCompare(first(), -1);
         sp -= 2;
         return cmp > 0;
     }
 
     public boolean stackCmple() {
-        int cmp = second().quickCompare(first(), 1);
+        int cmp = second().weakCompare(first(), 1);
         sp -= 2;
         return cmp <= 0;
     }
 
     public boolean stackCmplt() {
-        int cmp = second().quickCompare(first(), 1);
+        int cmp = second().weakCompare(first(), 1);
         sp -= 2;
         return cmp < 0;
     }
@@ -420,6 +424,20 @@ public final class InterpreterState {
 
     public void stackNewArray() {
         top().set(new MapHeap());
+        next();
+    }
+
+    public void stack_newlist() {
+        Address sizeAddress = popStack();
+        if (!sizeAddress.testType(ValueType.LONG)) {
+            return;
+        }
+        long size = sizeAddress.getLong();
+        if (size < 0 || size > Integer.MAX_VALUE) {
+            thread.error("illegal list size: %d", size);
+            return;
+        }
+        top().set(new ListHeap((int) size));
         next();
     }
 
@@ -516,25 +534,29 @@ public final class InterpreterState {
     /* ОПЕРАЦИИ С ПЕРЕМЕННЫМИ */
 
     public void stack_quick_vdec(int id) {
-        locals[id].dec(locals[id]);
+        // --x
+        locals[id].dec();
         next();
     }
 
     public void stackVDec(int id) {
         if (testLocal(id)) {
-            locals[id].dec(locals[id]);
+            // --x
+            locals[id].dec();
             next();
         }
     }
 
     public void stack_quick_vinc(int id) {
-        locals[id].inc(locals[id]);
+        // ++x
+        locals[id].inc();
         next();
     }
 
     public void stackVInc(int id) {
         if (testLocal(id)) {
-            locals[id].inc(locals[id]);
+            // ++x
+            locals[id].inc();
             next();
         }
     }

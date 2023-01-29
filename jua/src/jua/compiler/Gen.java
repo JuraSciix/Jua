@@ -3,6 +3,7 @@ package jua.compiler;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import jua.compiler.Items.*;
 import jua.compiler.Tree.*;
+import jua.compiler.Types.LongType;
 import jua.interpreter.Address;
 import jua.interpreter.instruction.*;
 import jua.runtime.Function;
@@ -78,23 +79,39 @@ public final class Gen extends Scanner {
     }
 
     @Override
-    public void visitArrayLiteral(ArrayLiteral tree) {
+    public void visitListInit(ListInit tree) {
         code.putPos(tree.pos);
-        emitNewArray();
-        result = genArrayInitializr(tree.entries);
+        items.makeLiteral(new LongType(tree.entries.count())).load();
+        code.addInstruction(newlist);
+        long index = 0L;
+        for (Expression entry : tree.entries) {
+            items.makeStack().duplicate();
+            items.makeLiteral(new LongType(index++)).load();
+            genExpr(entry).load();
+            items.makeAccess().store();
+        }
+        result = items.makeStack();
     }
 
-    Item genArrayInitializr(List<ArrayLiteral.Entry> entries) {
-        long implicitIndex = 0L;
+    @Override
+    public void visitMapInit(MapInit tree) {
+        code.putPos(tree.pos);
+        code.addInstruction(newarray);
+        for (MapInit.Entry entry : tree.entries) {
+            items.makeStack().duplicate();
+            genExpr(entry.key).load();
+            genExpr(entry.value).load();
+            code.putPos(entry.pos);
+            items.makeAccess().store();
+        }
+        result = items.makeStack();
+    }
+
+    Item genArrayInitializr(List<MapInit.Entry> entries) {
         Item item = items.makeStack();
-        for (ArrayLiteral.Entry entry : entries) {
+        for (MapInit.Entry entry : entries) {
             item.duplicate();
-            if (entry.key == null) {
-                code.putPos(entry.pos);
-                emitPushLong(implicitIndex++);
-            } else {
-                genExpr(entry.key).load();
-            }
+            genExpr(entry.key).load();
             genExpr(entry.value).load();
             code.putPos(entry.pos);
             items.makeAccess().store();
@@ -259,16 +276,24 @@ public final class Gen extends Scanner {
         Assert.ensure(cond);
         Name callee = ((MemberAccess) tree.callee).member;
 
-        if ("length".equals(callee.value)) {
-            genExpr(tree.args.first().expr).load();
-            code.putPos(tree.pos);
-            code.addInstruction(length);
-            result = items.makeStack();
-        } else {
-            int fn_idx = programScope.lookupFunction(callee).id;
-            visitInvocationArgs(tree.args);
-            code.putPos(tree.pos);
-            result = items.makeCall(fn_idx, tree.args.count());
+        switch (callee.toString()) {
+            case "length":
+                genExpr(tree.args.first().expr).load();
+                code.putPos(tree.pos);
+                code.addInstruction(length);
+                result = items.makeStack();
+                break;
+            case "list":
+                genExpr(tree.args.first().expr).load();
+                code.putPos(tree.pos);
+                code.addInstruction(newlist);
+                result = items.makeStack();
+                break;
+            default:
+                int fn_idx = programScope.lookupFunction(callee).id;
+                visitInvocationArgs(tree.args);
+                code.putPos(tree.pos);
+                result = items.makeCall(fn_idx, tree.args.count());
         }
     }
 
@@ -702,7 +727,7 @@ public final class Gen extends Scanner {
     }
 
     private void emitPushLong(long value) {
-        items.makeLiteral(new Types.LongType(value)).load();
+        items.makeLiteral(new LongType(value)).load();
     }
 
     private void emitPushString(String value) {

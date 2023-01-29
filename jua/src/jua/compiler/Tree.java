@@ -24,7 +24,8 @@ public abstract class Tree {
         RETURN,
         DISCARDED,
         LITERAL,
-        ARRAYLITERAL,
+        LISTINIT,
+        MAPINIT,
         VARIABLE,
         MEMACCESS,
         ARRAYACCESS,
@@ -91,7 +92,8 @@ public abstract class Tree {
         void visitReturn(Return tree);
         void visitDiscarded(Discarded tree);
         void visitLiteral(Literal tree);
-        void visitArrayLiteral(ArrayLiteral tree);
+        void visitListInit(ListInit tree);
+        void visitMapInit(MapInit tree);
         void visitVariable(Var tree);
         void visitMemberAccess(MemberAccess tree);
         void visitArrayAccess(ArrayAccess tree);
@@ -160,7 +162,10 @@ public abstract class Tree {
         public void visitLiteral(Literal tree) { visitTree(tree); }
 
         @Override
-        public void visitArrayLiteral(ArrayLiteral tree) { visitTree(tree); }
+        public void visitListInit(ListInit tree) { visitTree(tree); }
+
+        @Override
+        public void visitMapInit(MapInit tree) { visitTree(tree); }
 
         @Override
         public void visitVariable(Var tree) { visitTree(tree); }
@@ -312,8 +317,13 @@ public abstract class Tree {
         public void visitLiteral(Literal tree) {  }
 
         @Override
-        public void visitArrayLiteral(ArrayLiteral tree) {
-            for (ArrayLiteral.Entry entry : tree.entries) {
+        public void visitListInit(ListInit tree) {
+            scan(tree.entries);
+        }
+
+        @Override
+        public void visitMapInit(MapInit tree) {
+            for (MapInit.Entry entry : tree.entries) {
                 scan(entry.key);
                 scan(entry.value);
             }
@@ -516,8 +526,14 @@ public abstract class Tree {
         public void visitLiteral(Literal tree) { result = tree; }
 
         @Override
-        public void visitArrayLiteral(ArrayLiteral tree) {
-            for (ArrayLiteral.Entry entry : tree.entries) {
+        public void visitListInit(ListInit tree) {
+            tree.entries = translate(tree.entries);
+            result = tree;
+        }
+
+        @Override
+        public void visitMapInit(MapInit tree) {
+            for (MapInit.Entry entry : tree.entries) {
                 entry.key = translate(entry.key);
                 entry.value = translate(entry.value);
             }
@@ -1006,13 +1022,31 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitLiteral(this); }
     }
 
-    public static class ArrayLiteral extends Expression {
+    public static class ListInit extends Expression {
+
+        public List<Expression> entries;
+
+        public ListInit(int pos, List<Expression> entries) {
+            super(pos);
+            this.entries = entries;
+        }
+
+        @Override
+        public Tag getTag() { return Tag.LISTINIT; }
+
+        @Override
+        public void accept(Visitor visitor) { visitor.visitListInit(this); }
+    }
+
+    public static class MapInit extends Expression {
 
         public static class Entry {
 
             public final int pos;
 
             public Expression key, value;
+
+            public boolean field; // todo: Костыль
 
             public Entry(int pos, Expression key, Expression value) {
                 this.pos = pos;
@@ -1023,19 +1057,16 @@ public abstract class Tree {
         
         public List<Entry> entries;
 
-        /** Является ли массив списком */
-        public boolean _isList = false; // helpful compiler analysis flag
-
-        public ArrayLiteral(int pos, List<Entry> entries) {
+        public MapInit(int pos, List<Entry> entries) {
             super(pos);
             this.entries = entries;
         }
 
         @Override
-        public Tag getTag() { return Tag.ARRAYLITERAL; }
+        public Tag getTag() { return Tag.MAPINIT; }
 
         @Override
-        public void accept(Visitor visitor) { visitor.visitArrayLiteral(this); }
+        public void accept(Visitor visitor) { visitor.visitMapInit(this); }
     }
 
     public static class Var extends Expression {

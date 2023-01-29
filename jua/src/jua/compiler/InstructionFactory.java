@@ -35,6 +35,7 @@ public interface InstructionFactory {
     Dup2_x1 dup2_x1        = new Dup2_x1();
     Dup2_x2 dup2_x2        = new Dup2_x2();
     Newarray newarray      = new Newarray();
+    Newlist newlist        = new Newlist();
     Pop pop                = new Pop();
     Pop2 pop2              = new Pop2();
     Rem rem                = new Rem();

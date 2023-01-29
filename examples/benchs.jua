@@ -9,7 +9,7 @@ fn print_bench_data(bench_data) {
                 bench_data.score ??
                 bench_data.scores ??
                 [];
-    if array_index_of(['map', 'array'], typeof(scores)) < 0 {
+    if typeof(scores) != 'list' {
         scores = [scores];
     } else if length(scores) == 0 {
         println("<there is no scores>");
@@ -17,8 +17,8 @@ fn print_bench_data(bench_data) {
     }
     var score_b = array_min(scores);                                  /* best */
     var score_w = array_max(scores);                                  /* worst */
-    var units_h = (score_b == 0) ? 1E9 : 1E9 / score_b;               /* highest */
-    var units_l = (score_w == 0) ? 1E9 : 1E9 / score_w;               /* lowest */
+    var units_h = (score_b == 0) ? 1 : 1 / score_b;               /* highest */
+    var units_l = (score_w == 0) ? 1 : 1 / score_w;               /* lowest */
     var units_a = (units_l + units_h) / 2;                            /* average */
     var units_r = units_l - units_a;                                  /* error rate */
     println("score: " + round(units_a, 3) + "±" + round(units_r, 3) + " op/sec");

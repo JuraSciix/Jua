@@ -8,9 +8,9 @@ fn test_loop() {
 
 fn bench_loop(itrc = 5) {
     for var itr = 1; itr <= itrc; itr++ {
-        var m_start = ns_time();
+        var m_start = time();
         test_loop();
-        var m_end = ns_time();
+        var m_end = time();
 
         print_bench_data({
             'name': 'Loop bench',

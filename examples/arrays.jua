@@ -7,13 +7,19 @@ fn range(from, to, step = 1) {
 }
 
 fn array_push(arr, elem) {
-    arr[length(arr)] = elem;
+    var len = length(arr);
+    var result = list(len + 1);
+    array_copy(arr, 0, result, 0, len);
+    result[len] = elem;
+    return result;
 }
 
 fn array_pop(arr) {
-    var key, tmp = arr[key = length(arr) - 1];
-    arr[key] = null;
-    return tmp;
+    var len = length(arr) - 1;
+    var elem = arr[len];
+    var result = list(len);
+    array_copy(arr, 0, result, 0, len);
+    return result;
 }
 
 fn array_avg(arr) {
@@ -64,7 +70,7 @@ fn array_last_index_of(arr, elem, start = 0) {
 fn array_unique(arr) {
     if length(arr) <= 1
         return arr;
-    var result = [];
+    var result = list(1);
     for var i = 0, l = length(arr); i < l; i++ {
         if array_index_of(result, arr[i]) == -1 {
             array_push(result, arr[i]);
@@ -99,10 +105,12 @@ fn stringify_list(l) {
         if s { // check if s not empty
             s += ", ";
         }
-        if array_index_of(['map', 'array'], typeof(l[i])) >= 0
+        if typeof(l[i]) == 'map'
             s += "<map>";
-        else
+        else if typeof(l[i]) == 'list'
             s += stringify_list(l[i]);
+        else
+            s += l[i];
     }
     return "[" + s + "]";
 }

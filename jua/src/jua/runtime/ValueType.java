@@ -11,6 +11,7 @@ public interface ValueType {
     byte BOOLEAN   = 4;
     byte STRING    = 5;
     byte MAP       = 6;
+    byte LIST      = 7;
 
     /** Возвращает имя типа. */
     static String getTypeName(byte type) {
@@ -20,7 +21,8 @@ public interface ValueType {
             case DOUBLE:  return "float";
             case BOOLEAN: return "boolean";
             case STRING:  return "string";
-            case MAP:     return "array";
+            case MAP:     return "map";
+            case LIST:    return "list";
             default: throw new AssertionError(type);
         }
     }

@@ -5,7 +5,6 @@ import jua.compiler.Tokens.TokenType;
 import jua.compiler.Tree.*;
 import jua.utils.List;
 
-import java.util.HashMap;
 import java.util.stream.Collectors;
 
 import static jua.compiler.Tokens.TokenType.*;
@@ -876,33 +875,49 @@ public final class JuaParser implements Parser {
     }
 
     private Expression parseArray(int position, TokenType enclosing) {
-        List<ArrayLiteral.Entry> entries = new List<>();
-        boolean comma = false;
-        boolean isList = enclosing == RBRACKET; // []
+        return (enclosing == RBRACE) ? parseMapInit(position) : parseListInit(position);
+    }
 
-        while (!acceptToken(enclosing)) {
-            if (acceptToken(EOF) || comma && !acceptToken(COMMA)) {
-                expectToken(enclosing);
-            }
-            try {
-                int pos = token.pos;
-                Expression key = null;
-                Expression value = parseExpression();
-
-                if (acceptToken(COL)) {
-                    key = value;
-                    value = parseExpression();
-                    isList = false;
-                }
-                entries.add(new ArrayLiteral.Entry(pos, key, value));
-            } catch (ParseNodeExit e) {
-                source.getLog().error(e.pos, e.msg);
-            }
-            comma = !acceptToken(COMMA);
+    private ListInit parseListInit(int pos) {
+        List<Expression> entries = new List<>();
+        if (!acceptToken(RBRACKET)) {
+            do {
+                entries.add(parseExpression());
+            } while (acceptToken(COMMA));
+            expectToken(RBRACKET);
         }
-        ArrayLiteral tree = new ArrayLiteral(position, entries);
-        tree._isList = isList;
-        return tree;
+        return new ListInit(pos, entries);
+    }
+
+    private MapInit parseMapInit(int pos) {
+        List<MapInit.Entry> entries = new List<>();
+        if (!acceptToken(RBRACE)) {
+            do {
+                int entryPos = token.pos;
+                Expression key;
+                boolean field;
+                if (acceptToken(LBRACKET)) {
+                    key = parseExpression();
+                    expectToken(RBRACKET);
+                    field = false;
+                } else {
+                    Token tField = token;
+                    expectToken(IDENTIFIER);
+                    key = new Literal(tField.pos, new StringType(tField.name()));
+                    field = true;
+                }
+                expectToken(COL);
+                Expression value = parseExpression();
+                MapInit.Entry entry = new MapInit.Entry(entryPos, key, value);
+                entry.field = field;
+                entries.add(entry);
+            } while (acceptToken(COMMA));
+
+            if (!acceptToken(RBRACE)) {
+                unexpected(token, List.of(COMMA, RBRACE));
+            }
+        }
+        return new MapInit(pos, entries);
     }
 
     private Expression parseParens(int position) {
@@ -980,7 +995,7 @@ public final class JuaParser implements Parser {
         pError(foundToken.pos, "unexpected " +
                 token2string(foundToken) +
                 ", expected instead: " +
-                expectedTypes.stream().map(JuaParser::type2string).collect(Collectors.joining(", ")));
+                expectedTypes.map(JuaParser::type2string).stream().collect(Collectors.joining(", ")));
     }
 
     private void pError(int position, String message) {

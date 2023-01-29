@@ -56,9 +56,9 @@ public final class TreeInfo {
     public static boolean isLiteral(Expression tree) {
         Expression innerTree = stripParens(tree);
         if (innerTree.hasTag(Tag.LITERAL)) return true;
-        if (innerTree.hasTag(Tag.ARRAYLITERAL)) {
-            ArrayLiteral arrayTree = (ArrayLiteral) innerTree;
-            for (ArrayLiteral.Entry entry : arrayTree.entries) {
+        if (innerTree.hasTag(Tag.MAPINIT)) {
+            MapInit arrayTree = (MapInit) innerTree;
+            for (MapInit.Entry entry : arrayTree.entries) {
                 if (entry.key != null && !isLiteral(entry.key) || !isLiteral(entry.value)) {
                     return false;
                 }
@@ -105,8 +105,8 @@ public final class TreeInfo {
             Literal literalTree = (Literal) innerTree;
             return literalTree.type.booleanValue();
         }
-        if (innerTree.hasTag(Tag.ARRAYLITERAL)) {
-            ArrayLiteral arrayTree = (ArrayLiteral) innerTree;
+        if (innerTree.hasTag(Tag.MAPINIT)) {
+            MapInit arrayTree = (MapInit) innerTree;
             return !arrayTree.entries.isEmpty();
         }
         return false;
@@ -118,8 +118,8 @@ public final class TreeInfo {
             Literal literalTree = (Literal) innerTree;
             return !literalTree.type.booleanValue();
         }
-        if (innerTree.hasTag(Tag.ARRAYLITERAL)) {
-            ArrayLiteral arrayTree = (ArrayLiteral) innerTree;
+        if (innerTree.hasTag(Tag.MAPINIT)) {
+            MapInit arrayTree = (MapInit) innerTree;
             return arrayTree.entries.isEmpty();
         }
         return false;

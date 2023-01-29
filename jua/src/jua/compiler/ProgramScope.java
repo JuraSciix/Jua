@@ -66,6 +66,14 @@ public final class ProgramScope {
                 new ArrayList<>(Collections.singletonList("value")),
                 null
         ));
+        functions.put("list", new FunctionSymbol(
+                "list",
+                -1,
+                1,
+                1,
+                new ArrayList<>(Collections.singletonList("size")),
+                null
+        ));
     }
 
     private void registerNatives() {
@@ -157,15 +165,14 @@ public final class ProgramScope {
         return functions.get(name.toString());
     }
 
-    public int countFunctions() {
-        return functions.size();
-    }
-
     public Function[] collectFunctions() {
-        return functions.values().stream()
-                .filter(symbol -> symbol.runtimefunc != null)
-                .map(symbol -> symbol.runtimefunc)
-                .toArray(Function[]::new);
+        Function[] functions = new Function[funcnextaddr];
+        this.functions.values().forEach(symbol -> {
+            if (symbol.runtimefunc != null) {
+                functions[symbol.id] = symbol.runtimefunc;
+            }
+        });
+        return functions;
     }
 
     public Address[] collectConstantAddresses() {
