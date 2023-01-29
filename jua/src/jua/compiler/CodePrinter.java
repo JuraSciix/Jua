@@ -14,7 +14,9 @@ import java.util.stream.Collectors;
 
 public class CodePrinter {
 
-    private class Case {
+    private static final boolean PRINT_STACK_ADJUSTMENT = false;
+
+    private static class Case {
 
         private final int[] operands;
 
@@ -72,7 +74,9 @@ public class CodePrinter {
                 });
                 sb.append(align).append("}");
             } else {
-                sb.append(String.format("%5d: %-12s %-40s %3d(%2d)", index, name, String.join(", ", operands), stacktop, stackAdjustment));
+                sb.append(PRINT_STACK_ADJUSTMENT ?
+                        String.format("%5d: %-12s %-40s %3d(%2d)", index, name, String.join(", ", operands), stacktop, stackAdjustment) :
+                        String.format("%5d: %-12s %-40s", index, name, String.join(", ", operands)));
             }
             return sb.toString();
         }
