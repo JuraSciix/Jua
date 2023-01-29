@@ -1,5 +1,6 @@
 package jua.compiler;
 
+import jua.compiler.ProgramScope.ConstantSymbol;
 import jua.compiler.Tree.*;
 
 import java.util.Objects;
@@ -9,17 +10,10 @@ import static jua.compiler.Types.*;
 
 public final class Lower extends Translator {
     
-    private final ProgramLayout programLayout;
+    private final ProgramScope programScope;
 
-    public Lower(ProgramLayout programLayout) {
-        this.programLayout = Objects.requireNonNull(programLayout);
-    }
-
-    @Override
-    public void visitCompilationUnit(CompilationUnit tree) {
-        tree.constDefs = translate(tree.constDefs);
-        tree.stats = translate(tree.stats);
-        result = tree;
+    public Lower(ProgramScope programScope) {
+        this.programScope = Objects.requireNonNull(programScope);
     }
 
     @Override
@@ -36,8 +30,8 @@ public final class Lower extends Translator {
 
     @Override
     public void visitVariable(Var tree) {
-        if (programLayout.hasConstant(tree.name)) {
-            ProgramLayout.ConstData cd = programLayout.tryFindConst(tree.name);
+        if (programScope.isConstantDefined(tree.name)) {
+            ConstantSymbol cd = programScope.lookupConstant(tree.name);
             if (cd.type != null) {
                 result = new Literal(tree.pos, cd.type);
                 return;

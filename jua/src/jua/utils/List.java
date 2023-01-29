@@ -2,6 +2,7 @@ package jua.utils;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -276,6 +277,16 @@ public class List<E> implements Iterable<E> {
         }
 
         return mappedList;
+    }
+
+    public E[] toArray(IntFunction<? extends E[]> generator) {
+        E[] array = generator.apply(count);
+        Node<E> node = head;
+        for (int i = 0; i < count; i++) {
+            array[i] = node.value;
+            node = node.next;
+        }
+        return array;
     }
 
     @Override

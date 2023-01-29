@@ -1,5 +1,6 @@
 package jua.compiler;
 
+import jua.compiler.ProgramScope.FunctionSymbol;
 import jua.compiler.Tree.*;
 
 import java.util.HashSet;
@@ -8,7 +9,7 @@ import static jua.compiler.TreeInfo.*;
 
 public class Check extends Scanner {
 
-    private final ProgramLayout programLayout;
+    private final ProgramScope programScope;
 
     private final Log log;
 
@@ -16,15 +17,9 @@ public class Check extends Scanner {
 
     private HashSet<String> scopedVars = new HashSet<>();
 
-    public Check(ProgramLayout programLayout, Log log) {
-        this.programLayout = programLayout;
+    public Check(ProgramScope programScope, Log log) {
+        this.programScope = programScope;
         this.log = log;
-    }
-
-    @Override
-    public void visitCompilationUnit(CompilationUnit tree) {
-        scan(tree.imports);
-        scan(tree.stats);
     }
 
     @Override
@@ -173,7 +168,7 @@ public class Check extends Scanner {
     @Override
     public void visitVariable(Var tree) {
         Name name = tree.name;
-        if (!programLayout.hasConstant(name) && scopedVars.add(name.value)) {
+        if (!programScope.isConstantDefined(name) && scopedVars.add(name.value)) {
             log.error(name.pos, "attempt to refer to an undefined variable");
         }
         // todo: проверять инициализацию переменных, убрав проверку из рантайма
@@ -188,48 +183,32 @@ public class Check extends Scanner {
             return;
         }
 
-        MemberAccess calleeTree = (MemberAccess) callee;
+        Name calleeName = ((MemberAccess) callee).member;
+        FunctionSymbol calleeSym = programScope.lookupFunction(calleeName);
 
-        int argc = tree.args.count();
-        if (calleeTree.member.value.equals("length")) {
-            if (argc != 1) {
-                log.error(tree.pos, "the function 'length' takes a single parameter");
-                return;
-            }
-            if (tree.args.first().name != null) {
-                log.error(tree.args.first().name.pos, "undefined function param name");
-            }
+        if (calleeSym == null) {
+            log.error(tree.pos, "trying to call an undefined function");
             return;
         }
-        ProgramLayout.FuncData fd;
-        if ((fd = programLayout.tryFindFunc(calleeTree.member)) == null) {
-            log.error(calleeTree.member.pos, "trying to call an undefined function");
+
+        if (tree.args.count() > calleeSym.maxargs) {
+            log.error(tree.pos, "too many arguments: %d total, %d passed", calleeSym.maxargs, tree.args.count());
             return;
         }
-        // fd.maxargs always less than 256
-//            if (argc > 255) {
-//                log.error(tree.pos, "the number of call arguments cannot exceed 255");
-//                return;
-//            }
-        if (argc < fd.minargs) {
-            log.error(calleeTree.pos, "too few arguments: %d required, %d passed", fd.minargs, argc);
+
+        if (tree.args.count() < calleeSym.minargs) {
+            log.error(tree.pos, "too few arguments: %d required, %d passed", calleeSym.minargs, tree.args.count());
             return;
         }
-        if (argc > fd.maxargs) {
-            log.error(calleeTree.pos, "too many arguments: %d total, %d passed", fd.maxargs, argc);
-            return;
-        }
-        boolean safe = true;
 
         for (Invocation.Argument a : tree.args) {
-            Name name = a.name;
-            if (name != null) {
-                if (!fd.paramnames.contains(name.value)) {
-                    log.error(name.pos, "undefined function param name");
-                    safe = false;
+            if (a.name != null) {
+                if (calleeSym.paramnames != null && !calleeSym.paramnames.contains(a.name.value)) {
+                    // todo: У нативных функций пока нет именованных аргументов.
+                    log.error(a.name.pos, "undefined function parameter name");
                     continue;
                 }
-                log.error(name.pos, "named arguments not yet supported");
+                log.error(a.name.pos, "named arguments not yet supported");
                 continue;
             }
             scan(a.expr);

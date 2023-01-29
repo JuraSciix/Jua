@@ -18,7 +18,7 @@ public final class Gen extends Scanner {
     @Deprecated
     private static final boolean GEN_JVM_LOOPS = false;
 
-    private final ProgramLayout programLayout;
+    private final ProgramScope programScope;
 
     Code code;
 
@@ -30,8 +30,8 @@ public final class Gen extends Scanner {
 
     JuaFunction resultFunc;
 
-    Gen(ProgramLayout programLayout) {
-        this.programLayout = programLayout;
+    Gen(ProgramScope programScope) {
+        this.programScope = programScope;
     }
 
     @Override
@@ -261,7 +261,7 @@ public final class Gen extends Scanner {
             code.addInstruction(length);
             result = items.makeStack();
         } else {
-            int fn_idx = programLayout.tryFindFunc(callee).id;
+            int fn_idx = programScope.lookupFunction(callee).id;
             visitInvocationArgs(tree.args);
             code.putPos(tree.pos);
             result = items.makeCall(fn_idx, tree.args.count());
@@ -449,9 +449,9 @@ public final class Gen extends Scanner {
     @Override
     public void visitVariable(Var tree) {
         Name name = tree.name;
-        if (programLayout.hasConstant(name)) {
+        if (programScope.isConstantDefined(name)) {
             code.putPos(tree.pos);
-            code.addInstruction(new Getconst(programLayout.tryFindConst(name).id));
+            code.addInstruction(new Getconst(programScope.lookupConstant(name).id));
             result = items.makeStack();
         } else {
             code.putPos(tree.pos);

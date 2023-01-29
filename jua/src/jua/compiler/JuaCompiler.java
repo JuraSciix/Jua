@@ -2,12 +2,13 @@ package jua.compiler;
 
 import jua.compiler.Tokens.Token;
 import jua.compiler.Tokens.TokenType;
+import jua.interpreter.Address;
+import jua.runtime.JuaFunction;
 import jua.utils.IOUtils;
 import jua.utils.Options;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 
 public final class JuaCompiler {
 
@@ -49,30 +50,48 @@ public final class JuaCompiler {
             }
             return null;
         }
+        Log log = source.getLog();
         try {
-            ProgramLayout programLayout = new ProgramLayout();
-
             Parser parser = new JuaParser(source);
-            programLayout.topTree = parser.parseCompilationUnit();
-            if (Options.isShouldPrettyTree()) {
-                programLayout.topTree.accept(new Pretty(System.err));
+            Tree.CompilationUnit compilationUnit = parser.parseCompilationUnit();
+            ProgramScope programScope = new ProgramScope();
+
+            compilationUnit.code = new Code(programScope, source);
+            compilationUnit.funcDefs.forEach(funcDef -> funcDef.code = new Code(programScope, source));
+
+            compilationUnit.accept(new Enter(programScope));
+            compilationUnit.accept(new Lower(programScope));
+            compilationUnit.accept(new Check(programScope, log));
+            compilationUnit.accept(new Flow());
+
+            if (log.hasErrors()) {
+                log.flush(System.err);
                 return null;
             }
-            Program program = programLayout.buildProgram();
-            if (!source.getLog().hasErrors()) {
-                return program;
-            }
+
+            compilationUnit.accept(compilationUnit.code.gen);
+            compilationUnit.funcDefs
+                    .forEach(funcDef -> {
+                        funcDef.accept(funcDef.code.gen);
+                        programScope.lookupFunction(funcDef.name).runtimefunc = funcDef.code.gen.resultFunc;
+                    });
+
+            JuaFunction mainFunction = compilationUnit.code.gen.resultFunc;
+            JuaFunction[] functions = programScope.collectFunctions();
+            Address[] constantAddresses = programScope.collectConstantAddresses();
+
+            return new Program(source, mainFunction, functions, constantAddresses);
         } catch (CompileException e) {
             System.err.println("Compiler error occurred");
             e.printStackTrace();
         } catch (CompileInterrupter ignore) {
         } finally {
-            if (source.getLog().hasMessages()) {
-                source.getLog().flush(System.err);
+            if (log.hasMessages()) {
+                log.flush(System.err);
             }
         }
 
-        source.getLog().flush(System.err);
+        log.flush(System.err);
         return null;
     }
 }

@@ -43,22 +43,16 @@ public final class Code {
 
     private Log log;
 
-    public final ProgramLayout programLayout;
-    public final Lower lower;
-    public final Flow flow;
-    public final Check check;
+    public final ProgramScope programScope;
     public final Gen gen;
 
     private LineMap lineMap;
 
-    public Code(ProgramLayout programLayout, Source source) {
-        this.programLayout = programLayout;
+    public Code(ProgramScope programScope, Source source) {
+        this.programScope = programScope;
         this.lineMap = source.getLineMap();
         log = source.getLog();
-        lower = new Lower(programLayout);
-        flow = new Flow();
-        check = new Check(programLayout, log);
-        gen = new Gen(programLayout);
+        gen = new Gen(programScope);
         gen.code = this;
         gen.log = log;
         gen.source = source;

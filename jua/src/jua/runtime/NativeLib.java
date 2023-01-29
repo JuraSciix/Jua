@@ -1,5 +1,6 @@
 package jua.runtime;
 
+import jua.compiler.Types;
 import jua.interpreter.Address;
 import jua.interpreter.AddressUtils;
 import jua.interpreter.InterpreterThread;
@@ -11,9 +12,15 @@ import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class NativeLib {
+
+    public static Map<String, Types.Type> getNativeConstants() {
+        return Collections.emptyMap();
+    }
 
     public static List<JuaFunction> getNativeFunctions() {
         return Arrays.asList(

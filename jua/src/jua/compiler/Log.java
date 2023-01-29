@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Log {
-    private static final int maxErrors = 1;
+    private static final int maxErrors = 3;
 
 
     private final Source source;

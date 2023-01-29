@@ -1,11 +1,5 @@
-// only for prettier mode
+use test1.*;
+use test2.some;
 
-use http.request;
-use types.*;
-
-fn hello_world(url) = request(
-    method: 'GET',
-    url:    url
-);
-
-println(types.typeof("Hello!"));
+println(test1.some());
+println(some()); // test2.some

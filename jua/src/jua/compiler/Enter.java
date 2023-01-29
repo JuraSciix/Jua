@@ -24,6 +24,10 @@ public class Enter extends Scanner {
 
         /** Декларирует переменную, проверя дубликаты. */
         void declare(Name local) {
+            if (globalScope.isConstantDefined(local)) {
+                log.error(local.pos, "constant assignment");
+                return;
+            }
             int nextId = 0;
             for (Scope scope = this; scope != null; scope = scope.parent) {
                 if (scope.localIds.containsKey(local.value)) {
@@ -37,6 +41,7 @@ public class Enter extends Scanner {
 
         /** Ищет переменную, проверяя ее существование. */
         void lookup(Name local) {
+            if (globalScope.isConstantDefined(local)) return;
             int nextId = 0;
             for (Scope scope = this; scope != null; scope = scope.parent) {
                 if (scope.localIds.containsKey(local.value)) {
@@ -48,13 +53,20 @@ public class Enter extends Scanner {
             log.error(local.pos, "undeclared variable");
             localIds.put(local.value, local.id = nextId);
         }
+
     }
+
+    private final ProgramScope globalScope;
 
     /** Журнал ошибок. */
     private Log log;
 
     /** Текущая область видимости. */
     private Scope scope;
+
+    public Enter(ProgramScope globalScope) {
+        this.globalScope = globalScope;
+    }
 
     private void ensureRootScope() {
         Assert.ensure(scope == null, "non-root scope");
@@ -91,6 +103,7 @@ public class Enter extends Scanner {
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
         log = tree.source.getLog();
+        scan(tree.imports);
         scan(tree.constDefs);
         scan(tree.funcDefs);
         ensureRootScope();
@@ -98,7 +111,27 @@ public class Enter extends Scanner {
     }
 
     @Override
+    public void visitImport(Import tree) {
+        // NO-OP yet
+    }
+
+    @Override
+    public void visitConstDef(ConstDef tree) {
+        for (ConstDef.Definition def : tree.defs) {
+            if (globalScope.isConstantDefined(def.name)) {
+                log.error(def.name.pos, "constant redefinition");
+                continue;
+            }
+            globalScope.defineUserConstant(def);
+        }
+    }
+
+    @Override
     public void visitFuncDef(FuncDef tree) {
+        if (globalScope.isFunctionDefined(tree.name)) {
+            log.error(tree.name.pos, "function redefinition");
+            return;
+        }
         ensureRootScope();
         scope = new Scope(null);
 
@@ -122,6 +155,8 @@ public class Enter extends Scanner {
 
         ensureScopeChainUnaffected(null);
         scope = null;
+
+        globalScope.defineUserFunction(tree);
     }
 
     @Override
