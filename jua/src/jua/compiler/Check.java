@@ -23,7 +23,13 @@ public class Check extends Scanner {
 
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
+        scan(tree.imports);
         scan(tree.stats);
+    }
+
+    @Override
+    public void visitImport(Import tree) {
+        log.error(tree.pos, "the 'use' statement not supported yet");
     }
 
     @Override

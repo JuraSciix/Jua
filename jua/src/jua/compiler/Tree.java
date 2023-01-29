@@ -7,6 +7,7 @@ public abstract class Tree {
 
     public enum Tag {
         TOP,
+        IMPORT,
         FUNCDEF,
         CONSTDEF,
         BLOCK,
@@ -73,6 +74,7 @@ public abstract class Tree {
 
     public interface Visitor {
         void visitCompilationUnit(CompilationUnit tree);
+        void visitImport(Import tree);
         void visitConstDef(ConstDef tree);
         void visitFuncDef(FuncDef tree);
         void visitBlock(Block tree);
@@ -105,6 +107,9 @@ public abstract class Tree {
     public static abstract class AbstractVisitor implements Visitor {
         @Override
         public void visitCompilationUnit(CompilationUnit tree) { visitTree(tree); }
+
+        @Override
+        public void visitImport(Import tree) { visitTree(tree); }
 
         @Override
         public void visitConstDef(ConstDef tree) { visitTree(tree); }
@@ -209,10 +214,14 @@ public abstract class Tree {
 
         @Override
         public void visitCompilationUnit(CompilationUnit tree) {
+            scan(tree.imports);
             scan(tree.constDefs);
             scan(tree.funcDefs);
             scan(tree.stats);
         }
+
+        @Override
+        public void visitImport(Import tree) {}
 
         @Override
         public void visitConstDef(ConstDef tree) {
@@ -396,11 +405,15 @@ public abstract class Tree {
 
         @Override
         public void visitCompilationUnit(CompilationUnit tree) {
+            tree.imports = translate(tree.imports);
             tree.constDefs = translate(tree.constDefs);
             tree.funcDefs = translate(tree.funcDefs);
             tree.stats = translate(tree.stats);
             result = tree;
         }
+
+        @Override
+        public void visitImport(Import tree) { result = tree; }
 
         @Override
         public void visitConstDef(ConstDef tree) {
@@ -596,6 +609,8 @@ public abstract class Tree {
 
         public final Source source;
 
+        public List<Import> imports;
+
         public List<Statement> stats;
 
         public List<FuncDef> funcDefs;
@@ -604,12 +619,17 @@ public abstract class Tree {
 
         public Code code;
 
-        public CompilationUnit(int pos, Source source, List<Statement> stats, List<FuncDef> funcDefs, List<ConstDef> constDefs) {
+        public CompilationUnit(int pos, Source source,
+                               List<Import> imports,
+                               List<ConstDef> constDefs,
+                               List<FuncDef> funcDefs,
+                               List<Statement> stats) {
             super(pos);
             this.source = source;
-            this.stats = stats;
-            this.funcDefs = funcDefs;
+            this.imports = imports;
             this.constDefs = constDefs;
+            this.funcDefs = funcDefs;
+            this.stats = stats;
         }
 
         @Override
@@ -624,6 +644,25 @@ public abstract class Tree {
         protected Statement(int pos) {
             super(pos);
         }
+    }
+
+    public static class Import extends Tree {
+
+        public final Name lib;
+
+        public final Name target;
+
+        public Import(int pos, Name lib, Name target) {
+            super(pos);
+            this.lib = lib;
+            this.target = target;
+        }
+
+        @Override
+        public Tag getTag() { return Tag.IMPORT; }
+
+        @Override
+        public void accept(Visitor visitor) { visitor.visitImport(this); }
     }
 
     public static class ConstDef extends Tree {

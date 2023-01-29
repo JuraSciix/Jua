@@ -5,6 +5,7 @@ import jua.compiler.Tokens.TokenType;
 import jua.compiler.Tree.*;
 import jua.utils.List;
 
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 import static jua.compiler.Tokens.TokenType.*;
@@ -43,9 +44,31 @@ public final class JuaParser implements Parser {
         List<FuncDef> funcDefs = new List<>();
         List<ConstDef> constDefs = new List<>();
         nextToken();
-        while (!acceptToken(EOF)) {
+
+        int pos = token.pos;
+        List<Import> imports = new List<>();
+        while (acceptToken(USE)) {
             try {
-                int pos = token.pos;
+                Token lib = token;
+                expectToken(IDENTIFIER);
+                expectToken(DOT);
+                if (acceptToken(STAR)) {
+                    imports.add(new Import(pos, lib.toName(), null));
+                } else {
+                    Token target = token;
+                    expectToken(IDENTIFIER);
+                    imports.add(new Import(pos, lib.toName(), target.toName()));
+                }
+                expectToken(SEMI);
+            } catch (ParseNodeExit e) {
+                source.getLog().error(e.pos, e.msg);
+            }
+            pos = token.pos;
+        }
+
+        while (!acceptToken(EOF)) {
+            pos = token.pos;
+            try {
                 if (acceptToken(FN)) {
                     funcDefs.add(parseFunction(pos));
                     continue;
@@ -59,7 +82,7 @@ public final class JuaParser implements Parser {
                 source.getLog().error(e.pos, e.msg);
             }
         }
-        return new CompilationUnit(0, source, stats, funcDefs, constDefs);
+        return new CompilationUnit(0, source, imports, constDefs, funcDefs, stats);
     }
 
     @Override

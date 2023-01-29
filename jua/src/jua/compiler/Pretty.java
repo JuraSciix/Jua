@@ -3,6 +3,7 @@ package jua.compiler;
 import jua.compiler.Tree.*;
 import jua.utils.Assert;
 import jua.utils.List;
+import jua.utils.StringUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -27,6 +28,8 @@ public class Pretty extends Scanner {
 
     private int nTabs = 0;
 
+    private String codeHeader, codeFooter;
+
     public Pretty(PrintStream output) {
         this(output, 2);
     }
@@ -42,17 +45,34 @@ public class Pretty extends Scanner {
         this.tabIndent = tabIndent;
     }
 
+    public void setCodeHeader(String codeHeader) {
+        this.codeHeader = StringUtils.stripWhitespacesToNull(codeHeader);
+    }
+
+    public void setCodeFooter(String codeFooter) {
+        this.codeFooter = StringUtils.stripWhitespacesToNull(codeFooter);
+    }
+
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
-        printLine("/* the begin of the code */");
-        printLine();
+        if (codeHeader != null) {
+            printLine(codeHeader);
+            printLine();
+        }
+
+        for (Import anImport : tree.imports) {
+            scan(anImport);
+            printLine();
+        }
+
+        if (tree.imports.nonEmpty()) printLine();
 
         for (ConstDef constDef : tree.constDefs) {
             scan(constDef);
             printLine();
         }
         
-        printLine();
+        if (tree.constDefs.nonEmpty()) printLine();
 
         for (FuncDef funcDef : tree.funcDefs) {
             scan(funcDef);
@@ -64,9 +84,20 @@ public class Pretty extends Scanner {
             scan(stmt);
             printLine();
         }
-        
-        printLine();
-        printLine("/* the end of the code */");
+
+        if (codeFooter != null) {
+            printLine();
+            printLine(codeFooter);
+        }
+    }
+
+    @Override
+    public void visitImport(Import tree) {
+        print("use ");
+        print(tree.lib);
+        print(".");
+        print(tree.target == null ? "*" : tree.target);
+        print(";");
     }
 
     @Override
@@ -417,10 +448,6 @@ public class Pretty extends Scanner {
             subTab();
             printLine();
         }
-    }
-
-    public void print(Name name) {
-        print(name.value);
     }
 
     public void print(Object value) {
