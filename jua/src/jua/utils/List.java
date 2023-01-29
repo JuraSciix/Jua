@@ -65,6 +65,27 @@ public class List<E> implements Iterable<E> {
         return new List<>();
     }
 
+    public static <E> List<E> of(E e) {
+        List<E> list = new List<>();
+        list.add(e);
+        return list;
+    }
+
+    public static <E> List<E> of(E e1, E e2) {
+        List<E> list = new List<>();
+        list.add(e1);
+        list.add(e2);
+        return list;
+    }
+
+    public static <E> List<E> of(E e1, E e2, E e3) {
+        List<E> list = new List<>();
+        list.add(e1);
+        list.add(e2);
+        list.add(e3);
+        return list;
+    }
+
     @SafeVarargs
     public static <E> List<E> of(E... elements) {
         List<E> list = new List<>();
