@@ -8,10 +8,9 @@ import jua.interpreter.AddressUtils;
 import jua.interpreter.instruction.Binaryswitch;
 import jua.interpreter.instruction.Instruction;
 import jua.interpreter.instruction.JumpInstruction;
-import jua.runtime.code.CodeSegment;
+import jua.runtime.code.CodeData;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.LineNumberTable;
-import jua.runtime.code.LocalTable;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -173,14 +172,14 @@ public final class Code {
         return constantPoolWriter;
     }
 
-    public CodeSegment buildCodeSegment() {
+    public CodeData buildCodeSegment() {
         ConstantPool cp = buildConstantPool();
-        return new CodeSegment(buildCode(cp),
+        return new CodeData(
                 this.nstack,
                 this.nlocals,
+                buildCode(cp),
                 cp,
-                buildLineNumberTable(),
-                buildLocalTable());
+                buildLineNumberTable());
     }
 
     private static final Instruction[] EMPTY_INSTRUCTIONS = new Instruction[0];
@@ -202,17 +201,6 @@ public final class Code {
         );
     }
 
-    private LocalTable buildLocalTable() {
-        LocalTable.Local[] locals = new LocalTable.Local[localNames.size()];
-
-        for (String name : localNames.keySet()) {
-            int index = localNames.getInt(name);
-            locals[index] = new LocalTable.Local(name, defaultPCIs.getOrDefault(name, -1));
-        }
-
-        return new LocalTable(locals);
-    }
-
     private ConstantPool buildConstantPool() {
         Object[] values = constantPoolWriter().toArray();
         Address[] addresses = AddressUtils.allocateMemory(values.length, 0);
@@ -220,12 +208,6 @@ public final class Code {
             AddressUtils.assignObject(addresses[i], values[i]);
         }
         return new ConstantPool(addresses);
-    }
-
-    private final Map<String, Integer> defaultPCIs = new HashMap<>();
-
-    void setLocalDefaultPCI(Name name, int defaultPCI) {
-        defaultPCIs.put(name.value, defaultPCI);
     }
 
     public void resolveJump(int opcodePC) {

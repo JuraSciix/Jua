@@ -16,6 +16,20 @@ public final class Assert {
         return value;
     }
 
+    public static String nonBlank(String str) {
+        if (StringUtils.isBlank(str)) {
+            throw new IllegalArgumentException();
+        }
+        return str;
+    }
+
+    public static String nonBlank(String str, String name) {
+        if (StringUtils.isBlank(str)) {
+            throw new IllegalArgumentException(name + " must be non-null and non-empty");
+        }
+        return str;
+    }
+
     public static void ensure(boolean cond) {
         if (!cond) {
             throw new AssertionError();

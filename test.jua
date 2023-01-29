@@ -1,5 +1,1 @@
-use test1.*;
-use test2.some;
-
-println(test1.some());
-println(some()); // test2.some
+println(zopa:1);

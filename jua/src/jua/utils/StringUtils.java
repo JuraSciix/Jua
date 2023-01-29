@@ -48,5 +48,13 @@ public class StringUtils {
         return buffer.toString();
     }
 
+    public static boolean isBlank(String str) {
+        return (str == null) || str.isEmpty();
+    }
+
+    public static boolean nonBlank(String str) {
+        return !isBlank(str);
+    }
+
     private StringUtils() { Assert.error(); }
 }

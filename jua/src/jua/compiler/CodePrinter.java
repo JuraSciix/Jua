@@ -2,8 +2,8 @@ package jua.compiler;
 
 import jua.interpreter.Address;
 import jua.interpreter.instruction.Instruction;
-import jua.runtime.JuaFunction;
-import jua.runtime.code.CodeSegment;
+import jua.runtime.Function;
+import jua.runtime.code.CodeData;
 import jua.runtime.heap.Operand;
 
 import java.util.ArrayList;
@@ -20,9 +20,9 @@ public class CodePrinter {
 
         private final int index;
 
-        private final CodeSegment program;
+        private final CodeData program;
 
-        private Case(int[] operands, int index, CodeSegment program) {
+        private Case(int[] operands, int index, CodeData program) {
             this.operands = operands;
             this.index = index;
             this.program = program;
@@ -32,7 +32,7 @@ public class CodePrinter {
         public String toString() {
             String operands0 = (operands == null) ? "default" : Arrays.stream(operands)
                     .mapToObj(index -> {
-                        program.constantPool().load(index, address);
+                        program.constantPool.load(index, address);
                         return address.toString();
                     })
                     .collect(Collectors.joining(", "));
@@ -90,40 +90,28 @@ public class CodePrinter {
 //        }
     }
 
-    public static void printFunctions(Program script, ArrayList<JuaFunction> functions) {
+    public static void printFunctions(Program script, ArrayList<Function> functions) {
         functions.forEach(function -> {
-            if (function == null || function.isNative()) return;
-            String name = function.name();
-            System.out.print("fn " + name + "(");
-            CodeSegment p = function.codeSegment();
-            for (int i = 0; i < function.maxNumArgs(); i++) {
-                if (i > 0) {
-                    System.out.print(", ");
-                }
-                System.out.print(p.localTable().getLocalName(i));
-                if (i >= function.minNumArgs()) {
-                    System.out.print(" = ");
-                    p.constantPool().load(p.localTable().getLocalDefaultPCI(i), address);
-                    System.out.print(address);
-                }
-            }
-            System.out.println(") { // id=" + functions.indexOf(function));
+            if (function == null || (function.flags & Function.FLAG_NATIVE) != 0) return;
+            CodeData p = function.userCode();
+            System.out.print("fn " + function);
+            System.out.println(" { /* id=" + functions.indexOf(function) + " */");
             print(script, p, 1);
             System.out.println("}");
         });
     }
 
-    public static void print(Program script, CodeSegment program, int align) {
+    public static void print(Program script, CodeData program, int align) {
         CodePrinter printer = new CodePrinter(script, program);
         printer.setAlign(align);
         printer.printHead(program);
         int lastLineNumber = 0;
-        Instruction[] code = program.code();
+        Instruction[] code = program.code;
         int length = code.length;
         for (int i = 0; i < length; i++) {
             printer.stacktop += (printer.stackAdjustment = code[i].stackAdjustment());
             code[i].print(printer);
-            int line = program.lineNumberTable().getLineNumber(i);
+            int line = program.lineNumTable.getLineNumber(i);
             if (line != lastLineNumber) {
                 // todo: Sometimes an instruction that is not on the first line outputs L1
                 printer.printLine(line);
@@ -145,7 +133,7 @@ public class CodePrinter {
 
     private final Program script;
 
-    private final CodeSegment program;
+    private final CodeData program;
 
     private int index = 0;
 
@@ -155,7 +143,7 @@ public class CodePrinter {
 
     private int align;
 
-    private CodePrinter(Program script, CodeSegment program) {
+    private CodePrinter(Program script, CodeData program) {
         super();
         this.script = script;
         this.program = program;
@@ -165,12 +153,12 @@ public class CodePrinter {
         this.align = align;
     }
 
-    private void printHead(CodeSegment program) {
-        System.out.printf("Code:   stack: %d, locals: %d%n", program.maxStack(), program.maxLocals());
+    private void printHead(CodeData program) {
+        System.out.printf("Code:   stack: %d, locals: %d%n", program.stackSize, program.registers);
     }
 
     @Deprecated
-    private void printLines(CodeSegment program) {
+    private void printLines(CodeData program) {
 //        System.out.println("Lines:");
 //        Map<Integer, List<Integer>> lines = new TreeMap<>(Comparator.comparingInt(a -> a));
 //
@@ -194,7 +182,7 @@ public class CodePrinter {
     }
 
     public void printLocal(int id) {
-        print(String.format("%d (%s)", id, program.localTable().getLocalName(id)));
+        print("$" + id);
     }
 
     public void printIp(int ip) {
@@ -212,15 +200,15 @@ public class CodePrinter {
     private static final Address address = new Address();
 
     public void printLiteral(int index) {
-        program.constantPool().load(index, address);
+        program.constantPool.load(index, address);
         preparePrint().operands.add(String.format("#%d (%s %s)", index, address.getTypeName(), address));
     }
 
     public void printFunctionRef(int index) {
-        JuaFunction function = script.functions[index];
+        Function function = script.functions[index];
         // test.jua:hello@8
-        // Stub.java:sum@10
-        preparePrint().operands.add(String.format("%s:%s@%d", function.filename(), function.name(), index));
+        // stub_module:sum@10
+        preparePrint().operands.add(String.format("%s:%s@%d", function.module, function.name, index));
     }
 
     public void printConstRef(int index) {

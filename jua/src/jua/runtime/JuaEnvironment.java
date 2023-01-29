@@ -4,24 +4,24 @@ import jua.interpreter.Address;
 
 public class JuaEnvironment {
 
-    final JuaFunction[] functions;
+    final Function[] functions;
     final Address[] constants;
 
-    public JuaEnvironment(JuaFunction[] functions, Address[] constants) {
+    public JuaEnvironment(Function[] functions, Address[] constants) {
         this.functions = functions;
         this.constants = constants;
     }
 
-    public JuaFunction findFunc(String name) {
-        for (JuaFunction function : functions) {
-            if (function.name().equals(name)) {
+    public Function findFunc(String name) {
+        for (Function function : functions) {
+            if (function.name.equals(name)) {
                 return function;
             }
         }
         return null;
     }
 
-    public JuaFunction getFunction(int id) {
+    public Function getFunction(int id) {
         return functions[id];
     }
 

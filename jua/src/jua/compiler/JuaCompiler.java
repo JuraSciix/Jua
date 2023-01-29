@@ -3,7 +3,7 @@ package jua.compiler;
 import jua.compiler.Tokens.Token;
 import jua.compiler.Tokens.TokenType;
 import jua.interpreter.Address;
-import jua.runtime.JuaFunction;
+import jua.runtime.Function;
 import jua.utils.IOUtils;
 import jua.utils.Options;
 
@@ -76,8 +76,8 @@ public final class JuaCompiler {
                         programScope.lookupFunction(funcDef.name).runtimefunc = funcDef.code.gen.resultFunc;
                     });
 
-            JuaFunction mainFunction = compilationUnit.code.gen.resultFunc;
-            JuaFunction[] functions = programScope.collectFunctions();
+            Function mainFunction = compilationUnit.code.gen.resultFunc;
+            Function[] functions = programScope.collectFunctions();
             Address[] constantAddresses = programScope.collectConstantAddresses();
 
             return new Program(source, mainFunction, functions, constantAddresses);

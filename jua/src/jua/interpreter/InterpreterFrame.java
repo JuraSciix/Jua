@@ -1,19 +1,19 @@
 package jua.interpreter;
 
-import jua.runtime.JuaFunction;
+import jua.runtime.Function;
 import jua.runtime.StackTraceElement;
 
 public final class InterpreterFrame {
 
     public final InterpreterFrame prev;
 
-    public final JuaFunction owner;
+    public final Function owner;
 
     public final InterpreterState state;
 
     public final Address returnAddress;
 
-    InterpreterFrame(InterpreterFrame prev, JuaFunction owner, InterpreterState state, Address returnAddress) {
+    InterpreterFrame(InterpreterFrame prev, Function owner, InterpreterState state, Address returnAddress) {
         // Trusting constructor
         this.prev = prev;
         this.owner = owner;
@@ -22,7 +22,7 @@ public final class InterpreterFrame {
     }
 
     public InterpreterFrame prev() { return prev; }
-    public JuaFunction owner() { return owner; }
+    public Function owner() { return owner; }
     public InterpreterState state() { return state; }
     public Address returnAddress() { return returnAddress; }
 
@@ -30,10 +30,10 @@ public final class InterpreterFrame {
     int executingLineNumber() {
         if (state == null) return -1; // native function
         int cp = state.cp();
-        return owner.codeSegment().lineNumberTable().getLineNumber(cp);
+        return owner.userCode().lineNumTable.getLineNumber(cp);
     }
 
     StackTraceElement toStackTraceElement() {
-        return new StackTraceElement(owner.name(), owner.filename(), executingLineNumber());
+        return new StackTraceElement(owner.name, owner.module, executingLineNumber());
     }
 }

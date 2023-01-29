@@ -3,8 +3,9 @@ package jua.compiler;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import jua.compiler.Items.*;
 import jua.compiler.Tree.*;
+import jua.interpreter.Address;
 import jua.interpreter.instruction.*;
-import jua.runtime.JuaFunction;
+import jua.runtime.Function;
 import jua.utils.Assert;
 import jua.utils.List;
 
@@ -28,7 +29,7 @@ public final class Gen extends Scanner {
 
     Source source;
 
-    JuaFunction resultFunc;
+    Function resultFunc;
 
     Gen(ProgramScope programScope) {
         this.programScope = programScope;
@@ -42,12 +43,15 @@ public final class Gen extends Scanner {
         log = tree.source.getLog();
         scan(tree.stats);
         emitLeave();
-        resultFunc = JuaFunction.fromCode(
+        resultFunc = new Function(
                 "<main>",
+                source.name,
                 0,
                 0,
-                code.buildCodeSegment(),
-                source.name
+                new String[0],
+                new Address[0],
+                0L,
+                code.buildCodeSegment()
         );
     }
 
@@ -279,14 +283,14 @@ public final class Gen extends Scanner {
         items = new Items(code);
         log = source.getLog();
 
-        int nOptionals = 0;
+        List<Address> defaults = new List<>();
         for (FuncDef.Parameter param : tree.params) {
-            Name name = param.name;
-            code.resolveLocal(name.value);
+            code.resolveLocal(param.name);
             if (param.expr != null) {
-                Expression expr = stripParens(param.expr);
-                code.setLocalDefaultPCI(name, ((Literal) expr).type.resolvePoolConstant(code));
-                nOptionals++;
+                Literal literal = (Literal) stripParens(param.expr);
+                Address address = new Address();
+                literal.type.toOperand().writeToAddress(address);
+                defaults.add(address);
             }
         }
 
@@ -303,12 +307,15 @@ public final class Gen extends Scanner {
             code.dead();
         }
 
-        resultFunc = JuaFunction.fromCode(
-                tree.name.value,
-                tree.params.count() - nOptionals,
+        resultFunc = new Function(
+                tree.name.toString(),
+                source.name,
+                tree.params.count() - defaults.count(),
                 tree.params.count(),
-                code.buildCodeSegment(),
-                source.name
+                tree.params.map(param -> param.name.toString()).toArray(String[]::new),
+                defaults.toArray(Address[]::new),
+                0L,
+                code.buildCodeSegment()
         );
     }
 

@@ -3,7 +3,7 @@ package jua.runtime;
 import jua.interpreter.Address;
 
 @FunctionalInterface
-public interface JuaNativeExecutor {
+public interface NativeExecutor {
 
     boolean execute(Address[] args, int argc, Address returnAddress);
 }

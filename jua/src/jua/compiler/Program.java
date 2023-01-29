@@ -3,7 +3,7 @@ package jua.compiler;
 import jua.interpreter.Address;
 import jua.interpreter.InterpreterThread;
 import jua.runtime.JuaEnvironment;
-import jua.runtime.JuaFunction;
+import jua.runtime.Function;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,14 +12,14 @@ public final class Program {
 
     public final Source source;
 
-    public final JuaFunction main;
+    public final Function main;
 
-    public final JuaFunction[] functions;
+    public final Function[] functions;
 
     public final Address[] constants;
 
     // Trusting constructor
-    Program(Source source, JuaFunction main, JuaFunction[] functions, Address[] constants) {
+    Program(Source source, Function main, Function[] functions, Address[] constants) {
         this.source = source;
         this.main = main;
         this.functions = functions;
@@ -31,7 +31,7 @@ public final class Program {
     }
 
     public void print() {
-        CodePrinter.print(this, main.codeSegment(), 0);
+        CodePrinter.print(this, main.userCode(), 0);
         CodePrinter.printFunctions(this, new ArrayList<>(Arrays.asList(functions)));
     }
 

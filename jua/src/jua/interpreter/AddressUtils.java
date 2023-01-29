@@ -81,4 +81,12 @@ public class AddressUtils {
             throw new IllegalArgumentException(o.getClass().getName());
         }
     }
+
+    public static boolean valid(Address a) {
+        return (a != null) && a.isValid();
+    }
+
+    public static boolean invalid(Address a) {
+        return !valid(a);
+    }
 }

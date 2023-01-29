@@ -1,10 +1,10 @@
 package jua.interpreter;
 
 import jua.runtime.JuaEnvironment;
-import jua.runtime.JuaFunction;
+import jua.runtime.Function;
 import jua.runtime.RuntimeErrorException;
 import jua.runtime.StackTraceElement;
-import jua.runtime.code.CodeSegment;
+import jua.runtime.code.CodeData;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -57,7 +57,7 @@ public final class InterpreterThread {
     private int msg = MSG_UNSTARTED;
 
     private Address returnAddress;
-    private boolean checkArgc  = true;
+    private boolean checkArgc  = false;
 
     public InterpreterThread(Thread jvmThread, JuaEnvironment environment) {
         Objects.requireNonNull(jvmThread, "JVM thread");
@@ -82,30 +82,30 @@ public final class InterpreterThread {
         return environment;
     }
 
-    private InterpreterFrame makeFrame(JuaFunction function, Address returnAddress) {
+    private InterpreterFrame makeFrame(Function function, Address returnAddress) {
         InterpreterFrame sender = executingFrame;
         InterpreterState state;
-        if (function.isNative()) {
+        if ((function.flags & Function.FLAG_NATIVE) != 0) {
             // Нативные функции выполняются непосредственно на JVM.
             // У них вместо сегмента с Jua-кодом хранится нативный
             // экзекютор. Таким образом, они не нуждаются в экземпляре
             // класса InterpreterState.
             state = null;
         } else {
-            CodeSegment cs = function.codeSegment();
+            CodeData cs = function.userCode();
             state = new InterpreterState(cs, this);
         }
         return new InterpreterFrame(sender, function, state, returnAddress);
     }
 
-    private void joinFrame(JuaFunction callee, int argc) {
+    private void joinFrame(Function callee, int argc) {
         if (checkArgc) {
-            if (argc < callee.minNumArgs()) {
-                error("too few arguments: %d required, %d passed", callee.minNumArgs(), argc);
+            if (argc < callee.minArgc) {
+                error("too few arguments: %d required, %d passed", callee.minArgc, argc);
                 return;
             }
-            if (argc > callee.maxNumArgs()) {
-                error("too many arguments: total %d, passed %d", callee.maxNumArgs(), argc);
+            if (argc > callee.maxArgc) {
+                error("too many arguments: total %d, passed %d", callee.maxArgc, argc);
                 return;
             }
             checkArgc = false;
@@ -174,7 +174,7 @@ public final class InterpreterThread {
      * Вызывает указанную функцию и ждет завершения ее выполнения.
      * Возвращает {@code true}, если ошибок не произошло, иначе {@code false}.
      */
-    public boolean callAndWait(JuaFunction function, Address[] args, Address returnAddress) {
+    public boolean callAndWait(Function function, Address[] args, Address returnAddress) {
         set_msg(MSG_CALLING_FRAME);
         executingFrame = makeFrame(function, returnAddress);
         this.args = args;
@@ -265,11 +265,11 @@ public final class InterpreterThread {
 
                 try {
 
-                    if (frame.owner().isNative()) {
+                    if ((frame.owner().flags & Function.FLAG_NATIVE) != 0) {
                         switch (msg()) {
                             case MSG_CALLING_FRAME:
                                 set_msg(MSG_RUNNING_FRAME);
-                                boolean success = frame.owner().nativeHandler().execute(args, numArgs, returnAddress);
+                                boolean success = frame.owner().nativeExecutor().execute(args, numArgs, returnAddress);
                                 if (success && !isCrashed()) {
                                     set_msg(MSG_POPPING_FRAME);
                                 }
@@ -288,11 +288,8 @@ public final class InterpreterThread {
                                     state.store(i, args[i]);
                                 }
 
-                                for (int i = numArgs; i < frame.owner().maxNumArgs(); i++) {
-                                    state.constant_pool().load(
-                                            frame.owner().codeSegment().localTable().getLocalDefaultPCI(i),
-                                            state.locals[i]
-                                    );
+                                for (int i = numArgs; i < frame.owner().maxArgc; i++) {
+                                    state.locals[i].set(frame.owner().defaults[i - frame.owner.minArgc]);
                                 }
 
                                 calleeId = -1;

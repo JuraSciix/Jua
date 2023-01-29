@@ -1,7 +1,7 @@
 package jua.interpreter;
 
 import jua.interpreter.instruction.Instruction;
-import jua.runtime.code.CodeSegment;
+import jua.runtime.code.CodeData;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.heap.MapHeap;
 import jua.runtime.heap.Operand;
@@ -13,17 +13,17 @@ public final class InterpreterState {
 
     public final Address[] stack, locals;
 
-    private final CodeSegment cs;
+    private final CodeData cs;
 
     // todo: This fields should be typed with short
     private int cp, sp, cpAdvance;
 
     private final InterpreterThread thread;
 
-    InterpreterState(CodeSegment cs, InterpreterThread thread) {
-        this.code = cs.code();
-        this.stack = AddressUtils.allocateMemory(cs.maxStack(), 0);
-        this.locals = AddressUtils.allocateMemory(cs.maxLocals(), 0);
+    InterpreterState(CodeData cs, InterpreterThread thread) {
+        this.code = cs.code;
+        this.stack = AddressUtils.allocateMemory(cs.stackSize, 0);
+        this.locals = AddressUtils.allocateMemory(cs.registers, 0);
         this.cs = cs;
         this.thread = thread;
     }
@@ -77,7 +77,7 @@ public final class InterpreterState {
     }
 
     public ConstantPool constant_pool() {
-        return cs.constantPool();
+        return cs.constantPool;
     }
 
     public void advance() {
@@ -122,16 +122,6 @@ public final class InterpreterState {
 
     public void store(int index, Address value) {
         locals[index].set(value);
-    }
-
-    public void load(int index) {
-        if (locals[index] == null) {
-            thread.error("accessing an undefined variable '" +
-                    cs.localTable().getLocalName(index) + "'.");
-            return;
-        }
-        peekStack().set(locals[index]);
-        sp++;
     }
 
     /* ОПЕРАЦИИ НА СТЕКЕ */

@@ -5,10 +5,9 @@ import jua.compiler.Tree.FuncDef;
 import jua.compiler.Tree.Literal;
 import jua.interpreter.Address;
 import jua.interpreter.AddressUtils;
-import jua.runtime.JuaFunction;
-import jua.runtime.NativeLib;
+import jua.runtime.Function;
+import jua.runtime.NativeStdlib;
 import jua.runtime.VirtualMachine;
-import jua.utils.Assert;
 
 import java.util.*;
 
@@ -21,7 +20,7 @@ public final class ProgramScope {
         final int minargs, maxargs;
         final ArrayList<String> paramnames; // null if tree is null
         final FuncDef tree; // null if function is native
-        JuaFunction runtimefunc;
+        Function runtimefunc;
 
         FunctionSymbol(String name, int id, int minargs, int maxargs, ArrayList<String> paramnames, FuncDef tree) {
             this.name = name;
@@ -70,8 +69,8 @@ public final class ProgramScope {
     }
 
     private void registerNatives() {
-        NativeLib.getNativeConstants().forEach(this::defineNativeConstant);
-        NativeLib.getNativeFunctions().forEach(this::defineNativeFunction);
+        NativeStdlib.getNativeConstants().forEach(this::defineNativeConstant);
+        NativeStdlib.getNativeFunctions().forEach(this::defineNativeFunction);
     }
 
     public boolean isConstantDefined(Name name) {
@@ -95,9 +94,9 @@ public final class ProgramScope {
         ));
     }
 
-    public void defineNativeFunction(JuaFunction function) {
+    public void defineNativeFunction(Function function) {
         // todo: Именованные аргументы у нативных функций
-        String name = function.name();
+        String name = function.name;
         if (functions.containsKey(name)) {
             throw new IllegalArgumentException("Duplicate function: " + name);
         }
@@ -105,9 +104,9 @@ public final class ProgramScope {
         FunctionSymbol symbol = new FunctionSymbol(
                 name,
                 nextId,
-                function.minNumArgs(),
-                function.maxNumArgs(),
-                null,
+                function.minArgc,
+                function.maxArgc,
+                new ArrayList<>(Arrays.asList(function.params)),
                 null
         );
         symbol.runtimefunc = function;
@@ -162,11 +161,11 @@ public final class ProgramScope {
         return functions.size();
     }
 
-    public JuaFunction[] collectFunctions() {
+    public Function[] collectFunctions() {
         return functions.values().stream()
                 .filter(symbol -> symbol.runtimefunc != null)
                 .map(symbol -> symbol.runtimefunc)
-                .toArray(JuaFunction[]::new);
+                .toArray(Function[]::new);
     }
 
     public Address[] collectConstantAddresses() {
