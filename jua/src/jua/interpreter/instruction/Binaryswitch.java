@@ -30,14 +30,18 @@ public final class Binaryswitch extends JumpInstruction {
         int j = hi;
         int pivot = keys[(i+j)/2];
         Address tmp1 = new Address(), tmp2 = new Address();
-        cp.at(pivot, tmp1);
+        cp.load(pivot, tmp1);
         do {
-            cp.at(keys[i], tmp2);
-            while (tmp1.compareTo(tmp2) > 0)
-                cp.at(keys[++i], tmp2);
-            cp.at(keys[j], tmp2);
-            while (tmp1.compareTo(tmp2) < 0)
-                cp.at(keys[--j], tmp2);
+            cp.load(keys[i], tmp2);
+            while (tmp1.compareTo(tmp2) > 0) {
+                int index = keys[++i];
+                cp.load(index, tmp2);
+            }
+            cp.load(keys[j], tmp2);
+            while (tmp1.compareTo(tmp2) < 0) {
+                int index = keys[--j];
+                cp.load(index, tmp2);
+            }
 
             if (i <= j) {
                 int temp1 = keys[i];
@@ -96,7 +100,7 @@ public final class Binaryswitch extends JumpInstruction {
         if (sel.isScalar()) {
             while (l <= h) {
                 int i = (l + h) >> 1;
-                cp.at(literals[i], tmp);
+                cp.load(literals[i], tmp);
 
                 int d = sel.compareTo(tmp);
 

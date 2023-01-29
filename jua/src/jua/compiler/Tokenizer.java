@@ -60,7 +60,7 @@ public class Tokenizer implements Lexer, AutoCloseable {
     public Tokenizer(Source source) {
         this.source = source;
         reader = SourceReader.of(source.content);
-        log = source.getLog();
+        log = source.log;
     }
 
     public Source getSource() {
@@ -128,12 +128,6 @@ public class Tokenizer implements Lexer, AutoCloseable {
                     }
                     return new Token(DOT, pos);
 
-                case '#':
-                    log.waring("Comments which starts with '#' are deprecated and will be removed in near future");
-                    reader.readChar();
-                    parseSingleLineComment();
-                    continue;
-
                 case '/':
                     reader.readChar();
                     if (reader.hasMore()) {
@@ -189,7 +183,7 @@ public class Tokenizer implements Lexer, AutoCloseable {
                     } else {
                         reader.readChar();
                     }
-                    log.error(pos, "Illegal character");
+                    report(pos, "Illegal character");
             }
         }
 
@@ -211,7 +205,7 @@ public class Tokenizer implements Lexer, AutoCloseable {
                 }
             }
         }
-        log.error(pos, "Unterminated multi-line comment");
+        report(pos, "Unterminated multi-line comment");
     }
 
     private Token parseString(int mark) {
@@ -226,7 +220,7 @@ public class Tokenizer implements Lexer, AutoCloseable {
             }
         }
         if (!reader.hasMore() && c != mark) {
-            tError(reader.cursor(), "EOF reached while parsing string.");
+            report(reader.cursor(), "EOF reached while parsing string.");
         }
         return builder.buildString();
     }
@@ -284,7 +278,7 @@ public class Tokenizer implements Lexer, AutoCloseable {
         int next = reader.peekChar();
 
         if (digit(next, 16) < 0 && next != '_') {
-            tError(builder.pos, "illegal hexadecimal literal.");
+            report(builder.pos, "illegal hexadecimal literal.");
         }
         parseDigits(builder, 'x', 16);
         return builder.buildNumber(false, 16);
@@ -295,7 +289,7 @@ public class Tokenizer implements Lexer, AutoCloseable {
         int next = reader.peekChar();
 
         if (digit(next, 2) < 0 && next != '_') {
-            tError(builder.pos, "illegal binary decimal literal.");
+            report(builder.pos, "illegal binary decimal literal.");
         }
         parseDigits(builder, 'b', 10);
         return builder.buildNumber(false, 2);
@@ -306,7 +300,7 @@ public class Tokenizer implements Lexer, AutoCloseable {
         int next = reader.peekChar();
 
         if (digit(next, 12) < 0 && next != '_') {
-            tError(builder.pos, "illegal duodecimal literal.");
+            report(builder.pos, "illegal duodecimal literal.");
         }
         parseDigits(builder, 'b', 12);
         return builder.buildNumber(false, 12);
@@ -333,7 +327,7 @@ public class Tokenizer implements Lexer, AutoCloseable {
                 c = reader.peekChar();
             }
             if (!isDigit(c) && c != '_') {
-                tError(builder.pos, "malformed floating literal.");
+                report(builder.pos, "malformed floating literal.");
             }
             parseDigits(builder, c, 10);
             isFloat = true;
@@ -358,13 +352,13 @@ public class Tokenizer implements Lexer, AutoCloseable {
     }
 
     private void underscore() {
-        tError(reader.cursor(), "underscore is not allowed here.");
+        report(reader.cursor(), "underscore is not allowed here.");
     }
 
     private Token parseKeyword(int c) {
         TokenBuilder builder = getBuilder(c);
 
-        while (isJavaIdentifierPart(reader.peekCodePoint())) {
+        while (reader.hasMore() && isJavaIdentifierPart(reader.peekCodePoint())) {
             builder.putChar(reader.readCodePoint());
         }
         return builder.buildNamedOrString();
@@ -411,7 +405,7 @@ public class Tokenizer implements Lexer, AutoCloseable {
 
     private Token checkSpecial(TokenBuilder builder, TokenType type) {
         if (type == null) {
-            tError(builder.pos, "illegal character.");
+            report(builder.pos, "illegal character.");
         }
         return builder.buildNamed(type);
     }
@@ -429,8 +423,8 @@ public class Tokenizer implements Lexer, AutoCloseable {
         return builder;
     }
 
-    private void tError(int position, String message) {
-        log.error(position, message);
+    private void report(int position, String message) {
+        log.error(source, position, message);
     }
 
     @Override

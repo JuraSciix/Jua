@@ -1,12 +1,5 @@
-fn array_swap(map, x, y) {
-    var tmp = map[x];
-    map[x] = map[y];
-    map[y] = tmp;
-}
+var a, a;
+var b, b;
+var c
 
-var x = 1;
-var y = 2;
 
-var tmp = x;
-x = y;
-y = tmp;

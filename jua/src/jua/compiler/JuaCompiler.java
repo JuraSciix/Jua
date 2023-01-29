@@ -21,7 +21,8 @@ public final class JuaCompiler {
             System.exit(1);
             return null;
         }
-        Source source = new Source(file.getName(), filecontents);
+        Log log = new Log(System.err, Options.logMaxErrors());
+        Source source = new Source(file.getName(), filecontents, log);
 
         if (Options.isLintEnabled()) {
             Lexer tokenizer = new Tokenizer(source);
@@ -50,7 +51,6 @@ public final class JuaCompiler {
             }
             return null;
         }
-        Log log = source.getLog();
         try {
             Parser parser = new JuaParser(source);
             Tree.CompilationUnit compilationUnit = parser.parseCompilationUnit();
@@ -65,11 +65,10 @@ public final class JuaCompiler {
 
             compilationUnit.accept(new Enter(programScope));
             compilationUnit.accept(new Lower(programScope));
-            compilationUnit.accept(new Check(programScope, log));
+            compilationUnit.accept(new Check(programScope));
             compilationUnit.accept(new Flow());
 
             if (log.hasErrors()) {
-                log.flush(System.err);
                 return null;
             }
 
@@ -88,14 +87,7 @@ public final class JuaCompiler {
         } catch (CompileException e) {
             System.err.println("Compiler error occurred");
             e.printStackTrace();
-        } catch (CompileInterrupter ignore) {
-        } finally {
-            if (log.hasMessages()) {
-                log.flush(System.err);
-            }
+            return null;
         }
-
-        log.flush(System.err);
-        return null;
     }
 }

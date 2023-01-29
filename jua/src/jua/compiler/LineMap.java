@@ -2,13 +2,18 @@ package jua.compiler;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
+import jua.utils.StringUtils;
 
 public final class LineMap {
 
     private final int[] lineStartPoints;
 
+    private final int contentEndPoint;
+
     LineMap(String content) {
-        lineStartPoints = buildLineMap(content);
+        String rtrimmedContent = StringUtils.rtrim(content);
+        lineStartPoints = buildLineMap(rtrimmedContent);
+        contentEndPoint = rtrimmedContent.length();
     }
 
     private int[] buildLineMap(String content) {
@@ -21,10 +26,9 @@ public final class LineMap {
             while (reader.hasMore()) {
                 int ch = reader.readChar();
                 if (ch == '\n') {
-                    lineStartPoints.add(reader.cursor() - 1);
+                    lineStartPoints.add(reader.cursor());
                 }
             }
-            lineStartPoints.add(reader.length() - 1);
 
             return lineStartPoints.toIntArray();
         }
@@ -40,12 +44,14 @@ public final class LineMap {
         return pos - lineStartPoints[index];
     }
 
-    public int getLineStart(int pos) {
-        return lineStartPoints[findLineIndex(pos)];
+    public int getLineStart(int lineNum) {
+        return lineStartPoints[lineNum - 1];
     }
 
-    public int getLineEnd(int pos) {
-        return lineStartPoints[findLineIndex(pos) + 1];
+    public int getLineEnd(int lineNum) {
+        if (lineNum >= lineStartPoints.length)
+            return contentEndPoint;
+        return lineStartPoints[lineNum] - 1;
     }
 
     private int findLineIndex(int pos) {
@@ -54,7 +60,7 @@ public final class LineMap {
         int current = top >> 1;
 
         while ((top - bottom) > 1) {
-           if (lineStartPoints[current] < pos) {
+           if (lineStartPoints[current] <= pos) {
                bottom = current;
            } else {
                top = current;

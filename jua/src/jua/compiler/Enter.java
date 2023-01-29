@@ -52,8 +52,7 @@ public class Enter extends Scanner {
 
     private final ProgramScope globalScope;
 
-    /** Журнал ошибок. */
-    private Log log;
+    private Source source;
 
     /** Текущая область видимости. */
     private Scope scope;
@@ -70,9 +69,13 @@ public class Enter extends Scanner {
         Assert.ensure(scope.parent == parent, "scope chain has been affected");
     }
 
+    private void report(int pos, String message) {
+        source.log.error(source, pos, message);
+    }
+
     private void checkNotVarDef(Tree tree) {
         if (tree.hasTag(Tag.VARDEF)) {
-            log.error(tree.pos, "variable declaration isn't allowed here");
+            report(tree.pos, "variable declaration isn't allowed here");
         }
     }
 
@@ -96,7 +99,7 @@ public class Enter extends Scanner {
 
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
-        log = tree.source.getLog();
+        source = tree.source;
         scan(tree.imports);
         scan(tree.constDefs);
         scan(tree.funcDefs);
@@ -113,7 +116,7 @@ public class Enter extends Scanner {
     public void visitConstDef(ConstDef tree) {
         for (ConstDef.Definition def : tree.defs) {
             if (globalScope.isConstantDefined(def.name)) {
-                log.error(def.name.pos, "constant redefinition");
+                report(def.name.pos, "constant redefinition");
                 continue;
             }
             globalScope.defineUserConstant(def);
@@ -123,7 +126,7 @@ public class Enter extends Scanner {
     @Override
     public void visitFuncDef(FuncDef tree) {
         if (globalScope.isFunctionDefined(tree.name)) {
-            log.error(tree.name.pos, "function redefinition");
+            report(tree.name.pos, "function redefinition");
             return;
         }
         ensureRootScope();
@@ -131,7 +134,7 @@ public class Enter extends Scanner {
 
         for (FuncDef.Parameter param : tree.params) {
             if (scope.duplicate(param.name)) {
-                log.error(param.name.pos, "duplicated function parameter");
+                report(param.name.pos, "duplicated function parameter");
             }
             // Сканировать param.expr не нужно, поскольку это должен быть литерал.
         }
@@ -199,7 +202,9 @@ public class Enter extends Scanner {
     @Override
     public void visitVarDef(VarDef tree) {
         for (VarDef.Definition def : tree.defs) {
-            scope.duplicate(def.name);
+            if (scope.duplicate(def.name)) {
+                report(def.name.pos, "duplicated variable declaration");
+            }
             scan(def.init);
         }
     }
@@ -208,7 +213,7 @@ public class Enter extends Scanner {
     public void visitVariable(Var tree) {
         Name name = tree.name;
         if (scope.undeclared(name) && !globalScope.isConstantDefined(name)) {
-            log.error(name.pos, "undeclared variable");
+            report(name.pos, "undeclared variable");
         }
     }
 }

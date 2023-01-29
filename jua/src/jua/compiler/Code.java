@@ -14,8 +14,6 @@ import jua.runtime.code.LineNumberTable;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 public final class Code {
 
@@ -50,7 +48,7 @@ public final class Code {
     public Code(ProgramScope programScope, Source source) {
         this.programScope = programScope;
         this.lineMap = source.getLineMap();
-        log = source.getLog();
+        log = source.log;
         gen = new Gen(programScope);
         gen.code = this;
         gen.log = log;

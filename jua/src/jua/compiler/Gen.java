@@ -41,12 +41,12 @@ public final class Gen extends Scanner {
         code = tree.code;
         code.putPos(0);
         items = new Items(code);
-        log = tree.source.getLog();
+        log = tree.source.log;
         scan(tree.stats);
         emitLeave();
         resultFunc = new Function(
                 "<main>",
-                source.name,
+                source.fileName,
                 0,
                 0,
                 new String[0],
@@ -306,7 +306,7 @@ public final class Gen extends Scanner {
         code = tree.code;
         code.putPos(tree.pos);
         items = new Items(code);
-        log = source.getLog();
+        log = source.log;
 
         List<Address> defaults = new List<>();
         for (FuncDef.Parameter param : tree.params) {
@@ -334,7 +334,7 @@ public final class Gen extends Scanner {
 
         resultFunc = new Function(
                 tree.name.toString(),
-                source.name,
+                source.fileName,
                 tree.params.count() - defaults.count(),
                 tree.params.count(),
                 tree.params.map(param -> param.name.toString()).toArray(String[]::new),

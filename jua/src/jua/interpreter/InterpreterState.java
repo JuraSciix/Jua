@@ -527,7 +527,7 @@ public final class InterpreterState {
     }
 
     public void stackLDC(int constantIndex) {
-        constant_pool().at(constantIndex, top());
+        constant_pool().load(constantIndex, top());
         next();
     }
 

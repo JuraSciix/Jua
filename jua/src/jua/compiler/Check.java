@@ -9,18 +9,50 @@ public class Check extends Scanner {
 
     private final ProgramScope programScope;
 
-    private final Log log;
+    private Source source;
 
     private boolean allowsBreak, allowsContinue, allowsFallthrough;
 
-    public Check(ProgramScope programScope, Log log) {
+    public Check(ProgramScope programScope) {
         this.programScope = programScope;
-        this.log = log;
+    }
+    
+    private void report(int pos, String message) {
+        source.log.error(source, pos, message);
+    }
+
+    private void report(int pos, String message, Object... args) {
+        source.log.error(source, pos, message, args);
+    }
+
+    private boolean requireLiteralTree(Expression tree) {
+        if (isLiteral(tree)) {
+            return true;
+        }
+        report(stripParens(tree).pos, "only a literal values can be applied here");
+        return false;
+    }
+
+    private boolean requireAccessibleTree(Expression tree) {
+        if (isAccessible(tree)) {
+            return true;
+        }
+        report(stripParens(tree).pos, "only an accessible values can be applied here");
+        return false;
+    }
+
+    @Override
+    public void visitCompilationUnit(CompilationUnit tree) {
+        source = tree.source;
+        scan(tree.imports);
+        scan(tree.constDefs);
+        scan(tree.funcDefs);
+        scan(tree.stats);
     }
 
     @Override
     public void visitImport(Import tree) {
-        log.error(tree.pos, "'use' statements are not supported yet");
+        report(tree.pos, "'use' statements are not supported yet");
     }
 
     @Override
@@ -79,7 +111,7 @@ public class Check extends Scanner {
         if (tree.labels != null) { // default-case?
             for (Expression label : tree.labels) {
                 if (!isLiteral(label)) {
-                    log.error(stripParens(label).pos, "only literals are allowed as the case label expression");
+                    report(stripParens(label).pos, "only literals are allowed as the case label expression");
                 }
             }
         }
@@ -102,21 +134,21 @@ public class Check extends Scanner {
     @Override
     public void visitBreak(Break tree) {
         if (!allowsBreak) {
-            log.error(tree.pos, "break-statement is allowed only inside loop/switch-case");
+            report(tree.pos, "break-statement is allowed only inside loop/switch-case");
         }
     }
 
     @Override
     public void visitContinue(Continue tree) {
         if (!allowsContinue) {
-            log.error(tree.pos, "continue-statement is allowed only inside loop");
+            report(tree.pos, "continue-statement is allowed only inside loop");
         }
     }
 
     @Override
     public void visitFallthrough(Fallthrough tree) {
         if (!allowsFallthrough) {
-            log.error(tree.pos, "fallthrough-statement is allowed only inside switch-case");
+            report(tree.pos, "fallthrough-statement is allowed only inside switch-case");
         }
     }
 
@@ -125,7 +157,7 @@ public class Check extends Scanner {
         // Заметка: Я не вызываю ниже stripParens потому что так надо
         Expression callee = tree.callee;
         if (!callee.hasTag(Tag.MEMACCESS) || ((MemberAccess) callee).expr != null) {
-            log.error(stripParens(callee).pos, "only function calls are allowed");
+            report(stripParens(callee).pos, "only function calls are allowed");
             return;
         }
 
@@ -133,27 +165,27 @@ public class Check extends Scanner {
         FunctionSymbol calleeSym = programScope.lookupFunction(calleeName);
 
         if (calleeSym == null) {
-            log.error(tree.pos, "trying to call an undeclared function");
+            report(tree.pos, "trying to call an undeclared function");
             return;
         }
 
         if (tree.args.count() > calleeSym.maxargs) {
-            log.error(tree.pos, "cannot call function %s: too many arguments: %d total, %d passed", calleeSym.name, calleeSym.maxargs, tree.args.count());
+            report(tree.pos, "cannot call function %s: too many arguments: %d total, %d passed", calleeSym.name, calleeSym.maxargs, tree.args.count());
             return;
         }
 
         if (tree.args.count() < calleeSym.minargs) {
-            log.error(tree.pos, "cannot call function %s: too few arguments: %d required, %d passed", calleeSym.name, calleeSym.minargs, tree.args.count());
+            report(tree.pos, "cannot call function %s: too few arguments: %d required, %d passed", calleeSym.name, calleeSym.minargs, tree.args.count());
             return;
         }
 
         for (Invocation.Argument a : tree.args) {
             if (a.name != null) {
                 if (calleeSym.paramnames != null && !calleeSym.paramnames.contains(a.name.value)) {
-                    log.error(a.name.pos, "cannot call function %s: unrecognized function parameter name", calleeSym.name);
+                    report(a.name.pos, "cannot call function %s: unrecognized function parameter name", calleeSym.name);
                     continue;
                 }
-                log.error(a.name.pos, "named arguments not yet supported");
+                report(a.name.pos, "named arguments not yet supported");
                 continue;
             }
             scan(a.expr);
@@ -188,21 +220,5 @@ public class Check extends Scanner {
             default:
                 scan(tree.expr);
         }
-    }
-
-    private boolean requireLiteralTree(Expression tree) {
-        if (isLiteral(tree)) {
-            return true;
-        }
-        log.error(stripParens(tree).pos, "only a literal values can be applied here");
-        return false;
-    }
-
-    private boolean requireAccessibleTree(Expression tree) {
-        if (isAccessible(tree)) {
-            return true;
-        }
-        log.error(stripParens(tree).pos, "only an accessible values can be applied here");
-        return false;
     }
 }

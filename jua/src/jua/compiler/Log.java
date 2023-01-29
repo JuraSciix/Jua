@@ -1,110 +1,81 @@
 package jua.compiler;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import jua.utils.StringUtils;
+
 import java.io.PrintStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 
 public class Log {
-    private static final int maxErrors = 3;
 
+    /** Поток вывода ошибок. */
+    private final PrintStream stderr;
 
-    private final Source source;
+    /** Максимальное число выводимых ошибок. */
+    private final int errorLimit;
 
-    private int nerrs = 0;
+    /** Счетчик ошибок. */
+    private int errorCounter = 0;
 
-    private final List<String> messages = new ArrayList<>();
-
-    public Log(Source source) {
-        this.source = source;
+    public Log(PrintStream stderr, int errorLimit) {
+        if (stderr == null) {
+            throw new IllegalArgumentException("stderr must not be null");
+        }
+        if (errorLimit <= 0) {
+            throw new IllegalArgumentException("error limit must be greater than zero");
+        }
+        this.stderr = stderr;
+        this.errorLimit = errorLimit;
     }
 
-    public boolean hasMessages() {
-        return !messages.isEmpty();
+    public void error(Source source, int pos, String message) {
+        validateParameters(source, pos, message);
+        doError(source, pos, message);
     }
 
-    public boolean hasErrors() {
-        return nerrs > 0;
+    public void error(Source source, int pos, String message, Object... args) {
+        validateParameters(source, pos, message);
+        doError(source, pos, String.format(message, args));
     }
 
-    public void error(String msg) {
-        nerrs++;
-
-        //Compile error: %message%
-        messages.add("Compile error: " + msg + "\n");
-
-        if (nerrs >= maxErrors)
-            throw new CompileInterrupter();
+    private static void validateParameters(Source source, int pos, String message) {
+        if (source == null) {
+            throw new IllegalArgumentException("source must not be null");
+        }
+        if (pos < 0) {
+            throw new IllegalArgumentException("pos must not be negative");
+        }
+        if (StringUtils.isBlank(message)) {
+            throw new IllegalArgumentException("message must not be blank");
+        }
     }
 
-    public void error(int pos, String msg) {
-        nerrs++;
+    protected void doError(Source source, int pos, String msg) {
+        if (++errorCounter > errorLimit) return;
 
-        //Compile error: %message%
-        //File: %file%, line: %line%
-        //%source%
-        //%pointer%
+        // ========= Формат =========
+        // Compile error: {message}
+        // Location: in {file} at line {line}.
+        // {source-line}
+        // {column-pointer}
+        // ========= Пример =========
+        // Compile error: variable redeclaration.
+        // Location: in script.jua at line 1.
+        // var a;
+        //     ^
+        // ==========================
+
         LineMap lineMap = source.getLineMap();
-        StringBuilder buffer = new StringBuilder();
-        buffer.append("Compile error: ").append(msg).append("\n");
-        printPosition(buffer,
-                lineMap.getLineNumber(pos),
-                lineMap.getColumnNumber(pos)
-        );
-        messages.add(buffer.toString());
+        int lineNum = lineMap.getLineNumber(pos);
+        int colNum = lineMap.getColumnNumber(pos);
+        String lineSrc = source.content.substring(lineMap.getLineStart(lineNum), lineMap.getLineEnd(lineNum));
 
-        if (nerrs >= maxErrors)
-            throw new CompileInterrupter();
-    }
-
-    public void waring(String msg) {
-        messages.add("Warning: " + msg + "\n");
-    }
-
-    public void error(int pos, String fmt, Object... args) {
-        error(pos, String.format(fmt, args));
-    }
-
-    private void printPosition(StringBuilder buffer, int line, int offset) {
-        buffer.append(String.format("File: %s, line: %d.%n", source.name, line));
-
-        if (offset >= 0) {
-            printLine(buffer, line, offset);
+        stderr.println("Compile error: " + msg);
+        stderr.println("Location: in " + source.fileName + " at line " + lineNum + ".");
+        stderr.println(lineSrc);
+        for (int i = 0; i < colNum && i < lineSrc.length(); i++) {
+            stderr.print(lineSrc.charAt(i) == '\t' ? '\t' : ' ');
         }
+        stderr.println('^');
     }
 
-    private void printLine(StringBuilder buffer, int line, int offset) {
-        String s;
-
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(Files.newInputStream(Paths.get(source.name))))) {
-            while (--line > 0) {
-                br.readLine();
-            }
-            s = br.readLine();
-        } catch (IOException e) {
-            return;
-        }
-        printOffset(buffer, (s == null) ? "" : s, offset);
-    }
-
-    private void printOffset(StringBuilder buffer, String s, int offset) {
-        StringBuilder sb = new StringBuilder(offset);
-
-        for (int i = 0; i < (offset - 1); i++) {
-            sb.append(i >= s.length() || s.charAt(i) != '\t' ? ' ' : '\t');
-        }
-        buffer.append(s);
-        buffer.append("\n");
-        buffer.append(sb.append('^'));
-        buffer.append("\n");
-    }
-
-    public void flush(PrintStream output) {
-        messages.forEach(output::println);
-        messages.clear();
-    }
+    public boolean hasErrors() { return errorCounter > 0; }
 }

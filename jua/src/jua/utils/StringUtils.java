@@ -56,5 +56,16 @@ public class StringUtils {
         return !isBlank(str);
     }
 
+    public static String rtrim(String str) {
+        if (str.isEmpty()) {
+            return str;
+        }
+        int len = str.length();
+        while (str.charAt(len - 1) <= ' ') {
+            len--;
+        }
+        return (len == str.length()) ? str : str.substring(0, len);
+    }
+
     private StringUtils() { Assert.error(); }
 }

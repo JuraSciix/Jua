@@ -22,12 +22,14 @@ public final class Options {
     public static boolean isLintEnabled() { return bound.enableLint; }
     public static boolean isShouldPrettyTree() { return bound.prettyTree; }
     public static ArrayList<String> argv() { return bound.argv; }
+    public static int logMaxErrors() { return bound.logMaxErrors; }
 
     private final ArrayList<String> files = new ArrayList<>();
     private boolean printCode;
     private boolean enableLint;
     private boolean prettyTree;
     private final ArrayList<String> argv = new ArrayList<>();
+    private int logMaxErrors = 1;
 
     private static class OptionIterator {
 
@@ -97,6 +99,20 @@ public final class Options {
                     path = itr.next();
                 }
                 files.addAll(Arrays.asList(path.split(";")));
+                continue;
+            }
+            if (option.startsWith("-m")) {
+                String value = option.substring("-m".length());
+                if (!value.startsWith("=") || value.length() == 1) {
+                    System.err.println("Error: option '-m' must have a value specified after '='");
+                    System.exit(1);
+                }
+                try {
+                    logMaxErrors = Integer.parseUnsignedInt(value.substring(1));
+                } catch (NumberFormatException e) {
+                    System.err.println("Error: option '-m' have an invalid value, expected positive integer.");
+                    System.exit(1);
+                }
                 continue;
             }
         }
