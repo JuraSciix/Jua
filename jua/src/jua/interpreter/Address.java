@@ -637,6 +637,7 @@ public final class Address implements Comparable<Address> {
             }
             return false;
         }
+        threadError("trying to load array-element from %s", getTypeName());
         return false;
     }
 
@@ -658,6 +659,7 @@ public final class Address implements Comparable<Address> {
             }
             return false;
         }
+        threadError("trying to load array-element from %s", getTypeName());
         return false;
     }
 
@@ -683,6 +685,7 @@ public final class Address implements Comparable<Address> {
             }
             return false;
         }
+        threadError("trying to load array-element from %s", getTypeName());
         return false;
     }
 
@@ -702,6 +705,7 @@ public final class Address implements Comparable<Address> {
             }
             return false;
         }
+        threadError("trying to load array-element from %s", getTypeName());
         return false;
     }
 
