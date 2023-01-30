@@ -14,7 +14,7 @@ public final class Neg implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.stackNeg();
+    public boolean run(InterpreterState state) {
+        return state.stackNeg();
     }
 }

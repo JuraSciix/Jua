@@ -14,7 +14,7 @@ public final class Leave implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.thread().leave();
+    public boolean run(InterpreterState state) {
+        return state.impl_leave();
     }
 }

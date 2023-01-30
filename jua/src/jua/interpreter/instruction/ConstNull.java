@@ -14,7 +14,7 @@ public final class ConstNull implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.constNull();
+    public boolean run(InterpreterState state) {
+        return state.constNull();
     }
 }

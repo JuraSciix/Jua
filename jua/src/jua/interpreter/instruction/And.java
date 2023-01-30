@@ -14,7 +14,7 @@ public final class And implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.stackAnd();
+    public boolean run(InterpreterState state) {
+        return state.stackAnd();
     }
 }

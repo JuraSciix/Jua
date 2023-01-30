@@ -21,7 +21,7 @@ public final class Dec implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.stackVDec(id);
+    public boolean run(InterpreterState state) {
+        return state.stackVDec(id);
     }
 }

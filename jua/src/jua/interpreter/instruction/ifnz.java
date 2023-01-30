@@ -27,7 +27,7 @@ public final class ifnz extends JumpInstruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.ifnz(offset);
+    public boolean run(InterpreterState state) {
+        return state.ifnz(offset);
     }
 }

@@ -23,7 +23,7 @@ public final class Getconst implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.getconst(id);
+    public boolean run(InterpreterState state) {
+        return state.getconst(id);
     }
 }

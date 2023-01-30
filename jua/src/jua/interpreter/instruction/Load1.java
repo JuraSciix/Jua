@@ -15,7 +15,7 @@ public final class Load1 implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.stackVLoad(1);
+    public boolean run(InterpreterState state) {
+        return state.stackVLoad(1);
     }
 }

@@ -14,7 +14,7 @@ public final class ConstI1 implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.constInt(1L);
+    public boolean run(InterpreterState state) {
+        return state.constInt(1L);
     }
 }

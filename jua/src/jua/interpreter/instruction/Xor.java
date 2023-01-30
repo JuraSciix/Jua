@@ -14,7 +14,7 @@ public final class Xor implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.stackXor();
+    public boolean run(InterpreterState state) {
+        return state.stackXor();
     }
 }

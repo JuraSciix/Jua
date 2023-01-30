@@ -26,7 +26,7 @@ public final class Ifnull extends JumpInstruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.ifnull(offset);
+    public boolean run(InterpreterState state) {
+        return state.ifnull(offset);
     }
 }

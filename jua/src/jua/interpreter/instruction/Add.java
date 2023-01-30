@@ -14,7 +14,7 @@ public final class Add implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.stackAdd();
+    public boolean run(InterpreterState state) {
+        return state.stackAdd();
     }
 }

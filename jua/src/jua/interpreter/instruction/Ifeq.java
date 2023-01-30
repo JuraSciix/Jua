@@ -26,7 +26,7 @@ public final class Ifeq extends JumpInstruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.ifeq(offset);
+    public boolean run(InterpreterState state) {
+        return state.ifeq(offset);
     }
 }

@@ -26,7 +26,7 @@ public final class Iflt extends JumpInstruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.iflt(offset);
+    public boolean run(InterpreterState state) {
+        return state.iflt(offset);
     }
 }

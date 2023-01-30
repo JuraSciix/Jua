@@ -14,7 +14,7 @@ public final class Cmp implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.stackCmp();
+    public boolean run(InterpreterState state) {
+        return state.stackCmp();
     }
 }

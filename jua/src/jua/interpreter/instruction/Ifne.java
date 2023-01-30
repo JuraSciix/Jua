@@ -26,7 +26,7 @@ public final class Ifne extends JumpInstruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.ifne(offset);
+    public boolean run(InterpreterState state) {
+        return state.ifne(offset);
     }
 }

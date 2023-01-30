@@ -14,7 +14,7 @@ public final class Newmap implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.stack_newmap();
+    public boolean run(InterpreterState state) {
+        return state.stack_newmap();
     }
 }

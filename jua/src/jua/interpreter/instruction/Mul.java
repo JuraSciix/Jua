@@ -14,7 +14,7 @@ public final class Mul implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.stackMul();
+    public boolean run(InterpreterState state) {
+        return state.stackMul();
     }
 }

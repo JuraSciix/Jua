@@ -15,7 +15,7 @@ public final class Length implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.stackLength();
+    public boolean run(InterpreterState state) {
+        return state.stackLength();
     }
 }

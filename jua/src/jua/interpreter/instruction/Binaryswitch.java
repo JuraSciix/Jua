@@ -86,7 +86,7 @@ public final class Binaryswitch extends JumpInstruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.impl_binaryswitch(literals, destIps, offset);
+    public boolean run(InterpreterState state) {
+        return state.impl_binaryswitch(literals, destIps, offset);
     }
 }

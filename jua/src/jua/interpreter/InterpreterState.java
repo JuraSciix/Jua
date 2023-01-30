@@ -42,7 +42,11 @@ public final class InterpreterState {
     }
 
     public void executeTick() {
-        currentInstruction().run(this);
+        while (true) {
+            if (!currentInstruction().run(this)) {
+                return;
+            }
+        }
     }
 
     public InterpreterThread thread() {
@@ -85,6 +89,11 @@ public final class InterpreterState {
         cp += offset;
     }
 
+    public boolean _goto(int offset) {
+        offset(offset);
+        return true;
+    }
+
     public ConstantPool constant_pool() {
         return cs.constantPool;
     }
@@ -94,9 +103,10 @@ public final class InterpreterState {
         cpAdvance = 0;
     }
 
-    public void getconst(int id) {
+    public boolean getconst(int id) {
         top().set(thread.environment().getConstant(id));
         next();
+        return true;
     }
 
     public void pushStack(long value) {
@@ -141,29 +151,26 @@ public final class InterpreterState {
 
     /* ОПЕРАЦИИ НА СТЕКЕ */
 
-    public void push(short value) {
-        pushStack(value);
-        next();
-    }
-
-    public void pop() {
+    public boolean pop() {
         sp--;
         next();
+        return true;
     }
 
-    public void pop2() {
+    public boolean pop2() {
         sp -= 2;
         next();
+        return true;
     }
 
-    public void dup() {
+    public boolean dup() {
         Address peek = peekStack();
         top().set(peek);
         next();
-
+        return true;
     }
 
-    public void dup2() {
+    public boolean dup2() {
         Address a = popStack();
         Address b = popStack();
         pushStack(b);
@@ -171,26 +178,29 @@ public final class InterpreterState {
         pushStack(b);
         pushStack(a);
         next();
+        return true;
     }
 
-    public void dup1_x1() {
+    public boolean dup1_x1() {
         stack[sp].set(first());
         first().set(second());
         second().set(stack[sp]);
         sp++;
         next();
+        return true;
     }
 
-    public void dup1_x2() {
+    public boolean dup1_x2() {
         stack[sp].set(first());
         first().set(second());
         second().set(third());
         third().set(stack[sp]);
         sp++;
         next();
+        return true;
     }
 
-    public void dup2_x1() {
+    public boolean dup2_x1() {
         stack[sp + 1].set(first());
         stack[sp].set(second());
         second().set(third());
@@ -198,9 +208,10 @@ public final class InterpreterState {
         stack[sp - 4].set(stack[sp]);
         sp += 2;
         next();
+        return true;
     }
 
-    public void dup2_x2() {
+    public boolean dup2_x2() {
         stack[sp + 1].set(first());
         stack[sp].set(second());
         first().set(third());
@@ -209,149 +220,175 @@ public final class InterpreterState {
         stack[sp - 5].set(stack[sp]);
         sp += 2;
         next();
+        return true;
     }
 
-    public void stackAdd() {
+    public boolean stackAdd() {
         if (second().add(first(), second())) {
             sp--;
             next();
+            return true;
         }
+        return false;
     }
 
-    public void stackCmp() {
+    public boolean stackCmp() {
         // todo: implement comparison of two last stack elements and pushing result to back
+        return true;
     }
 
-    public void stackAnd() {
+    public boolean stackAnd() {
         if (second().and(first(), second())) {
             sp--;
             next();
+            return true;
         }
+        return false;
     }
 
-    public void constInt(long value) {
+    public boolean constInt(long value) {
         top().set(value);
         next();
+        return true;
     }
 
-    public void constFalse() {
+    public boolean constFalse() {
         top().set(false);
         next();
+        return true;
     }
 
-    public void constNull() {
+    public boolean constNull() {
         top().setNull();
         next();
+        return true;
     }
 
-    public void constTrue() {
+    public boolean constTrue() {
         top().set(true);
         next();
+        return true;
     }
 
-    public void stack_ainc() {
+    public boolean stack_ainc() {
         Address key = popStack();
         Address val = popStack();
 
         if (val.arrayInc(key, top())) {
             next();
+            return true;
         }
+        return false;
     }
 
-    public void stack_adec() {
+    public boolean stack_adec() {
         Address key = popStack();
         Address val = popStack();
 
         if (val.arrayDec(key, top())) {
             next();
+            return true;
         }
+        return false;
     }
 
-    public void stackDiv() {
+    public boolean stackDiv() {
         if (second().div(first(), second())) {
             sp--;
             next();
+            return true;
         }
+        return false;
     }
 
-    public void ifeq(int offset) {
+    public boolean ifeq(int offset) {
         if (stackCmpeq()) {
             offset(offset);
         } else {
             next();
         }
+        return true;
     }
 
-    public void ifne(int offset) {
+    public boolean ifne(int offset) {
         if (stackCmpne()) {
             offset(offset);
         } else {
             next();
         }
+        return true;
     }
 
-    public void ifgt(int offset) {
+    public boolean ifgt(int offset) {
         if (stackCmpgt()) {
             offset(offset);
         } else {
             next();
         }
+        return true;
     }
 
-    public void ifge(int offset) {
+    public boolean ifge(int offset) {
         if (stackCmpge()) {
             offset(offset);
         } else {
             next();
         }
+        return true;
     }
 
-    public void iflt(int offset) {
+    public boolean iflt(int offset) {
         if (stackCmplt()) {
             offset(offset);
         } else {
             next();
         }
+        return true;
     }
 
-    public void ifle(int offset) {
+    public boolean ifle(int offset) {
         if (stackCmple()) {
             offset(offset);
         } else {
             next();
         }
+        return true;
     }
 
-    public void ifnull(int offset) {
+    public boolean ifnull(int offset) {
         if (popStack().isNull()) {
             offset(offset);
         } else {
             next();
         }
+        return true;
     }
 
-    public void ifnonnull(int offset) {
+    public boolean ifnonnull(int offset) {
         if (!popStack().isNull()) {
             offset(offset);
         } else {
             next();
         }
+        return false;
     }
 
-    public void ifz(int offset) {
+    public boolean ifz(int offset) {
         if (!popBoolean()) {
             offset(offset);
         } else {
             next();
         }
+        return true;
     }
 
-    public void ifnz(int offset) {
+    public boolean ifnz(int offset) {
         if (popBoolean()) {
             offset(offset);
         } else {
             next();
         }
+        return true;
     }
 
     private boolean popBoolean() {
@@ -392,143 +429,183 @@ public final class InterpreterState {
         return cmp < 0;
     }
 
-    public void stackLength() {
+    public boolean stackLength() {
         if (first().length(first())) {
             next();
+            return true;
         }
+        return false;
     }
 
-    public void stackMul() {
+    public boolean stackMul() {
         if (second().mul(first(), second())) {
             sp--;
             next();
+            return true;
         }
+        return false;
     }
 
-    public void stackNeg() {
+    public boolean stackNeg() {
         if (peekStack().neg(peekStack())) {
             next();
+            return true;
         }
+        return false;
     }
 
-    public void stack_newmap() {
+    public boolean stack_newmap() {
         top().set(new MapHeap());
         next();
+        return true;
     }
 
-    public void stack_newlist() {
+    public boolean stack_newlist() {
         Address sizeAddress = popStack();
         if (!sizeAddress.testType(ValueType.LONG)) {
-            return;
+            return false;
         }
         long size = sizeAddress.getLong();
         if (size < 0 || size > Integer.MAX_VALUE) {
             thread.error("illegal list size: %d", size);
-            return;
+            return false;
         }
         top().set(new ListHeap((int) size));
         next();
+        return true;
     }
 
-    public void stackNot() {
+    public boolean stackNot() {
         if (peekStack().not(peekStack())) {
             next();
+            return true;
         }
+        return false;
     }
 
-    public void stackOr() {
+    public boolean stackOr() {
         if (second().or(first(), second())) {
             sp--;
             next();
+            return true;
         }
+        return false;
     }
 
-    public void stackPos() {
+    public boolean stackPos() {
         peekStack().pos(peekStack());
         next();
+        return true;
     }
 
-    public void stackRem() {
+    public boolean stackRem() {
         if (second().rem(first(), second())) {
             sp--;
             next();
+            return true;
         }
+        return false;
     }
 
-    public void stackShl() {
+    public boolean stackShl() {
         if (second().shl(first(), second())) {
             sp--;
             next();
+            return true;
         }
+        return false;
     }
 
-    public void stackShr() {
+    public boolean stackShr() {
         if (second().shr(first(), second())) {
             sp--;
             next();
+            return true;
         }
+        return false;
     }
 
-    public void stackSub() {
+    public boolean stackSub() {
         if (second().sub(first(), second())) {
             sp--;
             next();
+            return true;
         }
+        return false;
     }
 
-    public void stackXor() {
+    public boolean stackXor() {
         if (second().xor(first(), second())) {
             sp--;
             next();
+            return true;
         }
+        return false;
     }
 
-    public void stackAload() {
+    public boolean stackAload() {
         if (second().load(first(), second())) {
             sp--;
             next();
+            return true;
         }
+        return false;
     }
 
-    public void stackAstore() {
+    public boolean stackAstore() {
         if (third().store(second(), first())) {
             sp -= 3;
             next();
+            return true;
         }
+        return false;
     }
 
-    public void stackLDC(int constantIndex) {
+    public boolean stackLDC(int constantIndex) {
         constant_pool().load(constantIndex, top());
         next();
+        return true;
     }
 
-    public void stackVDec(int id) {
+    public boolean stackVDec(int id) {
         if (slots[id].dec()) {
             next();
+            return true;
         }
+        return false;
     }
 
-    public void stackVInc(int id) {
+    public boolean stackVInc(int id) {
         if (slots[id].inc()) {
             next();
+            return true;
         }
+        return false;
     }
 
-    public void stackVLoad(int id) {
+    public boolean stackVLoad(int id) {
         pushStack(slots[id]);
         next();
+        return true;
     }
 
-    public void stackVStore(int id) {
+    public boolean stackVStore(int id) {
         slots[id].set(popStack());
         next();
+        return true;
     }
 
-    public void impl_return() {
+    public boolean impl_return() {
         thread().doReturn(popStack());
+        return false;
     }
 
-    public void impl_binaryswitch(int[] literals, int[] destIps, int offset) {
+    public boolean impl_leave() {
+        thread().leave();
+        return true;
+    }
+
+    public boolean impl_binaryswitch(int[] literals, int[] destIps, int offset) {
         // Новый, двоичный поиск
         ConstantPool cp = constant_pool();
 
@@ -553,15 +630,16 @@ public final class InterpreterState {
                 } else {
                     /* assert d != 2; sel == tmp */
                     offset(destIps[i]);
-                    return;
+                    return true;
                 }
             }
         }
 
         offset(offset); /* default offset */
+        return true;
     }
 
-    public void impl_linearswitch(int[] literals, int[] destIps, int offset) {
+    public boolean impl_linearswitch(int[] literals, int[] destIps, int offset) {
         Address selector = popStack();
 
         Address tmp = new Address();
@@ -569,13 +647,14 @@ public final class InterpreterState {
             constant_pool().load(literals[i], tmp);
             if (selector.compareTo(tmp) == 0) {
                 offset(destIps[i]);
-                return;
+                return true;
             }
         }
         offset(offset); /* default ip */
+        return true;
     }
 
-    public void impl_call(int index, int nargs) {
+    public boolean impl_call(int index, int nargs) {
         Address[] args = new Address[nargs];
 
         int i = nargs;
@@ -587,5 +666,6 @@ public final class InterpreterState {
         thread().prepareCall(index, args, nargs, returnAddress, false);
         cleanupStack();
         set_cp_advance(1);
+        return false;
     }
 }

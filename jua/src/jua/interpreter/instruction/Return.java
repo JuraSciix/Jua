@@ -16,7 +16,7 @@ public final class Return implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.impl_return();
+    public boolean run(InterpreterState state) {
+        return state.impl_return();
     }
 }

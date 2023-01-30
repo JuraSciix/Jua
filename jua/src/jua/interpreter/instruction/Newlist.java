@@ -14,7 +14,7 @@ public final class Newlist implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.stack_newlist();
+    public boolean run(InterpreterState state) {
+        return state.stack_newlist();
     }
 }

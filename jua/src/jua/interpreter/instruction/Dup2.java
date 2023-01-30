@@ -16,7 +16,7 @@ public final class Dup2 implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.dup2();
+    public boolean run(InterpreterState state) {
+        return state.dup2();
     }
 }

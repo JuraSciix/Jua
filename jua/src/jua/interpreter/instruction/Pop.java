@@ -14,7 +14,7 @@ public final class Pop implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.pop();
+    public boolean run(InterpreterState state) {
+        return state.pop();
     }
 }

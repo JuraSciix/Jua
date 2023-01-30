@@ -14,7 +14,7 @@ public final class Shr implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.stackShr();
+    public boolean run(InterpreterState state) {
+        return state.stackShr();
     }
 }

@@ -14,7 +14,7 @@ public class Adec implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.stack_adec();
+    public boolean run(InterpreterState state) {
+        return state.stack_adec();
     }
 }

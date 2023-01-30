@@ -19,7 +19,7 @@ public class Inc implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.stackVInc(id);
+    public boolean run(InterpreterState state) {
+        return state.stackVInc(id);
     }
 }

@@ -14,7 +14,7 @@ public final class ConstTrue implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.constTrue();
+    public boolean run(InterpreterState state) {
+        return state.constTrue();
     }
 }

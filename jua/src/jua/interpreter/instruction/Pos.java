@@ -14,7 +14,7 @@ public final class Pos implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.stackPos();
+    public boolean run(InterpreterState state) {
+        return state.stackPos();
     }
 }

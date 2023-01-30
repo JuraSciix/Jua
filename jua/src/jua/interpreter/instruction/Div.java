@@ -14,7 +14,7 @@ public final class Div implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.stackDiv();
+    public boolean run(InterpreterState state) {
+        return state.stackDiv();
     }
 }

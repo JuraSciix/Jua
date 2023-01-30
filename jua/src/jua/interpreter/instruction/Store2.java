@@ -14,7 +14,7 @@ public final class Store2 implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.stackVStore(2);
+    public boolean run(InterpreterState state) {
+        return state.stackVStore(2);
     }
 }

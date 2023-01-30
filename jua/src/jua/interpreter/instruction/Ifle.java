@@ -26,7 +26,7 @@ public final class Ifle extends JumpInstruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.ifle(offset);
+    public boolean run(InterpreterState state) {
+        return state.ifle(offset);
     }
 }

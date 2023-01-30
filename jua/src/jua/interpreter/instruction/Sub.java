@@ -14,7 +14,7 @@ public final class Sub implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.stackSub();
+    public boolean run(InterpreterState state) {
+        return state.stackSub();
     }
 }

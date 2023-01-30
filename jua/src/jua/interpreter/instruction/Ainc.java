@@ -14,7 +14,7 @@ public class Ainc implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.stack_ainc();
+    public boolean run(InterpreterState state) {
+        return state.stack_ainc();
     }
 }

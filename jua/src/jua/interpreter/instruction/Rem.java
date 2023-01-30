@@ -14,7 +14,7 @@ public final class Rem implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.stackRem();
+    public boolean run(InterpreterState state) {
+        return state.stackRem();
     }
 }

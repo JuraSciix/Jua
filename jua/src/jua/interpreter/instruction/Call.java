@@ -29,8 +29,8 @@ public final class Call implements Instruction {
     }
 
     @Override
-    public void run(InterpreterState state) {
-        state.impl_call(index & 0xffff, nargs & 0xff);
+    public boolean run(InterpreterState state) {
+        return state.impl_call(index & 0xffff, nargs & 0xff);
     }
 
 }

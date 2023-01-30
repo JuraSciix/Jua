@@ -5,18 +5,17 @@ import jua.interpreter.InterpreterState;
 
 public interface Instruction {
 
-    /**
-     * Следующая инструкция.
-     */
-    int NEXT = 1;
-
-    int ERROR = Integer.MIN_VALUE;
-
-    int UNREACHABLE = Integer.MIN_VALUE;
-
+    /** @return Влияние инструкции на вершину стека. */
     int stackAdjustment();
 
+    /** Печатает информацию об инструкции */
     void print(CodePrinter printer);
 
-    void run(InterpreterState state);
+    /**
+     * Выполняет инструкцию.
+     *
+     * @param state Состояние фрейма.
+     * @return {@code true}, если инструкция успешно выполнена и следует переходить к следующей; {@code false}, если произошла ошибка или необходимо прервать выполнение.
+     */
+    boolean run(InterpreterState state);
 }
