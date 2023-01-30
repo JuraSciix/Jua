@@ -181,7 +181,7 @@ public class Check extends Scanner {
 
         for (Invocation.Argument a : tree.args) {
             if (a.name != null) {
-                if (calleeSym.paramnames != null && !calleeSym.paramnames.contains(a.name.value)) {
+                if (calleeSym.paramnames != null && !calleeSym.paramnames.contains(a.name.toString())) {
                     report(a.name.pos, "cannot call function %s: unrecognized function parameter name", calleeSym.name);
                     continue;
                 }

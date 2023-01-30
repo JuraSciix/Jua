@@ -10,7 +10,7 @@ import jua.utils.List;
  */
 public class Enter extends Scanner {
 
-    private class Scope {
+    private static class Scope {
 
         /** Родительская (внешняя) область. */
         final Scope parent;
@@ -26,12 +26,12 @@ public class Enter extends Scanner {
         boolean duplicate(Name local) {
             int nextId = 0;
             for (Scope scope = this; scope != null; scope = scope.parent) {
-                if (scope.localIds.containsKey(local.value)) {
+                if (scope.localIds.containsKey(local.toString())) {
                     return true;
                 }
                 nextId += scope.localIds.size();
             }
-            localIds.put(local.value, local.id = nextId);
+            localIds.put(local.toString(), local.id = nextId);
             return false;
         }
 
@@ -39,13 +39,13 @@ public class Enter extends Scanner {
         boolean undeclared(Name local) {
             int nextId = 0;
             for (Scope scope = this; scope != null; scope = scope.parent) {
-                if (scope.localIds.containsKey(local.value)) {
-                    local.id = scope.localIds.getInt(local.value);
+                if (scope.localIds.containsKey(local.toString())) {
+                    local.id = scope.localIds.getInt(local.toString());
                     return false;
                 }
                 nextId += scope.localIds.size();
             }
-            localIds.put(local.value, local.id = nextId);
+            localIds.put(local.toString(), local.id = nextId);
             return true;
         }
     }

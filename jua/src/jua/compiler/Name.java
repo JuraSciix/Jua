@@ -2,7 +2,7 @@ package jua.compiler;
 
 public class Name {
 
-    public final String value;
+    private final String value;
 
     public final int pos;
 

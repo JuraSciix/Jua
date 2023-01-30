@@ -152,7 +152,7 @@ public final class Code {
     }
 
     public int resolveLocal(Name name) {
-        return resolveLocal(name.value);
+        return resolveLocal(name.toString());
     }
 
     public int resolveLocal(String name) {

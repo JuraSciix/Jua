@@ -494,7 +494,7 @@ public final class Gen extends Scanner {
     @Override
     public void visitMemberAccess(MemberAccess tree) {
         genExpr(tree.expr).load();
-        emitPushString(tree.member.value);
+        emitPushString(tree.member.toString());
         code.putPos(tree.pos);
         result = items.makeAccess();
     }
