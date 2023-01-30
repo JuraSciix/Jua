@@ -44,7 +44,7 @@ public class NativeStdlib {
     static class PrintlnFunction extends NativeFunctionPresent {
 
         PrintlnFunction() {
-            super("println", ParamsData.create().add("value"));
+            super("println", ParamsData.create().optional("value", ""));
         }
 
         @Override
