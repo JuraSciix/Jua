@@ -1,0 +1,202 @@
+const OPCODE_NOP    = 0;
+const OPCODE_PUSH   = 1;
+const OPCODE_LOAD   = 2;
+const OPCODE_STORE  = 3;
+const OPCODE_ADD    = 4;
+const OPCODE_SUB    = 5;
+const OPCODE_INC    = 6;
+const OPCODE_DEC    = 7;
+const OPCODE_IFGT   = 8;
+const OPCODE_IFGE   = 9;
+const OPCODE_IFLT   = 10;
+const OPCODE_IFLE   = 11;
+const OPCODE_IFEQ   = 12;
+const OPCODE_IFNE   = 13;
+const OPCODE_GOTO   = 14;
+const OPCODE_PRINT  = 15;
+const OPCODE_RETURN = 16;
+
+fn interpret(code) {
+    var pc = 0;
+    var stack = list(255);
+    var sp = 0;
+    var locals = list(255);
+    while true {
+        //println(pc + ': ' + code[pc]);
+        switch code[pc] {
+            case OPCODE_NOP: {
+                pc++;
+                continue;
+            }
+
+            case OPCODE_PUSH: {
+                stack[sp] = code[pc + 1];
+                sp++;
+                pc += 2;
+                continue;
+            }
+
+            case OPCODE_LOAD: {
+                stack[sp] = locals[code[pc + 1]];
+                sp++;
+                pc += 2;
+                continue;
+            }
+
+            case OPCODE_STORE: {
+                locals[code[pc + 1]] = stack[sp - 1];
+                sp--;
+                pc += 2;
+                continue;
+            }
+
+            case OPCODE_ADD: {
+                stack[sp - 2] += stack[sp - 1];
+                sp--;
+                pc++;
+                continue;
+            }
+
+            case OPCODE_SUB: {
+                stack[sp - 2] -= stack[sp - 1];
+                sp--;
+                pc++;
+                continue;
+            }
+
+            case OPCODE_INC: {
+                locals[code[pc + 1]]++;
+                pc += 2;
+                continue;
+            }
+
+            case OPCODE_DEC: {
+                locals[code[pc + 1]]--;
+                pc += 2;
+                continue;
+            }
+
+            case OPCODE_IFGT: {
+                if stack[sp - 2] > stack[sp - 1] {
+                    sp -= 2;
+                    pc = code[pc + 1];
+                } else {
+                    sp -= 2;
+                    pc += 2;
+                }
+                continue;
+            }
+
+            case OPCODE_IFGE: {
+                if stack[sp - 2] >= stack[sp - 1] {
+                    sp -= 2;
+                    pc = code[pc + 1];
+                } else {
+                    sp -= 2;
+                    pc += 2;
+                }
+                continue;
+            }
+
+            case OPCODE_IFLT: {
+                if stack[sp - 2] < stack[sp - 1] {
+                    sp -= 2;
+                    pc = code[pc + 1];
+                } else {
+                    sp -= 2;
+                    pc += 2;
+                }
+                continue;
+            }
+
+            case OPCODE_IFLE: {
+                if stack[sp - 2] <= stack[sp - 1] {
+                    sp -= 2;
+                    pc = code[pc + 1];
+                } else {
+                    sp -= 2;
+                    pc += 2;
+                }
+                continue;
+            }
+
+            case OPCODE_IFEQ: {
+                if stack[sp - 2] == stack[sp - 1] {
+                    sp -= 2;
+                    pc = code[pc + 1];
+                } else {
+                    sp -= 2;
+                    pc += 2;
+                }
+                continue;
+            }
+
+            case OPCODE_IFNE: {
+                if stack[sp - 2] != stack[sp - 1] {
+                    sp -= 2;
+                    pc = code[pc + 1];
+                } else {
+                    sp -= 2;
+                    pc += 2;
+                }
+                continue;
+            }
+
+            case OPCODE_GOTO: {
+                pc = code[pc + 1];
+                continue;
+            }
+
+            case OPCODE_PRINT: {
+                println(stack[sp - 1]);
+                sp--;
+                pc++;
+                continue;
+            }
+
+            case OPCODE_RETURN: {
+                var result = stack[sp - 1];
+                sp--;
+                pc++;
+                return result;
+            }
+
+            default: {
+                println("invalid opcode: " + code[pc] + "(pc=" + pc + ",sp=" + sp + ")");
+                return null;
+            }
+        }
+    }
+}
+
+var code_loop = [
+    /*  0 */ OPCODE_PUSH,
+    /*  1 */ 0,
+    /*  2 */ OPCODE_STORE,
+    /*  3 */ 0,
+    /*  4 */ OPCODE_GOTO,
+    /*  5 */ 8,
+    /*  6 */ OPCODE_INC,
+    /*  7 */ 0,
+    /*  8 */ OPCODE_LOAD,
+    /*  9 */ 0,
+    /* 10 */ OPCODE_PUSH,
+    /* 11 */ 1_000_000,
+    /* 12 */ OPCODE_IFLT,
+    /* 13 */ 6,
+    /* 14 */ OPCODE_PUSH,
+    /* 15 */ 0,
+    /* 16 */ OPCODE_RETURN,
+    /* 17 */ null,
+    /* 18 */ null,
+    /* 19 */ null,
+    /* 20 */ null,
+    /* 21 */ null,
+];
+
+for var i = 0; i < 10; i++ {
+    var m_s = time();
+    interpret(code_loop);
+    var m_e = time();
+    println(m_e - m_s);
+}

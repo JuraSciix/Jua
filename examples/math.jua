@@ -1,8 +1,8 @@
 fn abs(n) = (n < 0) ? -n : n;
 
 fn complex(r, i) = {
-    'r': r,
-    'i': i
+    r: r,
+    i: i
 };
 
 fn complex_add(c1, c2) = complex(
@@ -52,3 +52,21 @@ fn complex_test(test_id) {
         }
     }
 }
+
+fn fact(n) {
+    var m = 0;
+    for var i = n; i > 0; i-- {
+        m *= i;
+    }
+    return m;
+}
+
+const MATH_E = 2.718281828459045;
+const MATH_PI = 3.141592653589793;
+const MATH_TAU = MATH_PI * 2;
+
+const _D2R = MATH_PI / 180;
+const _R2D = 180 / MATH_PI;
+
+fn rad(deg) = deg * _D2R;
+fn deg(rad) = rad * _R2D;

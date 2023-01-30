@@ -790,10 +790,10 @@ public final class JuaParser implements Parser {
                 return parseInt(token);
             }
             case LBRACE: {
-                return parseArray(token.pos, RBRACE);
+                return parseMapInit(token.pos);
             }
             case LBRACKET: {
-                return parseArray(token.pos, RBRACKET);
+                return parseListInit(token.pos);
             }
             case LPAREN: {
                 return parseParens(token.pos);
@@ -878,17 +878,22 @@ public final class JuaParser implements Parser {
         }
     }
 
-    private Expression parseArray(int position, TokenType enclosing) {
-        return (enclosing == RBRACE) ? parseMapInit(position) : parseListInit(position);
-    }
-
     private ListInit parseListInit(int pos) {
         List<Expression> entries = new List<>();
         if (!acceptToken(RBRACKET)) {
             do {
                 entries.add(parseExpression());
-            } while (acceptToken(COMMA));
-            expectToken(RBRACKET);
+                if (acceptToken(COMMA)) {
+                    if (acceptToken(RBRACKET)) {
+                        break;
+                    }
+                    continue;
+                }
+                if (acceptToken(RBRACKET)) {
+                    break;
+                }
+                unexpected(token, List.of(COMMA, RBRACKET));
+            } while (true);
         }
         return new ListInit(pos, entries);
     }
@@ -915,11 +920,17 @@ public final class JuaParser implements Parser {
                 MapInit.Entry entry = new MapInit.Entry(entryPos, key, value);
                 entry.field = field;
                 entries.add(entry);
-            } while (acceptToken(COMMA));
-
-            if (!acceptToken(RBRACE)) {
+                if (acceptToken(COMMA)) {
+                    if (acceptToken(RBRACE)) {
+                        break;
+                    }
+                    continue;
+                }
+                if (acceptToken(RBRACE)) {
+                    break;
+                }
                 unexpected(token, List.of(COMMA, RBRACE));
-            }
+            } while (true);
         }
         return new MapInit(pos, entries);
     }
