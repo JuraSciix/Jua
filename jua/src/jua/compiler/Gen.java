@@ -536,14 +536,14 @@ public final class Gen extends Scanner {
                     CondItem condItem = genCond(cond);
                     condItem.resolveTrueJumps();
                     genBranch(body);
-                    scan(update);
                     flow.resolveCont(loopstartPC);
+                    scan(update);
                     code.resolveJump(emitGoto(), loopstartPC);
                     condItem.resolveFalseJumps();
                 } else {
                     genBranch(body);
-                    scan(update);
                     flow.resolveCont();
+                    scan(update);
                     CondItem condItem = genCond(cond).negate();
                     condItem.resolveTrueJumps();
                     condItem.resolveFalseJumps(loopstartPC);
@@ -555,14 +555,15 @@ public final class Gen extends Scanner {
                 int skipBodyPC = emitGoto();
                 loopstartPC = code.currentIP();
                 genBranch(body);
+                flow.resolveCont();
                 scan(update);
                 code.resolveJump(skipBodyPC);
             } else {
                 loopstartPC = code.currentIP();
                 genBranch(body);
+                flow.resolveCont();
                 scan(update);
             }
-            flow.resolveCont();
             if (infinitecond) {
                 code.resolveJump(emitGoto(), loopstartPC);
                 if (_infinite) code.dead(); // Подлинный вечный цикл.
