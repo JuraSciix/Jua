@@ -34,7 +34,7 @@ public interface InstructionFactory {
     Dup_x2 dup_x2          = new Dup_x2();
     Dup2_x1 dup2_x1        = new Dup2_x1();
     Dup2_x2 dup2_x2        = new Dup2_x2();
-    Newarray newarray      = new Newarray();
+    Newmap newmap          = new Newmap();
     Newlist newlist        = new Newlist();
     Pop pop                = new Pop();
     Pop2 pop2              = new Pop2();

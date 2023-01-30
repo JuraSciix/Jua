@@ -96,7 +96,7 @@ public final class Gen extends Scanner {
     @Override
     public void visitMapInit(MapInit tree) {
         code.putPos(tree.pos);
-        code.addInstruction(newarray);
+        code.addInstruction(newmap);
         for (MapInit.Entry entry : tree.entries) {
             items.makeStack().duplicate();
             genExpr(entry.key).load();
@@ -120,7 +120,7 @@ public final class Gen extends Scanner {
     }
 
     private void emitNewArray() {
-        code.addInstruction(newarray);
+        code.addInstruction(newmap);
     }
 
     private void genBinary(BinaryOp tree) {

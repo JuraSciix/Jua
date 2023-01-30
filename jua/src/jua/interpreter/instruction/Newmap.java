@@ -3,14 +3,14 @@ package jua.interpreter.instruction;
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
-public final class Newarray implements Instruction {
+public final class Newmap implements Instruction {
 
     @Override
     public int stackAdjustment() { return 1; }
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName("newarray");
+        printer.printName("newmap");
     }
 
     @Override
