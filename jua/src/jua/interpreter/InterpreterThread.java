@@ -1,7 +1,7 @@
 package jua.interpreter;
 
-import jua.runtime.JuaEnvironment;
 import jua.runtime.Function;
+import jua.runtime.JuaEnvironment;
 import jua.runtime.RuntimeErrorException;
 import jua.runtime.StackTraceElement;
 import jua.runtime.code.CodeData;
@@ -289,7 +289,7 @@ public final class InterpreterThread {
                                 }
 
                                 for (int i = numArgs; i < frame.owner().maxArgc; i++) {
-                                    state.locals[i].set(frame.owner().defaults[i - frame.owner.minArgc]);
+                                    state.store(i, frame.owner().defaults[i - frame.owner.minArgc]);
                                 }
 
                                 calleeId = -1;

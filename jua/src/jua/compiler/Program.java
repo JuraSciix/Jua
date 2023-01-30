@@ -2,8 +2,8 @@ package jua.compiler;
 
 import jua.interpreter.Address;
 import jua.interpreter.InterpreterThread;
-import jua.runtime.JuaEnvironment;
 import jua.runtime.Function;
+import jua.runtime.JuaEnvironment;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -87,35 +87,6 @@ public final class Binaryswitch extends JumpInstruction {
 
     @Override
     public void run(InterpreterState state) {
-        // Новый, двоичный поиск
-        ConstantPool cp = state.constant_pool();
-
-        int l = 0;
-        int h = literals.length - 1;
-
-        Address sel = state.popStack();           /* selector */
-        Address tmp = new Address(); /* buffer   */
-
-        // Не скалярные значения семантически запрещены
-        if (sel.isScalar()) {
-            while (l <= h) {
-                int i = (l + h) >> 1;
-                cp.load(literals[i], tmp);
-
-                int d = sel.compareTo(tmp);
-
-                if (d > 0) {
-                    l = i + 1;
-                } else if (d < 0) {
-                    h = i - 1;
-                } else {
-                    /* assert d != 2; sel == tmp */
-                    state.offset(destIps[i]);
-                    return;
-                }
-            }
-        }
-
-        state.offset(offset); /* default offset */
+        state.impl_binaryswitch(literals, destIps, offset);
     }
 }

@@ -9,7 +9,10 @@ import jua.runtime.Function;
 import jua.runtime.NativeStdlib;
 import jua.runtime.VirtualMachine;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 
 public final class ProgramScope {
 

@@ -17,6 +17,6 @@ public final class Return implements Instruction {
 
     @Override
     public void run(InterpreterState state) {
-        state.thread().doReturn(state.popStack());
+        state.impl_return();
     }
 }

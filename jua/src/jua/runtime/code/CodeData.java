@@ -2,8 +2,6 @@ package jua.runtime.code;
 
 import jua.interpreter.instruction.Instruction;
 
-import java.util.Objects;
-
 public final class CodeData {
 
     /** Число слотов на стеке, используемых в коде. */

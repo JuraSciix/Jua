@@ -1,7 +1,6 @@
 package jua.interpreter.instruction;
 
 import jua.compiler.CodePrinter;
-import jua.interpreter.Address;
 import jua.interpreter.InterpreterState;
 
 public final class Linearswitch extends JumpInstruction {
@@ -46,18 +45,6 @@ public final class Linearswitch extends JumpInstruction {
 
     @Override
     public void run(InterpreterState state) {
-        int[] l = literals;
-
-        Address selector = state.popStack();
-
-        Address tmp = new Address();
-        for (int i = 0; i < l.length; i++) {
-            state.constant_pool().load(l[i], tmp);
-            if (selector.compareTo(tmp) == 0) {
-                state.offset(destIps[i]);
-                return;
-            }
-        }
-        state.offset(offset); /* default ip */
+        state.impl_linearswitch(literals, destIps, offset);
     }
 }
