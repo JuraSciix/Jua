@@ -30,17 +30,17 @@ public final class Binaryswitch extends JumpInstruction {
         int j = hi;
         int pivot = keys[(i+j)/2];
         Address tmp1 = new Address(), tmp2 = new Address();
-        cp.load(pivot, tmp1);
+        tmp1.set(cp.getAddress(pivot));
         do {
-            cp.load(keys[i], tmp2);
+            tmp2.set(cp.getAddress(keys[i]));
             while (tmp1.compareTo(tmp2) > 0) {
                 int index = keys[++i];
-                cp.load(index, tmp2);
+                tmp2.set(cp.getAddress(index));
             }
-            cp.load(keys[j], tmp2);
+            tmp2.set(cp.getAddress(keys[j]));
             while (tmp1.compareTo(tmp2) < 0) {
                 int index = keys[--j];
-                cp.load(index, tmp2);
+                tmp2.set(cp.getAddress(index));
             }
 
             if (i <= j) {

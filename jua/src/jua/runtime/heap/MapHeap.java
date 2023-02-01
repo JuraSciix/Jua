@@ -10,18 +10,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.StringJoiner;
 
-public final class MapHeap implements Heap, Iterable<Address> {
-
-    private static final ThreadLocal<MapHeap> TEMP = new ThreadLocal<MapHeap>() {
-        @Override
-        protected MapHeap initialValue() {
-            return new MapHeap();
-        }
-    };
-
-    public static MapHeap temp() {
-        return TEMP.get();
-    }
+public final class MapHeap extends Heap {
 
     // todo: использовать собственную реализацию карты.
 
@@ -43,7 +32,7 @@ public final class MapHeap implements Heap, Iterable<Address> {
 
     public boolean isSame(MapHeap that) { return map.equals(that.map); }
 
-    public MapHeap copy() { return this; }
+    public MapHeap refCopy() { return this; }
 
     public MapHeap deepCopy() { return new MapHeap(this); }
 
@@ -114,24 +103,6 @@ public final class MapHeap implements Heap, Iterable<Address> {
         return map.containsKey(key);
     }
 
-    public boolean increment(Address key, Address oldValueReceptor) {
-        ensureScalarKey(key);
-        ensureKeyPresent(key);
-        Address value = map.get(key);
-        oldValueReceptor.set(value);
-        // ++x
-        return value.inc();
-    }
-
-    public boolean decrement(Address key, Address oldValueReceptor) {
-        ensureScalarKey(key);
-        ensureKeyPresent(key);
-        Address value = map.get(key);
-        oldValueReceptor.set(value);
-        // --x
-        return value.dec();
-    }
-
     public void ensureKeyPresent(Address key) {
         if (!map.containsKey(key)) {
             InterpreterThread.threadError("access to undefined element");
@@ -164,10 +135,5 @@ public final class MapHeap implements Heap, Iterable<Address> {
             sj.add(esb.toString());
         }
         return sj.toString();
-    }
-
-    @Override
-    public Iterator<Address> iterator() {
-        return map.values().iterator();
     }
 }

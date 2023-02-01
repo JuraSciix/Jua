@@ -3,13 +3,17 @@ package jua.runtime;
 import jua.interpreter.Address;
 import jua.interpreter.AddressUtils;
 import jua.runtime.code.CodeData;
+import jua.runtime.code.ConstantPool;
 import jua.utils.StringUtils;
 
 import java.util.Arrays;
 
-public final class Function {
+public final class Function implements ConstantPool.Entry {
 
     public static final long FLAG_NATIVE = 0x01; /* Нативная функция. */
+
+    /** Интерфейс для типов, которые могут быть handle функций. */
+    public interface Handle {}
 
     /** Название функции. */
     public final String name;
@@ -33,9 +37,9 @@ public final class Function {
     public final long flags;
 
     /** Ссылка на {@link CodeData}, если функция нативная, или {@link NativeExecutor}, если нет. */
-    public final Object handle;
+    public final Handle handle;
 
-    public Function(String name, String module, int minArgc, int maxArgc, String[] params, Address[] defaults, long flags, Object handle) {
+    public Function(String name, String module, int minArgc, int maxArgc, String[] params, Address[] defaults, long flags, Handle handle) {
         validateFields(name, module, minArgc, maxArgc, params, defaults, flags, handle);
         this.name = name;
         this.module = module;
@@ -95,17 +99,27 @@ public final class Function {
     }
 
     public NativeExecutor nativeExecutor() {
-        if ((flags & FLAG_NATIVE) == 0L) {
-            throw new IllegalStateException("trying to access the native executor of a non-native function");
+        try {
+            return (NativeExecutor) handle;
+        } catch (ClassCastException e) {
+            if ((flags & FLAG_NATIVE) == 0L) {
+                throw new IllegalStateException("trying to access the native executor of a non-native function");
+            } else {
+                throw e;
+            }
         }
-        return (NativeExecutor) handle;
     }
 
     public CodeData userCode() {
-        if ((flags & FLAG_NATIVE) != 0L) {
-            throw new IllegalStateException("trying to access the user code of a native function");
+        try {
+            return (CodeData) handle;
+        } catch (ClassCastException e) {
+            if ((flags & FLAG_NATIVE) != 0L) {
+                throw new IllegalStateException("trying to access the user code of a native function");
+            } else {
+                throw e;
+            }
         }
-        return (CodeData) handle;
     }
 
     @Override
@@ -141,7 +155,7 @@ public final class Function {
      * Преобразовывает функцию в информативный идентификатор. Например, следующий код:
      * <pre>{@code
      * fn thing(a, b = null) = {
-     *     |a|: b
+     *     [a]: b
      * }; }</pre>
      * Будет преобразован в: <pre>{@code thing(a, b = null)}</pre>
      */

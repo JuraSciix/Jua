@@ -562,7 +562,7 @@ public final class InterpreterState {
     }
 
     public boolean stackLDC(int constantIndex) {
-        constant_pool().load(constantIndex, top());
+        top().set(constant_pool().getAddress(constantIndex));
         next();
         return true;
     }
@@ -619,7 +619,7 @@ public final class InterpreterState {
         if (sel.isScalar()) {
             while (l <= h) {
                 int i = (l + h) >> 1;
-                cp.load(literals[i], tmp);
+                tmp.set(cp.getAddress(literals[i]));
 
                 int d = sel.compareTo(tmp);
 
@@ -644,7 +644,7 @@ public final class InterpreterState {
 
         Address tmp = new Address();
         for (int i = 0; i < literals.length; i++) {
-            constant_pool().load(literals[i], tmp);
+            tmp.set(constant_pool().getAddress(literals[i]));
             if (selector.compareTo(tmp) == 0) {
                 offset(destIps[i]);
                 return true;

@@ -4,9 +4,10 @@ import jua.interpreter.Address;
 import jua.interpreter.AddressUtils;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.StringJoiner;
 
-public final class ListHeap implements Heap {
+public final class ListHeap extends Heap implements Iterable<Address> {
 
     private final Address[] elements;
 
@@ -70,12 +71,21 @@ public final class ListHeap implements Heap {
         return te.length - ae.length;
     }
 
-    public ListHeap copy() {
+    @Override
+    public ListHeap refCopy() {
         return this;
     }
 
+    @Override
     public ListHeap deepCopy() {
-        return new ListHeap(elements);
+        ListHeap copy = new ListHeap(elements.length);
+        AddressUtils.arraycopy(elements, 0, copy.elements, 0, elements.length);
+        return copy;
+    }
+
+    @Override
+    public Iterator<Address> iterator() {
+        return Arrays.asList(elements).iterator();
     }
 
     @Override

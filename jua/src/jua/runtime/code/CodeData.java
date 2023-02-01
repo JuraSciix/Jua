@@ -1,8 +1,9 @@
 package jua.runtime.code;
 
 import jua.interpreter.instruction.Instruction;
+import jua.runtime.Function;
 
-public final class CodeData {
+public final class CodeData implements Function.Handle {
 
     /** Число слотов на стеке, используемых в коде. */
     public final int stackSize;

@@ -1,6 +1,7 @@
 package jua.interpreter;
 
 import jua.runtime.ValueType;
+import jua.runtime.code.ConstantPool;
 import jua.runtime.heap.Heap;
 import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.MapHeap;
@@ -10,7 +11,7 @@ import jua.utils.Conversions;
 import static jua.interpreter.InterpreterThread.threadError;
 import static jua.runtime.ValueType.*;
 
-public final class Address implements Comparable<Address> {
+public final class Address implements Comparable<Address>, ConstantPool.Entry {
 
     /** Тип текущего значения. */
     private byte type;
@@ -226,56 +227,51 @@ public final class Address implements Comparable<Address> {
         switch (source.type) {
             case NULL:
                 setNull();
-                return;
+                break;
             case LONG:
                 set(source.getLong());
-                return;
+                break;
             case DOUBLE:
                 set(source.getDouble());
-                return;
+                break;
             case BOOLEAN:
                 set(source.getBoolean());
-                return;
+                break;
             case STRING:
-                set(source.getStringHeap().copy());
-                return;
+                set(source.getStringHeap().refCopy());
+                break;
             case MAP:
-                set(source.getMapHeap().copy());
-                return;
+                set(source.getMapHeap().refCopy());
+                break;
             case LIST:
-                set(source.getListHeap().copy());
-                return;
+                set(source.getListHeap().refCopy());
+                break;
             default:
                 throw new AssertionError(source.type);
         }
     }
 
-    @Deprecated
-    public void slowSet(Address source) {
-        source.clone(this);
-    }
-
-    public void clone(Address receptor) {
+    public void clone(Address receiver) {
         switch (type) {
             case LONG:
-                receptor.set(getLong());
+                receiver.set(getLong());
                 break;
             case DOUBLE:
-                receptor.set(getDouble());
+                receiver.set(getDouble());
                 break;
             case BOOLEAN:
-                receptor.set(getBoolean());
+                receiver.set(getBoolean());
                 break;
             case STRING:
-                receptor.set(getStringHeap().copy());
+                receiver.set(getStringHeap().deepCopy());
                 break;
             case MAP:
-                receptor.set(getStringHeap().deepCopy());
+                receiver.set(getMapHeap().deepCopy());
                 break;
             case LIST:
-                receptor.set(getListHeap().deepCopy());
+                receiver.set(getListHeap().deepCopy());
             case NULL:
-                receptor.setNull();
+                receiver.setNull();
                 break;
             default:
                 throw new AssertionError(type);

@@ -3,7 +3,7 @@ package jua.runtime.heap;
 import java.io.IOException;
 import java.io.Writer;
 
-public final class StringHeap implements CharSequence, Comparable<StringHeap>, Heap {
+public final class StringHeap extends Heap implements CharSequence, Comparable<StringHeap> {
 
     private final StringBuilder buffer;
 
@@ -52,13 +52,8 @@ public final class StringHeap implements CharSequence, Comparable<StringHeap>, H
         return buffer.length();
     }
 
-    public boolean isEmpty() {
-        return length() == 0;
-    }
-
-    public boolean nonEmpty() {
-        return !isEmpty();
-    }
+    public boolean isEmpty() { return length() == 0; }
+    public boolean nonEmpty() { return !isEmpty(); }
 
     @Override
     public char charAt(int index) {
@@ -83,7 +78,7 @@ public final class StringHeap implements CharSequence, Comparable<StringHeap>, H
         return true;
     }
 
-    public StringHeap copy() {
+    public StringHeap refCopy() {
         return new StringHeap(this);
     }
 

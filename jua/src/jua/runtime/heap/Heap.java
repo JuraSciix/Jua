@@ -1,13 +1,10 @@
 package jua.runtime.heap;
 
-public interface Heap {
+public abstract class Heap {
 
-    @Override
-    int hashCode();
+    /** Возвращает новую ссылку на тот же объект. Ничего не делает для примитивов */
+    public Heap refCopy() { return this; }
 
-    @Override
-    boolean equals(Object o);
-
-    @Override
-    String toString();
+    /** Возвращает новый объект, идентичный оригиналу. С примитивами ничего не делает. */
+    public Heap deepCopy() { return this; }
 }

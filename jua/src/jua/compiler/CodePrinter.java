@@ -34,7 +34,7 @@ public class CodePrinter {
         public String toString() {
             String operands0 = (operands == null) ? "default" : Arrays.stream(operands)
                     .mapToObj(index -> {
-                        program.constantPool.load(index, address);
+                        address.set(program.constantPool.getAddress(index));
                         return address.toString();
                     })
                     .collect(Collectors.joining(", "));
@@ -204,7 +204,7 @@ public class CodePrinter {
     private static final Address address = new Address();
 
     public void printLiteral(int index) {
-        program.constantPool.load(index, address);
+        address.set(program.constantPool.getAddress(index));
         preparePrint().operands.add(String.format("#%d (%s %s)", index, address.getTypeName(), address));
     }
 
