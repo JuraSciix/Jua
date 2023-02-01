@@ -2,7 +2,6 @@ package jua.compiler;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
-import jua.utils.StringUtils;
 
 public final class LineMap {
 
@@ -10,28 +9,34 @@ public final class LineMap {
 
     private final int contentEndPoint;
 
-    LineMap(String content) {
-        String rtrimmedContent = StringUtils.rtrim(content);
-        lineStartPoints = buildLineMap(rtrimmedContent);
-        contentEndPoint = rtrimmedContent.length();
+    LineMap(char[] content) {
+        int len = content.length;
+        while (content[len - 1] <= ' ') {
+            len--;
+        }
+
+        lineStartPoints = buildLineMap(new SourceReader(content, 0, len));
+        contentEndPoint = len;
     }
 
-    private int[] buildLineMap(String content) {
-        try (SourceReader reader = SourceReader.of(content)) {
-            IntList lineStartPoints = new IntArrayList(reader.length() - reader.cursor());
+    private int[] buildLineMap(SourceReader reader) {
+        IntList lineStartPoints = new IntArrayList();
 
-            // Первая линия
-            lineStartPoints.add(0);
+        // Первая линия
+        lineStartPoints.add(0);
 
-            while (reader.hasMore()) {
-                int ch = reader.readChar();
-                if (ch == '\n') {
-                    lineStartPoints.add(reader.cursor());
-                }
+        while (true) {
+            int c = reader.peek();
+            if (c == -1) { // EOF reached
+                break;
             }
-
-            return lineStartPoints.toIntArray();
+            if (c == '\n') {
+                lineStartPoints.add(reader.cursor + 1);
+            }
+            reader.next();
         }
+
+        return lineStartPoints.toIntArray();
     }
 
     public int getLineNumber(int pos) {

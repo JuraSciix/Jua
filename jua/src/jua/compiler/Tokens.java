@@ -42,6 +42,7 @@ public final class Tokens {
         IDENTIFIER(TokenKind.NAMED),
         IF("if"),
         INTLITERAL(TokenKind.NUMERIC),
+        INVALID,
         LBRACE("{"),
         LBRACKET("["),
         LPAREN("("),

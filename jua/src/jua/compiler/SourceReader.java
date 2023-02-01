@@ -1,119 +1,66 @@
 package jua.compiler;
 
-import java.util.Objects;
+public final class SourceReader {
 
-public final class SourceReader implements AutoCloseable {
+    public final char[] buffer;
 
-    private static final int UNPEEKED = -1;
+    public final int limit;
 
-    public static SourceReader of(String str) {
-        return wrap(str.toCharArray());
-    }
+    public int cursor;
 
-    public static SourceReader wrap(char[] buffer) {
-        Objects.requireNonNull(buffer, "buffer");
-        return new SourceReader(buffer, 0, buffer.length);
-    }
+    public int peeked = -1;
 
-    public static SourceReader wrap(char[] buffer, int offset, int length) {
-        Objects.requireNonNull(buffer, "buffer");
-        if (offset < 0 || length < 0 || (offset + length) >= buffer.length) {
-            throw new IndexOutOfBoundsException("buffer.length: " + buffer.length +
-                    "; offset: " + offset +
-                    "; length: " + length);
+    public SourceReader(char[] buffer, int start, int limit) {
+        if (buffer == null) {
+            throw new IllegalArgumentException("buffer must not be null");
         }
-        return new SourceReader(buffer, offset, length);
-    }
-
-    private final char[] buffer;
-
-    private final int length;
-
-    private int cursor;
-
-    private int peeked = UNPEEKED;
-
-    private SourceReader(char[] buffer, int offset, int length) {
+        if (limit > buffer.length) {
+            throw new IllegalArgumentException("limit exceeds the length of buffer: " + limit + ", " + buffer.length);
+        }
+        if (start > limit) {
+            throw new IllegalArgumentException("start exceeds the limit: " + start + ", " + limit);
+        }
+        if (start < 0) {
+            throw new IllegalArgumentException("start is negative: " + start);
+        }
         this.buffer = buffer;
-        this.length = offset + length;
-        cursor = offset;
+        this.cursor = start;
+        this.limit = limit;
     }
 
-    public boolean hasMore() { return cursor() < length(); }
-    public int cursor() { return cursor; }
-    public int length() { return length; }
-
-    public char peekChar() {
+    public int peek() {
         if (peeked == -1) {
-            peeked = buffer[cursor];
-        }
-        if (Character.charCount(peeked) > 1)
-            return Character.highSurrogate(peeked);
-        else
-            return (char) peeked;
-    }
-
-    public char readChar() {
-        int c;
-        if (peeked != -1) {
-            if (Character.charCount(peeked) > 1) {
-                c = Character.highSurrogate(peeked);
-                peeked = Character.lowSurrogate(peeked);
-            } else {
-                c = peeked;
-                peeked = -1;
-            }
-        } else {
-            c = buffer[cursor];
-        }
-        cursor++;
-        return (char) c;
-    }
-
-    public int peekCodePoint() {
-        if (peeked == -1) {
-            peeked = readCodePointInternal();
+            peeked = read();
         }
         return peeked;
     }
 
-    public int readCodePoint() {
-        int c;
-        if (peeked != -1) {
-            // todo: Требует тестирования, а вообще лучше переписать заново весь класс
-            if (Character.charCount(peeked) == 1 && length() - cursor() > 2 &&
-                    Character.isSurrogatePair((char) peeked, buffer[cursor + 1])) {
-                peeked = Character.toCodePoint((char) peeked, buffer[cursor + 1]);
-            }
-            c = peeked;
-            peeked = -1;
-        } else {
-            c = readCodePointInternal();
+    public boolean next() {
+        int c = read();
+        if (c >= 0) {
+            cursor += Character.charCount(c);
         }
-        cursor += Character.charCount(c);
-        return c;
+        return cursor < limit;
     }
 
-    private int readCodePointInternal() {
-        int left = length() - cursor();
-
-        if (left < 1) {
-            throw new IndexOutOfBoundsException();
+    private int read() {
+        if (peeked != -1) {
+            int p = peeked;
+            peeked = -1;
+            return p;
         }
-
+        if (cursor >= limit) {
+            return -1;
+        }
         char high = buffer[cursor];
-
-        if (left >= 2) {
-            char low = buffer[cursor + 1];
-
-            if (Character.isSurrogatePair(high, low)) {
-                return Character.toCodePoint(high, low);
+        if (Character.isHighSurrogate(high)) {
+            if ((cursor + 1) < limit) {
+                char low = buffer[cursor + 1];
+                if (Character.isLowSurrogate(low)) {
+                    return Character.toCodePoint(high, low);
+                }
             }
         }
-
         return high;
     }
-
-    @Override
-    public void close() { /* no-op */ }
 }

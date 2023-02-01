@@ -3,6 +3,7 @@ package jua.compiler;
 import jua.compiler.Tokens.Token;
 import jua.compiler.Tokens.TokenType;
 import jua.compiler.Tree.*;
+import jua.utils.Conversions;
 import jua.utils.List;
 
 import java.util.stream.Collectors;
@@ -10,7 +11,7 @@ import java.util.stream.Collectors;
 import static jua.compiler.Tokens.TokenType.*;
 import static jua.compiler.Types.*;
 
-public final class JuaParser implements Parser {
+public final class JuaParser {
 
     // todo: Рефакторинг и оптимизация.
 
@@ -34,10 +35,9 @@ public final class JuaParser implements Parser {
 
     public JuaParser(Source source) {
         this.source = source;
-        tokenizer = new Tokenizer(source);
+        tokenizer = new Lexer(source);
     }
 
-    @Override
     public CompilationUnit parseCompilationUnit() {
         List<Statement> stats = new List<>();
         List<FuncDef> funcDefs = new List<>();
@@ -88,7 +88,6 @@ public final class JuaParser implements Parser {
         source.log.error(source, e.pos, e.msg);
     }
 
-    @Override
     public Statement parseStatement() {
         int pos = token.pos;
 
@@ -169,6 +168,10 @@ public final class JuaParser implements Parser {
         }
     }
 
+    public Expression parseExpression() {
+        return parseAssignment();
+    }
+
     private VarDef parseVar(int pos) {
         List<VarDef.Definition> defs = new List<>();
         do {
@@ -225,7 +228,6 @@ public final class JuaParser implements Parser {
         return new Fallthrough(position);
     }
 
-    @Override
     public FuncDef parseFunctionDeclare() {
         int pos = token.pos;
         expectToken(FN);
@@ -418,11 +420,6 @@ public final class JuaParser implements Parser {
         } while (acceptToken(COMMA));
 
         return expressions;
-    }
-
-    @Override
-    public Expression parseExpression() {
-        return parseAssignment();
     }
 
     private Expression parseAssignment() {
@@ -818,13 +815,9 @@ public final class JuaParser implements Parser {
     }
 
     private Expression parseFloat(Token token) {
-        double d = Double.parseDouble(token.value());
+        double d = Conversions.parseDouble(token.value(), token.radix());
         if (Double.isInfinite(d)) {
             pError(token.pos, "number too large.");
-        }
-        // todo: Может проверку стоит убрать?
-        if ((d == 0.0) && !token.value().matches("\\.?0\\.?\\d*(?:[Ee][+-]\\d+)?$")) {
-            pError(token.pos, "number too small.");
         }
         return new Literal(token.pos, new DoubleType(d));
     }
@@ -871,7 +864,8 @@ public final class JuaParser implements Parser {
 
     private Expression parseInt(Token token) {
         try {
-            return new Literal(token.pos, new LongType(Long.parseLong(token.value(), token.radix())));
+            long value = Conversions.parseLong(token.value(), token.radix());
+            return new Literal(token.pos, new LongType(value));
         } catch (NumberFormatException e) {
             pError(token.pos, "number too large.");
             return null;
@@ -964,7 +958,7 @@ public final class JuaParser implements Parser {
             // Compile error: X expected.
             // Compile error: unexpected Y.
             String expected = type2string(type);
-            String found = token2string(token);
+            String found = token.type == EOF ? null : token2string(token);
 
             if (expected != null && found != null) {
                 pError(token.pos, expected + " expected, " + found + " found.");
@@ -988,16 +982,17 @@ public final class JuaParser implements Parser {
     }
 
     static String token2string(Token token) {
-        if (token.type == EOF) return "end of file";
+        if (token.type == EOF) return null;
         return type2string(token.type);
     }
 
     static String type2string(TokenType type) {
         switch (type) {
-            case IDENTIFIER: return "name";
+            case IDENTIFIER:    return "name";
             case STRINGLITERAL: return "string";
-            case INTLITERAL: return "integer number";
-            case FLOATLITERAL: return "floating-point number";
+            case INTLITERAL:    return "integer number";
+            case FLOATLITERAL:  return "floating-point number";
+            case INVALID:       return "invalid token";
             default: return type.value == null ? null : '\'' + type.value + '\'';
         }
     }
@@ -1007,10 +1002,11 @@ public final class JuaParser implements Parser {
     }
 
     private void unexpected(Token foundToken, List<TokenType> expectedTypes) {
-        pError(foundToken.pos, "unexpected " +
-                token2string(foundToken) +
-                ", expected instead: " +
-                expectedTypes.map(JuaParser::type2string).stream().collect(Collectors.joining(", ")));
+        String expects = expectedTypes
+                .stream()
+                .map(JuaParser::type2string)
+                .collect(Collectors.joining(", "));
+        pError(foundToken.pos, "unexpected " + token2string(foundToken) + ", expected instead: " + expects);
     }
 
     private void pError(int position, String message) {

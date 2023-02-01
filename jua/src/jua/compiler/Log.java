@@ -3,11 +3,12 @@ package jua.compiler;
 import jua.utils.StringUtils;
 
 import java.io.PrintStream;
+import java.io.PrintWriter;
 
 public class Log {
 
     /** Поток вывода ошибок. */
-    private final PrintStream stderr;
+    private final PrintWriter stderr;
 
     /** Максимальное число выводимых ошибок. */
     private final int errorLimit;
@@ -16,6 +17,10 @@ public class Log {
     private int errorCounter = 0;
 
     public Log(PrintStream stderr, int errorLimit) {
+        this(new PrintWriter(stderr), errorLimit);
+    }
+
+    public Log(PrintWriter stderr, int errorLimit) {
         if (stderr == null) {
             throw new IllegalArgumentException("stderr must not be null");
         }
@@ -64,18 +69,26 @@ public class Log {
         // ==========================
 
         LineMap lineMap = source.getLineMap();
-        int lineNum = lineMap.getLineNumber(pos);
-        int colNum = lineMap.getColumnNumber(pos);
-        String lineSrc = source.content.substring(lineMap.getLineStart(lineNum), lineMap.getLineEnd(lineNum));
+        int lineNum     = lineMap.getLineNumber(pos);
+        int colNum      = lineMap.getColumnNumber(pos);
+        int lineStart   = lineMap.getLineStart(lineNum);
+        int lineEnd     = lineMap.getLineEnd(lineNum);
 
         stderr.println("Compile error: " + msg);
         stderr.println("Location: in " + source.fileName + " at line " + lineNum + ".");
-        stderr.println(lineSrc);
-        for (int i = 0; i < colNum && i < lineSrc.length(); i++) {
-            stderr.print(lineSrc.charAt(i) == '\t' ? '\t' : ' ');
+        stderr.write(source.content, lineStart, lineEnd - lineStart);
+        stderr.println();
+        for (int i = 0; i < colNum && i < source.content.length; i++) {
+            stderr.print(source.content[lineStart + i] == '\t' ? '\t' : ' ');
         }
         stderr.println('^');
     }
 
     public boolean hasErrors() { return errorCounter > 0; }
+
+    public void flush() {
+        if (hasErrors()) {
+            stderr.flush();
+        }
+    }
 }

@@ -2,14 +2,16 @@ package jua.compiler;
 
 public final class Source {
 
-    public final String fileName, content;
+    public final String fileName;
+
+    public final char[] content;
 
     public final Log log;
 
     private LineMap _linemap;
 
 
-    public Source(String fileName, String content, Log log) {
+    public Source(String fileName, char[] content, Log log) {
         this.fileName = fileName;
         this.content = content;
         this.log = log;

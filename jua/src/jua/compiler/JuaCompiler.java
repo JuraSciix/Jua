@@ -13,9 +13,9 @@ import java.io.IOException;
 public final class JuaCompiler {
 
     public static Program compileFile(File file) {
-        String filecontents;
+        char[] filecontents;
         try {
-            filecontents = new String(IOUtils.readCharsFromFile(file));
+            filecontents = IOUtils.readCharsFromFile(file);
         } catch (IOException e) {
             System.err.println("Unable access to file.");
             System.exit(1);
@@ -25,7 +25,7 @@ public final class JuaCompiler {
         Source source = new Source(file.getName(), filecontents, log);
 
         if (Options.isLintEnabled()) {
-            Lexer tokenizer = new Tokenizer(source);
+            Lexer tokenizer = new Lexer(source);
             for (Token token = tokenizer.nextToken();
                  token.type != TokenType.EOF;
                  token = tokenizer.nextToken()) {
@@ -52,7 +52,7 @@ public final class JuaCompiler {
             return null;
         }
         try {
-            Parser parser = new JuaParser(source);
+            JuaParser parser = new JuaParser(source);
             Tree.CompilationUnit compilationUnit = parser.parseCompilationUnit();
             if (Options.isShouldPrettyTree()) {
                 compilationUnit.accept(new Pretty(System.err));
@@ -69,6 +69,7 @@ public final class JuaCompiler {
             compilationUnit.accept(new Flow());
 
             if (log.hasErrors()) {
+                log.flush();
                 return null;
             }
 

@@ -67,5 +67,13 @@ public class StringUtils {
         return (len == str.length()) ? str : str.substring(0, len);
     }
 
+    public static int rtrim(char[] str) {
+        int len = str.length;
+        while (str[len - 1] <= ' ') {
+            len--;
+        }
+        return len;
+    }
+
     private StringUtils() { Assert.error(); }
 }
