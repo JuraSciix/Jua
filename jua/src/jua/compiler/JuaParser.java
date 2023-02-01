@@ -445,11 +445,11 @@ public final class JuaParser {
             }
             case GTGTEQ: {
                 nextToken();
-                return new CompoundAssign(position, Tag.ASG_SL, expr, parseAssignment());
+                return new CompoundAssign(position, Tag.ASG_SR, expr, parseAssignment());
             }
             case LTLTEQ: {
                 nextToken();
-                return new CompoundAssign(position, Tag.ASG_SR, expr, parseAssignment());
+                return new CompoundAssign(position, Tag.ASG_SL, expr, parseAssignment());
             }
             case MINUSEQ: {
                 nextToken();

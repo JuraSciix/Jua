@@ -70,3 +70,20 @@ const _R2D = 180 / MATH_PI;
 
 fn rad(deg) = deg * _D2R;
 fn deg(rad) = rad * _R2D;
+
+fn pow(base, power) {
+    var negative = false;
+    if (power < 0) {
+        negative = true;
+        power = -power;
+    }
+    var result = 1.0;
+    while (power > 0) {
+        if ((power & 1) != 0) {
+            result *= base;
+        }
+        base *= base;
+        power >>= 1;
+    }
+    return negative ? 1.0 / result : result;
+}
