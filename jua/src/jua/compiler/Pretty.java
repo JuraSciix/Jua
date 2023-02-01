@@ -67,14 +67,14 @@ public class Pretty extends Scanner {
 
         if (tree.imports.nonEmpty()) printLine();
 
-        for (ConstDef constDef : tree.constDefs) {
+        for (ConstDef constDef : tree.constants) {
             scan(constDef);
             printLine();
         }
         
-        if (tree.constDefs.nonEmpty()) printLine();
+        if (tree.constants.nonEmpty()) printLine();
 
-        for (FuncDef funcDef : tree.funcDefs) {
+        for (FuncDef funcDef : tree.functions) {
             scan(funcDef);
             printLine();
             printLine();
@@ -335,7 +335,7 @@ public class Pretty extends Scanner {
 
     @Override
     public void visitInvocation(Invocation tree) {
-        scan(tree.callee);
+        scan(tree.target);
         print("(");
         printEnumeration(tree.args, arg -> {
             if (arg.name != null) {

@@ -2,6 +2,7 @@ package jua.compiler;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import jua.compiler.Items.*;
+import jua.compiler.ProgramScope.ConstantSymbol;
 import jua.compiler.Tree.*;
 import jua.compiler.Types.LongType;
 import jua.interpreter.Address;
@@ -20,8 +21,6 @@ public final class Gen extends Scanner {
     @Deprecated
     private static final boolean GEN_JVM_LOOPS = false;
 
-    private final ProgramScope programScope;
-
     Code code;
 
     Log log;
@@ -30,21 +29,15 @@ public final class Gen extends Scanner {
 
     Source source;
 
-    Function resultFunc;
-
-    Gen(ProgramScope programScope) {
-        this.programScope = programScope;
-    }
-
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
-        code = tree.code;
+        code = tree.sym.code;
         code.putPos(0);
         items = new Items(code);
         log = tree.source.log;
         scan(tree.stats);
         emitLeave();
-        resultFunc = new Function(
+        tree.sym.runtimefunc = new Function(
                 "<main>",
                 source.fileName,
                 0,
@@ -134,7 +127,7 @@ public final class Gen extends Scanner {
     @Override
     public void visitBreak(Break tree) {
         FlowEnv env = flow;
-        Assert.notNull((Object) env);
+        Assert.notNull(env);
         code.putPos(tree.pos);
         env.exitjumps.add(emitGoto());
         code.dead();
@@ -222,7 +215,7 @@ public final class Gen extends Scanner {
     @Override
     public void visitContinue(Continue tree) {
         FlowEnv env = searchEnv(false);
-        Assert.notNull((Object) env);
+        Assert.notNull(env);
         code.putPos(tree.pos);
         env.contjumps.add(emitGoto());
         code.dead();
@@ -243,7 +236,7 @@ public final class Gen extends Scanner {
     @Override
     public void visitFallthrough(Fallthrough tree) {
         FlowEnv env = searchEnv(true);
-        Assert.notNull((Object) env);
+        Assert.notNull(env);
         code.putPos(tree.pos);
         env.contjumps.add(emitGoto());
         code.dead();
@@ -272,9 +265,9 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitInvocation(Invocation tree) {
-        boolean cond = tree.callee instanceof MemberAccess;
+        boolean cond = tree.target instanceof MemberAccess;
         Assert.ensure(cond);
-        Name callee = ((MemberAccess) tree.callee).member;
+        Name callee = ((MemberAccess) tree.target).member;
 
         switch (callee.toString()) {
             case "length":
@@ -290,10 +283,10 @@ public final class Gen extends Scanner {
                 result = items.makeStack();
                 break;
             default:
-                int fn_idx = programScope.lookupFunction(callee).id;
                 visitInvocationArgs(tree.args);
                 code.putPos(tree.pos);
-                result = items.makeCall(fn_idx, tree.args.count());
+                code.addInstruction(new Call((short) tree.sym.id, (byte) tree.args.count()));
+                result = items.makeStack();
         }
     }
 
@@ -303,7 +296,7 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitFuncDef(FuncDef tree) {
-        code = tree.code;
+        code = tree.sym.code;
         code.putPos(tree.pos);
         items = new Items(code);
         log = source.log;
@@ -332,7 +325,7 @@ public final class Gen extends Scanner {
             code.dead();
         }
 
-        resultFunc = new Function(
+        tree.sym.runtimefunc = new Function(
                 tree.name.toString(),
                 source.fileName,
                 tree.params.count() - defaults.count(),
@@ -372,7 +365,8 @@ public final class Gen extends Scanner {
         Assert.ensure(code.curStackTop() == limitstacktop, "limitstacktop mismatch (" +
                 "before: " + limitstacktop + ", " +
                 "after: " + code.curStackTop() + ", " +
-                "code line num: " + code.lastLineNum() +
+                "current CP: " + code.currentIP() + ", " +
+                "current line num: " + code.lastLineNum() +
                 ")");
     }
 
@@ -480,14 +474,13 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitVariable(Var tree) {
-        Name name = tree.name;
-        if (programScope.isConstantDefined(name)) {
+        if (tree.sym instanceof ConstantSymbol) {
             code.putPos(tree.pos);
-            code.addInstruction(new Getconst(programScope.lookupConstant(name).id));
+            code.addInstruction(new Getconst(tree.sym.id));
             result = items.makeStack();
         } else {
             code.putPos(tree.pos);
-            result = items.makeLocal(code.resolveLocal(name));
+            result = items.makeLocal(code.resolveLocal(tree.name));
         }
     }
 

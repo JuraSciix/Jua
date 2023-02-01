@@ -59,11 +59,11 @@ public final class JuaCompiler {
                 return null;
             }
             ProgramScope programScope = new ProgramScope();
-
-            compilationUnit.code = new Code(programScope, source);
-            compilationUnit.funcDefs.forEach(funcDef -> funcDef.code = new Code(programScope, source));
-
             compilationUnit.accept(new Enter(programScope));
+
+            compilationUnit.sym.code = new Code(programScope, source);
+            compilationUnit.functions.forEach(funcDef -> funcDef.sym.code = new Code(programScope, source));
+
             compilationUnit.accept(new Lower(programScope));
             compilationUnit.accept(new Check(programScope));
             compilationUnit.accept(new Flow());
@@ -72,14 +72,14 @@ public final class JuaCompiler {
                 return null;
             }
 
-            compilationUnit.accept(compilationUnit.code.gen);
-            compilationUnit.funcDefs
+            compilationUnit.accept(compilationUnit.sym.code.gen);
+            compilationUnit.functions
                     .forEach(funcDef -> {
-                        funcDef.accept(funcDef.code.gen);
-                        programScope.lookupFunction(funcDef.name).runtimefunc = funcDef.code.gen.resultFunc;
+                        funcDef.accept(funcDef.sym.code.gen);
+                        programScope.lookupFunction(funcDef.name).runtimefunc = funcDef.sym.runtimefunc;
                     });
 
-            Function mainFunction = compilationUnit.code.gen.resultFunc;
+            Function mainFunction = compilationUnit.sym.runtimefunc;
             Function[] functions = programScope.collectFunctions();
             Address[] constantAddresses = programScope.collectConstantAddresses();
 

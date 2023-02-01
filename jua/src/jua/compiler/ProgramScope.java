@@ -8,6 +8,7 @@ import jua.interpreter.AddressUtils;
 import jua.runtime.Function;
 import jua.runtime.NativeStdlib;
 import jua.runtime.VirtualMachine;
+import jua.utils.List;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,26 +17,27 @@ import java.util.HashMap;
 
 public final class ProgramScope {
 
+    // todo: Переместить все классы *Symbol в отдельный файл Symbols.java
+
     public static class FunctionSymbol {
 
         final String name;
         final int id;
-        final int minargs, maxargs;
-        final ArrayList<String> paramnames; // null if tree is null
-        final FuncDef tree; // null if function is native
+        final int minArgc, maxArgc;
+        final List<String> params; // null if tree is null
         Function runtimefunc;
+        Code code;
 
-        FunctionSymbol(String name, int id, int minargs, int maxargs, ArrayList<String> paramnames, FuncDef tree) {
+        FunctionSymbol(String name, int id, int minArgc, int maxArgc, List<String> params) {
             this.name = name;
             this.id = id;
-            this.minargs = minargs;
-            this.maxargs = maxargs;
-            this.paramnames = paramnames;
-            this.tree = tree;
+            this.minArgc = minArgc;
+            this.maxArgc = maxArgc;
+            this.params = params;
         }
     }
 
-    public static class ConstantSymbol {
+    public static class ConstantSymbol extends VarSymbol {
 
         final String name;
         final int id;
@@ -43,10 +45,20 @@ public final class ProgramScope {
         final ConstDef.Definition tree;
 
         ConstantSymbol(String name, int id, Types.Type type, ConstDef.Definition tree) {
+            super(id);
             this.name = name;
             this.id = id;
             this.type = type;
             this.tree = tree;
+        }
+    }
+
+    public static class VarSymbol {
+
+        public final int id;
+
+        VarSymbol(int id) {
+            this.id = id;
         }
     }
 
@@ -66,16 +78,14 @@ public final class ProgramScope {
                 -1,
                 1,
                 1,
-                new ArrayList<>(Collections.singletonList("value")),
-                null
+                List.of("value")
         ));
         functions.put("list", new FunctionSymbol(
                 "list",
                 -1,
                 1,
                 1,
-                new ArrayList<>(Collections.singletonList("size")),
-                null
+                List.of("size")
         ));
     }
 
@@ -92,72 +102,102 @@ public final class ProgramScope {
         return functions.containsKey(name.toString());
     }
 
-    public void defineNativeConstant(String name, Types.Type type) {
+    public ConstantSymbol defineNativeConstant(String name, Types.Type type) {
         if (constants.containsKey(name)) {
             throw new IllegalArgumentException("Duplicate constant: " + name);
         }
         int nextId = constnextaddr++;
-        constants.put(name, new ConstantSymbol(
+        ConstantSymbol sym = new ConstantSymbol(
                 name,
                 nextId,
                 type,
                 null
-        ));
+        );
+        constants.put(name, sym);
+        return sym;
     }
 
-    public void defineNativeFunction(Function function) {
+    public FunctionSymbol defineNativeFunction(Function function) {
         // todo: Именованные аргументы у нативных функций
         String name = function.name;
         if (functions.containsKey(name)) {
             throw new IllegalArgumentException("Duplicate function: " + name);
         }
         int nextId = funcnextaddr++;
-        FunctionSymbol symbol = new FunctionSymbol(
+        FunctionSymbol sym = new FunctionSymbol(
                 name,
                 nextId,
                 function.minArgc,
                 function.maxArgc,
-                new ArrayList<>(Arrays.asList(function.params)),
-                null
+                List.of(function.params)
         );
-        symbol.runtimefunc = function;
-        functions.put(name, symbol);
+        sym.runtimefunc = function;
+        functions.put(name, sym);
+        return sym;
     }
 
-    public void defineUserConstant(ConstDef.Definition def) {
+    public ConstantSymbol defineUserConstant(ConstDef.Definition def) {
         String name = def.name.toString();
         int nextId = constnextaddr++;
         Literal literal = (Literal) TreeInfo.stripParens(def.expr);
-        constants.put(name, new ConstantSymbol(
+        ConstantSymbol sym = new ConstantSymbol(
                 name,
                 nextId,
                 literal.type,
                 def
-        ));
+        );
+        constants.put(name, sym);
+        return sym;
     }
 
-    public void defineUserFunction(FuncDef tree) {
+    public FunctionSymbol defineUserFunction(FuncDef tree) {
         String name = tree.name.toString();
         int nextId = funcnextaddr++;
         // The legacy code is present below
         int minargs = tree.params.count();
         int maxargs = 0;
-        ArrayList<String> paramnames = new ArrayList<>();
+        List<String> params = new List<>();
         for (FuncDef.Parameter param : tree.params) {
-            paramnames.add(param.name.toString());
+            params.add(param.name.toString());
             if (param.expr != null && minargs > maxargs) {
                 minargs = maxargs;
             }
             maxargs++;
         }
-        functions.put(name, new FunctionSymbol(
+        FunctionSymbol sym = new FunctionSymbol(
                 name,
                 nextId,
                 minargs,
                 maxargs,
-                paramnames,
-                tree
-        ));
+                params
+        );
+        functions.put(name, sym);
+        return sym;
+    }
+
+    public ConstantSymbol defineStubConstant(Name name) {
+        String nameString = name.toString();
+        ConstantSymbol sym = new ConstantSymbol(
+                nameString,
+                -1,
+                Types.TYPE_NULL,
+                null
+        );
+        constants.put(nameString, sym);
+        return sym;
+    }
+
+    public FunctionSymbol defineStubFunction(Name name) {
+        String nameString = name.toString();
+        FunctionSymbol sym = new FunctionSymbol(
+                nameString,
+                -1,
+                0,
+                255,
+                null
+        );
+        functions.put(nameString, sym);
+        return sym;
     }
 
     public ConstantSymbol lookupConstant(Name name) {

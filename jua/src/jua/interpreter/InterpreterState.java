@@ -602,7 +602,7 @@ public final class InterpreterState {
 
     public boolean impl_leave() {
         thread().leave();
-        return true;
+        return false;
     }
 
     public boolean impl_binaryswitch(int[] literals, int[] destIps, int offset) {

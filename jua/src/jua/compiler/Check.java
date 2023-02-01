@@ -2,6 +2,7 @@ package jua.compiler;
 
 import jua.compiler.ProgramScope.FunctionSymbol;
 import jua.compiler.Tree.*;
+import jua.utils.Assert;
 
 import static jua.compiler.TreeInfo.*;
 
@@ -45,8 +46,8 @@ public class Check extends Scanner {
     public void visitCompilationUnit(CompilationUnit tree) {
         source = tree.source;
         scan(tree.imports);
-        scan(tree.constDefs);
-        scan(tree.funcDefs);
+        scan(tree.constants);
+        scan(tree.functions);
         scan(tree.stats);
     }
 
@@ -155,7 +156,7 @@ public class Check extends Scanner {
     @Override
     public void visitInvocation(Invocation tree) {
         // Заметка: Я не вызываю ниже stripParens потому что так надо
-        Expression callee = tree.callee;
+        Expression callee = tree.target;
         if (!callee.hasTag(Tag.MEMACCESS) || ((MemberAccess) callee).expr != null) {
             report(stripParens(callee).pos, "only function calls are allowed");
             return;
@@ -164,24 +165,22 @@ public class Check extends Scanner {
         Name calleeName = ((MemberAccess) callee).member;
         FunctionSymbol calleeSym = programScope.lookupFunction(calleeName);
 
-        if (calleeSym == null) {
-            report(tree.pos, "trying to call an undeclared function");
+        //
+        Assert.ensureNonNull(calleeSym);
+
+        if (tree.args.count() > calleeSym.maxArgc) {
+            report(tree.pos, "cannot call function %s: too many arguments: %d total, %d passed", calleeSym.name, calleeSym.maxArgc, tree.args.count());
             return;
         }
 
-        if (tree.args.count() > calleeSym.maxargs) {
-            report(tree.pos, "cannot call function %s: too many arguments: %d total, %d passed", calleeSym.name, calleeSym.maxargs, tree.args.count());
-            return;
-        }
-
-        if (tree.args.count() < calleeSym.minargs) {
-            report(tree.pos, "cannot call function %s: too few arguments: %d required, %d passed", calleeSym.name, calleeSym.minargs, tree.args.count());
+        if (tree.args.count() < calleeSym.minArgc) {
+            report(tree.pos, "cannot call function %s: too few arguments: %d required, %d passed", calleeSym.name, calleeSym.minArgc, tree.args.count());
             return;
         }
 
         for (Invocation.Argument a : tree.args) {
             if (a.name != null) {
-                if (calleeSym.paramnames != null && !calleeSym.paramnames.contains(a.name.toString())) {
+                if (calleeSym.params != null && !calleeSym.params.contains(a.name.toString())) {
                     report(a.name.pos, "cannot call function %s: unrecognized function parameter name", calleeSym.name);
                     continue;
                 }

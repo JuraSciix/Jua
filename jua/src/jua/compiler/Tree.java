@@ -1,5 +1,8 @@
 package jua.compiler;
 
+import jua.compiler.ProgramScope.ConstantSymbol;
+import jua.compiler.ProgramScope.FunctionSymbol;
+import jua.compiler.ProgramScope.VarSymbol;
 import jua.compiler.Types.Type;
 import jua.utils.List;
 
@@ -220,8 +223,8 @@ public abstract class Tree {
         @Override
         public void visitCompilationUnit(CompilationUnit tree) {
             scan(tree.imports);
-            scan(tree.constDefs);
-            scan(tree.funcDefs);
+            scan(tree.constants);
+            scan(tree.functions);
             scan(tree.stats);
         }
 
@@ -416,8 +419,8 @@ public abstract class Tree {
         @Override
         public void visitCompilationUnit(CompilationUnit tree) {
             tree.imports = translate(tree.imports);
-            tree.constDefs = translate(tree.constDefs);
-            tree.funcDefs = translate(tree.funcDefs);
+            tree.constants = translate(tree.constants);
+            tree.functions = translate(tree.functions);
             tree.stats = translate(tree.stats);
             result = tree;
         }
@@ -629,22 +632,22 @@ public abstract class Tree {
 
         public List<Statement> stats;
 
-        public List<FuncDef> funcDefs;
+        public List<FuncDef> functions;
 
-        public List<ConstDef> constDefs;
+        public List<ConstDef> constants;
 
-        public Code code;
+        public FunctionSymbol sym;
 
         public CompilationUnit(int pos, Source source,
                                List<Import> imports,
-                               List<ConstDef> constDefs,
-                               List<FuncDef> funcDefs,
+                               List<ConstDef> constants,
+                               List<FuncDef> functions,
                                List<Statement> stats) {
             super(pos);
             this.source = source;
             this.imports = imports;
-            this.constDefs = constDefs;
-            this.funcDefs = funcDefs;
+            this.constants = constants;
+            this.functions = functions;
             this.stats = stats;
         }
 
@@ -689,6 +692,8 @@ public abstract class Tree {
 
             public Expression expr;
 
+            public ConstantSymbol sym;
+
             public Definition(Name name, Expression expr) {
                 this.name = name;
                 this.expr = expr;
@@ -717,6 +722,8 @@ public abstract class Tree {
 
             public Expression expr;
 
+            public VarSymbol sym;
+
             public Parameter(Name name, Expression expr) {
                 this.name = name;
                 this.expr = expr;
@@ -729,7 +736,7 @@ public abstract class Tree {
 
         public Statement body;
 
-        public Code code;
+        public FunctionSymbol sym;
 
         public FuncDef(int pos, Name name, List<Parameter> params, Statement body) {
             super(pos);
@@ -947,6 +954,8 @@ public abstract class Tree {
 
             public Expression init;
 
+            public VarSymbol sym;
+
             public Definition(Name name, Expression init) {
                 this.name = name;
                 this.init = init;
@@ -1073,6 +1082,8 @@ public abstract class Tree {
 
         public final Name name;
 
+        public VarSymbol sym;
+
         public Var(int pos, Name name) {
             super(pos);
             this.name = name;
@@ -1125,7 +1136,7 @@ public abstract class Tree {
 
         public static class Argument {
 
-            public final Name name; // todo: Значение этого поля всегда null, потому что не реализовано.
+            public final Name name;
 
             public Expression expr;
 
@@ -1135,13 +1146,15 @@ public abstract class Tree {
             }
         }
         
-        public final Expression callee;
+        public final Expression target;
 
         public List<Argument> args;
 
-        public Invocation(int pos, Expression callee, List<Argument> args) {
+        public FunctionSymbol sym;
+
+        public Invocation(int pos, Expression target, List<Argument> args) {
             super(pos);
-            this.callee = callee;
+            this.target = target;
             this.args = args;
         }
 

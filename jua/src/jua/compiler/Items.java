@@ -296,29 +296,6 @@ public class Items {
         }
     }
 
-    class CallItem extends Item {
-
-        final int index, nargs;
-
-        CallItem(int index, int nargs) {
-            this.index = index;
-            this.nargs = nargs;
-        }
-
-        @Override
-        Item load() {
-            code.addInstruction(new Call((short) index, (byte) nargs));
-            return stackItem;
-        }
-
-        @Override
-        void drop() {
-//            code.addInstruction(safe ? new CallPopq((short) index, (byte) nargs) :
-//                    new CallPop((short) index, (byte) nargs));
-            load().drop();
-        }
-    }
-
     /**
      * Регистр для временного хранения некоторых данных
      */
@@ -375,10 +352,6 @@ public class Items {
 
     CondItem makeCond(int opcodePC, IntArrayList truejumps, IntArrayList falsejumps) {
         return new CondItem(opcodePC, truejumps, falsejumps);
-    }
-
-    CallItem makeCall(int index, int nargs) {
-        return new CallItem(index, nargs);
     }
 
     TempItem makeTemp() {

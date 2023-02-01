@@ -1,9 +1,12 @@
 package jua.compiler;
 
-import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
+import jua.compiler.ProgramScope.FunctionSymbol;
+import jua.compiler.ProgramScope.VarSymbol;
 import jua.compiler.Tree.*;
 import jua.utils.Assert;
 import jua.utils.List;
+
+import java.util.HashMap;
 
 /**
  * Учет локальных переменных
@@ -15,38 +18,44 @@ public class Enter extends Scanner {
         /** Родительская (внешняя) область. */
         final Scope parent;
 
-        /** Соотнесение названий локальных переменных к их номерам. */
-        final Object2IntArrayMap<String> localIds = new Object2IntArrayMap<>();
+        final HashMap<Name, VarSymbol> varSymbols = new HashMap<>();
+
+        int nextVarId;
 
         Scope(Scope parent) {
             this.parent = parent;
+
+            if (parent != null) {
+                nextVarId = parent.nextVarId;
+            }
         }
 
-        /** Декларирует переменную, проверя дубликаты. */
-        boolean duplicate(Name local) {
-            int nextId = 0;
+        boolean defined(Name name) {
             for (Scope scope = this; scope != null; scope = scope.parent) {
-                if (scope.localIds.containsKey(local.toString())) {
+                if (scope.varSymbols.containsKey(name)) {
                     return true;
                 }
-                nextId += scope.localIds.size();
             }
-            localIds.put(local.toString(), local.id = nextId);
             return false;
         }
 
-        /** Ищет переменную, проверяя ее существование. */
-        boolean undeclared(Name local) {
-            int nextId = 0;
+        VarSymbol define(Name name) {
+            int id = nextVarId++;
+            VarSymbol sym = new VarSymbol(id);
+            varSymbols.put(name, sym);
+            return sym;
+        }
+
+        VarSymbol resolve(Name name) {
             for (Scope scope = this; scope != null; scope = scope.parent) {
-                if (scope.localIds.containsKey(local.toString())) {
-                    local.id = scope.localIds.getInt(local.toString());
-                    return false;
+                // Халтурно избегаем двойного поиска (containsKey + get),
+                // оставляя для ясности .getOrDefault(x, null)
+                VarSymbol sym = scope.varSymbols.getOrDefault(name, null);
+                if (sym != null) {
+                    return sym;
                 }
-                nextId += scope.localIds.size();
             }
-            localIds.put(local.toString(), local.id = nextId);
-            return true;
+            return null;
         }
     }
 
@@ -101,10 +110,18 @@ public class Enter extends Scanner {
     public void visitCompilationUnit(CompilationUnit tree) {
         source = tree.source;
         scan(tree.imports);
-        scan(tree.constDefs);
-        scan(tree.funcDefs);
+        scan(tree.constants);
+        scan(tree.functions);
         ensureRootScope();
         scanInnerScope(null, tree.stats);
+
+        tree.sym = new FunctionSymbol(
+                "<main>",
+                -1,
+                0,
+                0,
+                List.empty()
+        );
     }
 
     @Override
@@ -119,7 +136,7 @@ public class Enter extends Scanner {
                 report(def.name.pos, "constant redefinition");
                 continue;
             }
-            globalScope.defineUserConstant(def);
+            def.sym = globalScope.defineUserConstant(def);
         }
     }
 
@@ -133,9 +150,13 @@ public class Enter extends Scanner {
         scope = new Scope(null);
 
         for (FuncDef.Parameter param : tree.params) {
-            if (scope.duplicate(param.name)) {
+            if (scope.defined(param.name)) {
                 report(param.name.pos, "duplicated function parameter");
+                // Так как это не позитивный случай, избегать двойного поиска (defined + resolve) нет смысла.
+                param.sym = scope.resolve(param.name);
+                continue;
             }
+            param.sym = scope.define(param.name);
             // Сканировать param.expr не нужно, поскольку это должен быть литерал.
         }
 
@@ -155,7 +176,7 @@ public class Enter extends Scanner {
         ensureScopeChainUnaffected(null);
         scope = null;
 
-        globalScope.defineUserFunction(tree);
+        tree.sym = globalScope.defineUserFunction(tree);
     }
 
     @Override
@@ -202,18 +223,51 @@ public class Enter extends Scanner {
     @Override
     public void visitVarDef(VarDef tree) {
         for (VarDef.Definition def : tree.defs) {
-            if (scope.duplicate(def.name)) {
+            if (scope.defined(def.name)) {
                 report(def.name.pos, "duplicated variable declaration");
+                // Так как это не позитивный случай, избегать двойного поиска (defined + resolve) нет смысла.
+                def.sym = scope.resolve(def.name);
+                continue;
             }
+            def.sym = scope.define(def.name);
             scan(def.init);
         }
     }
 
     @Override
-    public void visitVariable(Var tree) {
-        Name name = tree.name;
-        if (scope.undeclared(name) && !globalScope.isConstantDefined(name)) {
-            report(name.pos, "undeclared variable");
+    public void visitInvocation(Invocation tree) {
+        if (tree.target.hasTag(Tag.MEMACCESS)) {
+            MemberAccess targetTree = (MemberAccess) tree.target;
+            if (targetTree.expr == null) {
+                FunctionSymbol targetSym = globalScope.lookupFunction(targetTree.member);
+                if (targetSym == null) {
+                    tree.sym = globalScope.defineStubFunction(targetTree.member);
+                    report(tree.pos, "calling an undeclared function");
+                    return;
+                }
+                tree.sym = targetSym;
+            }
         }
+
+        for (Invocation.Argument a : tree.args) {
+            scan(a.expr);
+        }
+    }
+
+    @Override
+    public void visitVariable(Var tree) {
+        // Халтурно избегаем двойного поиска (defined + resolve)
+        VarSymbol varSym = scope.resolve(tree.name);
+        if (varSym != null) {
+            tree.sym = varSym;
+            return;
+        }
+        // Халтурно избегаем двойного поиска (isConstantDefined + lookupConstant)
+        ProgramScope.ConstantSymbol constSym = globalScope.lookupConstant(tree.name);
+        if (constSym != null) {
+            tree.sym = constSym;
+            return;
+        }
+        report(tree.pos, "undeclared variable");
     }
 }

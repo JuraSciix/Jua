@@ -49,7 +49,7 @@ public final class Code {
         this.programScope = programScope;
         this.lineMap = source.getLineMap();
         log = source.log;
-        gen = new Gen(programScope);
+        gen = new Gen();
         gen.code = this;
         gen.log = log;
         gen.source = source;
