@@ -1,0 +1,61 @@
+/* converts int to float */
+fn float(x) = x * 1.0;
+
+/* converts any to boolean */
+fn boolean(x) = x && true;
+
+/* converts any to string */
+fn string(x) = x + "";
+
+const T_STRING  = 'string';
+const T_INT     = 'int';
+const T_FLOAT   = 'float';
+const T_BOOLEAN = 'boolean';
+const T_NULL    = 'null';
+const T_MAP     = 'map';
+const T_LIST    = 'list';
+
+fn is_string(x) = (typeof(x) == T_STRING);
+
+fn is_int(x) = (typeof(x) == T_INT);
+
+fn is_float(x) = (typeof(x) == T_FLOAT);
+
+fn is_number(x) = is_int(x) || is_float(x);
+
+fn is_boolean(x) = (typeof(x) == T_BOOLEAN);
+
+fn is_scalar(x) = is_string(x) || is_boolean(x) || is_number(x);
+
+fn is_null(x) = (typeof(x) == T_NULL);
+
+fn is_map(x) = (typeof(x) == T_MAP);
+
+fn is_list(x) = (typeof(x) == T_LIST);
+
+fn test_types() {
+    assert(is_list([]), "is_list([])");
+    assert(is_map({}), "is_map({})");
+    assert(is_string(""), 'is_string("")');
+    assert(is_int(0), "is_int(0)");
+    assert(!is_int(0.0), "!is_int(0.0)");
+    assert(is_float(0.0), "is_float(0.0)");
+    assert(!is_float(0), "!is_float(0)");
+    assert(is_number(0), "is_number(0)");
+    assert(is_number(0.0), "is_number(0.0)");
+    assert(is_boolean(true), "is_boolean(true)");
+    assert(is_boolean(false), "is_boolean(false)");
+    assert(!is_boolean(0), "!is_boolean(0)");
+    assert(is_null(null), "is_null(null)");
+    assert(!is_null(0), "!is_null(0)");
+    assert(is_scalar(0), "is_scalar(0)");
+    assert(is_scalar(0.0), "is_scalar(0.0)");
+    assert(is_scalar(""), 'is_scalar("")');
+    assert(is_scalar(true), 'is_scalar(true)');
+    assert(is_scalar(false), 'is_scalar(false)');
+    assert(!is_scalar(null), '!is_scalar(false)');
+    assert(!is_scalar([]), '!is_scalar([])');
+    assert(!is_scalar({}), '!is_scalar({})');
+}
+
+test_types();

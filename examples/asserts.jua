@@ -1,0 +1,5 @@
+fn assert(cond, msg) {
+    if !cond {
+        panic("assertion failed: " + msg);
+    }
+}

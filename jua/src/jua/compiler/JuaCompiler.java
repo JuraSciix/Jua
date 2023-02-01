@@ -69,7 +69,6 @@ public final class JuaCompiler {
             compilationUnit.accept(new Flow());
 
             if (log.hasErrors()) {
-                log.flush();
                 return null;
             }
 

@@ -82,13 +82,9 @@ public class Log {
             stderr.print(source.content[lineStart + i] == '\t' ? '\t' : ' ');
         }
         stderr.println('^');
+
+        stderr.flush();
     }
 
     public boolean hasErrors() { return errorCounter > 0; }
-
-    public void flush() {
-        if (hasErrors()) {
-            stderr.flush();
-        }
-    }
 }
