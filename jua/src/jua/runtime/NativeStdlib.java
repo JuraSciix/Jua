@@ -5,6 +5,7 @@ import jua.interpreter.Address;
 import jua.interpreter.InterpreterThread;
 import jua.runtime.NativeSupport.NativeFunctionPresent;
 import jua.runtime.NativeSupport.ParamsData;
+import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.StringHeap;
 
 import java.util.ArrayList;
@@ -24,10 +25,7 @@ public class NativeStdlib {
         nfp.add(new TypeofFunction());
         nfp.add(new TimeFunction());
         nfp.add(new PanicFunction());
-        nfp.add(new IntFunction());
-        //nfp.add(new FloatFunction());
-        //nfp.add(new BooleanFunction());
-        //nfp.add(new StringFunction());
+        nfp.add(new StrCodePointsFunction());
     }
 
     static class PrintFunction extends NativeFunctionPresent {
@@ -101,95 +99,29 @@ public class NativeStdlib {
             Address msg = new Address();
             if (!args[0].stringVal(msg)) return false;
             InterpreterThread.threadError(msg.getStringHeap().toString());
+            returnAddress.setNull();
             return false;
         }
     }
 
-    static class IntFunction extends NativeFunctionPresent {
+    static class StrCodePointsFunction extends NativeFunctionPresent {
 
-        IntFunction() {
-            super("int", ParamsData.create().add("value"));
+        StrCodePointsFunction() {
+            super("str_code_points", ParamsData.create().add("str"));
         }
 
         @Override
         public boolean execute(Address[] args, int argc, Address returnAddress) {
-            switch (args[0].getType()) {
-                case ValueType.LONG:
-                case ValueType.DOUBLE:
-                case ValueType.BOOLEAN:
-                    args[0].longVal(returnAddress);
-                    break;
-                case ValueType.STRING:
-                    try {
-                        returnAddress.set(Long.parseLong(args[0].getStringHeap().toString()));
-                    } catch (NumberFormatException e) {
-                        InterpreterThread.threadError("invalid number format");
-                        return false;
-                    }
-                    break;
-                default:
-                    InterpreterThread.threadError("%s cannot be converted to int",
-                            args[0].getTypeName(),
-                            ValueType.getTypeName(ValueType.DOUBLE));
-                    break;
+            if (!args[0].testType(ValueType.STRING)) return false;
+            StringHeap str = args[0].getStringHeap();
+            ListHeap chars = new ListHeap(str.length());
+            for (int i = 0; i < str.length(); ) {
+                int cp = str.codePointAt(i);
+                chars.get(i).set(cp);
+                i += Character.charCount(cp);
             }
+            returnAddress.set(chars);
             return true;
-        }
-    }
-
-    static class FloatFunction extends NativeFunctionPresent {
-
-        FloatFunction() {
-            super("float", ParamsData.create().add("value"));
-        }
-
-        @Override
-        public boolean execute(Address[] args, int argc, Address returnAddress) {
-            switch (args[0].getType()) {
-                case ValueType.LONG:
-                case ValueType.DOUBLE:
-                case ValueType.BOOLEAN:
-                    args[0].doubleVal(returnAddress);
-                    break;
-                case ValueType.STRING:
-                    try {
-                        returnAddress.set(Double.parseDouble(args[0].getStringHeap().toString()));
-                    } catch (NumberFormatException e) {
-                        InterpreterThread.threadError("invalid number format");
-                        return false;
-                    }
-                    break;
-                default:
-                    InterpreterThread.threadError("%s cannot be converted to %s",
-                            args[0].getTypeName(),
-                            ValueType.getTypeName(ValueType.DOUBLE));
-                    break;
-            }
-            return true;
-        }
-    }
-
-    static class BooleanFunction extends NativeFunctionPresent {
-
-        BooleanFunction() {
-            super("boolean", ParamsData.create().add("value"));
-        }
-
-        @Override
-        public boolean execute(Address[] args, int argc, Address returnAddress) {
-            return args[0].booleanVal(returnAddress);
-        }
-    }
-
-    static class StringFunction extends NativeFunctionPresent {
-
-        StringFunction() {
-            super("string", ParamsData.create().add("value"));
-        }
-
-        @Override
-        public boolean execute(Address[] args, int argc, Address returnAddress) {
-            return args[0].stringVal(returnAddress);
         }
     }
 

@@ -60,6 +60,17 @@ public final class StringHeap extends Heap implements CharSequence, Comparable<S
         return buffer.charAt(index);
     }
 
+    public int codePointAt(int index) {
+        char high = charAt(index);
+        if (Character.isLowSurrogate(high) && (index + 1) < length()) {
+            char low = charAt(index + 1);
+            if (Character.isHighSurrogate(low)) {
+                return Character.toCodePoint(low, high);
+            }
+        }
+        return high;
+    }
+
     @Override
     public StringHeap subSequence(int start, int end) {
         return new StringHeap(this, start, end - start);

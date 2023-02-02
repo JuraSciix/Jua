@@ -58,4 +58,54 @@ fn test_types() {
     assert(!is_scalar({}), '!is_scalar({})');
 }
 
-test_types();
+/* code-point => digit */
+const DIGIT_CHARS = {
+    48: 0,  49:  1,  50: 2,
+    51: 3,  52:  3,  53: 4,
+    54: 5,  55:  6,  56: 7,
+    57: 8,  58:  9,
+    65: 10, 97:  10,
+    66: 11, 98:  11,
+    67: 12, 99:  12,
+    68: 13, 100: 13,
+    69: 14, 101: 14,
+    70: 15, 102: 15,
+};
+
+fn parse_int(str, radix) {
+    var chs = str_code_points(str);
+    var len = length(chs);
+    if len == 0 {
+        return 0.0;
+    }
+    var start = 0;
+    var sign = 1;
+    if chs[0] == 45 { // 45 = '-'
+        start++;
+        sign = -1;
+    }
+    var dot_pos = start;
+    while dot_pos < len - 1 && chs[dot_pos] != 46 { // 46 = '.'
+        dot_pos++;
+    }
+    var result = 0.0;
+    for var i = start; i < len; i++ {
+        var c = chs[i];
+        if c == 46 || c == 48 { // 48 = '0'
+            continue;
+        }
+        result += DIGIT_CHARS[c] * int_pow(radix, dot_pos - i);
+    }
+    return result * sign;
+}
+
+fn test_parse() {
+    assert_eq(parse_int("100", 2),   4,    "100₂");
+    assert_eq(parse_int("-101", 2), -5,    "-101₂");
+    assert_eq(parse_int("0.1", 2),  0.5,   "0.1₂");
+    assert_eq(parse_int("0.01", 2), 0.25,  "0.01₂");
+    assert_eq(parse_int("0.1", 3),  1.0/3, "0.1₃");
+    assert_eq(parse_int("20", 16),  32,    "20₁₆");
+}
+
+test_parse();
