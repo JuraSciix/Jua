@@ -904,9 +904,21 @@ public final class JuaParser {
                     expectToken(RBRACKET);
                     field = false;
                 } else {
-                    Token tField = token;
-                    expectToken(IDENTIFIER);
-                    key = new Literal(tField.pos, new StringType(tField.name()));
+                    switch (token.type) {
+                        case FLOATLITERAL:
+                            key = parseFloat(token);
+                            break;
+                        case INTLITERAL:
+                            key = parseInt(token);
+                            break;
+                        case IDENTIFIER:
+                            key = new Literal(token.pos, new StringType(token.name()));
+                            break;
+                        default:
+                            unexpected(token, List.of(FLOATLITERAL, INTLITERAL, IDENTIFIER));
+                            throw new AssertionError(); // UNREACHABLE
+                    }
+                    nextToken();
                     field = true;
                 }
                 expectToken(COL);
