@@ -660,7 +660,8 @@ public final class InterpreterState {
 
         int i = nargs;
         while (--i >= 0) {
-            args[i] = popStack();
+            args[i] = new Address();
+            args[i].set(popStack());
         }
 
         Address returnAddress = top();

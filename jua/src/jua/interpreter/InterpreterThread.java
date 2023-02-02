@@ -117,6 +117,7 @@ public final class InterpreterThread {
             return;
         }
         executingFrame = uf1;
+        set_msg(MSG_RUNNING_FRAME);
     }
 
     private int msg() {
@@ -232,6 +233,18 @@ public final class InterpreterThread {
     }
 
     private void run() {
+        try {
+            runInternal();
+        } catch (Throwable t) {
+            RuntimeErrorException ex = new RuntimeErrorException("INTERPRETER CRASHED");
+            ex.thread = this;
+            printStackTrace();
+            t.printStackTrace();
+            throw ex;
+        }
+    }
+
+    private void runInternal() {
         while (true) {
             switch (msg) {
                 case MSG_CRASHED: {
@@ -244,23 +257,21 @@ public final class InterpreterThread {
 
                 case MSG_CALLING_FRAME:
                     enterFrame();
-                    break;
+                    continue;
 
                 case MSG_POPPING_FRAME:
                     leaveFrame();
-                    break;
+                    continue;
 
                 case MSG_HALTED:
                     jvmThread.interrupt();
                     return;
 
+                case MSG_RUNNING_FRAME:
+                    break;
+
                 default:
                     Assert.error("unexpected msg: " + msg);
-            }
-
-            if (executingFrame == null) {
-                set_msg(MSG_HALTED);
-                continue;
             }
 
             executingFrame.state.executeTick();
