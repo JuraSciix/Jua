@@ -32,7 +32,7 @@ public final class Lower extends Translator {
     public void visitVariable(Var tree) {
         if (programScope.isConstantDefined(tree.name)) {
             ConstantSymbol cd = programScope.lookupConstant(tree.name);
-            if (cd.type != null) {
+            if (cd.type != null && cd.type.isScalar()) {
                 result = new Literal(tree.pos, cd.type);
                 return;
             }

@@ -1,6 +1,8 @@
 package jua.compiler;
 
 import jua.compiler.Tree.*;
+import jua.compiler.Types.ListType;
+import jua.compiler.Types.Type;
 import jua.utils.Assert;
 
 public final class TreeInfo {
@@ -55,17 +57,48 @@ public final class TreeInfo {
 
     public static boolean isLiteral(Expression tree) {
         Expression innerTree = stripParens(tree);
-        if (innerTree.hasTag(Tag.LITERAL)) return true;
-        if (innerTree.hasTag(Tag.MAPINIT)) {
-            MapInit arrayTree = (MapInit) innerTree;
-            for (MapInit.Entry entry : arrayTree.entries) {
-                if (entry.key != null && !isLiteral(entry.key) || !isLiteral(entry.value)) {
-                    return false;
+        switch (innerTree.getTag()) {
+            case LITERAL:
+                return true;
+            case LISTINIT:
+                ListInit listTree = (ListInit) innerTree;
+                for (Expression entry : listTree.entries) {
+                    if (!isLiteral(entry)) {
+                        return false;
+                    }
                 }
-            }
-            return true;
+                return true;
+            case MAPINIT:
+                MapInit mapTree = (MapInit) innerTree;
+                for (MapInit.Entry entry : mapTree.entries) {
+                    if (!isLiteral(entry.key) || !isLiteral(entry.value)) {
+                        return false;
+                    }
+                }
+                return true;
+            default:
+                return false;
         }
-        return false;
+    }
+
+    public static Type literalType(Expression tree) {
+        Expression innerTree = stripParens(tree);
+        switch (innerTree.getTag()) {
+            case LITERAL:
+                Literal literalTree = (Literal) innerTree;
+                return literalTree.type;
+            case LISTINIT:
+                ListInit listTree = (ListInit) innerTree;
+                return new ListType(listTree.entries.map(TreeInfo::literalType).toArray(Type[]::new));
+            case MAPINIT:
+                MapInit mapTree = (MapInit) innerTree;
+                return new Types.MapType(
+                        mapTree.entries.map(e -> literalType(e.key)).toArray(Type[]::new),
+                        mapTree.entries.map(e -> literalType(e.value)).toArray(Type[]::new)
+                );
+            default:
+                throw new AssertionError(innerTree.getTag());
+        }
     }
 
     public static boolean isLiteralNull(Expression tree) {

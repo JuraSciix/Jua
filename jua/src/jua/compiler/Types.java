@@ -1,6 +1,8 @@
 package jua.compiler;
 
+import jua.interpreter.Address;
 import jua.runtime.heap.*;
+import jua.utils.Assert;
 import jua.utils.Conversions;
 
 import java.util.Objects;
@@ -23,11 +25,14 @@ public interface Types {
 
         public boolean isNull() { return this instanceof NullType; }
         public boolean isNumber() { return this instanceof NumberType; }
+        public boolean isPrimitive() { return this instanceof PrimitiveType; }
         public boolean isScalar() { return this instanceof ScalarType; }
         public boolean isLong() { return this instanceof LongType; }
         public boolean isDouble() { return this instanceof DoubleType; }
         public boolean isBoolean() { return this instanceof BooleanType; }
         public boolean isString() { return this instanceof StringType; }
+        public boolean isList() { return this instanceof ListType; }
+        public boolean isMap() { return this instanceof MapType; }
 
         public long longValue() { throw exception(); }
         public double doubleValue() { throw exception(); }
@@ -38,8 +43,7 @@ public interface Types {
             return new UnsupportedOperationException(getClass().getName());
         }
 
-        @Deprecated
-        public abstract Operand toOperand();
+        public abstract void write2address(Address address);
 
         @Deprecated
         public int quickCompare(Type other, int except) {
@@ -56,10 +60,12 @@ public interface Types {
         public abstract int resolvePoolConstant(Code code);
     }
 
-    class NullType extends Type {
+    class NullType extends PrimitiveType {
 
         @Override
-        public Operand toOperand() { return NullOperand.NULL; }
+        public void write2address(Address address) {
+            address.setNull();
+        }
 
         @Override
         public int resolvePoolConstant(Code code) {
@@ -81,7 +87,11 @@ public interface Types {
         public String toString() { return "null"; }
     }
 
-    abstract class ScalarType extends Type {
+    abstract class PrimitiveType extends Type {
+
+    }
+
+    abstract class ScalarType extends PrimitiveType {
 
     }
 
@@ -114,7 +124,9 @@ public interface Types {
         public String stringValue() { return Long.toString(value); }
 
         @Override
-        public Operand toOperand() { return LongOperand.valueOf(value); }
+        public void write2address(Address address) {
+            address.set(value);
+        }
 
         @Override
         public int resolvePoolConstant(Code code) {
@@ -162,7 +174,9 @@ public interface Types {
         public String stringValue() { return Double.toString(value); }
 
         @Override
-        public Operand toOperand() { return DoubleOperand.valueOf(value); }
+        public void write2address(Address address) {
+            address.set(value);
+        }
 
         @Override
         public int resolvePoolConstant(Code code) {
@@ -210,7 +224,9 @@ public interface Types {
         public String stringValue() { return Boolean.toString(value); }
 
         @Override
-        public Operand toOperand() { return BooleanOperand.valueOf(value); }
+        public void write2address(Address address) {
+            address.set(value);
+        }
 
         @Override
         public int resolvePoolConstant(Code code) {
@@ -252,7 +268,9 @@ public interface Types {
         public String stringValue() { return value; }
 
         @Override
-        public Operand toOperand() { return new StringOperand(value); }
+        public void write2address(Address address) {
+            address.set(new StringHeap(value));
+        }
 
         @Override
         public int resolvePoolConstant(Code code) {
@@ -277,5 +295,76 @@ public interface Types {
 
         @Override
         public String toString() { return "\"" + value + "\""; }
+    }
+
+    class ListType extends Type {
+
+        final Type[] elements;
+
+        ListType(Type[] elements) {
+            this.elements = elements;
+        }
+
+        @Override
+        public boolean booleanValue() { return elements.length > 0; }
+
+        @Override
+        public void write2address(Address address) {
+            ListHeap h = new ListHeap(elements.length);
+            for (int i = 0; i < elements.length; i++) {
+                elements[i].write2address(h.get(i));
+            }
+            address.set(h);
+        }
+
+        @Override
+        public int resolvePoolConstant(Code code) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int compareTo(Type o) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    class MapType extends Type {
+
+        final Type[] keys;
+        final Type[] values;
+
+        MapType(Type[] keys, Type[] values) {
+            Assert.ensure(keys.length == values.length);
+            this.keys = keys;
+            this.values = values;
+        }
+
+        @Override
+        public boolean booleanValue() {
+            return keys.length > 0;
+        }
+
+        @Override
+        public void write2address(Address address) {
+            MapHeap h = new MapHeap();
+            for (int i = 0; i < keys.length; i++) {
+                Address key   = new Address();
+                Address value = new Address();
+                keys[i].write2address(key);
+                values[i].write2address(value);
+                h.put(key, value);
+            }
+            address.set(h);
+        }
+
+        @Override
+        public int resolvePoolConstant(Code code) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int compareTo(Type o) {
+            throw new UnsupportedOperationException();
+        }
     }
 }

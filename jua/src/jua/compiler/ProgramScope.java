@@ -3,6 +3,8 @@ package jua.compiler;
 import jua.compiler.Tree.ConstDef;
 import jua.compiler.Tree.FuncDef;
 import jua.compiler.Tree.Literal;
+import jua.compiler.Tree.Tag;
+import jua.compiler.Types.Type;
 import jua.interpreter.Address;
 import jua.interpreter.AddressUtils;
 import jua.runtime.Function;
@@ -41,10 +43,10 @@ public final class ProgramScope {
 
         final String name;
         final int id;
-        final Types.Type type; // null if tree.expr isn't Tree.Literal
+        final Type type;
         final ConstDef.Definition tree;
 
-        ConstantSymbol(String name, int id, Types.Type type, ConstDef.Definition tree) {
+        ConstantSymbol(String name, int id, Type type, ConstDef.Definition tree) {
             super(id);
             this.name = name;
             this.id = id;
@@ -102,7 +104,7 @@ public final class ProgramScope {
         return functions.containsKey(name.toString());
     }
 
-    public ConstantSymbol defineNativeConstant(String name, Types.Type type) {
+    public ConstantSymbol defineNativeConstant(String name, Type type) {
         if (constants.containsKey(name)) {
             throw new IllegalArgumentException("Duplicate constant: " + name);
         }
@@ -139,11 +141,11 @@ public final class ProgramScope {
     public ConstantSymbol defineUserConstant(ConstDef.Definition def) {
         String name = def.name.toString();
         int nextId = constnextaddr++;
-        Literal literal = (Literal) TreeInfo.stripParens(def.expr);
+        Type type = TreeInfo.literalType(def.expr);
         ConstantSymbol sym = new ConstantSymbol(
                 name,
                 nextId,
-                literal.type,
+                type,
                 def
         );
         constants.put(name, sym);
@@ -221,7 +223,7 @@ public final class ProgramScope {
     public Address[] collectConstantAddresses() {
         Address[] constantAddresses = AddressUtils.allocateMemory(constants.size(), 0);
         for (ConstantSymbol constantSymbol : constants.values()) {
-            constantSymbol.type.toOperand().writeToAddress(constantAddresses[constantSymbol.id]);
+            constantSymbol.type.write2address(constantAddresses[constantSymbol.id]);
         }
         return constantAddresses;
     }
