@@ -45,7 +45,9 @@ public final class Conversions {
         double result = 0.0;
         for (int i = 0; i < unprefixedStr.length(); i++) {
             if (i == dotIdx) continue;
-            result += (unprefixedStr.charAt(i) - '0') * Math.pow(radix, dotIdx - i);
+            int d = unprefixedStr.charAt(i) - '0';
+            if (d == 0) continue;
+            result += d * Math.pow(radix, dotIdx - i);
         }
 
         return result;
