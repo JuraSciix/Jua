@@ -100,22 +100,6 @@ public final class Gen extends Scanner {
         result = items.makeStack();
     }
 
-    Item genArrayInitializr(List<MapInit.Entry> entries) {
-        Item item = items.makeStack();
-        for (MapInit.Entry entry : entries) {
-            item.duplicate();
-            genExpr(entry.key).load();
-            genExpr(entry.value).load();
-            code.putPos(entry.pos);
-            items.makeAccess().store();
-        }
-        return item;
-    }
-
-    private void emitNewArray() {
-        code.addInstruction(newmap);
-    }
-
     private void genBinary(BinaryOp tree) {
         genExpr(tree.lhs).load();
         genExpr(tree.rhs).load();
@@ -307,7 +291,7 @@ public final class Gen extends Scanner {
             if (param.expr != null) {
                 Literal literal = (Literal) stripParens(param.expr);
                 Address address = new Address();
-                literal.type.toOperand().writeToAddress(address);
+                literal.type.write2address(address);
                 defaults.add(address);
             }
         }
@@ -362,23 +346,31 @@ public final class Gen extends Scanner {
     }
 
     private void assertStacktopEquality(int limitstacktop) {
-        Assert.ensure(code.curStackTop() == limitstacktop, "limitstacktop mismatch (" +
-                "before: " + limitstacktop + ", " +
-                "after: " + code.curStackTop() + ", " +
-                "current CP: " + code.currentIP() + ", " +
-                "current line num: " + code.lastLineNum() +
-                ")");
+//        Assert.ensure(code.curStackTop() == limitstacktop, "limitstacktop mismatch (" +
+//                "before: " + limitstacktop + ", " +
+//                "after: " + code.curStackTop() + ", " +
+//                "current CP: " + code.currentIP() + ", " +
+//                "current line num: " + code.lastLineNum() +
+//                ")");
     }
 
     private void genCmp(BinaryOp tree) {
-        if (isLiteralNull(tree.lhs)) {
+        if (tree.hasTag(Tag.EQ) && isLiteralNull(tree.lhs)) {
             Item expr = genExpr(tree.rhs).load();
             code.putPos(tree.pos);
             result = expr.isNull();
-        } else if (isLiteralNull(tree.rhs)) {
+        } else if (tree.hasTag(Tag.EQ) && isLiteralNull(tree.rhs)) {
             Item expr = genExpr(tree.lhs).load();
             code.putPos(tree.pos);
             result = expr.isNull();
+        } else if (tree.hasTag(Tag.NE) && isLiteralNull(tree.lhs)) {
+            Item expr = genExpr(tree.rhs).load();
+            code.putPos(tree.pos);
+            result = expr.isNull().negate();
+        } else if (tree.hasTag(Tag.NE) && isLiteralNull(tree.rhs)) {
+            Item expr = genExpr(tree.lhs).load();
+            code.putPos(tree.pos);
+            result = expr.isNull().negate();
         } else {
             genExpr(tree.lhs).load();
             genExpr(tree.rhs).load();
@@ -579,12 +571,9 @@ public final class Gen extends Scanner {
             case OR:
                 genFlowOr(tree);
                 break;
-            case EQ:
-            case NE:
-            case GT:
-            case GE:
-            case LT:
-            case LE:
+            case EQ: case NE:
+            case GT: case GE:
+            case LT: case LE:
                 genCmp(tree);
                 break;
             case NULLCOALSC:

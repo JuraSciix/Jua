@@ -253,8 +253,10 @@ public class Items {
         @Override
         Item load() {
             resolveTrueJumps();
+            int st = code.curStackTop();
             code.addInstruction(const_true);
             int skipPC = code.addInstruction(new Goto());
+            code.curStackTop(st);
             resolveFalseJumps();
             code.addInstruction(const_false);
             code.resolveJump(skipPC);

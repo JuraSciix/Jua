@@ -17,7 +17,7 @@ public final class Ifeq extends JumpInstruction {
     public int stackAdjustment() { return -1 + -1; }
 
     @Override
-    public JumpInstruction negate() { return new Ifeq(offset); }
+    public JumpInstruction negate() { return new Ifne(offset); }
 
     @Override
     public void print(CodePrinter printer) {
