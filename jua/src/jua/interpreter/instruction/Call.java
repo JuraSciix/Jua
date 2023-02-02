@@ -5,32 +5,28 @@ import jua.interpreter.InterpreterState;
 
 public final class Call implements Instruction {
 
-    private final short index;
+    private final int index;
 
-    private final byte nargs;
+    private final int argc;
 
-    /**
-     * @param index Индекс функции.
-     * @param nargs Количество аргументов.
-     */
-    public Call(short index, byte nargs) {
+    public Call(int index, int argc) {
         this.index = index;
-        this.nargs = nargs;
+        this.argc = argc;
     }
 
     @Override
-    public int stackAdjustment() { return -(nargs & 0xff) + 1; }
+    public int stackAdjustment() { return -argc + 1; }
 
     @Override
     public void print(CodePrinter printer) {
         printer.printName("call");
-        printer.printFunctionRef(index & 0xffff);
-        printer.print(nargs & 0xff);
+        printer.printFunctionRef(index);
+        printer.print(argc);
     }
 
     @Override
     public boolean run(InterpreterState state) {
-        return state.impl_call(index & 0xffff, nargs & 0xff);
+        return state.impl_call(index, argc);
     }
 
 }

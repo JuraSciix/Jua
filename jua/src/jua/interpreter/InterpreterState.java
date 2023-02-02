@@ -42,6 +42,7 @@ public final class InterpreterState {
     }
 
     public void executeTick() {
+        advance();
         while (true) {
             if (!currentInstruction().run(this)) {
                 return;
@@ -663,7 +664,8 @@ public final class InterpreterState {
         }
 
         Address returnAddress = top();
-        thread().prepareCall(index, args, nargs, returnAddress, false);
+        // todo: Получать ссылку на функцию из пула констант
+        thread().prepareCall(thread().environment().getFunction(index), args, nargs, returnAddress);
         cleanupStack();
         set_cp_advance(1);
         return false;

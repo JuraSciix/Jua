@@ -5,6 +5,7 @@ import jua.runtime.JuaEnvironment;
 import jua.runtime.RuntimeErrorException;
 import jua.runtime.StackTraceElement;
 import jua.runtime.code.CodeData;
+import jua.utils.Assert;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -43,7 +44,7 @@ public final class InterpreterThread {
 
     private InterpreterFrame executingFrame = null;
 
-    private int calleeId;
+    private Function callee;
 
     private int numArgs;
 
@@ -57,7 +58,6 @@ public final class InterpreterThread {
     private int msg = MSG_UNSTARTED;
 
     private Address returnAddress;
-    private boolean checkArgc  = false;
 
     public InterpreterThread(Thread jvmThread, JuaEnvironment environment) {
         Objects.requireNonNull(jvmThread, "JVM thread");
@@ -82,36 +82,41 @@ public final class InterpreterThread {
         return environment;
     }
 
-    private InterpreterFrame makeFrame(Function function, Address returnAddress) {
-        InterpreterFrame sender = executingFrame;
-        InterpreterState state;
-        if ((function.flags & Function.FLAG_NATIVE) != 0) {
-            // Нативные функции выполняются непосредственно на JVM.
-            // У них вместо сегмента с Jua-кодом хранится нативный
-            // экзекютор. Таким образом, они не нуждаются в экземпляре
-            // класса InterpreterState.
-            state = null;
+    private void enterFrame() {
+        Assert.ensureNonNull(callee, "callee is not set");
+
+        if ((callee.flags & Function.FLAG_NATIVE) != 0) {
+            executingFrame = new InterpreterFrame(executingFrame, callee, null, returnAddress);
+            set_msg(MSG_RUNNING_FRAME);
+            boolean success = callee.nativeExecutor().execute(args, numArgs, returnAddress);
+            if (success) {
+                set_msg(MSG_POPPING_FRAME);
+                executingFrame = executingFrame.prev;
+                set_msg(MSG_RUNNING_FRAME);
+            } else {
+                Assert.ensure(isCrashed());
+            }
         } else {
-            CodeData cs = function.userCode();
-            state = new InterpreterState(cs, this);
+            InterpreterState state = new InterpreterState(callee.userCode(), this);
+            executingFrame = new InterpreterFrame(executingFrame, callee, state, returnAddress);
+            for (int i = 0; i < numArgs; i++) {
+                state.store(i, args[i]);
+            }
+            for (int i = numArgs; i < callee.maxArgc; i++) {
+                state.store(i, callee.defaults[i - callee.minArgc]);
+            }
+            set_msg(MSG_RUNNING_FRAME);
         }
-        return new InterpreterFrame(sender, function, state, returnAddress);
     }
 
-    private void joinFrame(Function callee, int argc) {
-        if (checkArgc) {
-            if (argc < callee.minArgc) {
-                error("%s: too few arguments: %d required, %d passed", callee.name, callee.minArgc, argc);
-                return;
-            }
-            if (argc > callee.maxArgc) {
-                error("%s: too many arguments: total %d, passed %d", callee.name, callee.maxArgc, argc);
-                return;
-            }
-            checkArgc = false;
+    private void leaveFrame() {
+        InterpreterFrame uf = executingFrame;
+        InterpreterFrame uf1 = uf.prev();
+        if (uf1 == null) {
+            interrupt(); // Выполнять более нечего
+            return;
         }
-
-        executingFrame = makeFrame(callee, returnAddress);
+        executingFrame = uf1;
     }
 
     private int msg() {
@@ -122,22 +127,11 @@ public final class InterpreterThread {
         this.msg = msg;
     }
 
-    private void returnFrame() {
-        InterpreterFrame uf = executingFrame;
-        InterpreterFrame uf1 = uf.prev();
-        if (uf1 == null) {
-            interrupt(); // Выполнять более нечего
-            return;
-        }
-        executingFrame = uf1;
-    }
-
-    public void prepareCall(int functionIndex, Address[] args, int argc, Address returnAddress, boolean checkArgc) {
-        calleeId = functionIndex;
+    public void prepareCall(Function function, Address[] args, int argc, Address returnAddress) {
+        callee = function;
         numArgs = argc;
         this.args = args;
         this.returnAddress = returnAddress;
-        this.checkArgc = checkArgc;
         set_msg(MSG_CALLING_FRAME);
     }
 
@@ -176,7 +170,7 @@ public final class InterpreterThread {
      */
     public boolean callAndWait(Function function, Address[] args, Address returnAddress) {
         set_msg(MSG_CALLING_FRAME);
-        executingFrame = makeFrame(function, returnAddress);
+        callee = function;
         this.args = args;
         numArgs = args.length;
         this.returnAddress = returnAddress;
@@ -239,115 +233,37 @@ public final class InterpreterThread {
 
     private void run() {
         while (true) {
-
-            switch (msg()) {
-
+            switch (msg) {
                 case MSG_CRASHED: {
-                    // todo: Сделать нормальный вывод ошибок
                     printStackTrace();
-                    throw new RuntimeErrorException(error_msg);
+                    RuntimeErrorException ex = new RuntimeErrorException(error_msg);
+                    error_msg = null;
+                    ex.thread = this;
+                    throw ex;
                 }
 
                 case MSG_CALLING_FRAME:
+                    enterFrame();
+                    break;
+
                 case MSG_POPPING_FRAME:
+                    leaveFrame();
                     break;
 
                 case MSG_HALTED:
+                    jvmThread.interrupt();
                     return;
 
                 default:
-                    throw new AssertionError(msg());
+                    Assert.error("unexpected msg: " + msg);
             }
 
-            InterpreterFrame frame = executingFrame;
-
-            try {
-
-                try {
-
-                    if ((frame.owner().flags & Function.FLAG_NATIVE) != 0) {
-                        switch (msg()) {
-                            case MSG_CALLING_FRAME:
-                                set_msg(MSG_RUNNING_FRAME);
-                                boolean success = frame.owner().nativeExecutor().execute(args, numArgs, returnAddress);
-                                if (success && !isCrashed()) {
-                                    set_msg(MSG_POPPING_FRAME);
-                                }
-                                break;
-                            case MSG_POPPING_FRAME:
-                                return;
-                        }
-                    } else {
-                        InterpreterState state = frame.state();
-
-                        switch (msg()) {
-                            case MSG_CALLING_FRAME:
-                                // Инициализируем стейт
-
-                                for (int i = 0; i < numArgs; i++) {
-                                    state.store(i, args[i]);
-                                }
-
-                                for (int i = numArgs; i < frame.owner().maxArgc; i++) {
-                                    state.store(i, frame.owner().defaults[i - frame.owner.minArgc]);
-                                }
-
-                                calleeId = -1;
-                                numArgs = 0;
-                                break;
-
-                            case MSG_POPPING_FRAME:
-                                state.advance();
-                                break;
-                        }
-
-                        set_msg(MSG_RUNNING_FRAME);
-
-                        while (isRunning()) {
-                            state.executeTick();
-                        }
-                    }
-                } catch (Throwable t) {
-                    t.printStackTrace();
-                    error("FATAL ERROR");
-//                    aError("FATAL ERROR. DETAILS:\n\t" +
-//                            "FILE: " + current_location() + "\n\t" +
-//                            "LINE: " + current_line_number() + "\n\t" +
-//                            "CP: " + state.cp() + "\n\t" +
-//                            "SP: " + state.sp());
-                }
-
-                switch (msg) {
-                    case MSG_RUNNING_FRAME:
-                        continue;
-
-                    case MSG_CALLING_FRAME: {
-                        joinFrame(environment.getFunction(calleeId), numArgs);
-                        break;
-                    }
-
-                    case MSG_POPPING_FRAME: {
-                        returnFrame();
-                        getTempAddress().reset();
-                        break;
-                    }
-
-                    case MSG_CRASHED: {
-                        // todo: Сделать нормальный вывод ошибок
-                        printStackTrace();
-                        throw new RuntimeErrorException(error_msg);
-                    }
-
-                    case MSG_HALTED:
-                        // Поток поток подлежит завершению.
-                        jvmThread.interrupt();
-                        return;
-                }
-            } catch (RuntimeErrorException e) {
-                // todo: Избавиться от выброса исключения.
-                e.thread = this;
-                throw e;
+            if (executingFrame == null) {
+                set_msg(MSG_HALTED);
+                continue;
             }
+
+            executingFrame.state.executeTick();
         }
     }
 

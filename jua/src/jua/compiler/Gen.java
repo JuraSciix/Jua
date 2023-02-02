@@ -285,7 +285,7 @@ public final class Gen extends Scanner {
             default:
                 visitInvocationArgs(tree.args);
                 code.putPos(tree.pos);
-                code.addInstruction(new Call((short) tree.sym.id, (byte) tree.args.count()));
+                code.addInstruction(new Call(tree.sym.id, tree.args.count()));
                 result = items.makeStack();
         }
     }
