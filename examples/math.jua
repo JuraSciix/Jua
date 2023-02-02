@@ -53,12 +53,21 @@ fn complex_test(test_id) {
     }
 }
 
-fn fact(n) {
-    var m = 0;
-    for var i = n; i > 0; i-- {
+fn int_fact(n) {
+    var m = 1;
+    for var i = n; i > 1; i-- {
         m *= i;
     }
     return m;
+}
+
+fn test_int_fact() {
+    assert_eq(int_fact(0), 1,   "0!");
+    assert_eq(int_fact(1), 1,   "1!");
+    assert_eq(int_fact(2), 2,   "2!");
+    assert_eq(int_fact(3), 6,   "3!");
+    assert_eq(int_fact(4), 24,  "4!");
+    assert_eq(int_fact(5), 120, "5"!");
 }
 
 const MATH_E = 2.718281828459045;
@@ -94,4 +103,20 @@ fn test_int_pow() {
     assert_eq(int_pow(1, 2),  1,    "1^2");
     assert_eq(int_pow(2, 3),  1,    "2^3");
     assert_eq(int_pow(2, -2), 0.25, "2^-2");
+}
+
+fn cos(x) {
+    var result = 0;
+    for var i = 0; i < 7; i++ {
+        result += int_pow(-1, i) * int_pow(x, 2 * i) / int_fact(2 * i);
+    }
+    return result;
+}
+
+fn sin(x) {
+    var result = 0;
+    for var i = 0; i < 7; i++ {
+        result += int_pow(-1, i) * int_pow(x, 2 * i + 1) / int_fact(2 * i + 1);
+    }
+    return result;
 }

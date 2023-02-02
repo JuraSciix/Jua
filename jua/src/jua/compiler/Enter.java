@@ -110,8 +110,31 @@ public class Enter extends Scanner {
     public void visitCompilationUnit(CompilationUnit tree) {
         source = tree.source;
         scan(tree.imports);
+
+        for (ConstDef constant : tree.constants) {
+            for (ConstDef.Definition def : constant.defs) {
+                if (globalScope.isConstantDefined(def.name)) {
+                    report(def.name.pos, "constant redefinition");
+                    def.sym = globalScope.lookupConstant(def.name);
+                    continue;
+                }
+                def.sym = globalScope.defineUserConstant(def);
+            }
+        }
+
         scan(tree.constants);
+
+        for (FuncDef function : tree.functions) {
+            if (globalScope.isFunctionDefined(function.name)) {
+                report(function.name.pos, "function redefinition");
+                function.sym = globalScope.lookupFunction(function.name);
+                continue;
+            }
+            function.sym = globalScope.defineUserFunction(function);
+        }
+
         scan(tree.functions);
+
         ensureRootScope();
         scanInnerScope(null, tree.stats);
 
@@ -130,22 +153,7 @@ public class Enter extends Scanner {
     }
 
     @Override
-    public void visitConstDef(ConstDef tree) {
-        for (ConstDef.Definition def : tree.defs) {
-            if (globalScope.isConstantDefined(def.name)) {
-                report(def.name.pos, "constant redefinition");
-                continue;
-            }
-            def.sym = globalScope.defineUserConstant(def);
-        }
-    }
-
-    @Override
     public void visitFuncDef(FuncDef tree) {
-        if (globalScope.isFunctionDefined(tree.name)) {
-            report(tree.name.pos, "function redefinition");
-            return;
-        }
         ensureRootScope();
         scope = new Scope(null);
 
@@ -175,8 +183,6 @@ public class Enter extends Scanner {
 
         ensureScopeChainUnaffected(null);
         scope = null;
-
-        tree.sym = globalScope.defineUserFunction(tree);
     }
 
     @Override
