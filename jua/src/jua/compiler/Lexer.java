@@ -34,7 +34,7 @@ public class Lexer {
     public Token nextToken() {
         loop:
         while (true) {
-            pos = reader.cursor;
+            pos = reader.pos();
 
             switch (reader.peek()) {
                 case -1:
@@ -110,14 +110,14 @@ public class Lexer {
                             }
                             break loop;
                         case '_': {
-                            int savedPos = reader.cursor;
+                            int savedPos = reader.pos();
 
                             do {
                                 reader.next();
                             } while (reader.peek() == '_');
 
                             if (!seenDigit(10)) {
-                                report(savedPos, "numeric literals cannot end with underscores");
+                                report(savedPos, "a sequence of digits cannot end with an underscore");
                             }
                             break;
                         }
@@ -209,11 +209,11 @@ public class Lexer {
                 case ']': reader.next(); type = RBRACKET; break loop;
 
                 case '\'':
-                    parseString0();
+                    parseSimpleString();
                     break loop;
 
                 case '\"':
-                    parseString1();
+                    parseNormString();
                     break loop;
             }
 
@@ -270,7 +270,7 @@ public class Lexer {
                 }
             }
         }
-        report(reader.cursor, "unexpected EOF, unterminated multiline comment");
+        report(reader.pos(), "unexpected EOF, unterminated multiline comment");
     }
 
     private void scanNumeric() {
@@ -300,6 +300,8 @@ public class Lexer {
         }
 
         if (reader.peek() == 'e' || reader.peek() == 'E') {
+            buffer.append((char) reader.peek());
+            reader.next();
             scanExponent();
         } else {
             type = FLOATLITERAL;
@@ -395,7 +397,7 @@ public class Lexer {
 
     private void scanDigits(int radix) {
         if (reader.peek() == '_') {
-            report(reader.cursor, "numeric literals cannot start with underscores");
+            report(reader.pos(), "a sequence of digits cannot start with an underscore");
 
             do {
                 reader.next();
@@ -411,7 +413,7 @@ public class Lexer {
 
             if (c == '_') {
                 if (lastUnderscorePos < 0) {
-                    lastUnderscorePos = reader.cursor;
+                    lastUnderscorePos = reader.pos();
                 }
             } else {
                 lastUnderscorePos = -1;
@@ -421,11 +423,11 @@ public class Lexer {
         }
 
         if (lastUnderscorePos >= 0) {
-            report(lastUnderscorePos, "numeric literals cannot end with underscores");
+            report(lastUnderscorePos, "a sequence of digits cannot end with an underscore");
         }
     }
 
-    private void parseString0() {
+    private void parseSimpleString() {
         reader.next();
 
         loop: while (true) {
@@ -445,7 +447,7 @@ public class Lexer {
         type = STRINGLITERAL;
     }
 
-    private void parseString1() {
+    private void parseNormString() {
         reader.next();
 
         loop: while (true) {
@@ -507,7 +509,7 @@ public class Lexer {
                     int d = digit(reader.peek(), 16);
 
                     if (d < 0) {
-                        report(reader.cursor, "hexadecimal expected here");
+                        report(reader.pos(), "a unicode point can only contain hexadecimal digits");
                         break;
                     }
                     u <<= 4;

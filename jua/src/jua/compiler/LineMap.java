@@ -31,7 +31,7 @@ public final class LineMap {
                 break;
             }
             if (c == '\n') {
-                lineStartPoints.add(reader.cursor + 1);
+                lineStartPoints.add(reader.pos() + 1);
             }
             reader.next();
         }

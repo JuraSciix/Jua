@@ -8,7 +8,7 @@ public final class SourceReader {
 
     public int cursor;
 
-    public int peeked = -1;
+    public int cached = -1;
 
     public SourceReader(char[] buffer, int start, int limit) {
         if (buffer == null) {
@@ -28,39 +28,23 @@ public final class SourceReader {
         this.limit = limit;
     }
 
+    public int pos() {   return cursor; }
+
     public int peek() {
-        if (peeked == -1) {
-            peeked = read();
+        if (cached < 0 && cursor < limit) {
+            cached = Character.codePointAt(buffer, cursor);
         }
-        return peeked;
+        return cached;
     }
 
     public boolean next() {
-        int c = read();
-        if (c >= 0) {
-            cursor += Character.charCount(c);
+        if (cached >= 0) {
+            cursor += Character.charCount(cached);
+            cached = -1;
+        } else if (cursor < limit) {
+            cursor += Character.charCount(Character.codePointAt(buffer, cursor));
         }
         return cursor < limit;
     }
 
-    private int read() {
-        if (peeked != -1) {
-            int p = peeked;
-            peeked = -1;
-            return p;
-        }
-        if (cursor >= limit) {
-            return -1;
-        }
-        char high = buffer[cursor];
-        if (Character.isHighSurrogate(high)) {
-            if ((cursor + 1) < limit) {
-                char low = buffer[cursor + 1];
-                if (Character.isLowSurrogate(low)) {
-                    return Character.toCodePoint(high, low);
-                }
-            }
-        }
-        return high;
-    }
 }
