@@ -7,7 +7,6 @@ import jua.interpreter.Address;
 import jua.interpreter.AddressUtils;
 import jua.interpreter.instruction.Binaryswitch;
 import jua.interpreter.instruction.Instruction;
-import jua.interpreter.instruction.JumpInstruction;
 import jua.runtime.code.CodeData;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.LineNumberTable;
@@ -76,14 +75,6 @@ public final class Code {
 
     public Instruction get(int pc) {
         return instructions.get(pc);
-    }
-
-    public JumpInstruction getJump(int pc) {
-        try {
-            return (JumpInstruction) instructions.get(pc);
-        } catch (ClassCastException e) {
-            throw new AssertionError(String.valueOf(pc), e);
-        }
     }
 
     public int currentIP() {
@@ -213,7 +204,7 @@ public final class Code {
     }
 
     public void resolveJump(int opcodePC, int destPC) {
-        getJump(opcodePC).offset = destPC - opcodePC;
+        get(opcodePC).setOffset(destPC - opcodePC);
     }
 
     public void resolveChain(IntArrayList opcodePCs) {

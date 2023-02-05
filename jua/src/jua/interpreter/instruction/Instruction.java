@@ -11,6 +11,14 @@ public interface Instruction {
     /** Печатает информацию об инструкции */
     void print(CodePrinter printer);
 
+    default Instruction negate() {
+        throw new UnsupportedOperationException(getClass().getName() + " cannot be negated");
+    }
+
+    default void setOffset(int pc) {
+        throw new UnsupportedOperationException(getClass().getName() + " have no offset field");
+    }
+
     /**
      * Выполняет инструкцию.
      *

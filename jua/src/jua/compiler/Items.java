@@ -275,7 +275,7 @@ public class Items {
         }
 
         CondItem negate() {
-            code.setInstruction(opcodePC, code.getJump(opcodePC).negate());
+            code.setInstruction(opcodePC, code.get(opcodePC).negate());
             CondItem condItem = new CondItem(opcodePC, falsejumps, truejumps);
             condItem.truejumps.removeInt(0);
             return condItem;

@@ -16,7 +16,13 @@ public abstract class JumpInstruction implements Instruction {
         this.offset = offset;
     }
 
+    @Override
     public abstract JumpInstruction negate();
+
+    @Override
+    public void setOffset(int pc) {
+        offset = pc;
+    }
 
     @Override
     public void print(CodePrinter printer) {
