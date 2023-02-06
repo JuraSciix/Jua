@@ -40,12 +40,12 @@ public class InstructionUtils {
 
     public static JumpInstruction fromComparisonOpTag(Tag tag) {
         switch (tag) {
-            case EQ: return new Ifne();
-            case NE: return new Ifeq();
-            case GT: return new Ifle();
-            case GE: return new Iflt();
-            case LT: return new Ifge();
-            case LE: return new Ifgt();
+            case EQ: return new Ifeq();
+            case NE: return new Ifne();
+            case GT: return new Ifgt();
+            case GE: return new Ifge();
+            case LT: return new Iflt();
+            case LE: return new Ifle();
             default: throw new AssertionError(tag);
         }
     }

@@ -30,7 +30,7 @@ public final class Ifz extends JumpInstruction {
     public int stackAdjustment() { return -1; }
 
     @Override
-    public JumpInstruction negate() { return new ifnz(offset); }
+    public JumpInstruction negate() { return new Ifnz(offset); }
 
     @Override
     public void print(CodePrinter printer) {

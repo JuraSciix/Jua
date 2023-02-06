@@ -1,6 +1,6 @@
 package jua.compiler;
 
-import it.unimi.dsi.fastutil.ints.IntArrayList;
+import jua.compiler.Code.Chain;
 import jua.interpreter.instruction.*;
 
 import java.util.Objects;
@@ -41,12 +41,12 @@ public class Items {
 
         CondItem isTrue() {
             load();
-            return new CondItem(code.addInstruction(new Ifz()));
+            return new CondItem(new Ifnz());
         }
 
-        CondItem isNull() {
+        CondItem nonNull() {
             load();
-            return new CondItem(code.addInstruction(new Ifnonnull()));
+            return new CondItem(new Ifnonnull());
         }
 
         int constantIndex() {
@@ -234,32 +234,31 @@ public class Items {
      */
     class CondItem extends Item {
 
-        final int opcodePC;
-        final IntArrayList truejumps;
-        final IntArrayList falsejumps;
+        final Instruction opcode;
+        Chain trueChain;
+        Chain falseChain;
 
-        CondItem(int opcodePC) {
-            this(opcodePC, new IntArrayList(), new IntArrayList());
+        CondItem(Instruction opcode) {
+            this(opcode, null, null);
         }
 
-        CondItem(int opcodePC, IntArrayList truejumps, IntArrayList falsejumps) {
-            this.opcodePC = opcodePC;
-            this.truejumps = truejumps;
-            this.falsejumps = falsejumps;
-
-            falsejumps.add(0, opcodePC);
+        CondItem(Instruction opcode, Chain trueChain, Chain falseChain) {
+            this.opcode = opcode;
+            this.trueChain = trueChain;
+            this.falseChain = falseChain;
         }
 
         @Override
         Item load() {
-            resolveTrueJumps();
+            Chain falseJumps = falseJumps();
+            code.resolve(trueChain);
             int st = code.curStackTop();
             code.addInstruction(const_true);
-            int skipPC = code.addInstruction(new Goto());
+            Chain trueChain = code.branch(new Goto());
             code.curStackTop(st);
-            resolveFalseJumps();
+            code.resolve(falseJumps);
             code.addInstruction(const_false);
-            code.resolveJump(skipPC);
+            code.resolve(trueChain);
             return stackItem;
         }
 
@@ -275,26 +274,15 @@ public class Items {
         }
 
         CondItem negate() {
-            code.setInstruction(opcodePC, code.get(opcodePC).negate());
-            CondItem condItem = new CondItem(opcodePC, falsejumps, truejumps);
-            condItem.truejumps.removeInt(0);
-            return condItem;
+            return new CondItem(opcode.negate(), falseChain, trueChain);
         }
 
-        void resolveTrueJumps() {
-            resolveTrueJumps(code.currentIP());
+        Chain trueJumps() {
+            return Code.mergeChains(trueChain, code.branch(opcode));
         }
 
-        void resolveTrueJumps(int pc) {
-            code.resolveChain(truejumps, pc);
-        }
-
-        void resolveFalseJumps() {
-            resolveFalseJumps(code.currentIP());
-        }
-
-        void resolveFalseJumps(int pc) {
-            code.resolveChain(falsejumps, pc);
+        Chain falseJumps() {
+            return Code.mergeChains(falseChain, code.branch(opcode.negate()));
         }
     }
 
@@ -348,12 +336,12 @@ public class Items {
         return new AssignItem(var);
     }
 
-    CondItem makeCond(int opcodePC) {
-        return new CondItem(opcodePC);
+    CondItem makeCond(Instruction opcode) {
+        return new CondItem(opcode);
     }
 
-    CondItem makeCond(int opcodePC, IntArrayList truejumps, IntArrayList falsejumps) {
-        return new CondItem(opcodePC, truejumps, falsejumps);
+    CondItem makeCond(Instruction opcode, Chain truejumps, Chain falsejumps) {
+        return new CondItem(opcode, truejumps, falsejumps);
     }
 
     TempItem makeTemp() {

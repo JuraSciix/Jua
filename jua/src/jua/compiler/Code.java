@@ -1,6 +1,5 @@
 package jua.compiler;
 
-import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.shorts.Short2IntRBTreeMap;
 import jua.interpreter.Address;
@@ -15,6 +14,28 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 
 public final class Code {
+
+    static class Chain {
+
+        final int pc;
+
+        final Chain next;
+
+        Chain(int pc, Chain next) {
+            this.pc = pc;
+            this.next = next;
+        }
+    }
+
+    static Chain mergeChains(Chain lhs, Chain rhs) {
+        if (lhs == null) return rhs;
+        if (rhs == null) return lhs;
+        // Рекурсивная сортировка
+        if (lhs.pc <= rhs.pc)
+            return new Chain(lhs.pc, mergeChains(lhs.next, rhs));
+        else  // lhs.pc > rhs.pc
+            return new Chain(rhs.pc, mergeChains(rhs.next, lhs));
+    }
 
     private final ArrayList<Instruction> instructions = new ArrayList<>();
 
@@ -52,6 +73,10 @@ public final class Code {
         gen.code = this;
         gen.log = log;
         gen.source = source;
+    }
+
+    public Chain branch(Instruction instr) {
+        return new Chain(addInstruction(instr), null);
     }
 
     public int lastLineNum() {
@@ -199,19 +224,14 @@ public final class Code {
         return new ConstantPool(addresses);
     }
 
-    public void resolveJump(int opcodePC) {
-        resolveJump(opcodePC, currentIP());
+    public void resolve(Chain chain) {
+        resolve(chain, currentIP());
     }
 
-    public void resolveJump(int opcodePC, int destPC) {
-        get(opcodePC).setOffset(destPC - opcodePC);
-    }
-
-    public void resolveChain(IntArrayList opcodePCs) {
-        resolveChain(opcodePCs, currentIP());
-    }
-
-    public void resolveChain(IntArrayList opcodePCs, int destPC) {
-        opcodePCs.forEach((int opcodePC) -> resolveJump(opcodePC, destPC));
+    public void resolve(Chain chain, int destPC) {
+        while (chain != null) {
+            get(chain.pc).setOffset(destPC - chain.pc);
+            chain = chain.next;
+        }
     }
 }

@@ -4,13 +4,13 @@ import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
 // todo: Переименовать в ifnz
-public final class ifnz extends JumpInstruction {
+public final class Ifnz extends JumpInstruction {
 
-    public ifnz() {
+    public Ifnz() {
         super();
     }
 
-    public ifnz(int offset) {
+    public Ifnz(int offset) {
         super(offset);
     }
 

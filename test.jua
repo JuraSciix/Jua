@@ -1,1 +1,14 @@
-println(.1E+1_0);
+fn test1(a, b, c) = (a && b) || c;
+fn test3() {
+    for var i = 0; i < 10; i++ {
+        println(i);
+    }
+}
+fn test2(a, b, c) = (a < b && b < c) || (a < b);
+fn test4() {
+    var i = 0, j = 10;
+    do
+        println(j - i);
+    while (j - i) > 0;
+}
+fn test5(a, b, c) = (a == b) || !(a == c && b > c);

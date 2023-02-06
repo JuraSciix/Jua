@@ -1,6 +1,7 @@
 package jua.compiler;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import jua.compiler.Code.Chain;
 import jua.compiler.Items.*;
 import jua.compiler.ProgramScope.ConstantSymbol;
 import jua.compiler.Tree.*;
@@ -11,10 +12,10 @@ import jua.runtime.Function;
 import jua.utils.Assert;
 import jua.utils.List;
 
+import static jua.compiler.Code.mergeChains;
 import static jua.compiler.InstructionFactory.*;
 import static jua.compiler.InstructionUtils.*;
 import static jua.compiler.TreeInfo.*;
-import static jua.utils.CollectionUtils.mergeIntLists;
 
 public final class Gen extends Scanner {
 
@@ -47,20 +48,6 @@ public final class Gen extends Scanner {
                 0L,
                 code.buildCodeSegment()
         );
-    }
-
-    private void genFlowAnd(BinaryOp tree) {
-        CondItem lcond = genCond(tree.lhs);
-        lcond.resolveTrueJumps();
-        CondItem rcond = genCond(tree.rhs);
-        result = items.makeCond(rcond.opcodePC, rcond.truejumps, mergeIntLists(lcond.falsejumps, rcond.falsejumps));
-    }
-
-    private void genFlowOr(BinaryOp tree) {
-        CondItem lcond = genCond(tree.lhs).negate();
-        lcond.resolveTrueJumps();
-        CondItem rcond = genCond(tree.rhs);
-        result = items.makeCond(rcond.opcodePC, mergeIntLists(lcond.falsejumps, rcond.falsejumps), rcond.truejumps);
     }
 
     @Override
@@ -100,25 +87,13 @@ public final class Gen extends Scanner {
         result = items.makeStack();
     }
 
-    private void genBinary(BinaryOp tree) {
-        genExpr(tree.lhs).load();
-        genExpr(tree.rhs).load();
-        code.putPos(tree.pos);
-        code.addInstruction(fromBinaryOpTag(tree.tag));
-        result = items.makeStack();
-    }
-
     @Override
     public void visitBreak(Break tree) {
         FlowEnv env = flow;
         Assert.notNull(env);
         code.putPos(tree.pos);
-        env.exitjumps.add(emitGoto());
+        env.exitjumps = mergeChains(env.exitjumps, code.branch(new Goto()));
         code.dead();
-    }
-
-    private int emitGoto() {
-        return code.addInstruction(new Goto());
     }
 
     @Override
@@ -133,7 +108,7 @@ public final class Gen extends Scanner {
         for (Case c : tree.cases) {
             c.accept(this);
             env.resolveCont();
-            env.contjumps.clear();
+            env.contjumps = null;
         }
 
         if (env.switchDefaultOffset == -1) {
@@ -192,7 +167,7 @@ public final class Gen extends Scanner {
 
         if (caseBodyAlive) {
             // Неявный break
-            flow.exitjumps.add(emitGoto());
+            flow.exitjumps = mergeChains(flow.exitjumps, code.branch(new Goto()));
         }
     }
 
@@ -201,7 +176,7 @@ public final class Gen extends Scanner {
         FlowEnv env = searchEnv(false);
         Assert.notNull(env);
         code.putPos(tree.pos);
-        env.contjumps.add(emitGoto());
+        env.contjumps = mergeChains(env.contjumps, code.branch(new Goto()));
         code.dead();
     }
 
@@ -222,7 +197,7 @@ public final class Gen extends Scanner {
         FlowEnv env = searchEnv(true);
         Assert.notNull(env);
         code.putPos(tree.pos);
-        env.contjumps.add(emitGoto());
+        env.contjumps = mergeChains(env.contjumps, code.branch(new Goto()));
         code.dead();
     }
 
@@ -324,70 +299,28 @@ public final class Gen extends Scanner {
     @Override
     public void visitIf(If tree) {
         CondItem cond = genCond(tree.cond);
-        cond.resolveTrueJumps();
-        boolean alive = genBranch(tree.thenbody);
-        if (tree.elsebody != null) {
-            if (alive) {
-                int skipperPC = emitGoto();
-                cond.resolveFalseJumps();
-                genBranch(tree.elsebody);
-                code.resolveJump(skipperPC);
-            } else {
-                cond.resolveFalseJumps();
-                alive = genBranch(tree.elsebody);
-            }
+        Chain falseJumps = cond.falseJumps();
+        code.resolve(cond.trueChain);
+        boolean thenalive = genBranch(tree.thenbody);
+        if (tree.elsebody == null) {
+            code.resolve(falseJumps);
         } else {
-            cond.resolveFalseJumps();
-        }
+            Chain trueChain = thenalive ? code.branch(new Goto()) : null;
+            code.resolve(falseJumps);
+            boolean elsealive = genBranch(tree.elsebody);
+            code.resolve(trueChain);
 
-        if (!alive) {
-            code.dead();
+            if (!thenalive && !elsealive) code.dead();
         }
     }
 
     private void assertStacktopEquality(int limitstacktop) {
-//        Assert.ensure(code.curStackTop() == limitstacktop, "limitstacktop mismatch (" +
-//                "before: " + limitstacktop + ", " +
-//                "after: " + code.curStackTop() + ", " +
-//                "current CP: " + code.currentIP() + ", " +
-//                "current line num: " + code.lastLineNum() +
-//                ")");
-    }
-
-    private void genCmp(BinaryOp tree) {
-        if (tree.hasTag(Tag.EQ) && isLiteralNull(tree.lhs)) {
-            Item expr = genExpr(tree.rhs).load();
-            code.putPos(tree.pos);
-            result = expr.isNull();
-        } else if (tree.hasTag(Tag.EQ) && isLiteralNull(tree.rhs)) {
-            Item expr = genExpr(tree.lhs).load();
-            code.putPos(tree.pos);
-            result = expr.isNull();
-        } else if (tree.hasTag(Tag.NE) && isLiteralNull(tree.lhs)) {
-            Item expr = genExpr(tree.rhs).load();
-            code.putPos(tree.pos);
-            result = expr.isNull().negate();
-        } else if (tree.hasTag(Tag.NE) && isLiteralNull(tree.rhs)) {
-            Item expr = genExpr(tree.lhs).load();
-            code.putPos(tree.pos);
-            result = expr.isNull().negate();
-        } else {
-            genExpr(tree.lhs).load();
-            genExpr(tree.rhs).load();
-            code.putPos(tree.pos);
-            result = items.makeCond(code.addInstruction(fromComparisonOpTag(tree.tag)));
-        }
-    }
-
-    private void genNullCoalescing(BinaryOp tree) {
-        Item lhs = genExpr(tree.lhs).load();
-        lhs.duplicate();
-        CondItem nonNull = lhs.isNull();
-        nonNull.resolveTrueJumps();
-        code.addInstruction(pop);
-        genExpr(tree.rhs).load();
-        nonNull.resolveFalseJumps();
-        result = items.makeStack();
+        Assert.ensure(code.curStackTop() == limitstacktop, "limitstacktop mismatch (" +
+                "before: " + limitstacktop + ", " +
+                "after: " + code.curStackTop() + ", " +
+                "current CP: " + code.currentIP() + ", " +
+                "current line num: " + code.lastLineNum() +
+                ")");
     }
 
     @Override
@@ -449,18 +382,16 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitTernaryOp(TernaryOp tree) {
-        int limitstacktop = code.curStackTop();
-        code.putPos(tree.pos);
         CondItem cond = genCond(tree.cond);
-        cond.resolveTrueJumps();
-        int a = code.curStackTop();
+        Chain falseJumps = cond.falseJumps();
+        code.resolve(cond.trueChain);
+        int st = code.curStackTop();
         genExpr(tree.thenexpr).load();
-        int exiterPC = emitGoto();
-        cond.resolveFalseJumps();
-        code.curStackTop(a);
+        Chain trueJumps = code.branch(new Goto());
+        code.resolve(falseJumps);
+        code.curStackTop(st);
         genExpr(tree.elseexpr).load();
-        code.resolveJump(exiterPC);
-        assertStacktopEquality(limitstacktop + 1);
+        code.resolve(trueJumps);
         result = items.makeStack();
     }
 
@@ -514,35 +445,36 @@ public final class Gen extends Scanner {
             if (infinitecond) {
                 genBranch(body);
                 flow.resolveCont(loopstartPC);
-                code.resolveJump(emitGoto(), loopstartPC);
+                code.resolve(code.branch(new Goto()), loopstartPC);
                 if (_infinite) code.dead(); // Подлинный вечный цикл.
             } else {
                 if (testFirst) {
                     CondItem condItem = genCond(cond);
-                    condItem.resolveTrueJumps();
+                    Chain falseJumps = condItem.falseJumps();
+                    code.resolve(condItem.trueChain);
                     genBranch(body);
                     flow.resolveCont(loopstartPC);
                     scan(update);
-                    code.resolveJump(emitGoto(), loopstartPC);
-                    condItem.resolveFalseJumps();
+                    code.resolve(code.branch(new Goto()), loopstartPC);
+                    code.resolve(falseJumps);
                 } else {
                     genBranch(body);
                     flow.resolveCont();
                     scan(update);
-                    CondItem condItem = genCond(cond).negate();
-                    condItem.resolveTrueJumps();
-                    condItem.resolveFalseJumps(loopstartPC);
+                    CondItem condItem = genCond(cond);
+                    code.resolve(condItem.trueJumps(), loopstartPC);
+                    code.resolve(condItem.falseChain);
                 }
             }
         } else {
             int loopstartPC;
             if (testFirst && !infinitecond) {
-                int skipBodyPC = emitGoto();
+                Chain skipBodyPC = code.branch(new Goto());
                 loopstartPC = code.currentIP();
                 genBranch(body);
                 flow.resolveCont();
                 scan(update);
-                code.resolveJump(skipBodyPC);
+                code.resolve(skipBodyPC);
             } else {
                 loopstartPC = code.currentIP();
                 genBranch(body);
@@ -550,12 +482,12 @@ public final class Gen extends Scanner {
                 scan(update);
             }
             if (infinitecond) {
-                code.resolveJump(emitGoto(), loopstartPC);
+                code.resolve(code.branch(new Goto()), loopstartPC);
                 if (_infinite) code.dead(); // Подлинный вечный цикл.
             } else {
-                CondItem condItem = genCond(cond).negate();
-                condItem.resolveTrueJumps();
-                condItem.resolveFalseJumps(loopstartPC);
+                CondItem condItem = genCond(cond);
+                code.resolve(condItem.trueJumps(), loopstartPC);
+                code.resolve(condItem.falseChain);
             }
         }
 
@@ -565,22 +497,67 @@ public final class Gen extends Scanner {
 
     public void visitBinaryOp(BinaryOp tree) {
         switch (tree.tag) {
-            case AND:
-                genFlowAnd(tree);
+            case AND: {
+                CondItem lcond = genCond(tree.lhs);
+                Chain falseJumps = lcond.falseJumps();
+                code.resolve(lcond.trueChain);
+                CondItem rcond = genCond(tree.rhs);
+                result = items.makeCond(rcond.opcode, rcond.trueChain, mergeChains(falseJumps, rcond.falseChain));
                 break;
-            case OR:
-                genFlowOr(tree);
+            }
+            case OR: {
+                CondItem lcond = genCond(tree.lhs);
+                Chain trueJumps = lcond.trueJumps();
+                code.resolve(lcond.falseChain);
+                CondItem rcond = genCond(tree.rhs);
+                result = items.makeCond(rcond.opcode, mergeChains(trueJumps, rcond.trueChain), rcond.falseChain);
                 break;
+            }
             case EQ: case NE:
             case GT: case GE:
-            case LT: case LE:
-                genCmp(tree);
+            case LT: case LE: {
+                if (tree.hasTag(Tag.EQ) && isLiteralNull(tree.lhs)) {
+                    Item expr = genExpr(tree.rhs).load();
+                    code.putPos(tree.pos);
+                    result = expr.nonNull();
+                } else if (tree.hasTag(Tag.EQ) && isLiteralNull(tree.rhs)) {
+                    Item expr = genExpr(tree.lhs).load();
+                    code.putPos(tree.pos);
+                    result = expr.nonNull();
+                } else if (tree.hasTag(Tag.NE) && isLiteralNull(tree.lhs)) {
+                    Item expr = genExpr(tree.rhs).load();
+                    code.putPos(tree.pos);
+                    result = expr.nonNull().negate();
+                } else if (tree.hasTag(Tag.NE) && isLiteralNull(tree.rhs)) {
+                    Item expr = genExpr(tree.lhs).load();
+                    code.putPos(tree.pos);
+                    result = expr.nonNull().negate();
+                } else {
+                    genExpr(tree.lhs).load();
+                    genExpr(tree.rhs).load();
+                    code.putPos(tree.pos);
+                    result = items.makeCond(fromComparisonOpTag(tree.tag));
+                }
                 break;
-            case NULLCOALSC:
-                genNullCoalescing(tree);
+            }
+            case NULLCOALSC: {
+                Item lhs = genExpr(tree.lhs).load();
+                lhs.duplicate();
+                CondItem nonNull = lhs.nonNull();
+                Chain trueChain = nonNull.trueJumps();
+                code.resolve(nonNull.falseChain);
+                code.addInstruction(pop);
+                genExpr(tree.rhs).load();
+                code.resolve(trueChain);
+                result = items.makeStack();
                 break;
+            }
             default:
-                genBinary(tree);
+                genExpr(tree.lhs).load();
+                genExpr(tree.rhs).load();
+                code.putPos(tree.pos);
+                code.addInstruction(fromBinaryOpTag(tree.tag));
+                result = items.makeStack();
         }
     }
 
@@ -599,18 +576,19 @@ public final class Gen extends Scanner {
             TempItem tmp = items.makeTemp();
             tmp.store();
             code.putPos(tree.pos);
-            CondItem nonNull = a.isNull();
-            nonNull.resolveTrueJumps();
+            CondItem nonNull = a.nonNull();
+            Chain falseJumps = nonNull.falseJumps();
+            code.resolve(nonNull.trueChain);
             int sp1 = code.curStackTop();
             genExpr(tree.expr).load().duplicate();
             tmp.store();
             varitem.store();
             int sp2 = code.curStackTop();
-            int ePC = emitGoto();
-            nonNull.resolveFalseJumps();
+            Chain trueJumps = code.branch(new Goto());
+            code.resolve(falseJumps);
             code.curStackTop(sp1);
             varitem.drop();
-            code.resolveJump(ePC);
+            code.resolve(trueJumps);
             assertStacktopEquality(sp2);
             result = tmp;
         } else {
@@ -738,17 +716,17 @@ public final class Gen extends Scanner {
 
         final FlowEnv parent;
 
-        final IntArrayList contjumps = new IntArrayList();
-        final IntArrayList exitjumps = new IntArrayList();
+        Chain contjumps = null;
+        Chain exitjumps = null;
 
         FlowEnv(FlowEnv parent) {
             this.parent = parent;
         }
 
-        void resolveCont() { code.resolveChain(contjumps); }
-        void resolveCont(int cp) { code.resolveChain(contjumps, cp); }
-        void resolveExit() { code.resolveChain(exitjumps); }
-        void resolveExit(int cp) { code.resolveChain(exitjumps, cp); }
+        void resolveCont() { code.resolve(contjumps); }
+        void resolveCont(int cp) { code.resolve(contjumps, cp); }
+        void resolveExit() { code.resolve(exitjumps); }
+        void resolveExit(int cp) { code.resolve(exitjumps, cp); }
     }
 
     class SwitchEnv extends FlowEnv {
