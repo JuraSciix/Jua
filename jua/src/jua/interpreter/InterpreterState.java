@@ -6,7 +6,6 @@ import jua.runtime.code.CodeData;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.MapHeap;
-import jua.runtime.heap.Operand;
 
 public final class InterpreterState {
 
@@ -139,11 +138,6 @@ public final class InterpreterState {
     public void cleanupStack() {
         for (int i = stack.length - 1; i > sp; i--)
             stack[i].reset();
-    }
-
-    @Deprecated
-    public void store(int index, Operand value) {
-        value.writeToAddress(slots[index]);
     }
 
     public void store(int index, Address value) {

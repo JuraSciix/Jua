@@ -4,12 +4,10 @@ import jua.interpreter.Address;
 import jua.interpreter.instruction.Instruction;
 import jua.runtime.Function;
 import jua.runtime.code.CodeData;
-import jua.runtime.heap.Operand;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class CodePrinter {
@@ -80,18 +78,6 @@ public class CodePrinter {
             }
             return sb.toString();
         }
-    }
-
-    public static void printConstants(Map<String, Operand> constants) {
-        // Do not print constants
-//        boolean[] test = new boolean[1];
-//        constants.forEach((name, constant) -> {
-//            test[0] = true;
-//            System.out.printf("const %s = %s%n", name, constant);
-//        });
-//        if (test[0]) {
-//            System.out.println();
-//        }
     }
 
     public static void printFunctions(Program script, ArrayList<Function> functions) {
