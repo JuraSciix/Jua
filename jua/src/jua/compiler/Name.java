@@ -1,5 +1,8 @@
 package jua.compiler;
 
+import jua.compiler.Types.StringType;
+import jua.compiler.Types.Type;
+
 public class Name {
 
     private final String value;
@@ -12,6 +15,8 @@ public class Name {
         this.value = value;
         this.pos = pos;
     }
+
+    public Type toType() { return new StringType(value); }
 
     @Override
     public int hashCode() { return value.hashCode(); }
