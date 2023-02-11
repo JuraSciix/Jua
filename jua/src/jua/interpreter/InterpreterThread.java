@@ -4,7 +4,6 @@ import jua.runtime.Function;
 import jua.runtime.JuaEnvironment;
 import jua.runtime.RuntimeErrorException;
 import jua.runtime.StackTraceElement;
-import jua.runtime.code.CodeData;
 import jua.utils.Assert;
 
 import java.io.PrintStream;
@@ -236,7 +235,16 @@ public final class InterpreterThread {
         try {
             runInternal();
         } catch (Throwable t) {
-            RuntimeErrorException ex = new RuntimeErrorException("INTERPRETER CRASHED");
+            String details;
+            if (executingFrame == null) {
+                details = "<NO FRAME>";
+            } else if ((executingFrame.owner.flags & Function.FLAG_NATIVE) != 0) {
+                details = "<NATIVE>";
+            } else {
+                details = "CP=" + executingFrame.state.cp() +
+                        ", SP=" + executingFrame.state.sp();
+            }
+            RuntimeErrorException ex = new RuntimeErrorException("INTERPRETER CRASHED: " + details );
             ex.thread = this;
             printStackTrace();
             t.printStackTrace();
