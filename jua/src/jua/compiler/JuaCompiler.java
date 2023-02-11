@@ -59,8 +59,10 @@ public final class JuaCompiler {
                 return null;
             }
             ProgramScope programScope = new ProgramScope();
+            // fixme
             compilationUnit.accept(new Lower(programScope));
             compilationUnit.accept(new Enter(programScope));
+            compilationUnit.accept(new Lower(programScope));
 
             compilationUnit.sym.code = new Code(programScope, source);
             compilationUnit.functions.forEach(funcDef -> funcDef.sym.code = new Code(programScope, source));

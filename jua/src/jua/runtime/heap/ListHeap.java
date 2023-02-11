@@ -15,7 +15,7 @@ public final class ListHeap extends Heap implements Iterable<Address> {
         if (size < 0) {
             throw new IllegalArgumentException("size must not be negative");
         }
-        elements = AddressUtils.allocateMemory(size, 0);
+        elements = new Address[size]; // Optimization: lazy init
     }
 
     public ListHeap(Address[] source) {
@@ -35,14 +35,23 @@ public final class ListHeap extends Heap implements Iterable<Address> {
     }
 
     public Address get(int index) {
+        initIndex(index);
         return elements[index];
     }
 
     public void set(int index, Address value, Address oldValueReceptor) {
+        initIndex(index);
         if (oldValueReceptor != null) {
             oldValueReceptor.set(elements[index]);
         }
         elements[index].set(value);
+    }
+
+    private void initIndex(int index) {
+        if (elements[index] == null) {
+            elements[index] = new Address();
+            elements[index].setNull();
+        }
     }
 
     public void clear() {
