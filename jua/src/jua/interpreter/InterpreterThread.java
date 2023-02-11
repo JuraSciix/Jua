@@ -221,9 +221,11 @@ public final class InterpreterThread {
 
     private void doPrintStackTrace(PrintStream output, StackTraceElement[] stackTrace) {
         Objects.requireNonNull(output, "output");
-        output.printf("Stack trace for thread \"%s\" %n", jvmThread.getName());
+        output.printf("Stack trace for thread \"%s\":%n", jvmThread.getName());
         for (StackTraceElement element : stackTrace) {
-            output.println("\t" + element);
+            output.print('\t');
+            element.print(output);
+            output.println();
         }
     }
 
@@ -244,10 +246,10 @@ public final class InterpreterThread {
                 details = "CP=" + executingFrame.state.cp() +
                         ", SP=" + executingFrame.state.sp();
             }
-            RuntimeErrorException ex = new RuntimeErrorException("INTERPRETER CRASHED: " + details );
-            ex.thread = this;
             printStackTrace();
             t.printStackTrace();
+            RuntimeErrorException ex = new RuntimeErrorException("INTERPRETER CRASHED: " + details );
+            ex.thread = this;
             throw ex;
         }
     }
@@ -256,7 +258,7 @@ public final class InterpreterThread {
         while (true) {
             switch (msg) {
                 case MSG_CRASHED: {
-                    printStackTrace();
+//                    printStackTrace();
                     RuntimeErrorException ex = new RuntimeErrorException(error_msg);
                     error_msg = null;
                     ex.thread = this;

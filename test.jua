@@ -1,4 +1,36 @@
-fn sum(a, b) = a + b;
+fn test1() {
+    var s = ".";
+    while true {
+        s += s;
+    }
+}
 
-var a = 5, b = -3;
-println(sum(a, b)); // 2
+fn test2() {
+    var a = {};
+    while true {
+        a = {):;
+        var i = 0;
+        var b = a[0];
+        while length(b) > 0 {
+            i++;
+            b = b[0];
+        }
+        println(i + " : " + _sizeof(a));
+    }
+}
+
+fn test3() {
+    var b = {};
+    b[0] = b;
+    b[0].x = "Hello";
+    println(b.x);
+}
+
+fn test4() {
+    var a = {};
+    println(_sizeof(a));
+    a[0] = 1;
+    println(_sizeof(a));
+    println(_sizeof(1));
+    println(_sizeof(null));
+}

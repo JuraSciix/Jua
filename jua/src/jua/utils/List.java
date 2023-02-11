@@ -325,16 +325,15 @@ public class List<E> implements Iterable<E> {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || o.getClass() != getClass()) return false;
-        List<?> list = (List<?>) o;
-        // Проверяем все элементы множества A на принадлежность множеству B и наоборот.
-        // Таким образом мы проверяем взаимно-однозначное соотношение.
-        for (Object element : list) {
+        List<?> l = (List<?>) o;
+        // Определяем равенство на основе биекции множеств A и B.
+        for (Object element : l) {
             if (!contains(element)) {
                 return false;
             }
         }
         for (E element : this) {
-            if (!list.contains(element)) {
+            if (!l.contains(element)) {
                 return false;
             }
         }

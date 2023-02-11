@@ -1,30 +1,47 @@
 package jua.runtime;
 
+import java.io.PrintStream;
 import java.util.Objects;
 
 public final class StackTraceElement {
 
-    private final String function;
+    /** Название исполняемого файла. */
+    public final String fileName;
 
-    private final String fileName;
+    /** Название исполняемой функции. */
+    public final String function;
 
-    private final int lineNumber;
+    /** Номер исполняемой строки. Равно {@code -1}, если функция нативная. */
+    public final int lineNumber;
 
-    public StackTraceElement(String function, String fileName, int lineNumber) {
-        this.function = Objects.requireNonNull(function);
-        this.fileName = Objects.requireNonNull(fileName);
+    /** Размер исполняемого фрейма. Равно {@code 0}, если функция нативная. */
+    public final long frameSize;
+
+    public StackTraceElement(String fileName, String function, int lineNumber, long frameSize) {
+        this.fileName = Objects.requireNonNull(fileName, "file name");
+        this.function = Objects.requireNonNull(function, "function");
         this.lineNumber = lineNumber;
+        this.frameSize = frameSize;
     }
-
-    public String getFunction() { return function; }
-
-    public String getFileName() { return fileName; }
-
-    public int getLineNumber() { return lineNumber; }
 
     @Override
     public int hashCode() {
-        return Objects.hash(fileName, lineNumber, function);
+        return ((fileName.hashCode() * 17 +
+                function.hashCode()) * 17 +
+                Integer.hashCode(lineNumber)) * 17 +
+                Long.hashCode(frameSize);
+    }
+
+    public void print(PrintStream output) {
+        output.print(function);
+        output.print('(');
+        output.print(fileName);
+        output.print(':');
+        output.print(lineNumber);
+        output.print(')');
+        output.print('[');
+        output.print(frameSize);
+        output.print(']');
     }
 
     @Override
@@ -32,11 +49,9 @@ public final class StackTraceElement {
         if (this == o) return true;
         if (o == null || o.getClass() != getClass()) return false;
         StackTraceElement e = (StackTraceElement) o;
-        return function.equals(e.function) && (lineNumber == e.lineNumber) && fileName.equals(e.fileName);
-    }
-
-    @Override
-    public String toString() {
-        return getFunction() + "(" + getFileName() + ":" + getLineNumber() + ")";
+        return (lineNumber == e.lineNumber) &&
+                (frameSize == e.frameSize) &&
+                fileName.equals(e.fileName) &&
+                function.equals(e.function);
     }
 }

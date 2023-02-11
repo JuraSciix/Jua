@@ -7,6 +7,7 @@ import jua.runtime.NativeSupport.NativeFunctionPresent;
 import jua.runtime.NativeSupport.ParamsData;
 import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.StringHeap;
+import jua.utils.ObjectSizeCalculating;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,6 +27,7 @@ public class NativeStdlib {
         nfp.add(new TimeFunction());
         nfp.add(new PanicFunction());
         nfp.add(new StrCodePointsFunction());
+        nfp.add(new _SizeOfFunction());
     }
 
     static class PrintFunction extends NativeFunctionPresent {
@@ -121,6 +123,19 @@ public class NativeStdlib {
                 i += Character.charCount(cp);
             }
             returnAddress.set(chars);
+            return true;
+        }
+    }
+
+    static class _SizeOfFunction extends NativeFunctionPresent {
+
+        _SizeOfFunction() {
+            super("_sizeof", ParamsData.create().add("val"));
+        }
+
+        @Override
+        public boolean execute(Address[] args, int argc, Address returnAddress) {
+            returnAddress.set(ObjectSizeCalculating.calcSizeOf(args[0]));
             return true;
         }
     }
