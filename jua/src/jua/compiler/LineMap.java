@@ -11,7 +11,7 @@ public final class LineMap {
 
     LineMap(char[] content) {
         int len = content.length;
-        while (content[len - 1] <= ' ') {
+        while (len > 0 && content[len - 1] <= ' ') {
             len--;
         }
 
