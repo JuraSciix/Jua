@@ -47,7 +47,7 @@ public class ObjectSizeCalculating {
     }
     
     public static long calcSizeOf(Object instance) {
-        return calcSizeOf(instance, null);
+        return calcSizeOf(instance, new HashSet<>());
     }
 
     static class ObjectWrapper {
@@ -72,13 +72,12 @@ public class ObjectSizeCalculating {
     }
 
     @SuppressWarnings("unchecked")
-    public static long calcSizeOf(Object instance, HashSet<ObjectWrapper> dejaVu) {
+    static long calcSizeOf(Object instance, HashSet<ObjectWrapper> dejaVu) {
         if (instance == null) return 0L;
-        if (dejaVu == null) dejaVu = new HashSet<>();
         if (!dejaVu.add(new ObjectWrapper(instance))) return REF_SIZE;
         tSizeCalcMap.computeIfAbsent(instance.getClass(), ObjectSizeCalculating::generateSizeCalcFor);
         TSizeCalc<Object> sizeCalc = (TSizeCalc<Object>) tSizeCalcMap.get(instance.getClass());
-        return sizeCalc.sizeOf(instance, dejaVu);
+        return align(sizeCalc.sizeOf(instance, dejaVu));
     }
 
     static <T> TSizeCalc<T> generateSizeCalcFor(Class<T> klass) {
@@ -89,12 +88,6 @@ public class ObjectSizeCalculating {
             do {
                 for (Field field : superclass.getDeclaredFields()) {
                     if (Modifier.isStatic(field.getModifiers())) {
-                        continue;
-                    }
-                    try {
-                        field.setAccessible(true);
-                    } catch (RuntimeException e) {
-                        e.printStackTrace();
                         continue;
                     }
                     Class<?> type = field.getType();
@@ -114,13 +107,17 @@ public class ObjectSizeCalculating {
                         size += 2;
                         continue;
                     }
+                    size += REF_SIZE;
                     Object value;
                     try {
+                        field.setAccessible(true);
                         value = field.get(t);
+                    } catch (RuntimeException e) {
+                        e.printStackTrace();
+                        continue;
                     } catch (IllegalAccessException e) {
                         throw new AssertionError(e); // Не должно случиться
                     }
-                    size += REF_SIZE;
                     size += calcSizeOf(value, dejaVu);
                 }
                 superclass = superclass.getSuperclass();
@@ -278,6 +275,8 @@ public class ObjectSizeCalculating {
             return HEADER_SIZE;
         }
     }
+
+    private static long align(long a) { return (a + 8 - 1) & -8; }
 
     private ObjectSizeCalculating() { Assert.error(); }
 }
