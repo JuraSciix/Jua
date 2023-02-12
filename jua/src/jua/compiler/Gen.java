@@ -23,8 +23,6 @@ public final class Gen extends Scanner {
     private static final boolean GEN_JVM_LOOPS = false;
 
     Code code;
-
-    Log log;
     
     Items items;
 
@@ -53,7 +51,6 @@ public final class Gen extends Scanner {
         code = tree.sym.code;
         code.putPos(0);
         items = new Items(code);
-        log = tree.source.log;
         scan(tree.stats);
         emitLeave();
         tree.sym.runtimefunc = new Function(
@@ -276,7 +273,6 @@ public final class Gen extends Scanner {
         code = tree.sym.code;
         code.putPos(tree.pos);
         items = new Items(code);
-        log = source.log;
 
         List<Address> defaults = new List<>();
         for (FuncDef.Parameter param : tree.params) {

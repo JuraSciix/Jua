@@ -15,17 +15,17 @@ public final class JuaCompiler {
     public static Program compileFile(File file) {
         char[] filecontents;
         try {
-            filecontents = IOUtils.readCharsFromFile(file);
+            filecontents = IOUtils.readFileCharBuffer(file, Options.charset());
         } catch (IOException e) {
             System.err.println("Unable access to file.");
             System.exit(1);
             return null;
         }
         Log log = new Log(System.err, Options.logMaxErrors());
-        Source source = new Source(file.getName(), filecontents, log);
+        Source source = new Source(file.getName(), filecontents);
 
         if (Options.isLintEnabled()) {
-            Lexer tokenizer = new Lexer(source);
+            Lexer tokenizer = new Lexer(source, log);
             for (Token token = tokenizer.nextToken();
                  token.type != TokenType.EOF;
                  token = tokenizer.nextToken()) {
@@ -52,7 +52,7 @@ public final class JuaCompiler {
             return null;
         }
         try {
-            JuaParser parser = new JuaParser(source);
+            JuaParser parser = new JuaParser(source, log);
             Tree.CompilationUnit compilationUnit = parser.parseCompilationUnit();
             if (Options.isShouldPrettyTree()) {
                 compilationUnit.accept(new Pretty(System.err));
@@ -61,13 +61,13 @@ public final class JuaCompiler {
             ProgramScope programScope = new ProgramScope();
             // fixme
             compilationUnit.accept(new Lower(programScope));
-            compilationUnit.accept(new Enter(programScope));
+            compilationUnit.accept(new Enter(programScope, log));
             compilationUnit.accept(new Lower(programScope));
 
             compilationUnit.sym.code = new Code(programScope, source);
             compilationUnit.functions.forEach(funcDef -> funcDef.sym.code = new Code(programScope, source));
 
-            compilationUnit.accept(new Check(programScope));
+            compilationUnit.accept(new Check(programScope, log));
             compilationUnit.accept(new Flow());
 
             if (log.hasErrors()) {

@@ -10,20 +10,23 @@ public class Check extends Scanner {
 
     private final ProgramScope programScope;
 
+    private final Log log;
+
     private Source source;
 
     private boolean allowsBreak, allowsContinue, allowsFallthrough;
 
-    public Check(ProgramScope programScope) {
+    public Check(ProgramScope programScope, Log log) {
         this.programScope = programScope;
+        this.log = log;
     }
     
     private void report(int pos, String message) {
-        source.log.error(source, pos, message);
+        log.error(source, pos, message);
     }
 
     private void report(int pos, String message, Object... args) {
-        source.log.error(source, pos, message, args);
+        log.error(source, pos, message, args);
     }
 
     private boolean requireLiteralTree(Expression tree) {

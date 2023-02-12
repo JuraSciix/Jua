@@ -10,6 +10,8 @@ public class Lexer {
 
     private final Source source;
 
+    private final Log log;
+
     private final SourceReader reader;
 
     private Token eofToken;
@@ -22,13 +24,14 @@ public class Lexer {
 
     private TokenType type = INVALID;
 
-    public Lexer(Source source) {
+    public Lexer(Source source, Log log) {
         this.source = source;
+        this.log = log;
         reader = new SourceReader(source.content, 0, source.content.length);
     }
 
     private void report(int pos, String message) {
-        source.log.error(source, pos, message);
+        log.error(source, pos, message);
     }
 
     public Token nextToken() {
@@ -473,14 +476,14 @@ public class Lexer {
 
     private void parseEscape() {
         switch (reader.peek()) {
-            case 'b':  buffer.append('\b'); break;
-            case 'f':  buffer.append('\f'); break;
-            case 'n':  buffer.append('\n'); break;
-            case 'r':  buffer.append('\r'); break;
-            case 't':  buffer.append('\t'); break;
-            case '\'': buffer.append('\''); break;
-            case '\"': buffer.append('\"'); break;
-            case '\\': buffer.append('\\'); break;
+            case 'b':  reader.next(); buffer.append('\b'); break;
+            case 'f':  reader.next(); buffer.append('\f'); break;
+            case 'n':  reader.next(); buffer.append('\n'); break;
+            case 'r':  reader.next(); buffer.append('\r'); break;
+            case 't':  reader.next(); buffer.append('\t'); break;
+            case '\'': reader.next(); buffer.append('\''); break;
+            case '\"': reader.next(); buffer.append('\"'); break;
+            case '\\': reader.next(); buffer.append('\\'); break;
             case '0': case '1': case '2':
             case '3': case '4': case '5':
             case '6': case '7': {

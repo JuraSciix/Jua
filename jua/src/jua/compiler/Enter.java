@@ -61,13 +61,16 @@ public class Enter extends Scanner {
 
     private final ProgramScope globalScope;
 
+    private final Log log;
+
     private Source source;
 
     /** Текущая область видимости. */
     private Scope scope;
 
-    public Enter(ProgramScope globalScope) {
+    public Enter(ProgramScope globalScope, Log log) {
         this.globalScope = globalScope;
+        this.log = log;
     }
 
     private void ensureRootScope() {
@@ -79,7 +82,7 @@ public class Enter extends Scanner {
     }
 
     private void report(int pos, String message) {
-        source.log.error(source, pos, message);
+        log.error(source, pos, message);
     }
 
     private void checkNotVarDef(Tree tree) {

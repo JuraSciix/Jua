@@ -2,6 +2,8 @@ package jua.utils;
 
 import jua.Main;
 
+import java.nio.charset.Charset;
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
@@ -23,6 +25,7 @@ public final class Options {
     public static boolean isShouldPrettyTree() { return bound.prettyTree; }
     public static ArrayList<String> argv() { return bound.argv; }
     public static int logMaxErrors() { return bound.logMaxErrors; }
+    public static Charset charset() { return bound.charset; }
 
     private final ArrayList<String> files = new ArrayList<>();
     private boolean printCode;
@@ -30,6 +33,7 @@ public final class Options {
     private boolean prettyTree;
     private final ArrayList<String> argv = new ArrayList<>();
     private int logMaxErrors = 1;
+    private Charset charset = Charset.defaultCharset();
 
     private static class OptionIterator {
 
@@ -115,6 +119,22 @@ public final class Options {
                 }
                 continue;
             }
+            if (option.startsWith("-c")) {
+                String value = option.substring("-c".length());
+                if (!value.startsWith("=") || value.length() == 1) {
+                    System.err.println("Error: option '-c' must have a value specified after '='");
+                    System.exit(1);
+                }
+                try {
+                    charset = Charset.forName(value.substring(1));
+                } catch (UnsupportedCharsetException e) {
+                    System.err.println("Error: option '-c' have an invalid value.");
+                    System.exit(1);
+                }
+                continue;
+            }
+            System.err.println("Unrecognized option: " + option);
+            System.exit(1);
         }
         if (itr.hasNext() & files.isEmpty()) {
             files.add(itr.next());

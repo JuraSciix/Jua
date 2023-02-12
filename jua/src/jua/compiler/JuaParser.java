@@ -29,13 +29,16 @@ public final class JuaParser {
 
     private final Source source;
 
+    private final Log log;
+
     private final Lexer tokenizer;
 
     Token token;
 
-    public JuaParser(Source source) {
+    public JuaParser(Source source, Log log) {
         this.source = source;
-        tokenizer = new Lexer(source);
+        this.log = log;
+        tokenizer = new Lexer(source, log);
     }
 
     public CompilationUnit parseCompilationUnit() {
@@ -60,7 +63,7 @@ public final class JuaParser {
                 }
                 expectToken(SEMI);
             } catch (ParseNodeExit e) {
-                logError(e);
+                report(e);
             }
             pos = token.pos;
         }
@@ -78,14 +81,14 @@ public final class JuaParser {
                 }
                 stats.add(parseStatement());
             } catch (ParseNodeExit e) {
-                logError(e);
+                report(e);
             }
         }
         return new CompilationUnit(0, source, imports, constDefs, funcDefs, stats);
     }
 
-    private void logError(ParseNodeExit e) {
-        source.log.error(source, e.pos, e.msg);
+    private void report(ParseNodeExit e) {
+        log.error(source, e.pos, e.msg);
     }
 
     public Statement parseStatement() {
@@ -202,7 +205,7 @@ public final class JuaParser {
                 expectToken(EQ);
                 definitions.add(new ConstDef.Definition(name.toName(), parseExpression()));
             } catch (ParseNodeExit e) {
-                logError(e);
+                report(e);
             }
         } while (acceptToken(COMMA));
 
@@ -294,7 +297,7 @@ public final class JuaParser {
             try {
                 init.addAll(parseExpressions().map(expr -> new Discarded(expr.pos, expr)));
             } catch (ParseNodeExit e) {
-                source.log.error(source, e.pos, "invalid statement");
+                report(new ParseNodeExit(e.pos, "invalid statement"));
             }
             expectToken(SEMI);
         }
@@ -345,7 +348,7 @@ public final class JuaParser {
             try {
                 statements.add(parseStatement());
             } catch (ParseNodeExit e) {
-                logError(e);
+                report(e);
             }
         }
         return new Block(position, statements);
@@ -359,7 +362,7 @@ public final class JuaParser {
         try {
             expr = parseExpression();
         } catch (ParseNodeExit e) {
-            logError(e);
+            report(e);
         }
         expectToken(SEMI);
         return new Return(position, expr);
@@ -377,13 +380,13 @@ public final class JuaParser {
                 try {
                     cases.add(parseCase(position1, false));
                 } catch (ParseNodeExit e) {
-                    logError(e);
+                    report(e);
                 }
             } else if (acceptToken(DEFAULT)) {
                 try {
                     cases.add(parseCase(position1, true));
                 } catch (ParseNodeExit e) {
-                    logError(e);
+                    report(e);
                 }
             } else if (acceptToken(EOF)) {
                 expectToken(RBRACE);

@@ -58,8 +58,6 @@ public final class Code {
     private final ArrayDeque<String> freeSyntheticNames = new ArrayDeque<>();
     private int syntheticLimit = 0;
 
-    private Log log;
-
     public final ProgramScope programScope;
     public final Gen gen;
 
@@ -68,10 +66,8 @@ public final class Code {
     public Code(ProgramScope programScope, Source source) {
         this.programScope = programScope;
         this.lineMap = source.getLineMap();
-        log = source.log;
         gen = new Gen();
         gen.code = this;
-        gen.log = log;
         gen.source = source;
     }
 
