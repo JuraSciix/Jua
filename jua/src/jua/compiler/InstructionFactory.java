@@ -4,6 +4,7 @@ import jua.interpreter.instruction.*;
 
 public interface InstructionFactory {
 
+    Nop nop                = new Nop();
     Add add                = new Add();
     Sub sub                = new Sub();
     Mul mul                = new Mul();
@@ -17,11 +18,11 @@ public interface InstructionFactory {
     Pos pos                = new Pos();
     Aload aload            = new Aload();
     Astore astore          = new Astore();
+    Adrop adrop            = new Adrop();
     Ainc ainc              = new Ainc();
     Adec adec              = new Adec();
     Leave leave            = new Leave();
     Length length          = new Length();
-    Cmp cmp                = new Cmp();
     ConstFalse const_false = new ConstFalse();
     ConstTrue const_true   = new ConstTrue();
     ConstNull const_null   = new ConstNull();

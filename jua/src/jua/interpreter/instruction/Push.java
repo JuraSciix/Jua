@@ -3,12 +3,12 @@ package jua.interpreter.instruction;
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
-public final class Ldc implements Instruction {
+public final class Push implements Instruction {
 
-    private final int operand;
+    private final int constantIndex;
 
-    public Ldc(int operand) {
-        this.operand = operand;
+    public Push(int constantIndex) {
+        this.constantIndex = constantIndex;
     }
 
     @Override
@@ -16,12 +16,12 @@ public final class Ldc implements Instruction {
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName("ldc");
-        printer.printLiteral(operand);
+        printer.printName("push");
+        printer.printLiteral(constantIndex);
     }
 
     @Override
     public boolean run(InterpreterState state) {
-        return state.stackLDC(operand);
+        return state.stackPush(constantIndex);
     }
 }

@@ -556,7 +556,7 @@ public final class InterpreterState {
         return false;
     }
 
-    public boolean stackLDC(int constantIndex) {
+    public boolean stackPush(int constantIndex) {
         top().set(constant_pool().getAddress(constantIndex));
         next();
         return true;
@@ -664,5 +664,10 @@ public final class InterpreterState {
         cleanupStack();
         set_cp_advance(1);
         return false;
+    }
+
+    public boolean nop() {
+        next();
+        return true;
     }
 }

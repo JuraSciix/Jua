@@ -3,18 +3,18 @@ package jua.interpreter.instruction;
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
-public final class Cmp implements Instruction {
+public class Nop implements Instruction {
 
     @Override
-    public int stackAdjustment() { return -1 + -1 + 1; }
+    public int stackAdjustment() { return 0; }
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName("add");
+        printer.printName("nop");
     }
 
     @Override
     public boolean run(InterpreterState state) {
-        return state.stackCmp();
+        return state.nop();
     }
 }

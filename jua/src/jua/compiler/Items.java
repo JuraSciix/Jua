@@ -110,7 +110,7 @@ public class Items {
                         return stackItem;
                     }
                 }
-                code.addInstruction(new Ldc(type.resolvePoolConstant(code)));
+                code.addInstruction(new Push(type.resolvePoolConstant(code)));
             }
             return stackItem;
         }
