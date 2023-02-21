@@ -529,7 +529,7 @@ public final class Gen extends Scanner {
                     result = cond;
                 } else {
                     genExpr(tree.lhs).load();
-                    genExpr(tree.lhs).load();
+                    genExpr(tree.rhs).load();
                     code.putPos(tree.pos);
                     result = items.makeCond(fromComparisonOpTag(tree.tag));
                 }
