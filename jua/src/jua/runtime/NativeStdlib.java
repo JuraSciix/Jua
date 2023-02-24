@@ -7,7 +7,7 @@ import jua.runtime.NativeSupport.NativeFunctionPresent;
 import jua.runtime.NativeSupport.ParamsData;
 import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.StringHeap;
-import jua.utils.ObjectSizeCalculating;
+import jua.utils.ObjectSizeAnalyzing;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -135,7 +135,7 @@ public class NativeStdlib {
 
         @Override
         public boolean execute(Address[] args, int argc, Address returnAddress) {
-            returnAddress.set(ObjectSizeCalculating.calcSizeOf(args[0]));
+            returnAddress.set(ObjectSizeAnalyzing.analyzeSize(args[0]));
             return true;
         }
     }

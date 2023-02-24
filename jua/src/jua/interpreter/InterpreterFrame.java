@@ -2,7 +2,7 @@ package jua.interpreter;
 
 import jua.runtime.Function;
 import jua.runtime.StackTraceElement;
-import jua.utils.ObjectSizeCalculating;
+import jua.utils.ObjectSizeAnalyzing;
 
 public final class InterpreterFrame {
 
@@ -36,6 +36,6 @@ public final class InterpreterFrame {
 
     StackTraceElement toStackTraceElement() {
         return new StackTraceElement(owner.module, owner.name, executingLineNumber(),
-                ObjectSizeCalculating.calcSizeOf(state));
+                ObjectSizeAnalyzing.analyzeSize(state));
     }
 }
