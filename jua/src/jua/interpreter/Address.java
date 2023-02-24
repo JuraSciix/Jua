@@ -748,6 +748,19 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
         return false;
     }
 
+    public boolean canBeComparedWith(Address rhs) {
+        // Два значения одного типа всегда можно сравнивать.
+        if (getType() == rhs.getType()) return true;
+        // Поскольку язык динамически типизированный, нулём может оказаться любая переменная,
+        // а значит нуль-проверка всегда имеет место быть.
+        if (getType() == NULL || rhs.getType() == NULL) return true;
+        // Типы значений, которые можно сравнивать со значениями других типов.
+        int u = getTypeUnion(getType(), rhs.getType());
+        if (u == getTypeUnion(LONG, DOUBLE)) return true;
+        if (u == getTypeUnion(DOUBLE, LONG)) return true;
+        return false;
+    }
+
     public int weakCompare(Address rhs, int except) {
         int union = getTypeUnion(type, rhs.type);
 
