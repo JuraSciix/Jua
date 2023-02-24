@@ -9,13 +9,19 @@ import java.util.StringJoiner;
 
 public final class ListHeap extends Heap implements Iterable<Address> {
 
-    private final Address[] elements;
+    private static final Address[] EMPTY_DATA = new Address[0];
+
+    private final Address[] data;
 
     public ListHeap(int size) {
         if (size < 0) {
             throw new IllegalArgumentException("size must not be negative");
         }
-        elements = new Address[size]; // Optimization: lazy init
+        if (size == 0) {
+            data = EMPTY_DATA;
+        } else {
+            data = new Address[size]; // Optimization: lazy init
+        }
     }
 
     public ListHeap(Address[] source) {
@@ -23,46 +29,44 @@ public final class ListHeap extends Heap implements Iterable<Address> {
             throw new IllegalArgumentException("source must not be null");
         }
         if (source.length == 0) {
-            elements = new Address[0];
+            data = EMPTY_DATA;
         } else {
-            elements = new Address[source.length];
-            AddressUtils.arraycopy(source, 0, elements, 0, source.length);
+            data = new Address[source.length];
+            AddressUtils.arraycopy(source, 0, data, 0, source.length);
         }
     }
 
     public int length() {
-        return elements.length;
+        return data.length;
     }
 
     public Address get(int index) {
         initIndex(index);
-        return elements[index];
+        return data[index];
     }
 
     public void set(int index, Address value, Address oldValueReceptor) {
         initIndex(index);
         if (oldValueReceptor != null) {
-            oldValueReceptor.set(elements[index]);
+            oldValueReceptor.set(data[index]);
         }
-        elements[index].set(value);
+        data[index].set(value);
     }
 
     private void initIndex(int index) {
-        if (elements[index] == null) {
-            elements[index] = new Address();
-            elements[index].setNull();
+        if (data[index] == null) {
+            data[index] = new Address();
+            data[index].setNull();
         }
     }
 
     public void clear() {
-        for (Address element : elements) {
-            element.reset();
-        }
+        Arrays.fill(data, null);
     }
 
     public boolean contains(Address value) {
-        for (Address element : elements) {
-            if (element.weakCompare(value, -1) == 0) {
+        for (Address e : data) {
+            if (e != null && e.weakCompare(value, -1) == 0) {
                 return true;
             }
         }
@@ -70,10 +74,11 @@ public final class ListHeap extends Heap implements Iterable<Address> {
     }
 
     public int compare(ListHeap another, int except) {
-        Address[] te = this.elements;
-        Address[] ae = another.elements;
+        Address[] te = this.data;
+        Address[] ae = another.data;
         int minlen = Math.min(te.length, ae.length);
         for (int i = 0; i < minlen; i++) {
+            if (te[i] == null || ae[i] == null) continue;
             int cmp = te[i].weakCompare(ae[i], except);
             if (cmp != 0) return cmp;
         }
@@ -87,31 +92,38 @@ public final class ListHeap extends Heap implements Iterable<Address> {
 
     @Override
     public ListHeap deepCopy() {
-        ListHeap copy = new ListHeap(elements.length);
-        AddressUtils.arraycopy(elements, 0, copy.elements, 0, elements.length);
+        int size = data.length;
+        ListHeap copy = new ListHeap(size);
+        for (int i = 0; i < size; i++) {
+            Address src = data[i];
+            if (src != null) {
+                Address dst = copy.get(i);
+                src.clone(dst);
+            }
+        }
         return copy;
     }
 
     @Override
     public Iterator<Address> iterator() {
-        return Arrays.asList(elements).iterator();
+        return Arrays.asList(data).iterator();
     }
 
     @Override
-    public int hashCode() { return Arrays.hashCode(elements); }
+    public int hashCode() { return Arrays.hashCode(data); }
 
     @Override
     public boolean equals(Object o) {
         if (o == this) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        ListHeap h = (ListHeap) o;
-        return Arrays.equals(elements, h.elements);
+        ListHeap x = (ListHeap) o;
+        return Arrays.equals(data, x.data);
     }
 
     @Override
     public String toString() {
         StringJoiner buffer = new StringJoiner(", ", "[", "]");
-        for (Address element : elements) {
+        for (Address element : data) {
             buffer.add(element.toString());
         }
         return buffer.toString();
