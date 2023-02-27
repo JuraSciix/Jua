@@ -40,7 +40,7 @@ public class ObjectSizeAnalyzing {
         systemAnalyzers.put(short[].class, new ShortArrayAnalyzer());
         systemAnalyzers.put(char[].class, new CharArrayAnalyzer());
         systemAnalyzers.put(boolean[].class, new BooleanArrayAnalyzer());
-        systemAnalyzers.put(Object[].class, new ObjectArrayAnalyzer());
+        systemAnalyzers.put(Object[].class, new ReferenceArrayAnalyzer());
         systemAnalyzers.put(Object.class, new JavaLangObjectAnalyzer());
         systemAnalyzers.put(Integer.class, new JavaLangIntegerAnalyzer());
         systemAnalyzers.put(Long.class, new JavaLangLongAnalyzer());
@@ -185,7 +185,7 @@ public class ObjectSizeAnalyzing {
         }
     }
 
-    private static class ObjectArrayAnalyzer extends ObjectAnalyzer<Object[]> {
+    private static class ReferenceArrayAnalyzer extends ObjectAnalyzer<Object[]> {
         @Override
         long sizeOf(Object[] oa, HashSet<ObjectRef> dejaVu) {
             // Размер массива хранится в заголовке.
@@ -286,6 +286,7 @@ public class ObjectSizeAnalyzing {
         if (instance == null) return 0L;
         if (!dejaVu.add(new ObjectRef(instance))) return POINTER_SIZE; // instance already analyzed
         Class<?> klass = instance.getClass();
+        if (klass.isArray()) klass = Object[].class; // Хитрая оптимизация: для любого T верно, что T[] -> Object[]
         ObjectAnalyzer<?> systemAnalyzer = systemAnalyzers.get(klass);
         if (systemAnalyzer != null) {
             @SuppressWarnings("unchecked")
