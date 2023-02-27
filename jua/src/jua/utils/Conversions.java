@@ -54,7 +54,7 @@ public final class Conversions {
     }
 
     public static boolean l2b(long l) {
-        return (l & 1) != 0L;
+        return l != 0L;
     }
 
     public static boolean d2b(double d) { return (d != 0.0); }
