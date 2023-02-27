@@ -41,7 +41,7 @@ public final class InterpreterThread {
 
     private final JuaEnvironment environment;
 
-    private InterpreterFrame executingFrame = null;
+    InterpreterFrame executingFrame = null;
 
     private Function callee;
 
@@ -96,7 +96,7 @@ public final class InterpreterThread {
                 Assert.ensure(isCrashed());
             }
         } else {
-            InterpreterState state = new InterpreterState(callee.userCode(), this);
+            InterpreterState state = new InterpreterState(callee.userCode());
             executingFrame = new InterpreterFrame(executingFrame, callee, state, returnAddress);
             for (int i = 0; i < numArgs; i++) {
                 state.store(i, args[i]);
@@ -284,7 +284,7 @@ public final class InterpreterThread {
                     Assert.error("unexpected msg: " + msg);
             }
 
-            executingFrame.state.executeTick();
+            executingFrame.state.executeTick(this, executingFrame);
         }
     }
 

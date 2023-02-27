@@ -1,1 +1,15 @@
-println("Hello, world!");
+fn a() {
+    var l = list(10);
+    b();
+}
+fn b() {
+    var l = list(10);
+    for var i = 0; i < 10; i++ {
+        l = null;
+    }
+    c();
+}
+
+fn c() = panic(0);
+
+a();

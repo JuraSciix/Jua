@@ -9,10 +9,8 @@ import jua.runtime.heap.MapHeap;
 
 public final class InterpreterState {
 
-
-
     /** Указатель на текущую инструкцию. */
-    private int cp;
+    private int cp = -1;
     /** Указатель на вершину стека. */
     private int sp;
 
@@ -21,40 +19,23 @@ public final class InterpreterState {
     /** Регистры. */
     private final Address[] slots;
 
-    // todo: Удалить нижеперечисленные поля
-
-    @Deprecated private final Instruction[] code;
-    @Deprecated private final CodeData cs;
-    @Deprecated private int cpAdvance;
-    @Deprecated private final InterpreterThread thread;
-
-    InterpreterState(CodeData cs, InterpreterThread thread) {
-        this.code = cs.code;
+    InterpreterState(CodeData cs) {
         this.stack = AddressUtils.allocateMemory(cs.stackSize, 0);
         this.slots = AddressUtils.allocateMemory(cs.registers, 0);
-        this.cs = cs;
-        this.thread = thread;
     }
 
-    public Instruction currentInstruction() {
-        return code[cp];
-    }
-
-    public void executeTick() {
-        advance();
+    public void executeTick(InterpreterThread thread, InterpreterFrame frame) {
+        cp++;
+        Instruction[] code = frame.owner.userCode().code;
         while (true) {
-            if (!currentInstruction().run(this)) {
+            if (!code[cp].run(this)) {
                 return;
             }
         }
     }
 
     public InterpreterThread thread() {
-        return thread;
-    }
-
-    public Instruction[] code() {
-        return code;
+        return InterpreterThread.currentThread();
     }
 
     public int cp() {
@@ -73,14 +54,6 @@ public final class InterpreterState {
         this.sp = sp;
     }
 
-    public int cp_advance() {
-        return cpAdvance;
-    }
-
-    public void set_cp_advance(int cpAdvance) {
-        this.cpAdvance = cpAdvance;
-    }
-
     public void next() {
         cp++;
     }
@@ -95,16 +68,11 @@ public final class InterpreterState {
     }
 
     public ConstantPool constant_pool() {
-        return cs.constantPool;
-    }
-
-    public void advance() {
-        cp += cpAdvance;
-        cpAdvance = 0;
+        return thread().executingFrame.owner.userCode().constantPool;
     }
 
     public boolean getconst(int id) {
-        top().set(thread.environment().getConstant(id));
+        top().set(thread().environment().getConstant(id));
         next();
         return true;
     }
@@ -462,7 +430,7 @@ public final class InterpreterState {
         }
         long size = sizeAddress.getLong();
         if (size < 0 || size > Integer.MAX_VALUE) {
-            thread.error("illegal list size: %d", size);
+            thread().error("illegal list size: %d", size);
             return false;
         }
         top().set(new ListHeap((int) size));
@@ -662,7 +630,6 @@ public final class InterpreterState {
         // todo: Получать ссылку на функцию из пула констант
         thread().prepareCall(thread().environment().getFunction(index), args, nargs, returnAddress);
         cleanupStack();
-        set_cp_advance(1);
         return false;
     }
 
