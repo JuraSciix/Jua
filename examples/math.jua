@@ -1,58 +1,5 @@
 fn abs(n) = (n < 0) ? -n : n;
 
-fn complex(r, i) = {
-    r: r,
-    i: i
-};
-
-fn complex_add(c1, c2) = complex(
-    (c1.r + c2.r),
-    (c1.i + c2.i)
-);
-
-fn complex_mul(c1, c2) = complex(
-    (c1.r * c2.r - c1.i * c2.i),
-    (c1.r * c2.i + c1.i * c2.r)
-);
-
-fn complex_div(c1, c2) = complex(
-    (c1.r * c2.r + c1.i * c2.i) / (c2.r * c2.r + c2.i * c2.i),
-    (c1.i * c2.r - c1.r * c2.i) / (c2.r * c2.r + c2.i * c2.i)
-);
-
-fn stringify_complex(z) = z.r + " + " + z.i + "i";
-
-fn complex_equals(c1, c2) = (c1.r == c2.r) && (c1.i == c2.i);
-
-fn complex_test(test_id) {
-    switch test_id {
-        case 1: {
-            var a = complex(100.0, 10.0);
-            var b = complex(0.0, 10.0);
-            var c = complex_div(a, b);
-            println(stringify_complex(c));
-            var d = complex_mul(c, b);
-            println(stringify_complex(d)); // 100 + 10i
-        }
-        case 2: {
-            // r₁ / r₂ = r₁ * (1 / r₂)
-            // z₁ / z₂ = z₁ * (1 / z₂)
-            var a  = complex(44.0, 99.0);
-            var b  = complex(4.0, 10.0);
-            var c  = complex_div(
-                complex(1.0, 0.0),
-                b
-            );
-            println(stringify_complex(c));
-            var d1 = complex_div(a, b);
-            var d2 = complex_mul(a, c);
-            // d1 should be equal to d2
-            println(stringify_complex(d1));
-            println(stringify_complex(d2));
-        }
-    }
-}
-
 fn int_fact(n) {
     var m = 1;
     for var i = n; i > 1; i-- {

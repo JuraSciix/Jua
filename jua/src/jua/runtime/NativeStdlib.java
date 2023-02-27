@@ -28,6 +28,7 @@ public class NativeStdlib {
         nfp.add(new PanicFunction());
         nfp.add(new StrCodePointsFunction());
         nfp.add(new _SizeOfFunction());
+        nfp.add(new SqrtFunction());
     }
 
     static class PrintFunction extends NativeFunctionPresent {
@@ -137,6 +138,23 @@ public class NativeStdlib {
         public boolean execute(Address[] args, int argc, Address returnAddress) {
             returnAddress.set(ObjectSizeAnalyzing.analyzeSize(args[0]));
             return true;
+        }
+    }
+
+    static class SqrtFunction extends NativeFunctionPresent {
+
+        SqrtFunction() {
+            super("sqrt", ParamsData.create().add("x"));
+        }
+
+        @Override
+        public boolean execute(Address[] args, int argc, Address returnAddress) {
+            Address doubleVal = new Address();
+            if (args[0].doubleVal(doubleVal)) {
+                returnAddress.set(Math.sqrt(doubleVal.getDouble()));
+                return true;
+            }
+            return false;
         }
     }
 

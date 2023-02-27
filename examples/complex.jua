@@ -1,0 +1,65 @@
+/** Создает представление комплексного числа. */
+fn complex_create(r, i = 0) {
+    // Использование статического массива для представления комплексных
+    // чисел намного эффективнее, нежели использование карт.
+    return [r, i];
+}
+
+/** Извлекает из представления комплексного числа действительную часть. */
+fn r(z) = z[0];
+
+/** Извлекает из представления комплексного числа мнимую часть. */
+fn i(z) = z[1];
+
+/** Складывает два комплексных числа. */
+fn complex_add(a, b) = complex_create(r(a) + r(b), i(a) + i(b));
+
+/** Вычитает одно комплексное число из другого. */
+fn complex_sub(a, b) = complex_create(r(a) - r(b), i(a) - i(b));
+
+/** Перемножает два комплексных числа. */
+fn complex_mul(a, b) {
+    var ar = r(a);
+    var ai = i(a);
+    var br = r(b);
+    var bi = i(b);
+    return complex_create(ar * br - ai * bi, ar * bi + ai * br);
+}
+
+/** Делит первое комплексное число на второе. */
+fn complex_div(a, b) {
+    var ar = r(a);
+    var ai = i(a);
+    var br = r(b);
+    var bi = i(b);
+    var d = br * br + bi * bi; // complex_abs(b)^2
+    return complex_create(
+        (ar * br + ai * bi) / d,
+        (ai * br - ar * bi) / d
+    );
+}
+
+/** Возвращает модуль комплексного числа. */
+fn complex_abs(z) {
+    var zr = r(z);
+    var zi = i(z);
+    return sqrt(zr * zr + zi * zi);
+}
+
+/** Приводит представление комплексного числа к строке вида "a + bi". */
+fn complex_stringify(z) = r(z) + " + " + i(z) + "i";
+
+/**
+ * Сравнивает два комплексных числа по их модулю и возвращает:
+ *   -1, если модуль a меньше модуля b.
+ *   0, если модули равны.
+ *   1, если модуль a больше модуля b.
+ */
+fn complex_compare(a, b) {
+    var ar = r(a);
+    var ai = i(a);
+    var br = r(b);
+    var bi = i(b);
+    // Сравниваем модули комплексных чисел.
+    return compare_number(ar * ar + ai * ai, br * br + bi * bi);
+}
