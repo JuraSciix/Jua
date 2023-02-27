@@ -547,11 +547,11 @@ public final class Gen extends Scanner {
                 Item lhs = genExpr(tree.lhs).load();
                 lhs.duplicate();
                 CondItem nonNull = lhs.nonNull();
-                Chain trueChain = nonNull.trueJumps();
-                code.resolve(nonNull.falseChain);
+                Chain falseJumps = nonNull.falseJumps();
+                code.resolve(nonNull.trueChain);
                 code.addInstruction(pop);
                 genExpr(tree.rhs).load();
-                code.resolve(trueChain);
+                code.resolve(falseJumps);
                 result = items.makeStack();
                 break;
             }
@@ -659,18 +659,18 @@ public final class Gen extends Scanner {
             tmp.store();
             code.putPos(tree.pos);
             CondItem nonNull = a.nonNull();
-            Chain falseJumps = nonNull.falseJumps();
-            code.resolve(nonNull.trueChain);
+            Chain trueJumps = nonNull.trueJumps();
+            code.resolve(nonNull.falseChain);
             int sp1 = code.curStackTop();
             genExpr(tree.expr).load().duplicate();
             tmp.store();
             varitem.store();
             int sp2 = code.curStackTop();
-            Chain trueJumps = code.branch(new Goto());
-            code.resolve(falseJumps);
+            Chain exit = code.branch(new Goto());
+            code.resolve(trueJumps);
             code.curStackTop(sp1);
             varitem.drop();
-            code.resolve(trueJumps);
+            code.resolve(exit);
             assertStacktopEquality(sp2);
             result = tmp;
         } else {
