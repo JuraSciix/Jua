@@ -28,6 +28,9 @@ public final class InterpreterState {
         cp++;
         Instruction[] code = frame.owner.userCode().code;
         while (true) {
+            // Супер-метод отладки
+//            System.out.printf("%4d: %-30s %10d %n",
+//                    cp, code[cp].getClass().getSimpleName(), sp);
             if (!code[cp].run(this)) {
                 return;
             }
@@ -333,7 +336,7 @@ public final class InterpreterState {
         } else {
             next();
         }
-        return false;
+        return true;
     }
 
     public boolean ifz(int offset) {
