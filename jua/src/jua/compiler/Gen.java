@@ -43,6 +43,10 @@ public final class Gen extends Scanner {
         void duplicateItem(Item item) {
             item.duplicate();
         }
+
+        void loadItem(Item item) {
+            item.load();
+        }
     }
 
     static class NoSaver extends Saver {
@@ -54,6 +58,11 @@ public final class Gen extends Scanner {
 
         @Override
         void duplicateItem(Item item) {
+            // nop
+        }
+
+        @Override
+        void loadItem(Item item) {
             // nop
         }
     }
@@ -630,63 +639,35 @@ public final class Gen extends Scanner {
 
     private void genIncrease(UnaryOp tree) {
         Item item = genExpr(tree.expr);
+        boolean isPost = tree.hasTag(Tag.POSTINC) || tree.hasTag(Tag.POSTDEC);
+        code.putPos(tree.pos);
         if (item instanceof LocalItem) {
-            LocalItem localItem = (LocalItem) item;
-            result = items.new Item() {
-                @Override
-                Item load() {
-                    if (tree.hasTag(Tag.POSTINC) || tree.hasTag(Tag.POSTDEC)) {
-                        localItem.load();
-                        if (tree.hasTag(Tag.POSTINC)) {
-                            localItem.inc();
-                        } else {
-                            localItem.dec();
-                        }
-                    } else {
-                        if (tree.hasTag(Tag.PREINC)) {
-                            localItem.inc();
-                        } else {
-                            localItem.dec();
-                        }
-                        localItem.load();
-                    }
-                    return items.makeStack();
-                }
+            if (isPost) {
+                currentSaver.loadItem(item);
+                item.incOrDec(tree.tag);
+                result = items.new Item() {
+                    @Override
+                    Item load() { return this; }
 
-                @Override
-                void drop() {
-                    if (tree.hasTag(Tag.POSTINC) || tree.hasTag(Tag.PREINC)) {
-                        localItem.inc();
-                    } else {
-                        localItem.dec();
-                    }
-                }
-            };
+                    @Override
+                    void drop() {}
+                };
+            } else {
+                item.incOrDec(tree.tag);
+                result = item;
+            }
+        } else if (item instanceof AccessItem) {
+            if (isPost) {
+                item.incOrDec(tree.tag);
+                result = items.makeStack();
+            } else {
+                item.duplicate();
+                item.incOrDec(tree.tag);
+                items.makeStack().drop();
+                result = item;
+            }
         } else {
-            Assert.ensure(item instanceof AccessItem);
-            result = items.new Item() {
-                @Override
-                Item load() {
-                    if (tree.hasTag(Tag.POSTINC)||tree.hasTag(Tag.POSTDEC)) {
-                        code.addInstruction(
-                                tree.hasTag(Tag.POSTINC) || tree.hasTag(Tag.PREINC) ? ainc : adec);
-                    } else {
-                        item.duplicate();
-                        code.addInstruction(
-                                tree.hasTag(Tag.POSTINC) || tree.hasTag(Tag.PREINC) ? ainc : adec);
-                        code.addInstruction(pop);
-                        item.load();
-                    }
-                    return items.makeStack();
-                }
-
-                @Override
-                void drop() {
-                    code.addInstruction(
-                            tree.hasTag(Tag.POSTINC) || tree.hasTag(Tag.PREINC) ? ainc : adec);
-                    code.addInstruction(pop);
-                }
-            };
+            Assert.error(item);
         }
     }
 

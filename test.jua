@@ -1,35 +1,8 @@
-fn test1(a, b, d) {
-    a[b] ??= a[d];
-}
-
-fn test2(a, b, d) = a[b] ??= a[d];
-
-fn test3(a, b) {
-    a ??= b;
-}
-
-fn test4(a, b) = a ??= b;
-
-{
-    // test 1
-    var a = {a:'foo',b:'bar'};
-    var b = {b:'bar'};
-    test1(a, 'a', 'b');
-    test1(b, 'a', 'b');
-    println(a.a); // foo
-    println(b.a); // bar
-    println(test2(a, 'a', 'b')); // foo
-    println(test2(a, 'd', 'b')); // bar
-}
-
-{
-    // test 2
-    var a, b = 1, c = 3;
-    a??=b;
-    c??=c;
-    println(a); // 1
-    println(c); // 3
-    a=null;
-    println(a??=b);//1
-    println(c??=b);//3
-}
+var a = [0];
+a[0]++;
+println(a[0]++); // 1
+println(++a[0]); // 3
+var i = 0;
+i++;
+println(i++); // 1
+println(++i); // 3

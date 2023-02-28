@@ -1,6 +1,7 @@
 package jua.compiler;
 
 import jua.compiler.Code.Chain;
+import jua.compiler.Tree.Tag;
 import jua.interpreter.instruction.*;
 
 import java.util.Objects;
@@ -54,6 +55,10 @@ public class Items {
         }
 
         int constantIndex() {
+            throw new AssertionError(this);
+        }
+
+        void incOrDec(Tag tag) {
             throw new AssertionError(this);
         }
     }
@@ -169,16 +174,14 @@ public class Items {
         }
 
         @Override
+        void incOrDec(Tag tag) {
+            code.addInstruction((tag == Tag.POSTINC || tag == Tag.PREINC) ?
+                    new Inc(index) : new Dec(index));
+        }
+
+        @Override
         void stash() {
             code.addInstruction(dup);
-        }
-
-        void inc() {
-            code.addInstruction(new Inc(index));
-        }
-
-        void dec() {
-            code.addInstruction(new Dec(index));
         }
     }
 
@@ -201,6 +204,11 @@ public class Items {
         @Override
         CondItem contains() {
             return new CondItem(new Ifpresent());
+        }
+
+        @Override
+        void incOrDec(Tag tag) {
+            code.addInstruction((tag == Tag.POSTINC || tag == Tag.PREINC) ? ainc : adec);
         }
 
         @Override
