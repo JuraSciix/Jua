@@ -2,25 +2,31 @@ const OPCODE_NOP    = 0;
 const OPCODE_PUSH   = 1;
 const OPCODE_LOAD   = 2;
 const OPCODE_STORE  = 3;
-const OPCODE_ADD    = 4;
-const OPCODE_SUB    = 5;
-const OPCODE_INC    = 6;
-const OPCODE_DEC    = 7;
-const OPCODE_IFGT   = 8;
-const OPCODE_IFGE   = 9;
-const OPCODE_IFLT   = 10;
-const OPCODE_IFLE   = 11;
-const OPCODE_IFEQ   = 12;
-const OPCODE_IFNE   = 13;
-const OPCODE_GOTO   = 14;
-const OPCODE_PRINT  = 15;
-const OPCODE_RETURN = 16;
+const OPCODE_CONST  = 4;
+const OPCODE_ADD    = 5;
+const OPCODE_SUB    = 6;
+const OPCODE_MUL    = 7;
+const OPCODE_DIV    = 8;
+const OPCODE_INC    = 9;
+const OPCODE_DEC    = 10;
+const OPCODE_IFGT   = 11;
+const OPCODE_IFGE   = 12;
+const OPCODE_IFLT   = 13;
+const OPCODE_IFLE   = 14;
+const OPCODE_IFEQ   = 15;
+const OPCODE_IFNE   = 16;
+const OPCODE_GOTO   = 17;
+const OPCODE_PRINT  = 18;
+const OPCODE_RETURN = 19;
 
-fn interpret(code) {
+fn interpret(program) {
+    var code = program.code;
     var pc = 0;
-    var stack = list(255);
+    var stack = list(program.stack_size ?? 0xff);
     var sp = 0;
-    var locals = list(255);
+    var slots = list(program.slots_count ?? 0xff);
+    var cp = program.constant_pool ?? [];
+
     while true {
         //println(pc + ': ' + code[pc]);
         switch code[pc] {
@@ -37,15 +43,22 @@ fn interpret(code) {
             }
 
             case OPCODE_LOAD: {
-                stack[sp] = locals[code[pc + 1]];
+                stack[sp] = slots[code[pc + 1]];
                 sp++;
                 pc += 2;
                 continue;
             }
 
             case OPCODE_STORE: {
-                locals[code[pc + 1]] = stack[sp - 1];
+                slots[code[pc + 1]] = stack[sp - 1];
                 sp--;
+                pc += 2;
+                continue;
+            }
+
+            case OPCODE_CONST: {
+                stack[sp] = cp[code[pc + 1]];
+                sp++;
                 pc += 2;
                 continue;
             }
@@ -64,14 +77,28 @@ fn interpret(code) {
                 continue;
             }
 
+            case OPCODE_MUL: {
+                stack[sp - 2] *= stack[sp - 1];
+                sp--;
+                pc++;
+                continue;
+            }
+
+            case OPCODE_DIV: {
+                stack[sp - 2] /= stack[sp - 1];
+                sp--;
+                pc++;
+                continue;
+            }
+
             case OPCODE_INC: {
-                locals[code[pc + 1]]++;
+                slots[code[pc + 1]]++;
                 pc += 2;
                 continue;
             }
 
             case OPCODE_DEC: {
-                locals[code[pc + 1]]--;
+                slots[code[pc + 1]]--;
                 pc += 2;
                 continue;
             }
@@ -169,34 +196,42 @@ fn interpret(code) {
     }
 }
 
-var code_loop = [
-    /*  0 */ OPCODE_PUSH,
-    /*  1 */ 0,
-    /*  2 */ OPCODE_STORE,
-    /*  3 */ 0,
-    /*  4 */ OPCODE_GOTO,
-    /*  5 */ 8,
-    /*  6 */ OPCODE_INC,
-    /*  7 */ 0,
-    /*  8 */ OPCODE_LOAD,
-    /*  9 */ 0,
-    /* 10 */ OPCODE_PUSH,
-    /* 11 */ 1_000_000,
-    /* 12 */ OPCODE_IFLT,
-    /* 13 */ 6,
-    /* 14 */ OPCODE_PUSH,
-    /* 15 */ 0,
-    /* 16 */ OPCODE_RETURN,
-    /* 17 */ null,
-    /* 18 */ null,
-    /* 19 */ null,
-    /* 20 */ null,
-    /* 21 */ null,
-];
+// Эта программа вычисляет факториал числа из пула констант и выводит в консоль.
+var program1 = {
+    constant_pool: [10], // 3628800
+    code: [
+        /*  0 */ OPCODE_CONST,
+        /*  1 */ 0,
+        /*  2 */ OPCODE_STORE,
+        /*  3 */ 0,
+        /*  4 */ OPCODE_PUSH,
+        /*  5 */ 1,
+        /*  6 */ OPCODE_STORE,
+        /*  7 */ 1,
+        /*  8 */ OPCODE_GOTO,
+        /*  9 */ 18,
+        /* 10 */ OPCODE_LOAD,
+        /* 11 */ 1,
+        /* 12 */ OPCODE_LOAD,
+        /* 13 */ 0,
+        /* 14 */ OPCODE_MUL,
+        /* 15 */ OPCODE_STORE,
+        /* 16 */ 1,
+        /* 17 */ OPCODE_DEC,
+        /* 18 */ 0,
+        /* 19 */ OPCODE_LOAD,
+        /* 20 */ 0,
+        /* 21 */ OPCODE_PUSH,
+        /* 22 */ 1,
+        /* 23 */ OPCODE_IFGT,
+        /* 24 */ 10,
+        /* 25 */ OPCODE_LOAD,
+        /* 26 */ 1,
+        /* 27 */ OPCODE_PRINT,
+        /* 28 */ OPCODE_PUSH,
+        /* 29 */ 0,
+        /* 30 */ OPCODE_RETURN,
+    ]
+};
 
-for var i = 0; i < 10; i++ {
-    var m_s = time();
-    interpret(code_loop);
-    var m_e = time();
-    println(m_e - m_s);
-}
+interpret(program1);

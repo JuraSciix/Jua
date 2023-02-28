@@ -1,8 +1,7 @@
-fn sort(a) = quick_sort(a); // default sort
-
+/** Алгоритм быстрой сортировки. Сложность: O(log(N^N)) */
 fn quick_sort(a, lo = null, hi = null) {
-    var i = lo ??= 0;
-    var j = hi ??= length(a) - 1;
+    var i = (lo ??= 0);
+    var j = (hi ??= length(a) - 1);
     var pivot = a[(i + j) >> 1];
     do {
         while (a[i] < pivot) i++;
@@ -16,17 +15,4 @@ fn quick_sort(a, lo = null, hi = null) {
     } while (i <= j);
     if (j > lo) quick_sort(a, lo, j);
     if (i < hi) quick_sort(a, i, hi);
-}
-
-fn bubble_sort(a) {
-    for var i = 0; i < length(a); i++ {
-        for var j = 1; j < length(a) - i; j++ {
-            var x = a[j - 1];
-            var y = a[j];
-            if x > y {
-                a[j - 1] = y;
-                a[j] = x;
-            }
-        }
-    }
 }

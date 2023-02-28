@@ -1,0 +1,14 @@
+/** Возводит вещественное число в натуральную степень. */
+fn int_pow(base, power) {
+    var p = power;
+    var b = base;
+    var r = 1.0;
+    while p {
+        if p & 1 {
+            r *= b;
+        }
+        b *= b;
+        p >>= 1;
+    }
+    return r;
+}

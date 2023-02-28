@@ -1,4 +1,4 @@
-// Реализация алгоритма генерации треугольника Паскаля
+/* Алгоритм генерации треугольника Паскаля. */
 fn pascal_triangle(height) {
     var cols = list(height + 1);
     for var i = 0; i <= height; i++ {
