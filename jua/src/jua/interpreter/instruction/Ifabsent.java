@@ -23,6 +23,6 @@ public class Ifabsent extends JumpInstruction {
 
     @Override
     public boolean run(InterpreterState state) {
-        throw new AssertionError(this); // todo
+        return state.ifabsent(offset);
     }
 }

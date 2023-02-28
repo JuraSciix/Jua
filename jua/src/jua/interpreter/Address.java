@@ -617,7 +617,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
 
     public boolean arrayInc(Address key, Address oldValueReceptor) {
         if (type == LIST) {
-            int index = validateIndex(key);
+            int index = validateIndex(key, true);
             if (index >= 0) {
                 Address element = getListHeap().get(index);
                 oldValueReceptor.set(element);
@@ -639,7 +639,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
 
     public boolean arrayDec(Address key, Address oldValueReceptor) {
         if (type == LIST) {
-            int index = validateIndex(key);
+            int index = validateIndex(key, true);
             if (index >= 0) {
                 Address element = getListHeap().get(index);
                 oldValueReceptor.set(element);
@@ -667,7 +667,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
 
     public boolean store(Address key, Address value) {
         if (type == LIST) {
-            int index = validateIndex(key);
+            int index = validateIndex(key, true);
             if (index >= 0) {
                 getListHeap().set(index, value, null);
                 return true;
@@ -687,7 +687,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
 
     public boolean load(Address key, Address receptor) {
         if (type == LIST) {
-            int index = validateIndex(key);
+            int index = validateIndex(key, true);
             if (index >= 0) {
                 receptor.set(getListHeap().get(index));
                 return true;
@@ -705,13 +705,36 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
         return false;
     }
 
-    private int validateIndex(Address indexAddress) {
-        if (indexAddress.testType(LONG)) {
+    public boolean contains(Address key, Address consumer) {
+        if (type == LIST) {
+            int index = validateIndex(key, false);
+            if (index >= 0) {
+                consumer.set(getListHeap().contains(key));
+                return true;
+            }
+            return false;
+        }
+        if (type == MAP) {
+            if (validateKey(key, false)) {
+                consumer.set(getMapHeap().containsKey(key));
+                return true;
+            }
+            return false;
+        }
+        threadError("trying to check array-element from %s", getTypeName());
+        return false;
+    }
+
+    private int validateIndex(Address indexAddress, boolean validateBounds) {
+        if (indexAddress.getType() == LONG) {
             long longIndex = indexAddress.getLong();
-            if (longIndex >= 0 && longIndex < getListHeap().length()) {
+            if (!validateBounds ||
+                    longIndex >= 0 && longIndex < getListHeap().length()) {
                 return (int) longIndex;
             }
             threadError("index %d out of the list bounds %d", longIndex, getListHeap().length());
+        } else {
+            threadError("trying to access a list with non-integer key");
         }
         return -1;
     }

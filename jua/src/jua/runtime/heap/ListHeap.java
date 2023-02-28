@@ -73,6 +73,12 @@ public final class ListHeap extends Heap implements Iterable<Address> {
         return false;
     }
 
+    public boolean isPresentAt(int index) {
+        return index >= 0 && index < data.length
+                && data[index] != null
+                && !data[index].isNull();
+    }
+
     public int compare(ListHeap another, int except) {
         Address[] te = this.data;
         Address[] ae = another.data;

@@ -640,4 +640,34 @@ public final class InterpreterState {
         next();
         return true;
     }
+
+    public boolean ifabsent(int offset) {
+        Address key = popStack();
+        Address arr = popStack();
+        if (arr.contains(key, key)) {
+            if (!key.booleanVal()) {
+                offset(offset);
+            } else {
+                next();
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public boolean ifpresent(int offset) {
+        Address key = popStack();
+        Address arr = popStack();
+        if (arr.contains(key, key)) {
+            if (key.booleanVal()) {
+                offset(offset);
+            } else {
+                next();
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
 }
