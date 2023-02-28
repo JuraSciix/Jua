@@ -117,6 +117,12 @@ public final class Code {
         return pc;
     }
 
+    public void position(Tree tree) {
+        if (tree != null) {
+            putPos(tree.pos);
+        }
+    }
+
     public void putPos(int pos) {
         int line = lineMap.getLineNumber(pos);
 

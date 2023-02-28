@@ -1,8 +1,6 @@
-var a = [0];
-a[0]++;
-println(a[0]++); // 1
-println(++a[0]); // 3
-var i = 0;
-i++;
-println(i++); // 1
-println(++i); // 3
+for
+    var i = 0;
+    i < 10;
+    i++ {
+    println(i);
+}

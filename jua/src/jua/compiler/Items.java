@@ -20,6 +20,8 @@ public class Items {
 
     abstract class Item {
 
+        Tree tree;
+
         Item load() {
             throw new AssertionError(this);
         }
@@ -103,6 +105,7 @@ public class Items {
 
         @Override
         Item load() {
+            code.position(tree);
             if (type.isBoolean()) {
                 if (type.booleanValue()) {
                     code.addInstruction(const_true);
@@ -145,6 +148,7 @@ public class Items {
 
         @Override
         Item load() {
+            code.position(tree);
             code.addInstruction((index <= 2) ? load_x[index] : new Load(index));
             return stackItem;
         }
@@ -165,6 +169,7 @@ public class Items {
 
         @Override
         void store() {
+            code.position(tree);
             code.addInstruction((index <= 2) ? store_x[index] : new Store(index));
         }
 
@@ -175,6 +180,7 @@ public class Items {
 
         @Override
         void incOrDec(Tag tag) {
+            code.position(tree);
             code.addInstruction((tag == Tag.POSTINC || tag == Tag.PREINC) ?
                     new Inc(index) : new Dec(index));
         }
@@ -192,12 +198,14 @@ public class Items {
 
         @Override
         Item load() {
+            code.position(tree);
             code.addInstruction(aload);
             return stackItem;
         }
 
         @Override
         void store() {
+            code.position(tree);
             code.addInstruction(astore);
         }
 
@@ -277,6 +285,7 @@ public class Items {
 
         @Override
         Item load() {
+            code.position(tree);
             Chain falseJumps = falseJumps();
             code.resolve(trueChain);
             int st = code.curStackTop();
@@ -301,14 +310,16 @@ public class Items {
         }
 
         CondItem negate() {
-            return new CondItem(opcode.negate(), falseChain, trueChain);
+            return treeify(new CondItem(opcode.negate(), falseChain, trueChain), tree);
         }
 
         Chain trueJumps() {
+            code.position(tree);
             return Code.mergeChains(trueChain, code.branch(opcode));
         }
 
         Chain falseJumps() {
+            code.position(tree);
             return Code.mergeChains(falseChain, code.branch(opcode.negate()));
         }
     }
@@ -316,6 +327,7 @@ public class Items {
     /**
      * Регистр для временного хранения некоторых данных
      */
+    @Deprecated
     class TempItem extends Item {
 
         final String name = code.acquireSyntheticName();
@@ -371,7 +383,13 @@ public class Items {
         return new CondItem(opcode, truejumps, falsejumps);
     }
 
+    @Deprecated
     TempItem makeTemp() {
         return new TempItem();
+    }
+
+    static <T extends Item> T treeify(T t, Tree tree) {
+        t.tree = tree;
+        return t;
     }
 }
