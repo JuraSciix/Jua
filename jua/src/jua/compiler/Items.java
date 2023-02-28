@@ -28,7 +28,7 @@ public class Items {
         }
 
         void duplicate() {
-            throw new AssertionError(this);
+
         }
 
         void stash() {
@@ -47,6 +47,10 @@ public class Items {
         CondItem nonNull() {
             load();
             return new CondItem(new Ifnonnull());
+        }
+
+        CondItem contains() {
+            throw new AssertionError(this);
         }
 
         int constantIndex() {
@@ -142,8 +146,13 @@ public class Items {
 
         @Override
         void drop() {
-            load();
-            code.addInstruction(pop);
+            // Ранее переменная загружалась для того,
+            // чтобы убедиться в её существовании во
+            // времени выполнения. Сейчас переменная
+            // декларируется в коде явно, поэтому
+            // эта механика неактуальна.
+//            load();
+//            code.addInstruction(pop);
         }
 
         @Override
@@ -152,6 +161,11 @@ public class Items {
         @Override
         void store() {
             code.addInstruction((index <= 2) ? store_x[index] : new Store(index));
+        }
+
+        @Override
+        CondItem contains() {
+            return nonNull();
         }
 
         @Override
@@ -182,6 +196,11 @@ public class Items {
         @Override
         void store() {
             code.addInstruction(astore);
+        }
+
+        @Override
+        CondItem contains() {
+            return new CondItem(new Ifpresent());
         }
 
         @Override

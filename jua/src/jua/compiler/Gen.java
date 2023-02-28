@@ -32,13 +32,50 @@ public final class Gen extends Scanner {
 
     Item result;
 
+    Saver currentSaver;
+
+    static class Saver {
+
+        void stashItem(Item item) {
+            item.stash();
+        }
+
+        void duplicateItem(Item item) {
+            item.duplicate();
+        }
+    }
+
+    static class NoSaver extends Saver {
+
+        @Override
+        void stashItem(Item item) {
+            // nop
+        }
+
+        @Override
+        void duplicateItem(Item item) {
+            // nop
+        }
+    }
+
+    static final Saver saver = new Saver();
+
+    static final NoSaver noSaver = new NoSaver();
+
     Item genExpr(Expression tree) {
+        return genExpr(tree, saver);
+    }
+
+    Item genExpr(Expression tree, Saver saver) {
         Item prevItem = result;
+        Saver prevSaver = currentSaver;
+        currentSaver = saver;
         try {
             tree.accept(this);
             return result;
         } finally {
             result = prevItem;
+            currentSaver = prevSaver;
         }
     }
 
@@ -544,14 +581,19 @@ public final class Gen extends Scanner {
                 break;
 
             case NULLCOALSC: {
-                Item lhs = genExpr(tree.lhs).load();
+                Item lhs = genExpr(tree.lhs);
                 lhs.duplicate();
-                CondItem nonNull = lhs.nonNull();
-                Chain falseJumps = nonNull.falseJumps();
-                code.resolve(nonNull.trueChain);
-                code.addInstruction(pop);
-                genExpr(tree.rhs).load();
+                CondItem contains = lhs.contains();
+                Chain falseJumps = contains.falseJumps();
+                code.resolve(contains.trueChain);
+                int sp = code.curStackTop();
+                lhs.load();
+                Chain exit = code.branch(new Goto());
                 code.resolve(falseJumps);
+                code.curStackTop(sp);
+                lhs.drop();
+                genExpr(tree.rhs).load();
+                code.resolve(exit);
                 result = items.makeStack();
                 break;
             }
@@ -650,35 +692,33 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitCompoundAssign(CompoundAssign tree) {
-        Item varitem = genExpr(tree.var);
-        varitem.duplicate();
+        Item varItem = genExpr(tree.var);
+        varItem.duplicate();
         if (tree.hasTag(Tag.ASG_NULLCOALSC)) {
-            Item a = varitem.load();
-            a.duplicate();
-            TempItem tmp = items.makeTemp();
-            tmp.store();
-            code.putPos(tree.pos);
-            CondItem nonNull = a.nonNull();
-            Chain trueJumps = nonNull.trueJumps();
-            code.resolve(nonNull.falseChain);
-            int sp1 = code.curStackTop();
-            genExpr(tree.expr).load().duplicate();
-            tmp.store();
-            varitem.store();
-            int sp2 = code.curStackTop();
-            Chain exit = code.branch(new Goto());
+            CondItem contains = varItem.contains();
+            Chain trueJumps = contains.trueJumps();
+            code.resolve(contains.falseChain);
+            int sp = code.curStackTop();
+            Item exprItem = genExpr(tree.expr);
+            exprItem.load();
+            if (!(varItem instanceof LocalItem)) {
+                currentSaver.stashItem(exprItem);
+            }
+            varItem.store();
+            Chain exit = null;
+            if (!(varItem instanceof LocalItem)) {
+                exit = code.branch(new Goto());
+            }
             code.resolve(trueJumps);
-            code.curStackTop(sp1);
-            varitem.drop();
-            code.resolve(exit);
-            assertStacktopEquality(sp2);
-            result = tmp;
+            code.curStackTop(sp);
+            result = varItem;
+            code.resolve(exit, code.currentIP() + 1);
         } else {
-            varitem.load();
+            varItem.load();
             genExpr(tree.expr).load();
             code.addInstruction(fromBinaryAsgOpTag(tree.tag));
             code.putPos(tree.pos);
-            result = items.makeAssign(varitem);
+            result = items.makeAssign(varItem);
         }
     }
 
@@ -689,7 +729,7 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitDiscarded(Discarded tree) {
-        genExpr(tree.expr).drop();
+        genExpr(tree.expr, noSaver).drop();
     }
 
     /**
