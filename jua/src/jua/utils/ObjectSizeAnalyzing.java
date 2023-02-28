@@ -286,7 +286,8 @@ public class ObjectSizeAnalyzing {
         if (instance == null) return 0L;
         if (!dejaVu.add(new ObjectRef(instance))) return POINTER_SIZE; // instance already analyzed
         Class<?> klass = instance.getClass();
-        if (klass.isArray()) klass = Object[].class; // Хитрая оптимизация: для любого T верно, что T[] -> Object[]
+        if (klass.isArray() && !klass.getComponentType().isPrimitive())
+            klass = Object[].class; // Хитрая оптимизация: для любого T верно, что T[] -> Object[]
         ObjectAnalyzer<?> systemAnalyzer = systemAnalyzers.get(klass);
         if (systemAnalyzer != null) {
             @SuppressWarnings("unchecked")
