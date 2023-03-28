@@ -7,8 +7,12 @@
     <groupId>jua</groupId>
     <artifactId>jua</artifactId>
     <version>1.0</version>
+    <packaging>pom</packaging>
     <name>Jua</name>
     <description>Jua</description>
+    <modules>
+        <module>Lang</module>
+    </modules>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -24,24 +28,4 @@
         </dependency>
     </dependencies>
 
-    <build>
-        <sourceDirectory>jua/src</sourceDirectory>
-        <testSourceDirectory>jua/test</testSourceDirectory>
-        <resources>
-            <resource>
-                <directory>jua/src</directory>
-                <excludes>
-                    <exclude>**/*.java</exclude>
-                </excludes>
-            </resource>
-        </resources>
-        <testResources>
-            <testResource>
-                <directory>jua/test</directory>
-                <excludes>
-                    <exclude>**/*.java</exclude>
-                </excludes>
-            </testResource>
-        </testResources>
-    </build>
 </project>
