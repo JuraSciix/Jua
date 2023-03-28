@@ -1,6 +1,5 @@
 package jua.interpreter.instruction;
 
-import jua.compiler.CodePrinter;
 import jua.interpreter.Address;
 import jua.interpreter.InterpreterState;
 import jua.runtime.code.ConstantPool;

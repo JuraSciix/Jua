@@ -1,6 +1,5 @@
 package jua.interpreter.instruction;
 
-import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
 public final class Dup2_x1 implements Instruction {

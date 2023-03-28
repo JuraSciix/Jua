@@ -1,6 +1,5 @@
 package jua.interpreter.instruction;
 
-import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
 public class Adec implements Instruction {

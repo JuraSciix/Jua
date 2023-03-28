@@ -7,10 +7,13 @@ import jua.interpreter.Address;
 import jua.interpreter.AddressUtils;
 import jua.runtime.Function;
 import jua.runtime.NativeStdlib;
+import jua.runtime.ValueType;
 import jua.runtime.VirtualMachine;
 import jua.utils.List;
 
 import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public final class ProgramScope {
 
@@ -87,7 +90,25 @@ public final class ProgramScope {
     }
 
     private void registerNatives() {
-        NativeStdlib.getNativeConstants().forEach(this::defineNativeConstant);
+        NativeStdlib.getNativeConstants().entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> {
+                    Address a = e.getValue();
+                    switch (a.getType()) {
+                        case ValueType.LONG:
+                            return new Types.LongType(a.getLong());
+                        case ValueType.DOUBLE:
+                            return new Types.DoubleType(a.getDouble());
+                        case ValueType.BOOLEAN:
+                            return Types.ofBoolean(a.getBoolean());
+                        case ValueType.STRING:
+                            return new Types.StringType(a.getStringHeap().toString());
+                        case ValueType.NULL:
+                            return Types.TYPE_NULL;
+                        default:
+                            throw new AssertionError(a.getType());
+                    }
+                }))
+                        .forEach(this::defineNativeConstant);
         NativeStdlib.getNativeFunctions().forEach(this::defineNativeFunction);
     }
 

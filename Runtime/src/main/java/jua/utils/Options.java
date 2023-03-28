@@ -1,7 +1,5 @@
 package jua.utils;
 
-import jua.Main;
-
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.ArrayList;
@@ -154,7 +152,8 @@ public final class Options {
     }
 
     private void print_version() {
-        System.out.printf("%s, v%s %n", Main.binary(), Main.version());
+        // todo
+        System.out.printf("%s, v%s %n", "Jua", "1.96");
         System.out.printf("Java version: %s %n", System.getProperty("java.version"));
         System.exit(0);
     }

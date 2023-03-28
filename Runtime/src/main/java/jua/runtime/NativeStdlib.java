@@ -1,6 +1,5 @@
 package jua.runtime;
 
-import jua.compiler.Types;
 import jua.interpreter.Address;
 import jua.interpreter.InterpreterThread;
 import jua.runtime.NativeSupport.NativeFunctionPresent;
@@ -206,7 +205,7 @@ public class NativeStdlib {
         }
     }
 
-    public static Map<String, Types.Type> getNativeConstants() {
+    public static Map<String, Address> getNativeConstants() {
         return Collections.emptyMap();
     }
 

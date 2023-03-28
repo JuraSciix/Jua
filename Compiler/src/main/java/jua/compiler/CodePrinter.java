@@ -10,7 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class CodePrinter {
+public class CodePrinter implements jua.interpreter.instruction.CodePrinter {
 
     private static final boolean PRINT_STACK_ADJUSTMENT = false;
 
@@ -147,48 +147,34 @@ public class CodePrinter {
         System.out.printf("Code:   stack: %d, locals: %d%n", program.stackSize, program.registers);
     }
 
-    @Deprecated
-    private void printLines(CodeData program) {
-//        System.out.println("Lines:");
-//        Map<Integer, List<Integer>> lines = new TreeMap<>(Comparator.comparingInt(a -> a));
-//
-//        for (int i = 0; i < program.lineTable.length; i++) {
-//            int line = program.lineTable[i];
-//            if (line == 0) continue;
-//            if (!lines.containsKey(line)) lines.put(line, new ArrayList<>());
-//            lines.get(line).add(i);
-//        }
-//        lines.forEach((line, ops) -> {
-//            StringJoiner sj = new StringJoiner(", ");
-//            for (int op: ops) {
-//                sj.add("#" + op);
-//            }
-//            System.out.printf("%4d: %s%n", line, sj);
-//        });
-    }
-
+    @Override
     public void printName(String name) {
         preparePrint().name = name;
     }
 
+    @Override
     public void printLocal(int id) {
         print("$" + id);
     }
 
+    @Override
     public void printIp(int ip) {
         print("->" + (this.index + ip - 1));
     }
 
+    @Override
     public void print(Object operand) {
         preparePrint().operands.add(String.valueOf(operand));
     }
 
+    @Override
     public void printCase(int[] operands, int index) {
         preparePrint().cases.add(new Case(operands, this.index + index - 1, program));
     }
 
     private static final Address address = new Address();
 
+    @Override
     public void printLiteral(int index) {
         address.set(program.constantPool.getAddress(index));
         preparePrint().operands.add(String.format("#%d (%s %s)", index, address.getTypeName(), address));

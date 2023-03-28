@@ -1,7 +1,5 @@
 package jua.interpreter.instruction;
 
-import jua.compiler.CodePrinter;
-
 public abstract class JumpInstruction implements Instruction {
 
     public int offset;
