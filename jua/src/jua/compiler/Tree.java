@@ -31,7 +31,9 @@ public abstract class Tree {
         MAPINIT,
         VARIABLE,
         MEMACCESS,
+        MEMACCESS_NULL_SAFE,
         ARRAYACCESS,
+        ARRAYACCESS_NULL_SAFE,
         INVOCATION,
         PARENS,
         ASSIGN,
@@ -1098,18 +1100,21 @@ public abstract class Tree {
 
     public static class MemberAccess extends Expression {
 
+        public final Tag tag;
+
         public Expression expr;
 
         public Name member;
 
-        public MemberAccess(int pos, Expression expr, Name member) {
+        public MemberAccess(int pos, Tag tag, Expression expr, Name member) {
             super(pos);
+            this.tag = tag;
             this.expr = expr;
             this.member = member;
         }
 
         @Override
-        public Tag getTag() { return Tag.MEMACCESS; }
+        public Tag getTag() { return tag; }
 
         @Override
         public void accept(Visitor visitor) { visitor.visitMemberAccess(this); }
@@ -1117,16 +1122,19 @@ public abstract class Tree {
 
     public static class ArrayAccess extends Expression {
 
+        public final Tag tag;
+
         public Expression expr, index;
 
-        public ArrayAccess(int pos, Expression expr, Expression index) {
+        public ArrayAccess(int pos, Tag tag, Expression expr, Expression index) {
             super(pos);
+            this.tag = tag;
             this.expr = expr;
             this.index = index;
         }
 
         @Override
-        public Tag getTag() { return Tag.ARRAYACCESS; }
+        public Tag getTag() { return tag; }
 
         @Override
         public void accept(Visitor visitor) { visitor.visitArrayAccess(this); }

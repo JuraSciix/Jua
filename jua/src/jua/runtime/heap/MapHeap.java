@@ -54,11 +54,11 @@ public final class MapHeap extends Heap {
 
     public void put(Address key, Address value) {
         ensureScalarKey(key);
-        Address storage = map.get(key);
-        if (value.isNull()) {
+        if (key.isNull()) {
             map.remove(key);
             return;
         }
+        Address storage = map.get(key);
         if (storage != null) {
             storage.set(value);
         } else {
@@ -69,6 +69,16 @@ public final class MapHeap extends Heap {
     public Address get(Address key) {
         ensureScalarKey(key);
         return map.get(key);
+    }
+
+    public boolean getTo(Address key, Address consumer) {
+        Address value = map.get(key);
+        if (value == null) {
+            consumer.setNull();
+            return false;
+        }
+        consumer.set(value);
+        return true;
     }
 
     private void ensureScalarKey(Address key) {

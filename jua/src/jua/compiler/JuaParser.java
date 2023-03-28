@@ -426,7 +426,7 @@ public final class JuaParser {
     }
 
     private Expression parseAssignment() {
-        Expression expr = parseNullCoalesce();
+        Expression expr = parseCoalesce();
         int position = token.pos;
 
         switch (token.type) {
@@ -482,18 +482,14 @@ public final class JuaParser {
         }
     }
 
-    private Expression parseNullCoalesce() {
+    private Expression parseCoalesce() {
         Expression expr = parseTernary();
+        int pos = token.pos;
 
-        while (true) {
-            int position = token.pos;
-
-            if (acceptToken(QUESQUES)) {
-                expr = new BinaryOp(position, Tag.NULLCOALSC, expr, parseTernary());
-            } else {
-                return expr;
-            }
+        if (acceptToken(QUESQUES)) {
+            expr = new BinaryOp(pos, Tag.NULLCOALSC, expr, parseCoalesce());
         }
+        return expr;
     }
 
     private Expression parseTernary() {
@@ -724,50 +720,35 @@ public final class JuaParser {
     }
 
     private Expression parseAccess() {
-//        Expression expr = parsePrimary();
-//        int position = currentToken.position;
-//        int i = match(DOT) ? 1 : match(LBRACKET) ? 0 : -1;
-//        return (i >= 0 ? parseArrayAccess(position, expr, i) : expr);
-
-        Expression expression = parsePrimary();
+        Expression expr = parsePrimary();
 
         while (true) {
-            int position = token.pos;
+            Token op = token;
+            switch (op.type) {
+                case DOT:
+                case QUESDOT:
+                    nextToken();
+                    Token member = token;
+                    expectToken(IDENTIFIER);
+                    expr = new MemberAccess(op.pos,
+                            (op.type == DOT) ? Tag.MEMACCESS : Tag.MEMACCESS_NULL_SAFE,
+                            expr, member.toName());
+                    break;
 
-            if (acceptToken(DOT)) {
-                Token token = this.token;
-                expectToken(IDENTIFIER);
-                expression = new MemberAccess(position, expression,
-                        token.toName());
-            } else if (acceptToken(LBRACKET)) {
-                expression = new ArrayAccess(position, expression, parseExpression());
-                expectToken(RBRACKET);
-            } else {
-                break;
+                case LBRACKET:
+                case QUESLBRACKET:
+                    nextToken();
+                    Expression index = parseExpression();
+                    expectToken(RBRACKET);
+                    expr = new ArrayAccess(op.pos,
+                            (op.type == LBRACKET) ? Tag.ARRAYACCESS : Tag.ARRAYACCESS_NULL_SAFE,
+                            expr, index);
+                    break;
+
+                default: return expr;
             }
         }
-        return expression;
     }
-
-//    private Expression parseArrayAccess(int position, Expression expr, int dot)
-//            {
-//        List<Expression> keys = new List<>();
-//
-//        while (true) {
-//            if ((dot == 1) || match(DOT)) {
-//                Token key = currentToken;
-//                expect(IDENTIFIER);
-//                keys.add(new StringExpression(currentToken.position, key.value()));
-//                dot = 2;
-//            } else if ((dot == 0) || match(LBRACKET)) {
-//                keys.add(parseExpression());
-//                expect(RBRACKET);
-//                dot = 2;
-//            } else {
-//                return new ArrayAccess(position, expr, keys);
-//            }
-//        }
-//    }
 
     private Expression parsePrimary() {
         Token token = this.token;
@@ -862,7 +843,9 @@ public final class JuaParser {
     private Expression parseInvocation(Token token) {
         List<Invocation.Argument> args = parseInvocationArgs();
         expectToken(RPAREN);
-        return new Invocation(token.pos, new MemberAccess(token.pos, null, token.toName()), args);
+        return new Invocation(token.pos,
+                new MemberAccess(token.pos, Tag.MEMACCESS, null, token.toName()),
+                args);
     }
 
     private Expression parseInt(Token token) {

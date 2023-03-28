@@ -91,6 +91,12 @@ public final class ListHeap extends Heap implements Iterable<Address> {
         return te.length - ae.length;
     }
 
+    /** Возвращает {@code true}, если список пуст, в противном случае {@code false}. */
+    public boolean isEmpty() { return data.length == 0; }
+
+    /** Возвращает {@code false}, если список пуст, в противном случае {@code true}. */
+    public boolean nonEmpty() { return !isEmpty(); }
+
     @Override
     public ListHeap refCopy() {
         return this;

@@ -107,11 +107,13 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
             case BOOLEAN:
                 return Conversions.l2b(getLong());
             case DOUBLE:
-                return getDouble() != 0.0;
+                return Conversions.d2b(getDouble());
             case STRING:
                 return getStringHeap().nonEmpty();
             case MAP:
                 return getMapHeap().nonEmpty();
+            case LIST:
+                return getListHeap().nonEmpty();
             default:
                 // Любой валидный тип можно преобразовать в логический
                 throw new AssertionError(getTypeName());
@@ -696,7 +698,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
         }
         if (type == MAP) {
             if (validateKey(key, true)) {
-                receptor.set(getMapHeap().get(key));
+                getMapHeap().getTo(key, receptor);
                 return true;
             }
             return false;

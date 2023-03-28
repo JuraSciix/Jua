@@ -18,6 +18,8 @@ public class Name {
 
     public Type toType() { return new StringType(value); }
 
+    public Tree.Literal toLiteral() { return new Tree.Literal(pos, toType()); }
+
     @Override
     public int hashCode() { return value.hashCode(); }
 

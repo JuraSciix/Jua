@@ -29,6 +29,8 @@ public class NativeStdlib {
         nfp.add(new StrCodePointsFunction());
         nfp.add(new _SizeOfFunction());
         nfp.add(new SqrtFunction());
+        nfp.add(new StrCharArrayFunction());
+        nfp.add(new StrCmpFunction());
     }
 
     static class PrintFunction extends NativeFunctionPresent {
@@ -155,6 +157,52 @@ public class NativeStdlib {
                 return true;
             }
             return false;
+        }
+    }
+
+    static class StrCharArrayFunction extends NativeFunctionPresent {
+
+        StrCharArrayFunction() {
+            super("str_char_array", ParamsData.create().add("str"));
+        }
+
+        @Override
+        public boolean execute(Address[] args, int argc, Address returnAddress) {
+            Address str = args[0];
+            if (!str.hasType(ValueType.STRING)) {
+                InterpreterThread.threadError("str_char_array: str must be string");
+                return false;
+            }
+            StringHeap strHeap = str.getStringHeap();
+            ListHeap charArray = new ListHeap(strHeap.length());
+            for (int i = 0; i < strHeap.length(); i++) {
+                charArray.get(i).set(strHeap.subSequence(i, i + 1));
+            }
+            returnAddress.set(charArray);
+            return true;
+        }
+    }
+
+    static class StrCmpFunction extends NativeFunctionPresent {
+
+        StrCmpFunction() {
+            super("str_cmp", ParamsData.create().add("lhs").add("rhs"));
+        }
+
+        @Override
+        public boolean execute(Address[] args, int argc, Address returnAddress) {
+            Address lhs = args[0];
+            Address rhs = args[1];
+            if (!lhs.hasType(ValueType.STRING)) {
+                InterpreterThread.threadError("str_cmp: lhs must be string");
+                return false;
+            }
+            if (!rhs.hasType(ValueType.STRING)) {
+                InterpreterThread.threadError("str_cmp: lhs must be string");
+                return false;
+            }
+            returnAddress.set(lhs.getStringHeap().compareTo(rhs.getStringHeap()));
+            return true;
         }
     }
 

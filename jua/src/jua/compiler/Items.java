@@ -27,7 +27,8 @@ public class Items {
         }
 
         void drop() {
-            throw new AssertionError(this);
+            load();
+            code.addInstruction(pop);
         }
 
         void duplicate() {
@@ -77,7 +78,6 @@ public class Items {
 
         @Override
         void drop() {
-            load();
             code.addInstruction(pop);
         }
 
@@ -165,9 +165,6 @@ public class Items {
         }
 
         @Override
-        void duplicate() { /* no-op */ }
-
-        @Override
         void store() {
             code.position(tree);
             code.addInstruction((index <= 2) ? store_x[index] : new Store(index));
@@ -220,11 +217,6 @@ public class Items {
         }
 
         @Override
-        void drop() {
-            code.addInstruction(pop2);
-        }
-
-        @Override
         void duplicate() {
             code.addInstruction(dup2);
         }
@@ -261,6 +253,38 @@ public class Items {
         @Override
         void stash() {
             var.stash();
+        }
+    }
+
+    class NullSafeItem extends Item {
+
+        final Item child;
+
+        Chain nullChain;
+
+        NullSafeItem(Item child) {
+            this.child = child;
+        }
+
+        @Override
+        Item load() {
+            child.load();
+            Chain nonNullChain = code.branch(new Goto());
+            code.resolve(nullChain);
+            code.addInstruction(pop);
+            code.addInstruction(const_null);
+            code.resolve(nonNullChain);
+            return stackItem;
+        }
+
+        @Override
+        void stash() {
+            child.stash();
+        }
+
+        @Override
+        CondItem contains() {
+            return new CondItem(new Ifpresent());
         }
     }
 
@@ -324,37 +348,6 @@ public class Items {
         }
     }
 
-    /**
-     * Регистр для временного хранения некоторых данных
-     */
-    @Deprecated
-    class TempItem extends Item {
-
-        final String name = code.acquireSyntheticName();
-
-        final int index = code.resolveLocal(name);
-
-        @Override
-        Item load() {
-            code.addInstruction(new Load(index));
-            drop();
-            return stackItem;
-        }
-
-        @Override
-        void store() {
-            code.addInstruction(new Store(index));
-        }
-
-        @Override
-        void drop() {
-            // Очищаем регистр чтобы не было утечек памяти
-            code.addInstruction(const_null);
-            store();
-            code.releaseSyntheticName(name);
-        }
-    }
-
     StackItem makeStack() {
         return stackItem;
     }
@@ -375,17 +368,16 @@ public class Items {
         return new AssignItem(var);
     }
 
+    NullSafeItem makeNullSafe(Item child) {
+        return new NullSafeItem(child);
+    }
+
     CondItem makeCond(Instruction opcode) {
         return new CondItem(opcode);
     }
 
     CondItem makeCond(Instruction opcode, Chain truejumps, Chain falsejumps) {
         return new CondItem(opcode, truejumps, falsejumps);
-    }
-
-    @Deprecated
-    TempItem makeTemp() {
-        return new TempItem();
     }
 
     static <T extends Item> T treeify(T t, Tree tree) {

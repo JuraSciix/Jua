@@ -3,7 +3,9 @@ package jua.interpreter.instruction;
 import jua.compiler.CodePrinter;
 import jua.interpreter.InterpreterState;
 
-// todo: Переименовать в ifnz
+/**
+ * If not zero (if is true)
+ */
 public final class Ifnz extends JumpInstruction {
 
     public Ifnz() {
