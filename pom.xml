@@ -11,7 +11,9 @@
     <name>Jua</name>
     <description>Jua</description>
     <modules>
-        <module>Lang</module>
+        <module>Runtime</module>
+        <module>Compiler</module>
+        <module>Boot</module>
     </modules>
 
     <properties>

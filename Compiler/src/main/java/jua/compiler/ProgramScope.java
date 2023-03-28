@@ -2,8 +2,6 @@ package jua.compiler;
 
 import jua.compiler.Tree.ConstDef;
 import jua.compiler.Tree.FuncDef;
-import jua.compiler.Tree.Literal;
-import jua.compiler.Tree.Tag;
 import jua.compiler.Types.Type;
 import jua.interpreter.Address;
 import jua.interpreter.AddressUtils;
@@ -12,9 +10,6 @@ import jua.runtime.NativeStdlib;
 import jua.runtime.VirtualMachine;
 import jua.utils.List;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 
 public final class ProgramScope {
