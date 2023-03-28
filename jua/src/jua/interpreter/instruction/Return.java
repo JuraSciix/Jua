@@ -5,8 +5,6 @@ import jua.interpreter.InterpreterState;
 
 public final class Return implements Instruction {
 
-    public static final Return RETURN = new Return();
-
     @Override
     public int stackAdjustment() { return -1; }
 

@@ -360,15 +360,13 @@ public final class Gen extends Scanner {
         assert tree.body != null;
 
         if (tree.body.hasTag(Tag.BLOCK)) {
-            if (genBranch(tree.body)) {
-                emitLeave();
-            }
+            genBranch(tree.body);
         } else {
             Assert.ensure(tree.body.hasTag(Tag.DISCARDED), "Function body neither block ner expression");
             genExpr(((Discarded) tree.body).expr).load();
-            code.addInstruction(jua.interpreter.instruction.Return.RETURN);
-            code.dead();
         }
+        code.addInstruction(return_);
+        code.dead();
 
         tree.sym.runtimefunc = new Function(
                 tree.name.toString(),
@@ -436,12 +434,12 @@ public final class Gen extends Scanner {
     public void visitReturn(Tree.Return tree) {
         code.putPos(tree.pos);
         if (tree.expr == null || isLiteralNull(tree.expr)) {
-            emitLeave();
+            code.addInstruction(leave);
         } else {
             genExpr(tree.expr).load();
-            code.addInstruction(jua.interpreter.instruction.Return.RETURN);
-            code.dead();
+            code.addInstruction(return_);
         }
+        code.dead();
     }
 
     private void emitLeave() {

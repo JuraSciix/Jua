@@ -40,6 +40,7 @@ public interface InstructionFactory {
     Pop pop                = new Pop();
     Pop2 pop2              = new Pop2();
     Rem rem                = new Rem();
+    Return return_         = new Return();
     Not not                = new Not();
     Load0 load_0           = new Load0();
     Load1 load_1           = new Load1();
