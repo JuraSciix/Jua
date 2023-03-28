@@ -6,32 +6,32 @@ fn complex_create(r, i = 0) {
 }
 
 /** Извлекает из представления комплексного числа действительную часть. */
-fn r(z) = z[0];
+fn R(z) = z[0];
 
 /** Извлекает из представления комплексного числа мнимую часть. */
-fn i(z) = z[1];
+fn I(z) = z[1];
 
 /** Складывает два комплексных числа. */
-fn complex_add(a, b) = complex_create(r(a) + r(b), i(a) + i(b));
+fn complex_add(a, b) = complex_create(R(a) + R(b), I(a) + I(b));
 
 /** Вычитает одно комплексное число из другого. */
-fn complex_sub(a, b) = complex_create(r(a) - r(b), i(a) - i(b));
+fn complex_sub(a, b) = complex_create(R(a) - R(b), I(a) - I(b));
 
 /** Перемножает два комплексных числа. */
 fn complex_mul(a, b) {
-    var ar = r(a);
-    var ai = i(a);
-    var br = r(b);
-    var bi = i(b);
+    var ar = R(a);
+    var ai = I(a);
+    var br = R(b);
+    var bi = I(b);
     return complex_create(ar * br - ai * bi, ar * bi + ai * br);
 }
 
 /** Делит первое комплексное число на второе. */
 fn complex_div(a, b) {
-    var ar = r(a);
-    var ai = i(a);
-    var br = r(b);
-    var bi = i(b);
+    var ar = R(a);
+    var ai = I(a);
+    var br = R(b);
+    var bi = I(b);
     var d = br * br + bi * bi; // complex_abs(b)^2
     return complex_create(
         (ar * br + ai * bi) / d,
@@ -41,13 +41,13 @@ fn complex_div(a, b) {
 
 /** Возвращает модуль комплексного числа. */
 fn complex_abs(z) {
-    var zr = r(z);
-    var zi = i(z);
+    var zr = R(z);
+    var zi = I(z);
     return sqrt(zr * zr + zi * zi);
 }
 
 /** Приводит представление комплексного числа к строке вида "a + bi". */
-fn complex_stringify(z) = r(z) + " + " + i(z) + "i";
+fn complex_stringify(z) = R(z) + " + " + I(z) + "i";
 
 /**
  * Сравнивает два комплексных числа по их модулю и возвращает:
@@ -56,10 +56,10 @@ fn complex_stringify(z) = r(z) + " + " + i(z) + "i";
  *   1, если модуль a больше модуля b.
  */
 fn complex_compare(a, b) {
-    var ar = r(a);
-    var ai = i(a);
-    var br = r(b);
-    var bi = i(b);
+    var ar = R(a);
+    var ai = I(a);
+    var br = R(b);
+    var bi = I(b);
     // Сравниваем модули комплексных чисел.
-    return compare_number(ar * ar + ai * ai, br * br + bi * bi);
+    return compare_numbeR(ar * ar + ai * ai, br * br + bi * bi);
 }
