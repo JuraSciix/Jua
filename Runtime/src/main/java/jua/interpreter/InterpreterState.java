@@ -1,7 +1,7 @@
 package jua.interpreter;
 
 import jua.interpreter.instruction.Instruction;
-import jua.runtime.ValueType;
+import jua.runtime.Types;
 import jua.runtime.code.CodeData;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.heap.ListHeap;
@@ -428,7 +428,7 @@ public final class InterpreterState {
 
     public boolean stack_newlist() {
         Address sizeAddress = popStack();
-        if (!sizeAddress.testType(ValueType.LONG)) {
+        if (!sizeAddress.testType(Types.T_INT)) {
             return false;
         }
         long size = sizeAddress.getLong();

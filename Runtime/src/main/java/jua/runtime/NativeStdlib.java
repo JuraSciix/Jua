@@ -116,7 +116,7 @@ public class NativeStdlib {
 
         @Override
         public boolean execute(Address[] args, int argc, Address returnAddress) {
-            if (!args[0].testType(ValueType.STRING)) return false;
+            if (!args[0].testType(Types.T_STRING)) return false;
             StringHeap str = args[0].getStringHeap();
             ListHeap chars = new ListHeap(str.length());
             for (int i = 0; i < str.length(); ) {
@@ -168,7 +168,7 @@ public class NativeStdlib {
         @Override
         public boolean execute(Address[] args, int argc, Address returnAddress) {
             Address str = args[0];
-            if (!str.hasType(ValueType.STRING)) {
+            if (!str.hasType(Types.T_STRING)) {
                 InterpreterThread.threadError("str_char_array: str must be string");
                 return false;
             }
@@ -192,11 +192,11 @@ public class NativeStdlib {
         public boolean execute(Address[] args, int argc, Address returnAddress) {
             Address lhs = args[0];
             Address rhs = args[1];
-            if (!lhs.hasType(ValueType.STRING)) {
+            if (!lhs.hasType(Types.T_STRING)) {
                 InterpreterThread.threadError("str_cmp: lhs must be string");
                 return false;
             }
-            if (!rhs.hasType(ValueType.STRING)) {
+            if (!rhs.hasType(Types.T_STRING)) {
                 InterpreterThread.threadError("str_cmp: lhs must be string");
                 return false;
             }

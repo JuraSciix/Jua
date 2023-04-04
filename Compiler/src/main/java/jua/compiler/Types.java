@@ -3,7 +3,6 @@ package jua.compiler;
 import jua.interpreter.Address;
 import jua.runtime.heap.*;
 import jua.utils.Assert;
-import jua.utils.Conversions;
 
 import java.util.Objects;
 
@@ -118,7 +117,9 @@ public interface Types {
         public double doubleValue() { return (double) value; }
 
         @Override
-        public boolean booleanValue() { return Conversions.l2b(value); }
+        public boolean booleanValue() {
+            return jua.runtime.Types.l2b(value);
+        }
 
         @Override
         public String stringValue() { return Long.toString(value); }
@@ -168,7 +169,9 @@ public interface Types {
         public double doubleValue() { return value; }
 
         @Override
-        public boolean booleanValue() { return Conversions.d2b(value); }
+        public boolean booleanValue() {
+            return jua.runtime.Types.d2b(value);
+        }
 
         @Override
         public String stringValue() { return Double.toString(value); }
@@ -212,10 +215,14 @@ public interface Types {
         }
 
         @Override
-        public long longValue() { return Conversions.b2l(value); }
+        public long longValue() {
+            return jua.runtime.Types.b2l(value);
+        }
 
         @Override
-        public double doubleValue() { return Conversions.b2d(value); }
+        public double doubleValue() {
+            return jua.runtime.Types.b2d(value);
+        }
 
         @Override
         public boolean booleanValue() { return value; }

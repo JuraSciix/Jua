@@ -7,7 +7,7 @@ import jua.interpreter.Address;
 import jua.interpreter.AddressUtils;
 import jua.runtime.Function;
 import jua.runtime.NativeStdlib;
-import jua.runtime.ValueType;
+import jua.runtime.Types;
 import jua.runtime.VirtualMachine;
 import jua.utils.List;
 
@@ -94,16 +94,16 @@ public final class ProgramScope {
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> {
                     Address a = e.getValue();
                     switch (a.getType()) {
-                        case ValueType.LONG:
-                            return new Types.LongType(a.getLong());
-                        case ValueType.DOUBLE:
-                            return new Types.DoubleType(a.getDouble());
-                        case ValueType.BOOLEAN:
-                            return Types.ofBoolean(a.getBoolean());
-                        case ValueType.STRING:
-                            return new Types.StringType(a.getStringHeap().toString());
-                        case ValueType.NULL:
-                            return Types.TYPE_NULL;
+                        case Types.T_INT:
+                            return new jua.compiler.Types.LongType(a.getLong());
+                        case Types.T_FLOAT:
+                            return new jua.compiler.Types.DoubleType(a.getDouble());
+                        case Types.T_BOOLEAN:
+                            return jua.compiler.Types.ofBoolean(a.getBoolean());
+                        case Types.T_STRING:
+                            return new jua.compiler.Types.StringType(a.getStringHeap().toString());
+                        case Types.T_NULL:
+                            return jua.compiler.Types.TYPE_NULL;
                         default:
                             throw new AssertionError(a.getType());
                     }
@@ -198,7 +198,7 @@ public final class ProgramScope {
         ConstantSymbol sym = new ConstantSymbol(
                 nameString,
                 -1,
-                Types.TYPE_NULL,
+                jua.compiler.Types.TYPE_NULL,
                 null
         );
         constants.put(nameString, sym);

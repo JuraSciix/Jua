@@ -1,15 +1,14 @@
 package jua.interpreter;
 
-import jua.runtime.ValueType;
+import jua.runtime.Types;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.heap.Heap;
 import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.MapHeap;
 import jua.runtime.heap.StringHeap;
-import jua.utils.Conversions;
 
 import static jua.interpreter.InterpreterThread.threadError;
-import static jua.runtime.ValueType.*;
+import static jua.runtime.Types.*;
 
 public final class Address implements Comparable<Address>, ConstantPool.Entry {
 
@@ -24,7 +23,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     public byte getType() { return type; }
 
     /** Возвращает название типа текущего значения. */
-    public String getTypeName() { return ValueType.getTypeName(type); }
+    public String getTypeName() { return Types.getTypeName(type); }
 
     /** Возвращает {@code true}, если текущее значение считается скалярным, иначе {@code false}. */
     public boolean isScalar() { return isTypeScalar(type); }
@@ -37,7 +36,9 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
 
     public double getDouble() { return d; }
 
-    public boolean getBoolean() { return Conversions.l2b(getLong()); }
+    public boolean getBoolean() {
+        return l2b(getLong());
+    }
 
     public Heap getHeap() { return a; }
 
@@ -54,20 +55,20 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     /** Преобразовывает значение в целочисленное 64-битное. */
     public boolean longVal(Address dst) {
         switch (type) {
-            case NULL:
+            case T_NULL:
                 dst.set(0L);
                 return true;
-            case LONG:
+            case T_INT:
                 dst.set(getLong());
                 return true;
-            case DOUBLE:
+            case T_FLOAT:
                 dst.set((long) getDouble());
                 return true;
-            case BOOLEAN:
-                dst.set(getLong() & 1L);
+            case T_BOOLEAN:
+                dst.set(b2l(getBoolean()));
                 return true;
             default:
-                badTypeConversion(LONG);
+                badTypeConversion(T_INT);
                 return false;
         }
     }
@@ -75,20 +76,20 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     /** Преобразовывает значение в вещественное 64-битное. */
     public boolean doubleVal(Address dst) {
         switch (type) {
-            case NULL:
+            case T_NULL:
                 dst.set(0.0);
                 return true;
-            case LONG:
+            case T_INT:
                 dst.set((double) getLong());
                 return true;
-            case DOUBLE:
+            case T_FLOAT:
                 dst.set(getDouble());
                 return true;
-            case BOOLEAN:
-                dst.set((double) (getLong() & 1L));
+            case T_BOOLEAN:
+                dst.set(b2d(getBoolean()));
                 return true;
             default:
-                badTypeConversion(DOUBLE);
+                badTypeConversion(T_FLOAT);
                 return false;
         }
     }
@@ -101,19 +102,19 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
 
     public boolean booleanVal() {
         switch (type) {
-            case NULL:
+            case T_NULL:
                 return false;
-            case LONG:
-            case BOOLEAN:
-                return Conversions.l2b(getLong());
-            case DOUBLE:
-                return Conversions.d2b(getDouble());
-            case STRING:
-                return getStringHeap().nonEmpty();
-            case MAP:
-                return getMapHeap().nonEmpty();
-            case LIST:
-                return getListHeap().nonEmpty();
+            case T_INT:
+            case T_BOOLEAN:
+                return l2b(getLong());
+            case T_FLOAT:
+                return d2b(getDouble());
+            case T_STRING:
+                return s2b(getStringHeap());
+            case T_MAP:
+                return m2b(getMapHeap());
+            case T_LIST:
+                return e2b(getListHeap());
             default:
                 // Любой валидный тип можно преобразовать в логический
                 throw new AssertionError(getTypeName());
@@ -122,44 +123,44 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
 
     public StringHeap stringVal() {
         switch (type) {
-            case NULL:    return new StringHeap().appendNull();
-            case LONG:    return new StringHeap().append(getLong());
-            case DOUBLE:  return new StringHeap().append(getDouble());
-            case BOOLEAN: return new StringHeap().append(getBoolean());
-            case STRING:  return getStringHeap();
+            case T_NULL:    return new StringHeap().appendNull();
+            case T_INT:    return new StringHeap().append(getLong());
+            case T_FLOAT:  return new StringHeap().append(getDouble());
+            case T_BOOLEAN: return new StringHeap().append(getBoolean());
+            case T_STRING:  return getStringHeap();
             default: throw new IllegalArgumentException("Unable to convert " + getTypeName() + " to string");
         }
     }
 
     public boolean stringVal(Address dst) {
         switch (type) {
-            case NULL:
+            case T_NULL:
                 dst.set(new StringHeap().appendNull());
                 return true;
-            case LONG:
+            case T_INT:
                 dst.set(new StringHeap().append(getLong()));
                 return true;
-            case DOUBLE:
+            case T_FLOAT:
                 dst.set(new StringHeap().append(getDouble()));
                 return true;
-            case BOOLEAN:
+            case T_BOOLEAN:
                 dst.set(new StringHeap().append(getBoolean()));
                 return true;
-            case STRING:
+            case T_STRING:
                 dst.set(getStringHeap());
                 return true;
             default:
-                badTypeConversion(STRING);
+                badTypeConversion(T_STRING);
                 return false;
         }
     }
 
     public boolean mapValue(Address dst) {
-        if (type == MAP) {
+        if (type == T_MAP) {
             dst.set(getMapHeap());
             return true;
         }
-        badTypeConversion(MAP);
+        badTypeConversion(T_MAP);
         return false;
     }
 
@@ -172,15 +173,15 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     }
 
     private void badTypeConversion(byte type) {
-        threadError("Cannot convert %s to %s", getTypeName(), ValueType.getTypeName(type));
+        threadError("Cannot convert %s to %s", getTypeName(), Types.getTypeName(type));
     }
 
     public boolean isValid() {
-        return type != UNDEFINED;
+        return type != T_UNDEFINED;
     }
 
     public boolean isNull() {
-        return type == NULL;
+        return type == T_NULL;
     }
 
     /* * * * * * * * * * * * * * * * * * * *
@@ -188,32 +189,32 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
      * * * * * * * * * * * * * * * * * * * */
 
     public void set(long _l) {
-        type = LONG;
+        type = T_INT;
         l = _l;
     }
 
     public void set(boolean b) {
-        type = BOOLEAN;
-        l = Conversions.b2l(b);
+        type = T_BOOLEAN;
+        l = b2l(b);
     }
 
     public void set(double _d) {
-        type = DOUBLE;
+        type = T_FLOAT;
         d = _d;
     }
 
     public void set(StringHeap s) {
-        type = STRING;
+        type = T_STRING;
         a = s;
     }
 
     public void set(MapHeap m) {
-        type = MAP;
+        type = T_MAP;
         a = m;
     }
 
     public void set(ListHeap l) {
-        type = LIST;
+        type = T_LIST;
         a = l;
     }
 
@@ -227,25 +228,25 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
 
     public void set(Address source) {
         switch (source.type) {
-            case NULL:
+            case T_NULL:
                 setNull();
                 break;
-            case LONG:
+            case T_INT:
                 set(source.getLong());
                 break;
-            case DOUBLE:
+            case T_FLOAT:
                 set(source.getDouble());
                 break;
-            case BOOLEAN:
+            case T_BOOLEAN:
                 set(source.getBoolean());
                 break;
-            case STRING:
+            case T_STRING:
                 set(source.getStringHeap().refCopy());
                 break;
-            case MAP:
+            case T_MAP:
                 set(source.getMapHeap().refCopy());
                 break;
-            case LIST:
+            case T_LIST:
                 set(source.getListHeap().refCopy());
                 break;
             default:
@@ -255,24 +256,24 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
 
     public void clone(Address receiver) {
         switch (type) {
-            case LONG:
+            case T_INT:
                 receiver.set(getLong());
                 break;
-            case DOUBLE:
+            case T_FLOAT:
                 receiver.set(getDouble());
                 break;
-            case BOOLEAN:
+            case T_BOOLEAN:
                 receiver.set(getBoolean());
                 break;
-            case STRING:
+            case T_STRING:
                 receiver.set(getStringHeap().deepCopy());
                 break;
-            case MAP:
+            case T_MAP:
                 receiver.set(getMapHeap().deepCopy());
                 break;
-            case LIST:
+            case T_LIST:
                 receiver.set(getListHeap().deepCopy());
-            case NULL:
+            case T_NULL:
                 receiver.setNull();
                 break;
             default:
@@ -281,11 +282,11 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     }
 
     public void setNull() {
-        type = NULL;
+        type = T_NULL;
     }
 
     public void reset() {
-        type = UNDEFINED;
+        type = T_UNDEFINED;
         a = null; // В помощь GC
     }
 
@@ -300,27 +301,27 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     public boolean add(Address rhs, Address result) {
         int union = getTypeUnion(type, rhs.type);
 
-        if (getTypeUnion(LONG, LONG) == union) {
+        if (getTypeUnion(T_INT, T_INT) == union) {
             result.set(getLong() + rhs.getLong());
             return true;
         }
 
-        if (getTypeUnion(LONG, DOUBLE) == union) {
+        if (getTypeUnion(T_INT, T_FLOAT) == union) {
             result.set(getLong() + rhs.getDouble());
             return true;
         }
 
-        if (getTypeUnion(DOUBLE, LONG) == union) {
+        if (getTypeUnion(T_FLOAT, T_INT) == union) {
             result.set(getDouble() + rhs.getLong());
             return true;
         }
 
-        if (getTypeUnion(DOUBLE, DOUBLE) == union) {
+        if (getTypeUnion(T_FLOAT, T_FLOAT) == union) {
             result.set(getDouble() + rhs.getDouble());
             return true;
         }
 
-        if (getTypeUnion(STRING, STRING) == union) {
+        if (getTypeUnion(T_STRING, T_STRING) == union) {
             if (this == result) {
                 getStringHeap().append(rhs.getStringHeap());
             } else {
@@ -329,7 +330,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
             return true;
         }
 
-        if (type == STRING) {
+        if (type == T_STRING) {
             Address tmp = new Address();
             if (!rhs.stringVal(tmp)) {
                 return false;
@@ -338,7 +339,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
             return true;
         }
 
-        if (rhs.type == STRING) {
+        if (rhs.type == T_STRING) {
             Address tmp = new Address();
             if (!stringVal(tmp)) {
                 return false;
@@ -353,22 +354,22 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     public boolean sub(Address rhs, Address result) {
         int union = getTypeUnion(type, rhs.type);
 
-        if (getTypeUnion(LONG, LONG) == union) {
+        if (getTypeUnion(T_INT, T_INT) == union) {
             result.set(getLong() - rhs.getLong());
             return true;
         }
 
-        if (getTypeUnion(LONG, DOUBLE) == union) {
+        if (getTypeUnion(T_INT, T_FLOAT) == union) {
             result.set((double) getLong() - rhs.getDouble());
             return true;
         }
 
-        if (getTypeUnion(DOUBLE, LONG) == union) {
+        if (getTypeUnion(T_FLOAT, T_INT) == union) {
             result.set(getDouble() - (double) rhs.getLong());
             return true;
         }
 
-        if (getTypeUnion(DOUBLE, DOUBLE) == union) {
+        if (getTypeUnion(T_FLOAT, T_FLOAT) == union) {
             result.set(getDouble() - rhs.getDouble());
             return true;
         }
@@ -379,22 +380,22 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     public boolean mul(Address rhs, Address result) {
         int union = getTypeUnion(type, rhs.type);
 
-        if (getTypeUnion(LONG, LONG) == union) {
+        if (getTypeUnion(T_INT, T_INT) == union) {
             result.set(getLong() * rhs.getLong());
             return true;
         }
 
-        if (getTypeUnion(LONG, DOUBLE) == union) {
+        if (getTypeUnion(T_INT, T_FLOAT) == union) {
             result.set((double) getLong() * rhs.getDouble());
             return true;
         }
 
-        if (getTypeUnion(DOUBLE, LONG) == union) {
+        if (getTypeUnion(T_FLOAT, T_INT) == union) {
             result.set(getDouble() * (double) rhs.getLong());
             return true;
         }
 
-        if (getTypeUnion(DOUBLE, DOUBLE) == union) {
+        if (getTypeUnion(T_FLOAT, T_FLOAT) == union) {
             result.set(getDouble() * rhs.getDouble());
             return true;
         }
@@ -405,7 +406,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     public boolean div(Address rhs, Address result) {
         int union = getTypeUnion(type, rhs.type);
 
-        if (getTypeUnion(LONG, LONG) == union) {
+        if (getTypeUnion(T_INT, T_INT) == union) {
             if (rhs.getLong() == 0L) {
                 threadError("integer division by zero");
                 return false;
@@ -414,17 +415,17 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
             return true;
         }
 
-        if (getTypeUnion(LONG, DOUBLE) == union) {
+        if (getTypeUnion(T_INT, T_FLOAT) == union) {
             result.set((double) getLong() / rhs.getDouble());
             return true;
         }
 
-        if (getTypeUnion(DOUBLE, LONG) == union) {
+        if (getTypeUnion(T_FLOAT, T_INT) == union) {
             result.set(getDouble() / (double) rhs.getLong());
             return true;
         }
 
-        if (getTypeUnion(DOUBLE, DOUBLE) == union) {
+        if (getTypeUnion(T_FLOAT, T_FLOAT) == union) {
             result.set(getDouble() / rhs.getDouble());
             return true;
         }
@@ -435,7 +436,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     public boolean rem(Address rhs, Address result) {
         int union = getTypeUnion(type, rhs.type);
 
-        if (getTypeUnion(LONG, LONG) == union) {
+        if (getTypeUnion(T_INT, T_INT) == union) {
             if (rhs.getLong() == 0L) {
                 threadError("modulo by zero");
                 return false;
@@ -444,7 +445,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
             return true;
         }
 
-        if (getTypeUnion(LONG, DOUBLE) == union) {
+        if (getTypeUnion(T_INT, T_FLOAT) == union) {
             if (rhs.getDouble() == 0.0) {
                 threadError("modulo by zero");
                 return false;
@@ -453,7 +454,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
             return true;
         }
 
-        if (getTypeUnion(DOUBLE, LONG) == union) {
+        if (getTypeUnion(T_FLOAT, T_INT) == union) {
             if (rhs.getLong() == 0L) {
                 threadError("modulo by zero");
                 return false;
@@ -462,7 +463,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
             return true;
         }
 
-        if (getTypeUnion(DOUBLE, DOUBLE) == union) {
+        if (getTypeUnion(T_FLOAT, T_FLOAT) == union) {
             if (rhs.getDouble() == 0.0) {
                 threadError("modulo by zero");
                 return false;
@@ -475,7 +476,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     }
 
     public boolean shl(Address rhs, Address result) {
-        if (getTypeUnion(LONG, LONG) == getTypeUnion(type, rhs.type)) {
+        if (getTypeUnion(T_INT, T_INT) == getTypeUnion(type, rhs.type)) {
             result.set(getLong() << rhs.getLong());
             return true;
         }
@@ -484,7 +485,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     }
 
     public boolean shr(Address rhs, Address result) {
-        if (getTypeUnion(LONG, LONG) == getTypeUnion(type, rhs.type)) {
+        if (getTypeUnion(T_INT, T_INT) == getTypeUnion(type, rhs.type)) {
             result.set(getLong() >> rhs.getLong());
             return true;
         }
@@ -495,12 +496,12 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     public boolean and(Address rhs, Address result) {
         int union = getTypeUnion(type, rhs.type);
 
-        if (getTypeUnion(LONG, LONG) == union) {
+        if (getTypeUnion(T_INT, T_INT) == union) {
             result.set(getLong() & rhs.getLong());
             return true;
         }
 
-        if (getTypeUnion(BOOLEAN, BOOLEAN) == union) {
+        if (getTypeUnion(T_BOOLEAN, T_BOOLEAN) == union) {
             result.set(getBoolean() & rhs.getBoolean());
             return true;
         }
@@ -511,12 +512,12 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     public boolean or(Address rhs, Address result) {
         int union = getTypeUnion(type, rhs.type);
 
-        if (getTypeUnion(LONG, LONG) == union) {
+        if (getTypeUnion(T_INT, T_INT) == union) {
             result.set(getLong() | rhs.getLong());
             return true;
         }
 
-        if (getTypeUnion(BOOLEAN, BOOLEAN) == union) {
+        if (getTypeUnion(T_BOOLEAN, T_BOOLEAN) == union) {
             result.set(getBoolean() | rhs.getBoolean());
             return true;
         }
@@ -527,12 +528,12 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     public boolean xor(Address rhs, Address result) {
         int union = getTypeUnion(type, rhs.type);
 
-        if (getTypeUnion(LONG, LONG) == union) {
+        if (getTypeUnion(T_INT, T_INT) == union) {
             result.set(getLong() ^ rhs.getLong());
             return true;
         }
 
-        if (getTypeUnion(BOOLEAN, BOOLEAN) == union) {
+        if (getTypeUnion(T_BOOLEAN, T_BOOLEAN) == union) {
             result.set(getBoolean() ^ rhs.getBoolean());
             return true;
         }
@@ -553,12 +554,12 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
      * * * * * * * * * * * * * * * * * * * */
 
     public boolean neg(Address result) { // -x
-        if (type == LONG) {
+        if (type == T_INT) {
             result.set(-getLong());
             return true;
         }
 
-        if (type == DOUBLE) {
+        if (type == T_FLOAT) {
             result.set(-getDouble());
             return true;
         }
@@ -567,12 +568,12 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     }
 
     public boolean pos(Address result) { // +x
-        if (type == LONG) {
+        if (type == T_INT) {
             result.set(+getLong());
             return true;
         }
 
-        if (type == DOUBLE) {
+        if (type == T_FLOAT) {
             result.set(+getDouble());
             return true;
         }
@@ -581,7 +582,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     }
 
     public boolean not(Address result) { // ~x
-        if (type == LONG) {
+        if (type == T_INT) {
             result.set(~getLong());
             return true;
         }
@@ -590,12 +591,12 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     }
 
     public boolean inc() {
-        if (type == LONG) {
+        if (type == T_INT) {
             l++;
             return true;
         }
 
-        if (type == DOUBLE) {
+        if (type == T_FLOAT) {
             d++;
             return true;
         }
@@ -604,12 +605,12 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     }
 
     public boolean dec() {
-        if (type == LONG) {
+        if (type == T_INT) {
             l--;
             return true;
         }
 
-        if (type == DOUBLE) {
+        if (type == T_FLOAT) {
             d--;
             return true;
         }
@@ -618,7 +619,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     }
 
     public boolean arrayInc(Address key, Address oldValueReceptor) {
-        if (type == LIST) {
+        if (type == T_LIST) {
             int index = validateIndex(key, true);
             if (index >= 0) {
                 Address element = getListHeap().get(index);
@@ -627,7 +628,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
             }
             return false;
         }
-        if (type == MAP) {
+        if (type == T_MAP) {
             if (validateKey(key, true)) {
                 Address element = getMapHeap().get(key);
                 oldValueReceptor.set(element);
@@ -640,7 +641,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     }
 
     public boolean arrayDec(Address key, Address oldValueReceptor) {
-        if (type == LIST) {
+        if (type == T_LIST) {
             int index = validateIndex(key, true);
             if (index >= 0) {
                 Address element = getListHeap().get(index);
@@ -649,7 +650,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
             }
             return false;
         }
-        if (type == MAP) {
+        if (type == T_MAP) {
             if (validateKey(key, true)) {
                 Address element = getMapHeap().get(key);
                 oldValueReceptor.set(element);
@@ -668,7 +669,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     }
 
     public boolean store(Address key, Address value) {
-        if (type == LIST) {
+        if (type == T_LIST) {
             int index = validateIndex(key, true);
             if (index >= 0) {
                 getListHeap().set(index, value, null);
@@ -676,7 +677,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
             }
             return false;
         }
-        if (type == MAP) {
+        if (type == T_MAP) {
             if (validateKey(key, false)) {
                 getMapHeap().put(key, value);
                 return true;
@@ -688,7 +689,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     }
 
     public boolean load(Address key, Address receptor) {
-        if (type == LIST) {
+        if (type == T_LIST) {
             int index = validateIndex(key, true);
             if (index >= 0) {
                 receptor.set(getListHeap().get(index));
@@ -696,7 +697,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
             }
             return false;
         }
-        if (type == MAP) {
+        if (type == T_MAP) {
             if (validateKey(key, true)) {
                 getMapHeap().getTo(key, receptor);
                 return true;
@@ -708,7 +709,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     }
 
     public boolean contains(Address key, Address consumer) {
-        if (type == LIST) {
+        if (type == T_LIST) {
             int index = validateIndex(key, false);
             if (index >= 0) {
                 consumer.set(getListHeap().contains(key));
@@ -716,7 +717,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
             }
             return false;
         }
-        if (type == MAP) {
+        if (type == T_MAP) {
             if (validateKey(key, false)) {
                 consumer.set(getMapHeap().containsKey(key));
                 return true;
@@ -728,7 +729,7 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     }
 
     private int validateIndex(Address indexAddress, boolean validateBounds) {
-        if (indexAddress.getType() == LONG) {
+        if (indexAddress.getType() == T_INT) {
             long longIndex = indexAddress.getLong();
             if (!validateBounds ||
                     longIndex >= 0 && longIndex < getListHeap().length()) {
@@ -754,17 +755,17 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     }
 
     public boolean length(Address receptor) {
-        if (type == STRING) {
+        if (type == T_STRING) {
             receptor.set(getStringHeap().size());
             return true;
         }
 
-        if (type == MAP) {
+        if (type == T_MAP) {
             receptor.set(getMapHeap().size());
             return true;
         }
 
-        if (type == LIST) {
+        if (type == T_LIST) {
             receptor.set(getListHeap().length());
             return true;
         }
@@ -778,49 +779,49 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
         if (getType() == rhs.getType()) return true;
         // Поскольку язык динамически типизированный, нулём может оказаться любая переменная,
         // а значит нуль-проверка всегда имеет место быть.
-        if (getType() == NULL || rhs.getType() == NULL) return true;
+        if (getType() == T_NULL || rhs.getType() == T_NULL) return true;
         // Типы значений, которые можно сравнивать со значениями других типов.
         int u = getTypeUnion(getType(), rhs.getType());
-        if (u == getTypeUnion(LONG, DOUBLE)) return true;
-        if (u == getTypeUnion(DOUBLE, LONG)) return true;
+        if (u == getTypeUnion(T_INT, T_FLOAT)) return true;
+        if (u == getTypeUnion(T_FLOAT, T_INT)) return true;
         return false;
     }
 
     public int weakCompare(Address rhs, int except) {
         int union = getTypeUnion(type, rhs.type);
 
-        if (getTypeUnion(LONG, LONG) == union) {
+        if (getTypeUnion(T_INT, T_INT) == union) {
             return Long.compare(getLong(), rhs.getLong());
         }
 
-        if (getTypeUnion(LONG, DOUBLE) == union) {
+        if (getTypeUnion(T_INT, T_FLOAT) == union) {
             return Double.compare(getLong(), rhs.getDouble());
         }
 
-        if (getTypeUnion(DOUBLE, LONG) == union) {
+        if (getTypeUnion(T_FLOAT, T_INT) == union) {
             return Double.compare(getDouble(), rhs.getLong());
         }
 
-        if (getTypeUnion(DOUBLE, DOUBLE) == union) {
+        if (getTypeUnion(T_FLOAT, T_FLOAT) == union) {
             if (Double.isNaN(getDouble()) || Double.isNaN(rhs.getDouble()))
                 return except;
             else
                 return Double.compare(getDouble(), rhs.getDouble());
         }
 
-        if (getTypeUnion(STRING, STRING) == union) {
+        if (getTypeUnion(T_STRING, T_STRING) == union) {
             return getStringHeap().compareTo(rhs.getStringHeap());
         }
 
-        if (getTypeUnion(MAP, MAP) == union) {
+        if (getTypeUnion(T_MAP, T_MAP) == union) {
             return getMapHeap().compare(rhs.getMapHeap(), except);
         }
 
-        if (getTypeUnion(LIST, LIST) == union) {
+        if (getTypeUnion(T_LIST, T_LIST) == union) {
             return getListHeap().compare(rhs.getListHeap(), except);
         }
 
-        if (getTypeUnion(NULL, NULL) == union) {
+        if (getTypeUnion(T_NULL, T_NULL) == union) {
             return 0;
         }
 
@@ -828,10 +829,10 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     }
 
     public int quickConstCompare(short value, int except) {
-        if (type == LONG) {
+        if (type == T_INT) {
             return Long.compare(getLong(), value);
         }
-        if (type == DOUBLE) {
+        if (type == T_FLOAT) {
             return Double.compare(getDouble(), value);
         }
         return except;
@@ -842,34 +843,34 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
         if (this == o) return 0;
         int typeUnion = getTypeUnion(type, o.type);
 
-        if (typeUnion == getTypeUnion(LONG, LONG) || typeUnion == getTypeUnion(BOOLEAN, BOOLEAN))
+        if (typeUnion == getTypeUnion(T_INT, T_INT) || typeUnion == getTypeUnion(T_BOOLEAN, T_BOOLEAN))
             return Long.compare(getLong(), o.getLong());
 
-        if (typeUnion == getTypeUnion(LONG, DOUBLE) || typeUnion == getTypeUnion(BOOLEAN, DOUBLE))
+        if (typeUnion == getTypeUnion(T_INT, T_FLOAT) || typeUnion == getTypeUnion(T_BOOLEAN, T_FLOAT))
             return Double.compare(getLong(), o.getDouble());
 
-        if (typeUnion == getTypeUnion(LONG, STRING))
+        if (typeUnion == getTypeUnion(T_INT, T_STRING))
             return new StringHeap().append(getLong()).compareTo(o.getStringHeap());
 
-        if (typeUnion == getTypeUnion(DOUBLE, LONG) || typeUnion == getTypeUnion(DOUBLE, BOOLEAN))
+        if (typeUnion == getTypeUnion(T_FLOAT, T_INT) || typeUnion == getTypeUnion(T_FLOAT, T_BOOLEAN))
             return Double.compare(getDouble(), o.getLong());
 
-        if (typeUnion == getTypeUnion(DOUBLE, DOUBLE))
+        if (typeUnion == getTypeUnion(T_FLOAT, T_FLOAT))
             return Double.compare(getDouble(), o.getDouble());
 
-        if (typeUnion == getTypeUnion(DOUBLE, STRING))
+        if (typeUnion == getTypeUnion(T_FLOAT, T_STRING))
             return new StringHeap().append(getDouble()).compareTo(o.getStringHeap());
 
-        if (typeUnion == getTypeUnion(STRING, LONG))
+        if (typeUnion == getTypeUnion(T_STRING, T_INT))
             return getStringHeap().compareTo(new StringHeap().append(getLong()));
 
-        if (typeUnion == getTypeUnion(STRING, DOUBLE))
+        if (typeUnion == getTypeUnion(T_STRING, T_FLOAT))
             return getStringHeap().compareTo(new StringHeap().append(getBoolean()));
 
-        if (typeUnion == getTypeUnion(STRING, BOOLEAN))
+        if (typeUnion == getTypeUnion(T_STRING, T_BOOLEAN))
             return getStringHeap().compareTo(new StringHeap().append(getBoolean()));
 
-        if (typeUnion == getTypeUnion(STRING, STRING))
+        if (typeUnion == getTypeUnion(T_STRING, T_STRING))
             return getStringHeap().compareTo(o.getStringHeap());
 
         throw new IllegalArgumentException("Unable to compare " + getTypeName() + " with " + o.getTypeName());
@@ -878,14 +879,14 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     @Override
     public int hashCode() {
         switch (type) {
-            case NULL:    return 0;
-            case LONG:    return Long.hashCode(getLong());
-            case BOOLEAN: return Boolean.hashCode(getBoolean());
-            case DOUBLE:  return Double.hashCode(getDouble());
-            case STRING:  return getStringHeap().hashCode();
-            case MAP:     return getMapHeap().hashCode();
-            case LIST:    return getListHeap().hashCode();
-            default:      throw new AssertionError(type);
+            case T_NULL:    return 0;
+            case T_INT:     return hashOfLong(getLong());
+            case T_FLOAT:   return hashOfDouble(getDouble());
+            case T_BOOLEAN: return hashOfBoolean(getBoolean());
+            case T_STRING:  return hashOfString(getStringHeap());
+            case T_MAP:     return hashOfMap(getMapHeap());
+            case T_LIST:    return hashOfList(getListHeap());
+            default: throw new AssertionError(type);
         }
     }
 
@@ -896,18 +897,26 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
         return weakCompare((Address) o, Integer.MIN_VALUE) == 0;
     }
 
+    /**
+     * Возвращает сериализованное представление адреса.
+     * Первым символом является идентификатор типа,
+     * за ним следует значение.
+     *
+     * @return Сериализованное представление адреса.
+     */
     @Override
     public String toString() {
         // Этот метод не связан с рантаймом Jua
         switch (type) {
-            case NULL:    return "null";
-            case LONG:    return Long.toString(getLong());
-            case DOUBLE:  return Double.toString(getDouble());
-            case BOOLEAN: return Boolean.toString(getBoolean());
-            case STRING:  return '"' + getStringHeap().toString() + '"';
-            case MAP:     return getMapHeap().toString();
-            case LIST:    return getListHeap().toString();
-            default:      throw new AssertionError(type);
+            case T_UNDEFINED: return "~";
+            case T_NULL:      return "<null>";
+            case T_INT:       return "L" + getLong();
+            case T_FLOAT:     return "D" + getDouble();
+            case T_BOOLEAN:   return "B" + getBoolean();
+            case T_STRING:    return "S" + getStringHeap();
+            case T_MAP:       return "M" + getMapHeap();
+            case T_LIST:      return "E" + getListHeap();
+            default: throw new AssertionError(type);
         }
     }
 }
