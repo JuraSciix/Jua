@@ -5,56 +5,76 @@ import jua.compiler.Tokens.TokenType;
 import jua.interpreter.Address;
 import jua.runtime.Function;
 import jua.utils.IOUtils;
-import jua.utils.Options;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.Charset;
 
 public final class JuaCompiler {
 
-    public static Program compileFile(File file) {
+    private PrintStream stdout = System.out;
+
+    private PrintStream stderr = System.err;
+
+    private int logLimit;
+
+    private String file;
+
+    private boolean lintMode;
+
+    private boolean prettyTreeMode;
+
+    private Charset charset = Charset.defaultCharset();
+
+    public void setCharset(Charset charset) {
+        this.charset = charset;
+    }
+
+    public void setPrettyTreeMode(boolean prettyTreeMode) {
+        this.prettyTreeMode = prettyTreeMode;
+    }
+
+    public void setLintMode(boolean lintMode) {
+        this.lintMode = lintMode;
+    }
+
+    public void setStdout(PrintStream stdout) {
+        this.stdout = stdout;
+    }
+
+    public void setStderr(PrintStream stderr) {
+        this.stderr = stderr;
+    }
+
+    public void setLogLimit(int logLimit) {
+        this.logLimit = logLimit;
+    }
+
+    public void setFile(String file) {
+        this.file = file;
+    }
+
+    public Program compile() {
         char[] filecontents;
         try {
-            filecontents = IOUtils.readFileCharBuffer(file, Options.charset());
+            filecontents = IOUtils.readFileCharBuffer(new File(file), charset);
         } catch (IOException e) {
-            System.err.println("Unable access to file.");
+            stderr.println("Unable access to file.");
             System.exit(1);
             return null;
         }
-        Log log = new Log(System.err, Options.logMaxErrors());
-        Source source = new Source(file.getName(), filecontents);
+        Log log = new Log(stderr, logLimit);
+        Source source = new Source(file, filecontents);
 
-        if (Options.isLintEnabled()) {
-            Lexer tokenizer = new Lexer(source, log);
-            for (Token token = tokenizer.nextToken();
-                 token.type != TokenType.EOF;
-                 token = tokenizer.nextToken()) {
-                System.out.printf("[%d:%d] ",
-                        source.getLineMap().getLineNumber(token.pos),
-                        source.getLineMap().getColumnNumber(token.pos));
-                switch (token.type.kind) {
-                    case DEFAULT:
-                        System.out.println(token.type.name());
-                        break;
-                    case NAMED:
-                        System.out.printf("%s: %s%n", token.type.name(), token.name());
-                        break;
-                    case STRING:
-                        System.out.printf("%s: \"%s\"%n", token.type.name(), token.value());
-                        break;
-                    case NUMERIC:
-                        System.out.printf("%s: %s * %d%n", token.type.name(), token.value(), token.radix());
-                        break;
-                    default:
-                        throw new AssertionError(token.type);
-                }
-            }
+        if (lintMode) {
+            lint(log, source);
             return null;
         }
         try {
             JuaParser parser = new JuaParser(source, log);
             Tree.CompilationUnit compilationUnit = parser.parseCompilationUnit();
-            if (Options.isShouldPrettyTree()) {
+            if (prettyTreeMode) {
                 compilationUnit.accept(new Pretty(System.err));
                 return null;
             }
@@ -92,4 +112,32 @@ public final class JuaCompiler {
             return null;
         }
     }
+
+    private void lint(Log log, Source source) {
+        Lexer tokenizer = new Lexer(source, log);
+        for (Token token = tokenizer.nextToken();
+             token.type != TokenType.EOF;
+             token = tokenizer.nextToken()) {
+            stdout.printf("[%d:%d] ",
+                    source.getLineMap().getLineNumber(token.pos),
+                    source.getLineMap().getColumnNumber(token.pos));
+            switch (token.type.kind) {
+                case DEFAULT:
+                    stdout.println(token.type.name());
+                    break;
+                case NAMED:
+                    stdout.printf("%s: %s%n", token.type.name(), token.name());
+                    break;
+                case STRING:
+                    stdout.printf("%s: \"%s\"%n", token.type.name(), token.value());
+                    break;
+                case NUMERIC:
+                    stdout.printf("%s: %s * %d%n", token.type.name(), token.value(), token.radix());
+                    break;
+                default:
+                    throw new AssertionError(token.type);
+            }
+        }
+    }
+
 }

@@ -3,7 +3,6 @@ package jua;
 import jua.compiler.JuaCompiler;
 import jua.compiler.Program;
 import jua.runtime.RuntimeErrorException;
-import jua.utils.Options;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,7 +36,13 @@ public class Main {
         // todo: Работа с несколькими файлами одновременно
 
         File file = testTargetFile();
-        Program result = JuaCompiler.compileFile(file);
+        JuaCompiler compiler = new JuaCompiler();
+        compiler.setFile(file.getName());
+        compiler.setCharset(Options.charset());
+        compiler.setLintMode(Options.isLintEnabled());
+        compiler.setLintMode(Options.isShouldPrettyTree());
+        compiler.setLogLimit(Options.logMaxErrors());
+        Program result = compiler.compile();
 
         if (result == null) return;
         if (Options.isShouldPrintCode()) {
