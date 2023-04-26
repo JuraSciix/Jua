@@ -34,6 +34,23 @@ public class InstructionUtils {
         }
     }
 
+    public static Instruction arrayIncreaseFromTag(Tag tag) {
+        switch (tag) {
+            case POSTINC: case PREINC: return ainc;
+            case POSTDEC: case PREDEC: return adec;
+            default: throw new AssertionError(tag);
+        }
+    }
+
+
+    public static Instruction increaseFromTag(Tag tag, int index) {
+        switch (tag) {
+            case POSTINC: case PREINC: return new Inc(index);
+            case POSTDEC: case PREDEC: return new Dec(index);
+            default: throw new AssertionError(tag);
+        }
+    }
+
     public static Instruction fromBinaryAsgOpTag(Tag tag) {
         return fromBinaryOpTag(TreeInfo.stripAsgTag(tag));
     }

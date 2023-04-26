@@ -1,0 +1,27 @@
+fn test(a, b) {
+    a[0] ??= b;
+}
+
+// a[0] ??= b;
+//
+// 0. load_0
+// 1. push 0
+// 2. dup2
+// 3. ifpresent 7
+// 4. load_1
+// 5. astore
+// 6. goto 8
+// 7. pop2
+
+fn test2(a, b)
+    = (a[0] ??= b);
+
+// 0. load_0
+// 1. push 0
+// 2. dup2
+// 3. ifpresent 8
+// 4. load_1
+// 5. dup_x2
+// 6. astore
+// 7. goto 9
+// 8. aload

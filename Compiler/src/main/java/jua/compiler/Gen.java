@@ -19,7 +19,7 @@ import static jua.compiler.TreeInfo.*;
 
 public final class Gen extends Scanner {
 
-    @Deprecated
+    @Deprecated // todo: option -gj
     private static final boolean GEN_JVM_LOOPS = false;
 
     Code code;
@@ -89,7 +89,11 @@ public final class Gen extends Scanner {
     }
 
     CondItem genCond(Expression tree) {
-        return genExpr(tree).isTrue();
+        return genExpr(tree).asCond();
+    }
+
+    SafeItem genSafe(Expression tree) {
+        return genExpr(tree).safe();
     }
 
     @Override
@@ -113,23 +117,20 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitArrayAccess(ArrayAccess tree) {
-        genAccess(tree, tree.expr, tree.index, Tag.ARRAYACCESS_NULL_SAFE);
+        genAccess(tree, tree.expr, tree.index, Tag.ARRAYACCESS_SAFE);
     }
 
     @Override
     public void visitMemberAccess(MemberAccess tree) {
-        genAccess(tree, tree.expr, tree.member.toLiteral(), Tag.MEMACCESS_NULL_SAFE);
+        genAccess(tree, tree.expr, tree.member.toLiteral(), Tag.MEMACCESS_SAFE);
     }
 
     private void genAccess(Expression tree, Expression expr, Expression key, Tag coalescingTag) {
         Item exprItem = genExpr(expr);
         Item resultItem = items.makeAccess();
         if (tree.hasTag(coalescingTag)) {
-            NullSafeItem exprSafeItem =
-                    (exprItem instanceof NullSafeItem)
-                            ? (NullSafeItem) exprItem
-                            : items.makeNullSafe(exprItem);
-            NullSafeItem resultSafeItem = items.makeNullSafe(resultItem);
+            SafeItem exprSafeItem = exprItem.safe();
+            SafeItem resultSafeItem = items.makeNullSafe(resultItem);
             resultItem = resultSafeItem;
             Item safeChildItem = exprSafeItem.child.load();
             safeChildItem.duplicate();
@@ -413,24 +414,6 @@ public final class Gen extends Scanner {
     }
 
     @Override
-    public void visitAssign(Assign tree) {
-        Expression var = stripParens(tree.var);
-        switch (var.getTag()) {
-            case MEMACCESS:
-            case ARRAYACCESS:
-            case VARIABLE:
-                Item varitem = genExpr(tree.var);
-                genExpr(tree.expr).load();
-                code.putPos(tree.pos);
-                result = items.makeAssign(varitem);
-                break;
-
-            default:
-                Assert.error();
-        }
-    }
-
-    @Override
     public void visitReturn(Tree.Return tree) {
         code.putPos(tree.pos);
         if (tree.expr == null || isLiteralNull(tree.expr)) {
@@ -450,14 +433,11 @@ public final class Gen extends Scanner {
     @Override
     public void visitTernaryOp(TernaryOp tree) {
         CondItem cond = genCond(tree.cond);
-        code.putPos(tree.pos);
         Chain falseJumps = cond.falseJumps();
         code.resolve(cond.trueChain);
-        int st = code.curStackTop();
         genExpr(tree.thenexpr).load();
         Chain trueJumps = code.branch(new Goto());
         code.resolve(falseJumps);
-        code.curStackTop(st);
         genExpr(tree.elseexpr).load();
         code.resolve(trueJumps);
         result = items.makeStack();
@@ -470,8 +450,8 @@ public final class Gen extends Scanner {
             code.addInstruction(new Getconst(tree.sym.id));
             result = items.makeStack();
         } else {
-            code.putPos(tree.pos);
-            result = items.makeLocal(code.resolveLocal(tree.name));
+            result = Items.treeify(
+                    items.makeLocal(code.resolveLocal(tree.name)), tree);
         }
     }
 
@@ -600,16 +580,11 @@ public final class Gen extends Scanner {
             case LT: case LE:
                 genExpr(tree.lhs).load();
                 genExpr(tree.rhs).load();
-                code.putPos(tree.pos);
                 result = Items.treeify(items.makeCond(fromComparisonOpTag(tree.tag)), tree);
                 break;
 
-            case NULLCOALSC: {
-                Item lhsItem = genExpr(tree.lhs);
-                NullSafeItem lhsSafeItem =
-                        (lhsItem instanceof NullSafeItem)
-                                ? (NullSafeItem) lhsItem
-                                : items.makeNullSafe(lhsItem);
+            case COALESCE: {
+                SafeItem lhsSafeItem = genSafe(tree.lhs);
                 Item item = lhsSafeItem.child.load();
                 item.duplicate();
                 CondItem nonNullCond = Items.treeify(item.nonNull(), tree);
@@ -640,7 +615,7 @@ public final class Gen extends Scanner {
         switch (tree.tag) {
             case POSTDEC: case PREDEC:
             case POSTINC: case PREINC:
-                genIncrease(tree);
+                result = genExpr(tree.expr).increase(tree.tag);
                 break;
 
             case NOT:
@@ -656,70 +631,27 @@ public final class Gen extends Scanner {
         }
     }
 
-    private void genIncrease(UnaryOp tree) {
-        Item item = genExpr(tree.expr);
-        boolean isPost = tree.hasTag(Tag.POSTINC) || tree.hasTag(Tag.POSTDEC);
-        code.putPos(tree.pos);
-        if (item instanceof LocalItem) {
-            if (isPost) {
-                currentSaver.loadItem(item);
-                item.incOrDec(tree.tag);
-                result = items.new Item() {
-                    @Override
-                    Item load() { return this; }
-
-                    @Override
-                    void drop() {}
-                };
-            } else {
-                item.incOrDec(tree.tag);
-                result = item;
-            }
-        } else if (item instanceof AccessItem) {
-            if (isPost) {
-                item.incOrDec(tree.tag);
-                result = items.makeStack();
-            } else {
-                item.duplicate();
-                item.incOrDec(tree.tag);
-                items.makeStack().drop();
-                result = item;
-            }
-        } else {
-            Assert.error(item);
-        }
+    @Override
+    public void visitAssign(Assign tree) {
+        Item varItem = genExpr(tree.var);
+        genExpr(tree.expr).load();
+        result = Items.treeify(items.makeAssign(varItem), tree);
     }
 
     @Override
     public void visitCompoundAssign(CompoundAssign tree) {
         Item varItem = genExpr(tree.var);
-        varItem.duplicate();
-        if (tree.hasTag(Tag.ASG_NULLCOALSC)) {
-            // todo: Починить
-            CondItem contains = Items.treeify(varItem.contains(), tree);
-            Chain trueJumps = contains.trueJumps();
-            code.resolve(contains.falseChain);
-            int sp = code.curStackTop();
-            Item exprItem = genExpr(tree.expr);
-            exprItem.load();
-            if (!(varItem instanceof LocalItem)) {
-                currentSaver.stashItem(exprItem);
-            }
-            varItem.store();
-            Chain exit = null;
-            if (!(varItem instanceof LocalItem)) {
-                exit = code.branch(new Goto());
-            }
-            code.resolve(trueJumps);
-            code.curStackTop(sp);
-            result = varItem;
-            code.resolve(exit, code.currentIP() + 1);
+        if (tree.hasTag(Tag.ASG_COALESCE)) {
+            varItem.duplicate();
+            CondItem presentCond = varItem.contains();
+            Chain whenItemPresentChain = presentCond.trueJumps();
+            code.resolve(presentCond.falseChain);
+            result = varItem.coalesce(genExpr(tree.expr), whenItemPresentChain);
         } else {
             varItem.load();
             genExpr(tree.expr).load();
-            code.putPos(tree.pos);
             code.addInstruction(fromBinaryAsgOpTag(tree.tag));
-            result = Items.treeify(items.makeAssign(varItem), tree);
+            result = Items.treeify(items.makeAssign(varItem), tree); // treeify is unnecessary
         }
     }
 
@@ -737,14 +669,14 @@ public final class Gen extends Scanner {
      * Генерирует код оператора в дочерней ветке и возвращает жива ли она.
      */
     private boolean genBranch(Statement statement) {
-        int savedstacktop = code.curStackTop();
+        int backedStackTop = code.curStackTop();
 
         try {
             statement.accept(this);
             return code.isAlive();
         } finally {
             code.setAlive();
-            assertStacktopEquality(savedstacktop);
+            assertStacktopEquality(backedStackTop);
         }
     }
 

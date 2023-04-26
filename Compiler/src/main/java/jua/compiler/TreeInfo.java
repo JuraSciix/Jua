@@ -166,7 +166,7 @@ public final class TreeInfo {
             case ASG_SL: case ASG_SR: case ASG_BIT_AND:
             case ASG_BIT_OR: case ASG_BIT_XOR:
                 return 1;
-            case NULLCOALSC:
+            case COALESCE:
                 return 2;
             case TERNARY:
                 return 3;

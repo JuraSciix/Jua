@@ -468,7 +468,7 @@ public final class JuaParser {
             }
             case QUESQUESEQ: {
                 nextToken();
-                return new CompoundAssign(position, Tag.ASG_NULLCOALSC, expr, parseAssignment());
+                return new CompoundAssign(position, Tag.ASG_COALESCE, expr, parseAssignment());
             }
             case SLASHEQ: {
                 nextToken();
@@ -487,7 +487,7 @@ public final class JuaParser {
         int pos = token.pos;
 
         if (acceptToken(QUESQUES)) {
-            expr = new BinaryOp(pos, Tag.NULLCOALSC, expr, parseCoalesce());
+            expr = new BinaryOp(pos, Tag.COALESCE, expr, parseCoalesce());
         }
         return expr;
     }
@@ -731,7 +731,7 @@ public final class JuaParser {
                     Token member = token;
                     expectToken(IDENTIFIER);
                     expr = new MemberAccess(op.pos,
-                            (op.type == DOT) ? Tag.MEMACCESS : Tag.MEMACCESS_NULL_SAFE,
+                            (op.type == DOT) ? Tag.MEMACCESS : Tag.MEMACCESS_SAFE,
                             expr, member.toName());
                     break;
 
@@ -741,7 +741,7 @@ public final class JuaParser {
                     Expression index = parseExpression();
                     expectToken(RBRACKET);
                     expr = new ArrayAccess(op.pos,
-                            (op.type == LBRACKET) ? Tag.ARRAYACCESS : Tag.ARRAYACCESS_NULL_SAFE,
+                            (op.type == LBRACKET) ? Tag.ARRAYACCESS : Tag.ARRAYACCESS_SAFE,
                             expr, index);
                     break;
 

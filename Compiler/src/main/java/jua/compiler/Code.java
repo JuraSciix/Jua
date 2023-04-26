@@ -21,9 +21,12 @@ public final class Code {
 
         final Chain next;
 
-        Chain(int pc, Chain next) {
+        final int savedStackTop;
+
+        Chain(int pc, Chain next, int savedStackTop) {
             this.pc = pc;
             this.next = next;
+            this.savedStackTop = savedStackTop;
         }
     }
 
@@ -32,9 +35,9 @@ public final class Code {
         if (rhs == null) return lhs;
         // Рекурсивная сортировка
         if (lhs.pc <= rhs.pc)
-            return new Chain(lhs.pc, mergeChains(lhs.next, rhs));
+            return new Chain(lhs.pc, mergeChains(lhs.next, rhs), lhs.savedStackTop);
         else  // lhs.pc > rhs.pc
-            return new Chain(rhs.pc, mergeChains(rhs.next, lhs));
+            return new Chain(rhs.pc, mergeChains(rhs.next, lhs), rhs.savedStackTop);
     }
 
     private final ArrayList<Instruction> instructions = new ArrayList<>();
@@ -72,7 +75,7 @@ public final class Code {
     }
 
     public Chain branch(Instruction instr) {
-        return new Chain(addInstruction(instr), null);
+        return new Chain(addInstruction(instr), null, curStackTop());
     }
 
     public int lastLineNum() {
@@ -232,6 +235,7 @@ public final class Code {
 
     public void resolve(Chain chain, int destPC) {
         while (chain != null) {
+            curStackTop(chain.savedStackTop);
             get(chain.pc).setOffset(destPC - chain.pc);
             chain = chain.next;
         }

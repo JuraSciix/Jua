@@ -375,7 +375,7 @@ public class Pretty extends Scanner {
             case ASG_BIT_AND:      operator = " &= ";  break;
             case ASG_BIT_OR:       operator = " |= ";  break;
             case ASG_BIT_XOR:      operator = " ^= ";  break;
-            case ASG_NULLCOALSC: operator = " ??= "; break;
+            case ASG_COALESCE: operator = " ??= "; break;
             default: throw illegalTagException(tree.tag);
         }
 
@@ -397,7 +397,7 @@ public class Pretty extends Scanner {
     public void visitBinaryOp(BinaryOp tree) {
         String operator;
         switch (tree.tag) {
-            case NULLCOALSC: operator = " ?? "; break;
+            case COALESCE: operator = " ?? "; break;
             case OR:      operator = " || "; break;
             case AND:     operator = " && "; break;
             case EQ:      operator = " == "; break;

@@ -85,7 +85,7 @@ public final class Lower extends Translator {
                 }
                 break;
 
-            case NULLCOALSC:
+            case COALESCE:
                 result = isLiteralNull(tree.lhs) ? tree.rhs : tree;
                 return;
         }
