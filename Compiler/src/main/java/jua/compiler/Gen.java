@@ -32,59 +32,13 @@ public final class Gen extends Scanner {
 
     Item result;
 
-    Saver currentSaver;
-
-    static class Saver {
-
-        void stashItem(Item item) {
-            item.stash();
-        }
-
-        void duplicateItem(Item item) {
-            item.duplicate();
-        }
-
-        void loadItem(Item item) {
-            item.load();
-        }
-    }
-
-    static class NoSaver extends Saver {
-
-        @Override
-        void stashItem(Item item) {
-            // nop
-        }
-
-        @Override
-        void duplicateItem(Item item) {
-            // nop
-        }
-
-        @Override
-        void loadItem(Item item) {
-            // nop
-        }
-    }
-
-    static final Saver saver = new Saver();
-
-    static final NoSaver noSaver = new NoSaver();
-
     Item genExpr(Expression tree) {
-        return genExpr(tree, saver);
-    }
-
-    Item genExpr(Expression tree, Saver saver) {
         Item prevItem = result;
-        Saver prevSaver = currentSaver;
-        currentSaver = saver;
         try {
             tree.accept(this);
             return result;
         } finally {
             result = prevItem;
-            currentSaver = prevSaver;
         }
     }
 
@@ -662,7 +616,7 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitDiscarded(Discarded tree) {
-        genExpr(tree.expr, noSaver).drop();
+        genExpr(tree.expr).drop();
     }
 
     /**
