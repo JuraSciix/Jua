@@ -1,27 +1,29 @@
-fn test(a, b) {
-    a[0] ??= b;
-}
+fn test1(a, b) = (a ??= b);
 
-// a[0] ??= b;
-//
-// 0. load_0
-// 1. push 0
-// 2. dup2
-// 3. ifpresent 7
-// 4. load_1
-// 5. astore
-// 6. goto 8
-// 7. pop2
+// 0: load_0
+// 1: ifnonnull 6
+// 2: load_1
+// 3: dup
+// 4: store_0
+// 5: goto 7
+// 6: load_0
+// 7: return
 
-fn test2(a, b)
-    = (a[0] ??= b);
 
-// 0. load_0
-// 1. push 0
-// 2. dup2
-// 3. ifpresent 8
-// 4. load_1
-// 5. dup_x2
-// 6. astore
-// 7. goto 9
-// 8. aload
+fn test2(a, b, c) = (a ??= b) ?? c;
+
+// 0: load_0
+// 1: ifnonnull 11
+// 2: load_1
+// 3: dup
+// 4: store_0
+// 5: goto 7
+// 6: load_0
+// 7: dup
+// 8: ifnonnull 11
+// 9: pop
+//10: load_2
+//11: return
+
+
+fn test3(a, b, c) = a ?? b ?? c;

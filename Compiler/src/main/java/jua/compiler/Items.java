@@ -236,12 +236,12 @@ public class Items {
     class LocalCoalesceItem extends Item {
         final LocalItem item;
         final Item value;
-        final Chain whenItemNonNullChain;
+        final Chain whenItemPresentChain;
 
-        LocalCoalesceItem(LocalItem item, Item value, Chain whenItemNonNullChain) {
+        LocalCoalesceItem(LocalItem item, Item value, Chain whenItemPresentChain) {
             this.item = item;
             this.value = value;
-            this.whenItemNonNullChain = whenItemNonNullChain;
+            this.whenItemPresentChain = whenItemPresentChain;
         }
 
         @Override
@@ -249,7 +249,10 @@ public class Items {
             Item result = value.load();
             result.duplicate();
             item.store();
-            code.resolve(whenItemNonNullChain);
+            Chain exitChain = code.branch(new Goto());
+            code.resolve(whenItemPresentChain);
+            item.load();
+            code.resolve(exitChain);
             return result;
         }
 
@@ -257,7 +260,14 @@ public class Items {
         void drop() {
             value.load();
             item.store();
-            code.resolve(whenItemNonNullChain);
+            code.resolve(whenItemPresentChain);
+        }
+
+        @Override
+        SafeItem safe() {
+            SafeItem safeItem = new SafeItem(this);
+            safeItem.exitChain = whenItemPresentChain;
+            return safeItem;
         }
     }
 
@@ -406,7 +416,7 @@ public class Items {
 
         final Item child;
 
-        Chain nullChain;
+        Chain exitChain;
 
         SafeItem(Item child) {
             this.child = child;
@@ -416,7 +426,7 @@ public class Items {
         Item load() {
             child.load();
             Chain nonNullChain = code.branch(new Goto());
-            code.resolve(nullChain);
+            code.resolve(exitChain);
             code.addInstruction(pop);
             code.addInstruction(const_null);
             code.resolve(nonNullChain);

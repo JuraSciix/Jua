@@ -46,10 +46,6 @@ public final class Gen extends Scanner {
         return genExpr(tree).asCond();
     }
 
-    SafeItem genSafe(Expression tree) {
-        return genExpr(tree).safe();
-    }
-
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
         code = tree.sym.code;
@@ -89,8 +85,8 @@ public final class Gen extends Scanner {
             Item safeChildItem = exprSafeItem.child.load();
             safeChildItem.duplicate();
             CondItem nonNullCond = safeChildItem.nonNull();
-            resultSafeItem.nullChain =
-                    Code.mergeChains(exprSafeItem.nullChain,
+            resultSafeItem.exitChain =
+                    Code.mergeChains(exprSafeItem.exitChain,
                             nonNullCond.falseJumps());
             code.resolve(nonNullCond.trueChain);
         } else {
@@ -538,19 +534,19 @@ public final class Gen extends Scanner {
                 break;
 
             case COALESCE: {
-                SafeItem lhsSafeItem = genSafe(tree.lhs);
+                SafeItem lhsSafeItem = genExpr(tree.lhs).safe();
                 Item item = lhsSafeItem.child.load();
                 item.duplicate();
-                CondItem nonNullCond = Items.treeify(item.nonNull(), tree);
-                Chain nonNullChain = nonNullCond.trueJumps();
-                nonNullCond.falseChain =
+                CondItem nonNullCond = item.nonNull(); // treeify is unnecessary
+                Chain whenNonNullChain = nonNullCond.trueJumps();
+                lhsSafeItem.exitChain =
                         Code.mergeChains(
-                                nonNullCond.falseChain,
-                                lhsSafeItem.nullChain);
+                                lhsSafeItem.exitChain,
+                                whenNonNullChain);
                 code.resolve(nonNullCond.falseChain);
                 item.drop();
                 genExpr(tree.rhs).load();
-                code.resolve(nonNullChain);
+                code.resolve(lhsSafeItem.exitChain);
                 result = items.makeStack();
                 break;
             }
@@ -605,7 +601,7 @@ public final class Gen extends Scanner {
             varItem.load();
             genExpr(tree.expr).load();
             code.addInstruction(fromBinaryAsgOpTag(tree.tag));
-            result = Items.treeify(items.makeAssign(varItem), tree); // treeify is unnecessary
+            result = Items.treeify(items.makeAssign(varItem), tree);
         }
     }
 
