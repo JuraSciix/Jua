@@ -79,12 +79,12 @@ public final class Gen extends Scanner {
         Item exprItem = genExpr(expr);
         Item resultItem = items.makeAccess();
         if (tree.hasTag(coalescingTag)) {
-            SafeItem exprSafeItem = exprItem.safe();
+            SafeItem exprSafeItem = exprItem.asSafe();
             SafeItem resultSafeItem = items.makeNullSafe(resultItem);
             resultItem = resultSafeItem;
             Item safeChildItem = exprSafeItem.child.load();
             safeChildItem.duplicate();
-            CondItem nonNullCond = safeChildItem.nonNull();
+            CondItem nonNullCond = safeChildItem.nullCheck();
             resultSafeItem.exitChain =
                     Code.mergeChains(exprSafeItem.exitChain,
                             nonNullCond.falseJumps());
@@ -316,7 +316,7 @@ public final class Gen extends Scanner {
             Assert.ensure(tree.body.hasTag(Tag.DISCARDED), "Function body neither block ner expression");
             genExpr(((Discarded) tree.body).expr).load();
         }
-        code.addInstruction(return_);
+        code.addInstruction(leave);
         code.dead();
 
         tree.sym.runtimefunc = new Function(
@@ -513,15 +513,15 @@ public final class Gen extends Scanner {
                 if (isLiteralNull(tree.rhs)) {
                     Item expr = genExpr(tree.lhs).load();
                     result = Items.treeify(tree.hasTag(Tag.NE)
-                            ? expr.nonNull()
-                            : expr.nonNull().negate(), tree);
+                            ? expr.nullCheck()
+                            : expr.nullCheck().negate(), tree);
                     break;
                 }
                 if (isLiteralNull(tree.lhs)) {
                     Item expr = genExpr(tree.rhs).load();
                     result = Items.treeify(tree.hasTag(Tag.NE)
-                            ? expr.nonNull()
-                            : expr.nonNull().negate(), tree);
+                            ? expr.nullCheck()
+                            : expr.nullCheck().negate(), tree);
                     break;
                 }
                 // fallthrough
@@ -534,10 +534,10 @@ public final class Gen extends Scanner {
                 break;
 
             case COALESCE: {
-                SafeItem lhsSafeItem = genExpr(tree.lhs).safe();
+                SafeItem lhsSafeItem = genExpr(tree.lhs).asSafe();
                 Item item = lhsSafeItem.child.load();
                 item.duplicate();
-                CondItem nonNullCond = item.nonNull(); // treeify is unnecessary
+                CondItem nonNullCond = item.nullCheck(); // treeify is unnecessary
                 Chain whenNonNullChain = nonNullCond.trueJumps();
                 lhsSafeItem.exitChain =
                         Code.mergeChains(
@@ -593,7 +593,7 @@ public final class Gen extends Scanner {
         Item varItem = genExpr(tree.var);
         if (tree.hasTag(Tag.ASG_COALESCE)) {
             varItem.duplicate();
-            CondItem presentCond = varItem.contains();
+            CondItem presentCond = varItem.presentCheck();
             Chain whenItemPresentChain = presentCond.trueJumps();
             code.resolve(presentCond.falseChain);
             result = varItem.coalesce(genExpr(tree.expr), whenItemPresentChain);

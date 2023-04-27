@@ -50,12 +50,12 @@ public class Items {
             return new CondItem(new Ifnz());
         }
 
-        CondItem nonNull() {
+        CondItem nullCheck() {
             load();
             return new CondItem(new Ifnonnull());
         }
 
-        CondItem contains() {
+        CondItem presentCheck() {
             throw new AssertionError(this);
         }
 
@@ -63,7 +63,7 @@ public class Items {
             throw new AssertionError(this);
         }
 
-        SafeItem safe() {
+        SafeItem asSafe() {
             return new SafeItem(this);
         }
 
@@ -186,8 +186,8 @@ public class Items {
         }
 
         @Override
-        CondItem contains() {
-            return nonNull();
+        CondItem presentCheck() {
+            return nullCheck();
         }
 
         @Override
@@ -263,12 +263,13 @@ public class Items {
             code.resolve(whenItemPresentChain);
         }
 
-        @Override
-        SafeItem safe() {
-            SafeItem safeItem = new SafeItem(this);
-            safeItem.exitChain = whenItemPresentChain;
-            return safeItem;
-        }
+        // todo: Оптимизация выражения (a ??= b) ?? c
+//        @Override
+//        SafeItem asSafe() {
+//            SafeItem safeItem = new SafeItem(this);
+//            safeItem.exitChain = whenItemPresentChain;
+//            return safeItem;
+//        }
     }
 
     /**
@@ -295,7 +296,7 @@ public class Items {
         }
 
         @Override
-        CondItem contains() {
+        CondItem presentCheck() {
             return new CondItem(new Ifpresent());
         }
 
@@ -439,12 +440,12 @@ public class Items {
         }
 
         @Override
-        CondItem contains() {
+        CondItem presentCheck() {
             return new CondItem(new Ifpresent());
         }
 
         @Override
-        SafeItem safe() {
+        SafeItem asSafe() {
             return this;
         }
     }

@@ -115,8 +115,10 @@ public final class Code {
 
     private int addInstruction0(Instruction instruction) {
         int pc = instructions.size();
-        this.instructions.add(instruction);
-        adjustStack(instruction.stackAdjustment());
+        if (isAlive()) {
+            instructions.add(instruction);
+            adjustStack(instruction.stackAdjustment());
+        }
         return pc;
     }
 
