@@ -24,6 +24,7 @@ public final class Options {
     public static ArrayList<String> argv() { return bound.argv; }
     public static int logMaxErrors() { return bound.logMaxErrors; }
     public static Charset charset() { return bound.charset; }
+    public static boolean genJvmLoops() { return bound.genJvmLoops; }
 
     private final ArrayList<String> files = new ArrayList<>();
     private boolean printCode;
@@ -32,6 +33,7 @@ public final class Options {
     private final ArrayList<String> argv = new ArrayList<>();
     private int logMaxErrors = 1;
     private Charset charset = Charset.defaultCharset();
+    private boolean genJvmLoops;
 
     private static class OptionIterator {
 
@@ -131,6 +133,11 @@ public final class Options {
                 }
                 continue;
             }
+            if (option.equals("-gj")) {
+                genJvmLoops = true;
+                continue;
+            }
+
             System.err.println("Unrecognized option: " + option);
             System.exit(1);
         }
@@ -144,10 +151,14 @@ public final class Options {
 
     private void print_help() {
         System.out.println("Usage: jua [options...] [file]");
-        System.out.println("\t-x             Print compiled code");
-        System.out.println("\t-l, --lint     Print tokens");
-        System.out.println("\t-h, --help     Print this help");
-        System.out.println("\t-v, --version  Print installed version");
+        System.out.println("\t-x                              Print compiled code");
+        System.out.println("\t-l, --lint                      Print tokens");
+        System.out.println("\t-h, --help                      Print this help");
+        System.out.println("\t-v, --version                   Print installed version");
+        System.out.println("\t-v, --c=<value>                 Specify charset");
+        System.out.println("\t-m=<value>, --m<value>          Specify max printable compiler errors");
+        System.out.println("\t--gj                            Enable JVM loops model generation");
+        System.out.println("\t-f=<values;>, --files=<values;> Specify files to be executed (didn't work)");
         System.exit(0);
     }
 

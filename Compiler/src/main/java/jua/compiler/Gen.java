@@ -19,8 +19,7 @@ import static jua.compiler.TreeInfo.*;
 
 public final class Gen extends Scanner {
 
-    @Deprecated // todo: option -gj
-    private static final boolean GEN_JVM_LOOPS = false;
+    boolean genJvmLoops;
 
     Code code;
 
@@ -430,59 +429,71 @@ public final class Gen extends Scanner {
 
         boolean infinitecond = isInfiniteLoopCond(cond);
 
-        if (GEN_JVM_LOOPS) {
-            int loopstartPC = code.currentIP();
-            if (infinitecond) {
+        if (genJvmLoops) {
+            genJvmLoop(_infinite, cond, update, body, testFirst, infinitecond);
+        } else {
+            genJuaLoop(_infinite, cond, update, body, testFirst, infinitecond);
+        }
+
+        flow.resolveExit();
+        flow = flow.parent;
+    }
+
+    private void genJvmLoop(boolean _infinite, Expression cond,
+                            List<Discarded> update, Statement body, boolean testFirst,
+                            boolean infinitecond) {
+        int loopstartPC = code.currentIP();
+        if (infinitecond) {
+            genBranch(body);
+            flow.resolveCont(loopstartPC);
+            code.resolve(code.branch(new Goto()), loopstartPC);
+            if (_infinite) code.dead(); // Подлинный вечный цикл.
+        } else {
+            if (testFirst) {
+                CondItem condItem = genCond(cond);
+                Chain falseJumps = condItem.falseJumps();
+                code.resolve(condItem.trueChain);
                 genBranch(body);
                 flow.resolveCont(loopstartPC);
+                scan(update);
                 code.resolve(code.branch(new Goto()), loopstartPC);
-                if (_infinite) code.dead(); // Подлинный вечный цикл.
+                code.resolve(falseJumps);
             } else {
-                if (testFirst) {
-                    CondItem condItem = genCond(cond);
-                    Chain falseJumps = condItem.falseJumps();
-                    code.resolve(condItem.trueChain);
-                    genBranch(body);
-                    flow.resolveCont(loopstartPC);
-                    scan(update);
-                    code.resolve(code.branch(new Goto()), loopstartPC);
-                    code.resolve(falseJumps);
-                } else {
-                    genBranch(body);
-                    flow.resolveCont();
-                    scan(update);
-                    CondItem condItem = genCond(cond);
-                    code.resolve(condItem.trueJumps(), loopstartPC);
-                    code.resolve(condItem.falseChain);
-                }
-            }
-        } else {
-            int loopstartPC;
-            if (testFirst && !infinitecond) {
-                Chain skipBodyPC = code.branch(new Goto());
-                loopstartPC = code.currentIP();
                 genBranch(body);
                 flow.resolveCont();
                 scan(update);
-                code.resolve(skipBodyPC);
-            } else {
-                loopstartPC = code.currentIP();
-                genBranch(body);
-                flow.resolveCont();
-                scan(update);
-            }
-            if (infinitecond) {
-                code.resolve(code.branch(new Goto()), loopstartPC);
-                if (_infinite) code.dead(); // Подлинный вечный цикл.
-            } else {
                 CondItem condItem = genCond(cond);
                 code.resolve(condItem.trueJumps(), loopstartPC);
                 code.resolve(condItem.falseChain);
             }
         }
+    }
 
-        flow.resolveExit();
-        flow = flow.parent;
+    private void genJuaLoop(boolean _infinite,
+                            Expression cond, List<Discarded> update,
+                            Statement body, boolean testFirst, boolean infinitecond) {
+        int loopstartPC;
+        if (testFirst && !infinitecond) {
+            Chain skipBodyPC = code.branch(new Goto());
+            loopstartPC = code.currentIP();
+            genBranch(body);
+            flow.resolveCont();
+            scan(update);
+            code.resolve(skipBodyPC);
+        } else {
+            loopstartPC = code.currentIP();
+            genBranch(body);
+            flow.resolveCont();
+            scan(update);
+        }
+        if (infinitecond) {
+            code.resolve(code.branch(new Goto()), loopstartPC);
+            if (_infinite) code.dead(); // Подлинный вечный цикл.
+        } else {
+            CondItem condItem = genCond(cond);
+            code.resolve(condItem.trueJumps(), loopstartPC);
+            code.resolve(condItem.falseChain);
+        }
     }
 
     public void visitBinaryOp(BinaryOp tree) {

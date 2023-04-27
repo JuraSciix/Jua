@@ -27,6 +27,16 @@ public final class JuaCompiler {
 
     private Charset charset = Charset.defaultCharset();
 
+    public boolean isGenJvmLoops() {
+        return genJvmLoops;
+    }
+
+    public void setGenJvmLoops(boolean genJvmLoops) {
+        this.genJvmLoops = genJvmLoops;
+    }
+
+    private boolean genJvmLoops = false;
+
     public void setCharset(Charset charset) {
         this.charset = charset;
     }
@@ -94,6 +104,7 @@ public final class JuaCompiler {
                 return null;
             }
 
+            compilationUnit.sym.code.gen.genJvmLoops = genJvmLoops;
             compilationUnit.accept(compilationUnit.sym.code.gen);
             compilationUnit.functions
                     .forEach(funcDef -> {

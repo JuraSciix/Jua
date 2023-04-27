@@ -42,6 +42,7 @@ public class Main {
         compiler.setLintMode(Options.isLintEnabled());
         compiler.setLintMode(Options.isShouldPrettyTree());
         compiler.setLogLimit(Options.logMaxErrors());
+        compiler.setGenJvmLoops(Options.genJvmLoops());
         Program result = compiler.compile();
 
         if (result == null) return;
