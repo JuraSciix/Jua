@@ -40,7 +40,7 @@ public class Main {
         compiler.setFile(file.getName());
         compiler.setCharset(Options.charset());
         compiler.setLintMode(Options.isLintEnabled());
-        compiler.setLintMode(Options.isShouldPrettyTree());
+        compiler.setPrettyTreeMode(Options.isShouldPrettyTree());
         compiler.setLogLimit(Options.logMaxErrors());
         compiler.setGenJvmLoops(Options.genJvmLoops());
         Program result = compiler.compile();
