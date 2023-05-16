@@ -8,26 +8,16 @@
     <artifactId>jua</artifactId>
     <version>1.0</version>
     <packaging>pom</packaging>
-    <name>Jua</name>
-    <description>Jua</description>
     <modules>
-        <module>Runtime</module>
-        <module>Compiler</module>
-        <module>Boot</module>
+        <module>boot</module>
+        <module>compiler</module>
+        <module>runtime</module>
     </modules>
 
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-
-    <dependencies>
-        <dependency>
-            <groupId>it.unimi.dsi</groupId>
-            <artifactId>fastutil</artifactId>
-            <version>8.1.0</version>
-        </dependency>
-    </dependencies>
 
 </project>

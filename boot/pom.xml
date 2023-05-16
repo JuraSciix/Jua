@@ -9,18 +9,17 @@
         <version>1.0</version>
     </parent>
 
-    <artifactId>Boot</artifactId>
-
-    <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
+    <artifactId>boot</artifactId>
 
     <dependencies>
         <dependency>
             <groupId>jua</groupId>
-            <artifactId>Compiler</artifactId>
+            <artifactId>compiler</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>jua</groupId>
+            <artifactId>runtime</artifactId>
             <version>1.0</version>
         </dependency>
     </dependencies>

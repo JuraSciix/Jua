@@ -9,20 +9,19 @@
         <version>1.0</version>
     </parent>
 
-    <artifactId>Compiler</artifactId>
-
-    <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
+    <artifactId>compiler</artifactId>
 
     <dependencies>
         <dependency>
+            <groupId>it.unimi.dsi</groupId>
+            <artifactId>fastutil</artifactId>
+            <version>8.1.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>jua</groupId>
-            <artifactId>Runtime</artifactId>
+            <artifactId>runtime</artifactId>
             <version>1.0</version>
         </dependency>
     </dependencies>
-
 </project>
