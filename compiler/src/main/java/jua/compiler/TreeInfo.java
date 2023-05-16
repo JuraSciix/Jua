@@ -46,8 +46,8 @@ public final class TreeInfo {
 
     public static boolean isAccessible(Expression tree) {
         switch (stripParens(tree).getTag()) {
-            case VARIABLE:
-            case ARRAYACCESS:
+            case VAR:
+            case ARRACC:
             case MEMACCESS:
                 return true;
             default:
@@ -60,17 +60,17 @@ public final class TreeInfo {
         switch (innerTree.getTag()) {
             case LITERAL:
                 return true;
-            case LISTINIT:
-                ListInit listTree = (ListInit) innerTree;
+            case LISTLIT:
+                ListLiteral listTree = (ListLiteral) innerTree;
                 for (Expression entry : listTree.entries) {
                     if (!isLiteral(entry)) {
                         return false;
                     }
                 }
                 return true;
-            case MAPINIT:
-                MapInit mapTree = (MapInit) innerTree;
-                for (MapInit.Entry entry : mapTree.entries) {
+            case MAPLIT:
+                MapLiteral mapTree = (MapLiteral) innerTree;
+                for (MapLiteral.Entry entry : mapTree.entries) {
                     if (!isLiteral(entry.key) || !isLiteral(entry.value)) {
                         return false;
                     }
@@ -87,11 +87,11 @@ public final class TreeInfo {
             case LITERAL:
                 Literal literalTree = (Literal) innerTree;
                 return literalTree.type;
-            case LISTINIT:
-                ListInit listTree = (ListInit) innerTree;
+            case LISTLIT:
+                ListLiteral listTree = (ListLiteral) innerTree;
                 return new ListType(listTree.entries.map(TreeInfo::literalType).toArray(Type[]::new));
-            case MAPINIT:
-                MapInit mapTree = (MapInit) innerTree;
+            case MAPLIT:
+                MapLiteral mapTree = (MapLiteral) innerTree;
                 return new Types.MapType(
                         mapTree.entries.map(e -> literalType(e.key)).toArray(Type[]::new),
                         mapTree.entries.map(e -> literalType(e.value)).toArray(Type[]::new)
@@ -138,8 +138,8 @@ public final class TreeInfo {
             Literal literalTree = (Literal) innerTree;
             return literalTree.type.booleanValue();
         }
-        if (innerTree.hasTag(Tag.MAPINIT)) {
-            MapInit arrayTree = (MapInit) innerTree;
+        if (innerTree.hasTag(Tag.MAPLIT)) {
+            MapLiteral arrayTree = (MapLiteral) innerTree;
             return !arrayTree.entries.isEmpty();
         }
         return false;
@@ -151,8 +151,8 @@ public final class TreeInfo {
             Literal literalTree = (Literal) innerTree;
             return !literalTree.type.booleanValue();
         }
-        if (innerTree.hasTag(Tag.MAPINIT)) {
-            MapInit arrayTree = (MapInit) innerTree;
+        if (innerTree.hasTag(Tag.MAPLIT)) {
+            MapLiteral arrayTree = (MapLiteral) innerTree;
             return arrayTree.entries.isEmpty();
         }
         return false;
@@ -197,32 +197,12 @@ public final class TreeInfo {
                 return 15;
             case INVOCATION:
                 return 16;
-            case MEMACCESS: case ARRAYACCESS:
+            case MEMACCESS: case ARRACC:
                 return 17;
-            case VARIABLE:
+            case VAR:
                 return 18;
             default:
                 throw new AssertionError(tag);
         }
-    }
-
-    // my-file.jua => my_2d_file
-    public static String normalizeName(String name) {
-        int i = 0;
-        int j = name.lastIndexOf('.');
-        if (j < 0) j = name.length();
-        StringBuilder buffer = new StringBuilder(j);
-        while (i < j) {
-            int cp = name.codePointAt(i);
-            if (Character.isJavaIdentifierPart(cp)) {
-                buffer.appendCodePoint(cp);
-            } else {
-                buffer.append('_');
-                buffer.append(Integer.toHexString(cp));
-                buffer.append('_');
-            }
-            i += Character.charCount(cp);
-        }
-        return buffer.toString();
     }
 }

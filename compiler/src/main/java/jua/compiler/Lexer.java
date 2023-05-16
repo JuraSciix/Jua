@@ -2,6 +2,8 @@ package jua.compiler;
 
 import jua.utils.Assert;
 
+import java.util.Objects;
+
 import static java.lang.Character.*;
 import static jua.compiler.Tokens.*;
 import static jua.compiler.Tokens.TokenType.*;
@@ -557,6 +559,7 @@ public class Lexer {
             b = TokenType.lookupNullable(buffer.toString());
         }
 
-        type = Assert.notNull(a);
+        Assert.ensureNonNull(a, "token type not installed");
+        type = a;
     }
 }

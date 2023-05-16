@@ -12,6 +12,8 @@ import jua.runtime.Function;
 import jua.utils.Assert;
 import jua.utils.List;
 
+import java.util.Objects;
+
 import static jua.compiler.Code.mergeChains;
 import static jua.compiler.InstructionFactory.*;
 import static jua.compiler.InstructionUtils.*;
@@ -66,12 +68,12 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitArrayAccess(ArrayAccess tree) {
-        genAccess(tree, tree.expr, tree.index, Tag.ARRAYACCESS_SAFE);
+        genAccess(tree, tree.expr, tree.index, Tag.ARRACCSF);
     }
 
     @Override
     public void visitMemberAccess(MemberAccess tree) {
-        genAccess(tree, tree.expr, tree.member.toLiteral(), Tag.MEMACCESS_SAFE);
+        genAccess(tree, tree.expr, tree.member.toLiteral(), Tag.MEMACCSF);
     }
 
     private void genAccess(Expression tree, Expression expr, Expression key, Tag coalescingTag) {
@@ -96,7 +98,7 @@ public final class Gen extends Scanner {
     }
 
     @Override
-    public void visitListInit(ListInit tree) {
+    public void visitListLiteral(ListLiteral tree) {
         code.putPos(tree.pos);
         items.makeLiteral(new LongType(tree.entries.count())).load();
         code.addInstruction(newlist);
@@ -111,10 +113,10 @@ public final class Gen extends Scanner {
     }
 
     @Override
-    public void visitMapInit(MapInit tree) {
+    public void visitMapLiteral(MapLiteral tree) {
         code.putPos(tree.pos);
         code.addInstruction(newmap);
-        for (MapInit.Entry entry : tree.entries) {
+        for (MapLiteral.Entry entry : tree.entries) {
             items.makeStack().duplicate();
             genExpr(entry.key).load();
             genExpr(entry.value).load();
@@ -127,7 +129,7 @@ public final class Gen extends Scanner {
     @Override
     public void visitBreak(Break tree) {
         FlowEnv env = flow;
-        Assert.notNull(env);
+        Objects.requireNonNull(env);
         code.putPos(tree.pos);
         env.exitjumps = mergeChains(env.exitjumps, code.branch(new Goto()));
         code.dead();
@@ -174,11 +176,11 @@ public final class Gen extends Scanner {
 
         env.resolveExit();
 
-        if (tree._final) {
-            // Ни один кейз не был закрыт с помощью break.
-            // Это значит, что после switch находится недостижимый код.
-            code.dead();
-        }
+//        if (tree._final) {
+//            // Ни один кейз не был закрыт с помощью break.
+//            // Это значит, что после switch находится недостижимый код.
+//            code.dead();
+//        }
 
         flow = env.parent;
     }
@@ -211,7 +213,7 @@ public final class Gen extends Scanner {
     @Override
     public void visitContinue(Continue tree) {
         FlowEnv env = searchEnv(false);
-        Assert.notNull(env);
+        Objects.requireNonNull(env);
         code.putPos(tree.pos);
         env.contjumps = mergeChains(env.contjumps, code.branch(new Goto()));
         code.dead();
@@ -226,13 +228,13 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitDoLoop(DoLoop tree) {
-        genLoop(tree.pos, tree._infinite, null, tree.cond, null, tree.body, false);
+        genLoop(tree.pos, false, null, tree.cond, null, tree.body, false);
     }
 
     @Override
     public void visitFallthrough(Fallthrough tree) {
         FlowEnv env = searchEnv(true);
-        Assert.notNull(env);
+        Objects.requireNonNull(env);
         code.putPos(tree.pos);
         env.contjumps = mergeChains(env.contjumps, code.branch(new Goto()));
         code.dead();
@@ -256,7 +258,7 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitForLoop(ForLoop tree) {
-        genLoop(tree.pos, tree._infinite, tree.init, tree.cond, tree.step, tree.body, true);
+        genLoop(tree.pos, false, tree.init, tree.cond, tree.step, tree.body, true);
     }
 
     @Override
@@ -406,7 +408,7 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitWhileLoop(WhileLoop tree) {
-        genLoop(tree.pos, tree._infinite, null, tree.cond, null, tree.body, true);
+        genLoop(tree.pos, false, null, tree.cond, null, tree.body, true);
     }
 
     private static boolean isInfiniteLoopCond(Expression tree) {

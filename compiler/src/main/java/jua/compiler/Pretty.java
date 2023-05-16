@@ -259,14 +259,14 @@ public class Pretty extends Scanner {
     }
 
     @Override
-    public void visitListInit(ListInit tree) {
+    public void visitListLiteral(ListLiteral tree) {
         print("[");
         printEnumeration(tree.entries, this::scan);
         print("]");
     }
 
     @Override
-    public void visitMapInit(MapInit tree) {
+    public void visitMapLiteral(MapLiteral tree) {
         if (tree.entries.isEmpty()) {
             print("{}");
             return;

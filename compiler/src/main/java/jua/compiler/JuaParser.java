@@ -731,7 +731,7 @@ public final class JuaParser {
                     Token member = token;
                     expectToken(IDENTIFIER);
                     expr = new MemberAccess(op.pos,
-                            (op.type == DOT) ? Tag.MEMACCESS : Tag.MEMACCESS_SAFE,
+                            (op.type == DOT) ? Tag.MEMACCESS : Tag.MEMACCSF,
                             expr, member.toName());
                     break;
 
@@ -741,7 +741,7 @@ public final class JuaParser {
                     Expression index = parseExpression();
                     expectToken(RBRACKET);
                     expr = new ArrayAccess(op.pos,
-                            (op.type == LBRACKET) ? Tag.ARRAYACCESS : Tag.ARRAYACCESS_SAFE,
+                            (op.type == LBRACKET) ? Tag.ARRACC : Tag.ARRACCSF,
                             expr, index);
                     break;
 
@@ -826,7 +826,7 @@ public final class JuaParser {
             if (matchesToken(IDENTIFIER)) {
                 Token t = token;
                 expr = parseExpression();
-                if (expr.hasTag(Tag.VARIABLE) && acceptToken(COL)) {
+                if (expr.hasTag(Tag.VAR) && acceptToken(COL)) {
                     name = t.toName();
                     expr = parseExpression();
                 }
@@ -858,7 +858,7 @@ public final class JuaParser {
         }
     }
 
-    private ListInit parseListInit(int pos) {
+    private ListLiteral parseListInit(int pos) {
         List<Expression> entries = new List<>();
         if (!acceptToken(RBRACKET)) {
             do {
@@ -875,11 +875,11 @@ public final class JuaParser {
                 unexpected(token, List.of(COMMA, RBRACKET));
             } while (true);
         }
-        return new ListInit(pos, entries);
+        return new ListLiteral(pos, entries);
     }
 
-    private MapInit parseMapInit(int pos) {
-        List<MapInit.Entry> entries = new List<>();
+    private MapLiteral parseMapInit(int pos) {
+        List<MapLiteral.Entry> entries = new List<>();
         if (!acceptToken(RBRACE)) {
             do {
                 int entryPos = token.pos;
@@ -909,7 +909,7 @@ public final class JuaParser {
                 }
                 expectToken(COL);
                 Expression value = parseExpression();
-                MapInit.Entry entry = new MapInit.Entry(entryPos, key, value);
+                MapLiteral.Entry entry = new MapLiteral.Entry(entryPos, key, value);
                 entry.field = field;
                 entries.add(entry);
                 if (acceptToken(COMMA)) {
@@ -924,7 +924,7 @@ public final class JuaParser {
                 unexpected(token, List.of(COMMA, RBRACE));
             } while (true);
         }
-        return new MapInit(pos, entries);
+        return new MapLiteral(pos, entries);
     }
 
     private Expression parseParens(int position) {

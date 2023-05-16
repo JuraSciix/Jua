@@ -27,13 +27,13 @@ public abstract class Tree {
         RETURN,
         DISCARDED,
         LITERAL,
-        LISTINIT,
-        MAPINIT,
-        VARIABLE,
+        LISTLIT,
+        MAPLIT,
+        VAR,
         MEMACCESS,
-        MEMACCESS_SAFE,
-        ARRAYACCESS,
-        ARRAYACCESS_SAFE,
+        MEMACCSF,
+        ARRACC,
+        ARRACCSF,
         INVOCATION,
         PARENS,
         ASSIGN,
@@ -97,8 +97,8 @@ public abstract class Tree {
         void visitReturn(Return tree);
         void visitDiscarded(Discarded tree);
         void visitLiteral(Literal tree);
-        void visitListInit(ListInit tree);
-        void visitMapInit(MapInit tree);
+        void visitListLiteral(ListLiteral tree);
+        void visitMapLiteral(MapLiteral tree);
         void visitVariable(Var tree);
         void visitMemberAccess(MemberAccess tree);
         void visitArrayAccess(ArrayAccess tree);
@@ -167,10 +167,10 @@ public abstract class Tree {
         public void visitLiteral(Literal tree) { visitTree(tree); }
 
         @Override
-        public void visitListInit(ListInit tree) { visitTree(tree); }
+        public void visitListLiteral(ListLiteral tree) { visitTree(tree); }
 
         @Override
-        public void visitMapInit(MapInit tree) { visitTree(tree); }
+        public void visitMapLiteral(MapLiteral tree) { visitTree(tree); }
 
         @Override
         public void visitVariable(Var tree) { visitTree(tree); }
@@ -322,13 +322,13 @@ public abstract class Tree {
         public void visitLiteral(Literal tree) {  }
 
         @Override
-        public void visitListInit(ListInit tree) {
+        public void visitListLiteral(ListLiteral tree) {
             scan(tree.entries);
         }
 
         @Override
-        public void visitMapInit(MapInit tree) {
-            for (MapInit.Entry entry : tree.entries) {
+        public void visitMapLiteral(MapLiteral tree) {
+            for (MapLiteral.Entry entry : tree.entries) {
                 scan(entry.key);
                 scan(entry.value);
             }
@@ -531,14 +531,14 @@ public abstract class Tree {
         public void visitLiteral(Literal tree) { result = tree; }
 
         @Override
-        public void visitListInit(ListInit tree) {
+        public void visitListLiteral(ListLiteral tree) {
             tree.entries = translate(tree.entries);
             result = tree;
         }
 
         @Override
-        public void visitMapInit(MapInit tree) {
-            for (MapInit.Entry entry : tree.entries) {
+        public void visitMapLiteral(MapLiteral tree) {
+            for (MapLiteral.Entry entry : tree.entries) {
                 entry.key = translate(entry.key);
                 entry.value = translate(entry.value);
             }
@@ -798,10 +798,6 @@ public abstract class Tree {
 
         public Statement body;
 
-        /** Возможно ли выполнение кода после данного цикла */
-        @Deprecated // todo: flow-analysis обратно в Gen
-        public boolean _infinite; // helpful compiler flag
-
         public WhileLoop(int pos, Expression cond, Statement body) {
             super(pos);
             this.cond = cond;
@@ -820,10 +816,6 @@ public abstract class Tree {
         public Statement body;
 
         public Expression cond;
-
-        /** Возможно ли выполнение кода после данного цикла */
-        @Deprecated // todo: flow-analysis обратно в Gen
-        public boolean _infinite; // helpful compiler flag
 
         public DoLoop(int pos, Statement body, Expression cond) {
             super(pos);
@@ -848,10 +840,6 @@ public abstract class Tree {
 
         public Statement body;
 
-        /** Возможно ли выполнение кода после данного цикла */
-        @Deprecated // todo: flow-analysis обратно в Gen
-        public boolean _infinite; // helpful compiler flag
-
         public ForLoop(int pos, List<Statement> init, Expression cond, List<Discarded> step, Statement body) {
             super(pos);
             this.init = init;
@@ -872,10 +860,6 @@ public abstract class Tree {
         public Expression expr;
 
         public List<Case> cases;
-        
-        /** Возможно ли выполнение кода после данного {@code switch}. */
-        @Deprecated // todo: flow-analysis обратно в Gen
-        public boolean _final; // helpful compiler flag
 
         public Switch(int pos, Expression expr, List<Case> cases) {
             super(pos);
@@ -1033,23 +1017,23 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitLiteral(this); }
     }
 
-    public static class ListInit extends Expression {
+    public static class ListLiteral extends Expression {
 
         public List<Expression> entries;
 
-        public ListInit(int pos, List<Expression> entries) {
+        public ListLiteral(int pos, List<Expression> entries) {
             super(pos);
             this.entries = entries;
         }
 
         @Override
-        public Tag getTag() { return Tag.LISTINIT; }
+        public Tag getTag() { return Tag.LISTLIT; }
 
         @Override
-        public void accept(Visitor visitor) { visitor.visitListInit(this); }
+        public void accept(Visitor visitor) { visitor.visitListLiteral(this); }
     }
 
-    public static class MapInit extends Expression {
+    public static class MapLiteral extends Expression {
 
         public static class Entry {
 
@@ -1068,16 +1052,16 @@ public abstract class Tree {
         
         public List<Entry> entries;
 
-        public MapInit(int pos, List<Entry> entries) {
+        public MapLiteral(int pos, List<Entry> entries) {
             super(pos);
             this.entries = entries;
         }
 
         @Override
-        public Tag getTag() { return Tag.MAPINIT; }
+        public Tag getTag() { return Tag.MAPLIT; }
 
         @Override
-        public void accept(Visitor visitor) { visitor.visitMapInit(this); }
+        public void accept(Visitor visitor) { visitor.visitMapLiteral(this); }
     }
 
     public static class Var extends Expression {
@@ -1092,7 +1076,7 @@ public abstract class Tree {
         }
 
         @Override
-        public Tag getTag() { return Tag.VARIABLE; }
+        public Tag getTag() { return Tag.VAR; }
 
         @Override
         public void accept(Visitor visitor) { visitor.visitVariable(this); }
@@ -1210,7 +1194,7 @@ public abstract class Tree {
 
         public final Tag tag;
 
-        public Expression var, expr; // todo: Переименовать в var, expr соответственно.
+        public Expression var, expr;
 
         public CompoundAssign(int pos, Tag tag, Expression var, Expression expr) {
             super(pos);
