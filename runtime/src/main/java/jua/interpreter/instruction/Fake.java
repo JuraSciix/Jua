@@ -7,7 +7,7 @@ import jua.interpreter.InterpreterState;
  * Эта инструкция не предназначена для выполнения и всегда выбрасывает исключение, при попытке
  * отобразить ее или выполнить.
  */
-public final class Fake implements Instruction {
+public class Fake implements Instruction {
 
     private final int stackAdjustment;
 

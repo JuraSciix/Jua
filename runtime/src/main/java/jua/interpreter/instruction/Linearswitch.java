@@ -2,7 +2,7 @@ package jua.interpreter.instruction;
 
 import jua.interpreter.InterpreterState;
 
-public final class Linearswitch extends JumpInstruction {
+public class Linearswitch extends JumpInstruction {
 
     private final int[] literals;
 

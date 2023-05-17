@@ -15,7 +15,7 @@ Should be optimized to:
 
  */
 // todo: Переименовать в ifz
-public final class Ifz extends JumpInstruction {
+public class Ifz extends JumpInstruction {
 
     public Ifz() {
         super();

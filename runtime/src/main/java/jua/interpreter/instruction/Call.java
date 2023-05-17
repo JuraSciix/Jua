@@ -2,7 +2,7 @@ package jua.interpreter.instruction;
 
 import jua.interpreter.InterpreterState;
 
-public final class Call implements Instruction {
+public class Call implements Instruction {
 
     private final int index;
 

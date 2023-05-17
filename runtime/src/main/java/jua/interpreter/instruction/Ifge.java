@@ -2,7 +2,7 @@ package jua.interpreter.instruction;
 
 import jua.interpreter.InterpreterState;
 
-public final class Ifge extends JumpInstruction {
+public class Ifge extends JumpInstruction {
 
     public Ifge() {
         super();

@@ -2,7 +2,7 @@ package jua.interpreter.instruction;
 
 import jua.interpreter.InterpreterState;
 
-public final class Newmap implements Instruction {
+public class Newmap implements Instruction {
 
     @Override
     public int stackAdjustment() { return 1; }

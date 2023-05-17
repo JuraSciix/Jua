@@ -2,7 +2,7 @@ package jua.interpreter.instruction;
 
 import jua.interpreter.InterpreterState;
 
-public final class Goto extends JumpInstruction {
+public class Goto extends JumpInstruction {
 
     public Goto() {
         super();

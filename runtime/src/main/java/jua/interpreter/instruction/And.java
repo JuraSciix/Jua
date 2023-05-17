@@ -2,7 +2,7 @@ package jua.interpreter.instruction;
 
 import jua.interpreter.InterpreterState;
 
-public final class And implements Instruction {
+public class And implements Instruction {
 
     @Override
     public int stackAdjustment() { return -1 + -1 + 1; }

@@ -2,7 +2,7 @@ package jua.interpreter.instruction;
 
 import jua.interpreter.InterpreterState;
 
-public final class Getconst implements Instruction {
+public class Getconst implements Instruction {
 
     private final int id;
 

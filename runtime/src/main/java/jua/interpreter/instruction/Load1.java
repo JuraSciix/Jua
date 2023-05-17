@@ -3,7 +3,7 @@ package jua.interpreter.instruction;
 import jua.interpreter.InterpreterState;
 
 // todo: rename to Load (vload -> load)
-public final class Load1 implements Instruction {
+public class Load1 implements Instruction {
 
     @Override
     public int stackAdjustment() { return 1; }

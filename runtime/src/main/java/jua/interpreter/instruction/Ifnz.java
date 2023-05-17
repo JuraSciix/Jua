@@ -5,7 +5,7 @@ import jua.interpreter.InterpreterState;
 /**
  * If not zero (if is true)
  */
-public final class Ifnz extends JumpInstruction {
+public class Ifnz extends JumpInstruction {
 
     public Ifnz() {
         super();

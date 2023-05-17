@@ -2,7 +2,7 @@ package jua.interpreter.instruction;
 
 import jua.interpreter.InterpreterState;
 
-public final class Dec implements Instruction {
+public class Dec implements Instruction {
 
     private final int id;
 

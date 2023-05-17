@@ -2,7 +2,7 @@ package jua.interpreter.instruction;
 
 import jua.interpreter.InterpreterState;
 
-public final class Push implements Instruction {
+public class Push implements Instruction {
 
     private final int constantIndex;
 

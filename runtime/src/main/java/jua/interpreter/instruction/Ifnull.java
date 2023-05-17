@@ -2,7 +2,7 @@ package jua.interpreter.instruction;
 
 import jua.interpreter.InterpreterState;
 
-public final class Ifnull extends JumpInstruction {
+public class Ifnull extends JumpInstruction {
 
     public Ifnull() {
         super();

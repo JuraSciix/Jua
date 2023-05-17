@@ -4,7 +4,7 @@ import jua.interpreter.Address;
 import jua.interpreter.InterpreterState;
 import jua.runtime.code.ConstantPool;
 
-public final class Binaryswitch extends JumpInstruction {
+public class Binaryswitch extends JumpInstruction {
 
     private final int[] literals;
 
