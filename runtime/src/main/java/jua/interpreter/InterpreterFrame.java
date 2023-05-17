@@ -2,7 +2,6 @@ package jua.interpreter;
 
 import jua.runtime.Function;
 import jua.runtime.StackTraceElement;
-import jua.utils.ObjectSizeAnalyzing;
 
 public final class InterpreterFrame {
 
@@ -35,7 +34,6 @@ public final class InterpreterFrame {
     }
 
     StackTraceElement toStackTraceElement() {
-        return new StackTraceElement(owner.module, owner.name, executingLineNumber(),
-                ObjectSizeAnalyzing.analyzeSize(state));
+        return new StackTraceElement(owner.module, owner.name, executingLineNumber());
     }
 }
