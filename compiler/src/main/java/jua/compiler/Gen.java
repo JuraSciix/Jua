@@ -313,11 +313,12 @@ public final class Gen extends Scanner {
 
         if (tree.body.hasTag(Tag.BLOCK)) {
             genBranch(tree.body);
+            code.addInstruction(leave);
         } else {
             Assert.ensure(tree.body.hasTag(Tag.DISCARDED), "Function body neither block ner expression");
             genExpr(((Discarded) tree.body).expr).load();
+            code.addInstruction(return_);
         }
-        code.addInstruction(leave);
         code.dead();
 
         tree.sym.runtimefunc = new Function(
