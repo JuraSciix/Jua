@@ -169,7 +169,7 @@ public class Check extends Scanner {
         FunctionSymbol calleeSym = programScope.lookupFunction(calleeName);
 
         //
-        Assert.ensureNonNull(calleeSym);
+        Assert.checkNonNull(calleeSym);
 
         if (tree.args.count() > calleeSym.maxArgc) {
             report(tree.pos, "cannot call function %s: too many arguments: %d total, %d passed", calleeSym.name, calleeSym.maxArgc, tree.args.count());

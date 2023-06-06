@@ -474,7 +474,7 @@ public class Pretty extends Scanner {
     }
 
     public void subTab() {
-        Assert.ensure(nTabs > 0);
+        Assert.check(nTabs > 0);
         nTabs--;
     }
 

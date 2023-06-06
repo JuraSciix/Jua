@@ -341,7 +341,7 @@ public interface Types {
         final Type[] values;
 
         MapType(Type[] keys, Type[] values) {
-            Assert.ensure(keys.length == values.length);
+            Assert.check(keys.length == values.length);
             this.keys = keys;
             this.values = values;
         }

@@ -43,10 +43,6 @@ public final class Gen extends Scanner {
         }
     }
 
-    CondItem genCond(Expression tree) {
-        return genExpr(tree).asCond();
-    }
-
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
         code = tree.sym.code;
@@ -187,8 +183,7 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitCase(Case tree) {
-        boolean cond = flow instanceof SwitchEnv;
-        Assert.ensure(cond);
+        Assert.check(flow instanceof SwitchEnv);
         SwitchEnv env = (SwitchEnv) flow;
         if (tree.labels == null) {
             // default case
@@ -228,7 +223,7 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitDoLoop(DoLoop tree) {
-        genLoop(tree.pos, false, null, tree.cond, null, tree.body, false);
+        genLoop(tree.pos, null, tree.cond, null, tree.body, false);
     }
 
     @Override
@@ -258,13 +253,12 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitForLoop(ForLoop tree) {
-        genLoop(tree.pos, false, tree.init, tree.cond, tree.step, tree.body, true);
+        genLoop(tree.pos, tree.init, tree.cond, tree.step, tree.body, true);
     }
 
     @Override
     public void visitInvocation(Invocation tree) {
-        boolean cond = tree.target instanceof MemberAccess;
-        Assert.ensure(cond);
+        Assert.check(tree.target instanceof MemberAccess);
         Name callee = ((MemberAccess) tree.target).member;
 
         switch (callee.toString()) {
@@ -315,7 +309,7 @@ public final class Gen extends Scanner {
             genBranch(tree.body);
             code.addInstruction(leave);
         } else {
-            Assert.ensure(tree.body.hasTag(Tag.DISCARDED), "Function body neither block ner expression");
+            Assert.check(tree.body.hasTag(Tag.DISCARDED), "Function body neither block ner expression");
             genExpr(((Discarded) tree.body).expr).load();
             code.addInstruction(return_);
         }
@@ -335,7 +329,7 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitIf(If tree) {
-        CondItem cond = genCond(tree.cond);
+        CondItem cond = genExpr(tree.cond).asCond();
         Chain falseJumps = cond.falseJumps();
         code.resolve(cond.trueChain);
         boolean thenalive = genBranch(tree.thenbody);
@@ -352,7 +346,7 @@ public final class Gen extends Scanner {
     }
 
     private void assertStacktopEquality(int limitstacktop) {
-        Assert.ensure(code.curStackTop() == limitstacktop, "limitstacktop mismatch (" +
+        Assert.check(code.curStackTop() == limitstacktop, "limitstacktop mismatch (" +
                 "before: " + limitstacktop + ", " +
                 "after: " + code.curStackTop() + ", " +
                 "current CP: " + code.currentIP() + ", " +
@@ -384,7 +378,7 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitTernaryOp(TernaryOp tree) {
-        CondItem cond = genCond(tree.cond);
+        CondItem cond = genExpr(tree.cond).asCond();
         Chain falseJumps = cond.falseJumps();
         code.resolve(cond.trueChain);
         genExpr(tree.thenexpr).load();
@@ -409,15 +403,15 @@ public final class Gen extends Scanner {
 
     @Override
     public void visitWhileLoop(WhileLoop tree) {
-        genLoop(tree.pos, false, null, tree.cond, null, tree.body, true);
+        genLoop(tree.pos, null, tree.cond, null, tree.body, true);
     }
 
     private static boolean isInfiniteLoopCond(Expression tree) {
         return tree == null || isLiteralTrue(tree);
     }
 
-    private void genLoop(int pos,
-            boolean _infinite,
+    private void genLoop(
+            int pos,
             List<Statement> init,
             Expression cond,
             List<Discarded> update,
@@ -433,16 +427,16 @@ public final class Gen extends Scanner {
         boolean infinitecond = isInfiniteLoopCond(cond);
 
         if (genJvmLoops) {
-            genJvmLoop(_infinite, cond, update, body, testFirst, infinitecond);
+            genJvmLoop(cond, update, body, testFirst, infinitecond);
         } else {
-            genJuaLoop(_infinite, cond, update, body, testFirst, infinitecond);
+            genJuaLoop(cond, update, body, testFirst, infinitecond);
         }
 
         flow.resolveExit();
         flow = flow.parent;
     }
 
-    private void genJvmLoop(boolean _infinite, Expression cond,
+    private void genJvmLoop(Expression cond,
                             List<Discarded> update, Statement body, boolean testFirst,
                             boolean infinitecond) {
         int loopstartPC = code.currentIP();
@@ -450,10 +444,9 @@ public final class Gen extends Scanner {
             genBranch(body);
             flow.resolveCont(loopstartPC);
             code.resolve(code.branch(new Goto()), loopstartPC);
-            if (_infinite) code.dead(); // Подлинный вечный цикл.
         } else {
             if (testFirst) {
-                CondItem condItem = genCond(cond);
+                CondItem condItem = genExpr(cond).asCond();
                 Chain falseJumps = condItem.falseJumps();
                 code.resolve(condItem.trueChain);
                 genBranch(body);
@@ -465,15 +458,14 @@ public final class Gen extends Scanner {
                 genBranch(body);
                 flow.resolveCont();
                 scan(update);
-                CondItem condItem = genCond(cond);
+                CondItem condItem = genExpr(cond).asCond();
                 code.resolve(condItem.trueJumps(), loopstartPC);
                 code.resolve(condItem.falseChain);
             }
         }
     }
 
-    private void genJuaLoop(boolean _infinite,
-                            Expression cond, List<Discarded> update,
+    private void genJuaLoop(Expression cond, List<Discarded> update,
                             Statement body, boolean testFirst, boolean infinitecond) {
         int loopstartPC;
         if (testFirst && !infinitecond) {
@@ -491,9 +483,8 @@ public final class Gen extends Scanner {
         }
         if (infinitecond) {
             code.resolve(code.branch(new Goto()), loopstartPC);
-            if (_infinite) code.dead(); // Подлинный вечный цикл.
         } else {
-            CondItem condItem = genCond(cond);
+            CondItem condItem = genExpr(cond).asCond();
             code.resolve(condItem.trueJumps(), loopstartPC);
             code.resolve(condItem.falseChain);
         }
@@ -502,10 +493,10 @@ public final class Gen extends Scanner {
     public void visitBinaryOp(BinaryOp tree) {
         switch (tree.tag) {
             case AND: {
-                CondItem lcond = Items.treeify(genCond(tree.lhs), tree);
+                CondItem lcond = Items.treeify(genExpr(tree.lhs).asCond(), tree);
                 Chain falseJumps = lcond.falseJumps();
                 code.resolve(lcond.trueChain);
-                CondItem rcond = Items.treeify(genCond(tree.rhs), tree);
+                CondItem rcond = Items.treeify(genExpr(tree.rhs).asCond(), tree);
                 result = items.makeCond(rcond.opcode,
                         rcond.trueChain,
                         mergeChains(falseJumps, rcond.falseChain));
@@ -513,10 +504,10 @@ public final class Gen extends Scanner {
             }
 
             case OR: {
-                CondItem lcond = Items.treeify(genCond(tree.lhs), tree);
+                CondItem lcond = Items.treeify(genExpr(tree.lhs).asCond(), tree);
                 Chain trueJumps = lcond.trueJumps();
                 code.resolve(lcond.falseChain);
-                CondItem rcond = Items.treeify(genCond(tree.rhs), tree);
+                CondItem rcond = Items.treeify(genExpr(tree.rhs).asCond(), tree);
                 result = items.makeCond(rcond.opcode,
                         mergeChains(trueJumps, rcond.trueChain),
                         rcond.falseChain);
@@ -583,7 +574,7 @@ public final class Gen extends Scanner {
                 break;
 
             case NOT:
-                CondItem item = genCond(tree.expr);
+                CondItem item = genExpr(tree.expr).asCond();
                 result = Items.treeify(item.negate(), tree);
                 break;
 

@@ -124,11 +124,11 @@ public final class TreeInfo {
 
     public static short getLiteralShort(Expression tree) {
         Expression innerTree = stripParens(tree);
-        Assert.ensure(innerTree.hasTag(Tag.LITERAL));
+        Assert.check(innerTree.hasTag(Tag.LITERAL));
         Literal literalTree = (Literal) innerTree;
-        Assert.ensure(literalTree.type.isLong());
+        Assert.check(literalTree.type.isLong());
         long longVal = literalTree.type.longValue();
-        Assert.ensure((longVal >>> 16) == 0);
+        Assert.check((longVal >>> 16) == 0);
         return (short) longVal;
     }
 

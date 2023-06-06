@@ -9,8 +9,8 @@ import jua.interpreter.instruction.Instruction;
 import jua.runtime.code.CodeData;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.LineNumberTable;
+import jua.utils.Assert;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 
 public final class Code {
@@ -24,6 +24,7 @@ public final class Code {
         final int savedStackTop;
 
         Chain(int pc, Chain next, int savedStackTop) {
+            Assert.check(next == null || next.savedStackTop == savedStackTop);
             this.pc = pc;
             this.next = next;
             this.savedStackTop = savedStackTop;
@@ -58,9 +59,6 @@ public final class Code {
 
     private boolean alive = true;
 
-    private final ArrayDeque<String> freeSyntheticNames = new ArrayDeque<>();
-    private int syntheticLimit = 0;
-
     public final ProgramScope programScope;
     public final Gen gen;
 
@@ -80,21 +78,6 @@ public final class Code {
 
     public int lastLineNum() {
         return current_lineNumber;
-    }
-
-    public String acquireSyntheticName() {
-        if (freeSyntheticNames.isEmpty()) {
-            String s = "s$" + syntheticLimit++;
-            while (localNames.containsKey(s)) {
-                s += "_";
-            }
-            return s;
-        }
-        return freeSyntheticNames.pollFirst();
-    }
-
-    public void releaseSyntheticName(String name) {
-        freeSyntheticNames.addFirst(name);
     }
 
     public Instruction get(int pc) {
@@ -236,8 +219,8 @@ public final class Code {
     }
 
     public void resolve(Chain chain, int destPC) {
+        curStackTop(chain.savedStackTop);
         while (chain != null) {
-            curStackTop(chain.savedStackTop);
             get(chain.pc).setOffset(destPC - chain.pc);
             chain = chain.next;
         }

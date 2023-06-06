@@ -82,7 +82,7 @@ public final class InterpreterThread {
     }
 
     private void enterFrame() {
-        Assert.ensureNonNull(callee, "callee is not set");
+        Assert.checkNonNull(callee, "callee is not set");
 
         if ((callee.flags & Function.FLAG_NATIVE) != 0) {
             executingFrame = new InterpreterFrame(executingFrame, callee, null, returnAddress);
@@ -93,7 +93,7 @@ public final class InterpreterThread {
                 executingFrame = executingFrame.prev;
                 set_msg(MSG_RUNNING_FRAME);
             } else {
-                Assert.ensure(isCrashed());
+                Assert.check(isCrashed());
             }
         } else {
             InterpreterState state = new InterpreterState(callee.userCode());

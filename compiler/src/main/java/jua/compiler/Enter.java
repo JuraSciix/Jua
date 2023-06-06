@@ -74,11 +74,11 @@ public class Enter extends Scanner {
     }
 
     private void ensureRootScope() {
-        Assert.ensure(scope == null, "non-root scope");
+        Assert.check(scope == null, "non-root scope");
     }
 
     private void ensureScopeChainUnaffected(Scope parent) {
-        Assert.ensure(scope.parent == parent, "scope chain has been affected");
+        Assert.check(scope.parent == parent, "scope chain has been affected");
     }
 
     private void report(int pos, String message) {
