@@ -11,15 +11,12 @@ public class Binaryswitch extends JumpInstruction {
     private final int[] destIps;
 
     public Binaryswitch(int[] literals, int[] destIps, int defaultIp) {
-        super(defaultIp);
+        elsePoint(defaultIp);
         assert literals.length == destIps.length;
         this.literals = literals;
         this.destIps = destIps;
     }
 
-    /**
-     *
-     */
     public void sort(ConstantPool cp) {
         qsort2(cp, literals, destIps, 0, literals.length - 1);
     }
@@ -61,7 +58,7 @@ public class Binaryswitch extends JumpInstruction {
     public int stackAdjustment() { return -1; }
 
     @Override
-    public JumpInstruction negate() {
+    public JumpInstruction negated() {
         throw new UnsupportedOperationException();
     }
 
@@ -81,11 +78,11 @@ public class Binaryswitch extends JumpInstruction {
             }
             printer.printCase(java.util.Arrays.copyOfRange(literals, last_index, literals.length), destIps[last_index]);
         }
-        printer.printCase(null, offset /* default ip */);
+        printer.printCase(null, _elsePoint /* default ip */);
     }
 
     @Override
     public boolean run(InterpreterState state) {
-        return state.impl_binaryswitch(literals, destIps, offset);
+        return state.impl_binaryswitch(literals, destIps, _elsePoint);
     }
 }

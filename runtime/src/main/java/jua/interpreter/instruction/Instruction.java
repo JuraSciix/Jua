@@ -10,12 +10,12 @@ public interface Instruction {
     /** Печатает информацию об инструкции */
     void print(CodePrinter printer);
 
-    default Instruction negate() {
+    default Instruction negated() {
         throw new UnsupportedOperationException(getClass().getName() + " cannot be negated");
     }
 
-    default void setOffset(int pc) {
-        throw new UnsupportedOperationException(getClass().getName() + " have no offset field");
+    default Instruction elsePoint(int pc) {
+        throw new UnsupportedOperationException(getClass().getName() + " have no point field");
     }
 
     /**

@@ -9,7 +9,7 @@ public class Linearswitch extends JumpInstruction {
     private final int[] destIps;
 
     public Linearswitch(int[] literals, int[] destIps, int defaultIp) {
-        super(defaultIp);
+        elsePoint(defaultIp);
         assert literals.length == destIps.length;
         this.literals = literals;
         this.destIps = destIps;
@@ -19,7 +19,7 @@ public class Linearswitch extends JumpInstruction {
     public int stackAdjustment() { return -1; }
 
     @Override
-    public JumpInstruction negate() {
+    public JumpInstruction negated() {
         throw new UnsupportedOperationException();
     }
 
@@ -39,11 +39,11 @@ public class Linearswitch extends JumpInstruction {
             }
             printer.printCase(java.util.Arrays.copyOfRange(literals, last_index, literals.length), destIps[last_index]);
         }
-        printer.printCase(null, offset /* default ip */);
+        printer.printCase(null, _elsePoint /* default ip */);
     }
 
     @Override
     public boolean run(InterpreterState state) {
-        return state.impl_linearswitch(literals, destIps, offset);
+        return state.impl_linearswitch(literals, destIps, _elsePoint);
     }
 }

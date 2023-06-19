@@ -897,6 +897,20 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
         return weakCompare((Address) o, Integer.MIN_VALUE) == 0;
     }
 
+    public String toBeautifulString() {
+        switch (type) {
+            case T_NULL:      return Types.getTypeName(T_NULL);
+            case T_INT:       return Types.getTypeName(T_INT) + ":" + getLong();
+            case T_FLOAT:     return Types.getTypeName(T_FLOAT) + ":" + getDouble();
+            case T_BOOLEAN:   return Types.getTypeName(T_BOOLEAN) + ":" + getBoolean();
+            case T_STRING:    return Types.getTypeName(T_STRING) + ":" + getStringHeap();
+            case T_MAP:       return Types.getTypeName(T_MAP) + ":" + getMapHeap();
+            case T_LIST:      return Types.getTypeName(T_LIST) + ":" + getListHeap();
+            case T_UNDEFINED: // fallthrough
+            default: throw new AssertionError(type);
+        }
+    }
+
     /**
      * Возвращает сериализованное представление адреса.
      * Первым символом является идентификатор типа,

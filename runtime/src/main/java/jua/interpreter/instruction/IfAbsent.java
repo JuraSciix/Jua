@@ -2,26 +2,22 @@ package jua.interpreter.instruction;
 
 import jua.interpreter.InterpreterState;
 
-public class Ifabsent extends JumpInstruction {
-
-    public Ifabsent(int offset) {
-        super(offset);
-    }
+public class IfAbsent extends JumpInstruction {
 
     @Override
     public int stackAdjustment() { return -1 + -1; }
 
     @Override
-    public JumpInstruction negate() { return new Ifpresent(offset); }
+    public JumpInstruction negated() { return new IfPresent().elsePoint(_elsePoint); }
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printName("ifabsent");
+        printer.printName("if_absent");
         super.print(printer);
     }
 
     @Override
     public boolean run(InterpreterState state) {
-        return state.ifabsent(offset);
+        return state.if_absent(_elsePoint);
     }
 }

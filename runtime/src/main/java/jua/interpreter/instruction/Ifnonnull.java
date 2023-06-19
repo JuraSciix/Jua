@@ -4,19 +4,11 @@ import jua.interpreter.InterpreterState;
 
 public class Ifnonnull extends JumpInstruction {
 
-    public Ifnonnull() {
-        super();
-    }
-
-    public Ifnonnull(int offset) {
-        super(offset);
-    }
-
     @Override
     public int stackAdjustment() { return -1; }
 
     @Override
-    public JumpInstruction negate() { return new Ifnull(offset); }
+    public JumpInstruction negated() { return new Ifnull().elsePoint(_elsePoint); }
 
     @Override
     public void print(CodePrinter printer) {
@@ -26,6 +18,6 @@ public class Ifnonnull extends JumpInstruction {
 
     @Override
     public boolean run(InterpreterState state) {
-        return state.ifnonnull(offset);
+        return state.ifnonnull(_elsePoint);
     }
 }

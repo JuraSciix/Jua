@@ -33,7 +33,7 @@ public class CodePrinter implements jua.interpreter.instruction.CodePrinter {
             String operands0 = (operands == null) ? "default" : Arrays.stream(operands)
                     .mapToObj(index -> {
                         address.set(program.constantPool.getAddress(index));
-                        return address.toString();
+                        return address.toBeautifulString();
                     })
                     .collect(Collectors.joining(", "));
             return String.format("%s: ->%d", operands0, index);
@@ -177,7 +177,7 @@ public class CodePrinter implements jua.interpreter.instruction.CodePrinter {
     @Override
     public void printLiteral(int index) {
         address.set(program.constantPool.getAddress(index));
-        preparePrint().operands.add(String.format("#%d (%s %s)", index, address.getTypeName(), address));
+        preparePrint().operands.add(String.format("#%d %s", index, address.toBeautifulString()));
     }
 
     public void printFunctionRef(int index) {

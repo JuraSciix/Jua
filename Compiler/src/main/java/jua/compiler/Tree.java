@@ -217,7 +217,7 @@ public abstract class Tree {
             if (trees != null && trees.nonEmpty()) {
                 for (Tree tree : trees) {
                     // В списке не должно быть null-значений.
-                    tree.accept(this);
+                    scan(tree);
                 }
             }
         }

@@ -4,22 +4,12 @@ import jua.interpreter.InterpreterState;
 
 public class Goto extends JumpInstruction {
 
-    public Goto() {
-        super();
-    }
-
-    public Goto(int offset) {
-        super(offset);
-    }
+    @Override
+    public int stackAdjustment() { return 0; }
 
     @Override
-    public int stackAdjustment() {
-        return 0;
-    }
-
-    @Override
-    public JumpInstruction negate() {
-        return this; // todo
+    public JumpInstruction negated() {
+        throw new AssertionError("goto doesn't have a negative instruction yet");
     }
 
     @Override
@@ -30,6 +20,6 @@ public class Goto extends JumpInstruction {
 
     @Override
     public boolean run(InterpreterState state) {
-        return state._goto(offset);
+        return state._goto(_elsePoint);
     }
 }

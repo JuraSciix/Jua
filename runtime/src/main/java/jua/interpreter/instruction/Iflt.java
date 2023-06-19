@@ -4,19 +4,11 @@ import jua.interpreter.InterpreterState;
 
 public class Iflt extends JumpInstruction {
 
-    public Iflt() {
-        super();
-    }
-
-    public Iflt(int offset) {
-        super(offset);
-    }
-
     @Override
     public int stackAdjustment() { return -1 + -1; }
 
     @Override
-    public JumpInstruction negate() { return new Ifge(offset); }
+    public JumpInstruction negated() { return new Ifge().elsePoint(_elsePoint); }
 
     @Override
     public void print(CodePrinter printer) {
@@ -26,6 +18,6 @@ public class Iflt extends JumpInstruction {
 
     @Override
     public boolean run(InterpreterState state) {
-        return state.iflt(offset);
+        return state.iflt(_elsePoint);
     }
 }

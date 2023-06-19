@@ -21,13 +21,13 @@ public final class Code {
 
         final Chain next;
 
-        final int savedStackTop;
+        final int tos;
 
-        Chain(int pc, Chain next, int savedStackTop) {
-            Assert.check(next == null || next.savedStackTop == savedStackTop);
+        Chain(int pc, Chain next, int tos) {
+            Assert.check(next == null || next.tos == tos);
             this.pc = pc;
             this.next = next;
-            this.savedStackTop = savedStackTop;
+            this.tos = tos;
         }
     }
 
@@ -36,9 +36,9 @@ public final class Code {
         if (rhs == null) return lhs;
         // Рекурсивная сортировка
         if (lhs.pc <= rhs.pc)
-            return new Chain(lhs.pc, mergeChains(lhs.next, rhs), lhs.savedStackTop);
+            return new Chain(lhs.pc, mergeChains(lhs.next, rhs), lhs.tos);
         else  // lhs.pc > rhs.pc
-            return new Chain(rhs.pc, mergeChains(rhs.next, lhs), rhs.savedStackTop);
+            return new Chain(rhs.pc, mergeChains(rhs.next, lhs), rhs.tos);
     }
 
     private final ArrayList<Instruction> instructions = new ArrayList<>();
@@ -49,13 +49,17 @@ public final class Code {
 
     private final ConstantPoolWriter constantPoolWriter = new ConstantPoolWriter();
 
-    private int nstack = 0;
 
     private int nlocals = 0;
 
-    private int current_nstack = 0;
+    /** Top of stack. */
+    private int tos = 0;
 
-    private int current_lineNumber = 0;
+    /** Top of stack limit. */
+    private int limTos = 0;
+
+    /** Current line number. */
+    private int cLineNum = 0;
 
     private boolean alive = true;
 
@@ -73,18 +77,22 @@ public final class Code {
     }
 
     public Chain branch(Instruction instr) {
-        return new Chain(addInstruction(instr), null, curStackTop());
+        return new Chain(addInstruction(instr), null, tos());
     }
 
-    public int lastLineNum() {
-        return current_lineNumber;
+    public Chain branch(Instruction instr, int tos) {
+        return new Chain(addInstruction(instr), null, tos);
+    }
+
+    public int lineNum() {
+        return cLineNum;
     }
 
     public Instruction get(int pc) {
         return instructions.get(pc);
     }
 
-    public int currentIP() {
+    public int pc() {
         return this.instructions.size();
     }
 
@@ -93,7 +101,12 @@ public final class Code {
     }
 
     public int addInstruction(Instruction instr) {
-        return addInstruction0(instr);
+        int pc = instructions.size();
+        if (isAlive()) {
+            instructions.add(instr);
+            adjustStack(instr.stackAdjustment());
+        }
+        return pc;
     }
 
     private int addInstruction0(Instruction instruction) {
@@ -115,30 +128,27 @@ public final class Code {
         int line = lineMap.getLineNumber(pos);
 
         // todo: line always have int type
-        if (line > 0 && line < (1<<16) && line != this.current_lineNumber) {
-            this.lineTable.put((short) currentIP(), (short) line);
-            this.current_lineNumber = line;
+        if (line > 0 && line < (1<<16) && line != this.cLineNum) {
+            this.lineTable.put((short) pc(), (short) line);
+            this.cLineNum = line;
         }
     }
 
     private void adjustStack(int stackAdjustment) {
-        if ((this.current_nstack += stackAdjustment) > this.nstack)
-            this.nstack = this.current_nstack;
-        assert this.current_nstack >= 0 : "context.current_nstack < 0, " +
-                "currentIP: " +  currentIP() + ", " +
-                "lineNumber: " + this.current_lineNumber;
+        tos(tos + stackAdjustment);
+        Assert.check(tos >= 0, () ->
+                String.format(
+                        "negative tos: PC=%d, LINE=%d",
+                        pc(), lineNum()));
     }
 
-    public int curStackTop() {
-        return this.current_nstack;
+    public int tos() {
+        return tos;
     }
 
-    public void curStackTop(int nstack) {
-        // todo: Я не уверен, что замена nstack на current_nstack ничего плохого
-        //  за собой не повлечет
-        this.current_nstack = nstack;
-        if (this.current_nstack > this.nstack)
-            this.nstack = this.current_nstack;
+    public void tos(int _tos) {
+        tos = _tos;
+        limTos = Math.max(limTos, _tos);
     }
 
     public void dead() {
@@ -179,7 +189,7 @@ public final class Code {
     public CodeData buildCodeSegment() {
         ConstantPool cp = buildConstantPool();
         return new CodeData(
-                this.nstack,
+                this.limTos,
                 this.nlocals,
                 buildCode(cp),
                 cp,
@@ -215,14 +225,22 @@ public final class Code {
     }
 
     public void resolve(Chain chain) {
-        resolve(chain, currentIP());
+        resolve(chain, pc());
     }
 
     public void resolve(Chain chain, int destPC) {
-        curStackTop(chain.savedStackTop);
-        while (chain != null) {
-            get(chain.pc).setOffset(destPC - chain.pc);
+        if (chain == null) return;
+        assertTosEquality(chain.tos);
+        do {
+            get(chain.pc).elsePoint(destPC - chain.pc);
             chain = chain.next;
-        }
+        } while (chain != null);
+    }
+
+    public void assertTosEquality(int tos) {
+        Assert.check(tos() == tos, () ->
+                String.format(
+                        "TOS violation: BEFORE=%d, AFTER=%d, PC=%d, LINE=%d",
+                        tos, tos(), pc(), lineNum()));
     }
 }

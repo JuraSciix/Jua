@@ -641,7 +641,7 @@ public final class InterpreterState {
         return true;
     }
 
-    public boolean ifabsent(int offset) {
+    public boolean if_absent(int offset) {
         Address key = popStack();
         Address arr = popStack();
         if (arr.contains(key, key)) {
@@ -656,7 +656,7 @@ public final class InterpreterState {
         }
     }
 
-    public boolean ifpresent(int offset) {
+    public boolean if_present(int offset) {
         Address key = popStack();
         Address arr = popStack();
         if (arr.contains(key, key)) {

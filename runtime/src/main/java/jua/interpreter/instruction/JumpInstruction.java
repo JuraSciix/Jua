@@ -2,28 +2,19 @@ package jua.interpreter.instruction;
 
 public abstract class JumpInstruction implements Instruction {
 
-    public int offset;
-
-    protected JumpInstruction() {
-        super();
-    }
-
-    /** @deprecated Для временной совместимости. */
-    @Deprecated
-    protected JumpInstruction(int offset) {
-        this.offset = offset;
-    }
+    protected int _elsePoint;
 
     @Override
-    public abstract JumpInstruction negate();
+    public abstract JumpInstruction negated();
 
     @Override
-    public void setOffset(int pc) {
-        offset = pc;
+    public JumpInstruction elsePoint(int pc) {
+        _elsePoint = pc;
+        return this;
     }
 
     @Override
     public void print(CodePrinter printer) {
-        printer.printIp(offset);
+        printer.printIp(_elsePoint);
     }
 }

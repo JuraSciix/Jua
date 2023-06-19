@@ -24,6 +24,12 @@ public class Items {
 
         Tree tree;
 
+        @SuppressWarnings("unchecked")
+        <T extends Item>T treeify(Tree tree) {
+            this.tree = tree;
+            return (T)this;
+        }
+
         Item load() {
             throw new AssertionError(this);
         }
@@ -50,7 +56,7 @@ public class Items {
             return new CondItem(new Ifnz());
         }
 
-        CondItem nullCheck() {
+        CondItem nonNullCheck() {
             load();
             return new CondItem(new Ifnonnull());
         }
@@ -187,7 +193,7 @@ public class Items {
 
         @Override
         CondItem presentCheck() {
-            return nullCheck();
+            return nonNullCheck();
         }
 
         @Override
@@ -297,7 +303,7 @@ public class Items {
 
         @Override
         CondItem presentCheck() {
-            return new CondItem(new Ifpresent());
+            return new CondItem(new IfPresent());
         }
 
         @Override
@@ -417,7 +423,8 @@ public class Items {
 
         final Item child;
 
-        Chain exitChain;
+        Chain whenNullChain, whenNonNullChain;
+
 
         SafeItem(Item child) {
             this.child = child;
@@ -426,11 +433,12 @@ public class Items {
         @Override
         Item load() {
             child.load();
-            Chain nonNullChain = code.branch(new Goto());
-            code.resolve(exitChain);
+            Chain avoidNullinChain = code.branch(new Goto());
+            code.resolve(whenNullChain);
             code.addInstruction(pop);
             code.addInstruction(const_null);
-            code.resolve(nonNullChain);
+            code.resolve(whenNonNullChain);
+            code.resolve(avoidNullinChain);
             return makeStack();
         }
 
@@ -441,7 +449,7 @@ public class Items {
 
         @Override
         CondItem presentCheck() {
-            return new CondItem(new Ifpresent());
+            return new CondItem(new IfPresent());
         }
 
         @Override
@@ -456,23 +464,23 @@ public class Items {
     class CondItem extends Item {
 
         final Instruction opcode;
-        Chain trueChain;
-        Chain falseChain;
+        Chain thenChain;
+        Chain elseChain;
 
         CondItem(Instruction opcode) {
             this(opcode, null, null);
         }
 
-        CondItem(Instruction opcode, Chain trueChain, Chain falseChain) {
+        CondItem(Instruction opcode, Chain thenChain, Chain elseChain) {
             this.opcode = opcode;
-            this.trueChain = trueChain;
-            this.falseChain = falseChain;
+            this.thenChain = thenChain;
+            this.elseChain = elseChain;
         }
 
         @Override
         Item load() {
-            Chain falseJumps = falseJumps();
-            code.resolve(trueChain);
+            Chain falseJumps = elseJumps();
+            code.resolve(thenChain);
             code.addInstruction(const_true);
             Chain trueChain = code.branch(new Goto());
             code.resolve(falseJumps);
@@ -487,17 +495,17 @@ public class Items {
         }
 
         CondItem negate() {
-            return treeify(new CondItem(opcode.negate(), falseChain, trueChain), tree);
+            return new CondItem(opcode.negated(), elseChain, thenChain).treeify(tree);
         }
 
-        Chain trueJumps() {
+        Chain thenJumps() {
             code.position(tree);
-            return Code.mergeChains(trueChain, code.branch(opcode));
+            return Code.mergeChains(thenChain, code.branch(opcode));
         }
 
-        Chain falseJumps() {
+        Chain elseJumps() {
             code.position(tree);
-            return Code.mergeChains(falseChain, code.branch(opcode.negate()));
+            return Code.mergeChains(elseChain, code.branch(opcode.negated()));
         }
     }
 
@@ -531,10 +539,5 @@ public class Items {
 
     CondItem makeCond(Instruction opcode, Chain truejumps, Chain falsejumps) {
         return new CondItem(opcode, truejumps, falsejumps);
-    }
-
-    static <T extends Item> T treeify(T t, Tree tree) {
-        t.tree = tree;
-        return t;
     }
 }

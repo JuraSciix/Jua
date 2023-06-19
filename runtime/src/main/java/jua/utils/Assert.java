@@ -1,5 +1,7 @@
 package jua.utils;
 
+import java.util.function.Supplier;
+
 public final class Assert {
 
     // ensure - очень хорошее слово, но check роднее.
@@ -10,6 +12,10 @@ public final class Assert {
 
     public static void check(boolean cond, Object msg) {
         assert cond : msg;
+    }
+
+    public static void check(boolean cond, Supplier<?> messageSupplier) {
+        assert cond : messageSupplier.get();
     }
 
     public static void checkNonNull(Object obj) {
