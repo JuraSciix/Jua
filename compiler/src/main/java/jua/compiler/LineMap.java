@@ -1,7 +1,6 @@
 package jua.compiler;
 
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntList;
+import java.util.ArrayList;
 
 public final class LineMap {
 
@@ -20,7 +19,8 @@ public final class LineMap {
     }
 
     private int[] buildLineMap(SourceReader reader) {
-        IntList lineStartPoints = new IntArrayList();
+        // todo: Не полагаться на обертки.
+        ArrayList<Integer> lineStartPoints = new ArrayList<>();
 
         // Первая линия
         lineStartPoints.add(0);
@@ -36,7 +36,7 @@ public final class LineMap {
             reader.next();
         }
 
-        return lineStartPoints.toIntArray();
+        return lineStartPoints.stream().mapToInt(a->a).toArray();
     }
 
     public int getLineNumber(int pos) {

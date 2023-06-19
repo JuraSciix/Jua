@@ -1,7 +1,5 @@
 package jua.compiler;
 
-import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
-import it.unimi.dsi.fastutil.shorts.Short2IntRBTreeMap;
 import jua.interpreter.Address;
 import jua.interpreter.AddressUtils;
 import jua.interpreter.instruction.Binaryswitch;
@@ -12,6 +10,8 @@ import jua.runtime.code.LineNumberTable;
 import jua.utils.Assert;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.TreeMap;
 
 public final class Code {
 
@@ -43,9 +43,9 @@ public final class Code {
 
     private final ArrayList<Instruction> instructions = new ArrayList<>();
 
-    private final Short2IntRBTreeMap lineTable = new Short2IntRBTreeMap();
+    private final TreeMap<Short, Integer> lineTable = new TreeMap<>();
 
-    private final Object2IntLinkedOpenHashMap<String> localNames = new Object2IntLinkedOpenHashMap<>();
+    private final LinkedHashMap<String, Integer> localNames = new LinkedHashMap<>();
 
     private final ConstantPoolWriter constantPoolWriter = new ConstantPoolWriter();
 
@@ -129,7 +129,7 @@ public final class Code {
 
         // todo: line always have int type
         if (line > 0 && line < (1<<16) && line != this.cLineNum) {
-            this.lineTable.put((short) pc(), (short) line);
+            this.lineTable.put((short) pc(), line);
             this.cLineNum = line;
         }
     }
@@ -178,7 +178,7 @@ public final class Code {
             this.localNames.put(name, newIndex);
             return newIndex;
         } else {
-            return this.localNames.getInt(name);
+            return this.localNames.get(name);
         }
     }
 
@@ -209,9 +209,14 @@ public final class Code {
     }
 
     private LineNumberTable buildLineNumberTable() {
+        int[] intCodePoints = lineTable.keySet().stream().mapToInt(a -> a).toArray();
+        short[] shortCodePoints = new short[intCodePoints.length];
+        for (int i = 0; i < intCodePoints.length; i++) {
+            shortCodePoints[i] = (short) intCodePoints[i];
+        }
         return new LineNumberTable(
-                lineTable.keySet().toShortArray(),
-                lineTable.values().toIntArray()
+                shortCodePoints,
+                lineTable.values().stream().mapToInt(a->a).toArray()
         );
     }
 
