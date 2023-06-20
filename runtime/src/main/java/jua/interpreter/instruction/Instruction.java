@@ -8,13 +8,13 @@ public interface Instruction {
     int stackAdjustment();
 
     /** Печатает информацию об инструкции */
-    void print(CodePrinter printer);
+    void print(InstructionPrinter printer);
 
     default Instruction negated() {
         throw new UnsupportedOperationException(getClass().getName() + " cannot be negated");
     }
 
-    default Instruction elsePoint(int pc) {
+    default Instruction offsetJump(int pc) {
         throw new UnsupportedOperationException(getClass().getName() + " have no point field");
     }
 

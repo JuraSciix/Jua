@@ -8,7 +8,7 @@ public class ConstI1 implements Instruction {
     public int stackAdjustment() { return 1; }
 
     @Override
-    public void print(CodePrinter printer) {
+    public void print(InstructionPrinter printer) {
         printer.printName("const_i1");
     }
 

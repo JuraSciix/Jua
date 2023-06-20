@@ -5,9 +5,9 @@ import jua.interpreter.Address;
 public class JuaEnvironment {
 
     final Function[] functions;
-    final Address[] constants;
+    final ConstantMemory[] constants;
 
-    public JuaEnvironment(Function[] functions, Address[] constants) {
+    public JuaEnvironment(Function[] functions, ConstantMemory[] constants) {
         this.functions = functions;
         this.constants = constants;
     }
@@ -26,6 +26,6 @@ public class JuaEnvironment {
     }
 
     public Address getConstant(int id) {
-        return constants[id];
+        return constants[id].address;
     }
 }

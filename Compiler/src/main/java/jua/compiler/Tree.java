@@ -3,7 +3,6 @@ package jua.compiler;
 import jua.compiler.ProgramScope.ConstantSymbol;
 import jua.compiler.ProgramScope.FunctionSymbol;
 import jua.compiler.ProgramScope.VarSymbol;
-import jua.compiler.Types.Type;
 import jua.utils.List;
 
 public abstract class Tree {
@@ -1003,11 +1002,11 @@ public abstract class Tree {
 
     public static class Literal extends Expression {
 
-        public final Type type;
+        public final Object value;
 
-        public Literal(int pos, Type type) {
+        public Literal(int pos, Object value) {
             super(pos);
-            this.type = type;
+            this.value = value;
         }
 
         @Override

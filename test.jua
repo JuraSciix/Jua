@@ -1,7 +1,6 @@
 fn test1(user) {
     print(user.name ?? "No name");
 }
-
 // 0: load "user"
 // 1: push "name"
 // 2: dup2
@@ -15,10 +14,72 @@ fn test1(user) {
 //10: leave
 
 
+
 fn test2(user) {
+    print(user.name ?? user.prev_name ?? "No name");
+}
+// 0: load "user"
+// 1: push "name"
+// 2: dup2
+// 3: if_absent 6
+// 4: aload
+// 5: goto 15
+// 6: pop2
+// 7: load "user"
+// 8: push "prev_name"
+// 9: dup2
+//10: if_absent 13
+//11: aload
+//12: goto 15
+//13: pop2
+//14: push "No name"
+//15: call "print"
+//16: pop
+//17: leave
+
+
+
+fn test3(user) {
+    print(user?.name);
+}
+// 0: load "user"
+// 1: dup
+// 2: ifnull 6
+// 3: push "name"
+// 4: aload
+// 5: goto
+// 6: pop
+// 7: const_null
+// 8: call "print"
+// 9: pop
+//10: leave
+
+
+
+fn test4(user) {
+    print(user?.job?.vacancy);
+}
+// 0: load "user"
+// 1: dup
+// 2: ifnull 10
+// 3: push "job"
+// 4: aload
+// 5: dup
+// 6: ifnull 10
+// 7: push "vacancy"
+// 8: aload
+// 9: goto
+//10: pop
+//11: const_null
+//12: call "print"
+//13: pop
+//14: leave
+
+
+
+fn test5(user) {
     user.name ??= "No name";
 }
-
 // 0: load "user"
 // 1: push "name"
 // 2: dup2
@@ -30,10 +91,10 @@ fn test2(user) {
 // 8: leave
 
 
-fn test3(user) {
+
+fn test6(user) {
     print(user.name ??= "No name");
 }
-
 // 0: load "user"
 // 1: push "name"
 // 2: dup2
@@ -48,10 +109,10 @@ fn test3(user) {
 //11: leave
 
 
-fn test4(user) {
+
+fn test7(user) {
     user.name ??= user.prev_name ?? "No name";
 }
-
 // 0: load "user"
 // 1: push "name"
 // 2: dup2
@@ -70,10 +131,10 @@ fn test4(user) {
 //15: leave
 
 
-fn test5(user) {
+
+fn test8(user) {
     print(user.name ??= user.prev_name ?? "No name");
 }
-
 // 0: load "user"
 // 1: push "name"
 // 2: dup2
@@ -94,10 +155,10 @@ fn test5(user) {
 //17: pop
 //18: leave
 
-fn test6(user) {
+
+fn test9(user) {
     print((user.name ??= user.prev_name) ?? "No name");
 }
-
 // 0: load "user"
 // 1: push "name"
 // 2: dup2
@@ -117,50 +178,11 @@ fn test6(user) {
 //16: call "print"
 //17: leave
 
-fn test7(user) {
-    print(user.name ?? user.prev_name ?? "No name");
-}
-
-// 0: load "user"
-// 1: push "name"
-// 2: dup2
-// 3: if_absent 6
-// 4: aload
-// 5: goto 15
-// 6: pop2
-// 7: load "user"
-// 8: push "prev_name"
-// 9: dup2
-//10: if_absent 13
-//11: aload
-//12: goto 15
-//13: pop2
-//14: push "No name"
-//15: call "print"
-//16: pop
-//17: leave
-
-fn test8(user) {
-    print(user?.name);
-}
-
-// 0: load "user"
-// 1: dup
-// 2: ifnull 6
-// 3: push "name"
-// 4: aload
-// 5: goto
-// 6: pop
-// 7: const_null
-// 8: call "print"
-// 9: pop
-//10: leave
 
 
-fn test9(user) {
+fn test10(user) {
     print(user?.name ?? "No name");
 }
-
 // 0: load "user"
 // 1: dup
 // 2: ifnull 9
@@ -175,3 +197,49 @@ fn test9(user) {
 //11: call "print"
 //12: pop
 //13: leave
+
+
+
+/*
+
+Source "test.jua":
+  fn <main>():
+    Code:
+      stack=1, locals=0
+L2         0: push "world"
+           1: call "hello_string"
+           2: call "println"
+           3: pop
+           4: leave
+  fn hello_string(target):
+    Code:
+      stack=1, locals=0
+L5         0: push "hello, "
+           1: load_0
+           2: add
+           3: return
+
+
+Source "test.jua":
+  fn <main>():
+    Code:
+      stack=1, locals=0
+L2         1 +1     0: push "world"
+           1 0      1: call "hello_string"
+           1 0      2: call "println"
+           0 -1     3: pop
+           0 0      4: leave
+  fn hello_string(target):
+    Code:
+      stack=2, locals=0
+L5         1 +1     0: push "hello, "
+           2 +1     1: load_0
+           1 -1     2: add
+           0 -1     3: return
+
+L65535 +7 65535 65535: ________________
+L1      0 0         0:
+       +5 5         1:
+       +5 10        2:
+
+*/

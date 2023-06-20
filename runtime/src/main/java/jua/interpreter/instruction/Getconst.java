@@ -16,7 +16,7 @@ public class Getconst implements Instruction {
     }
 
     @Override
-    public void print(CodePrinter printer) {
+    public void print(InstructionPrinter printer) {
         printer.printName("getconst");
         printer.printConstRef(id);
     }

@@ -4,21 +4,22 @@ import jua.interpreter.Address;
 import jua.interpreter.InterpreterState;
 import jua.runtime.code.ConstantPool;
 
-public class Binaryswitch extends JumpInstruction {
+import static java.util.Arrays.copyOfRange;
 
+public class Binaryswitch implements Instruction {
     private final int[] literals;
+    private final int[] pcCases;
+    private final int defaultPC;
 
-    private final int[] destIps;
-
-    public Binaryswitch(int[] literals, int[] destIps, int defaultIp) {
-        elsePoint(defaultIp);
-        assert literals.length == destIps.length;
+    public Binaryswitch(int[] literals, int[] pcCases, int defaultPC) {
+        assert literals.length == pcCases.length;
         this.literals = literals;
-        this.destIps = destIps;
+        this.pcCases = pcCases;
+        this.defaultPC = defaultPC;
     }
 
     public void sort(ConstantPool cp) {
-        qsort2(cp, literals, destIps, 0, literals.length - 1);
+        qsort2(cp, literals, pcCases, 0, literals.length - 1);
     }
 
     static void qsort2(ConstantPool cp, int[] keys, int[] values, int lo, int hi) {
@@ -63,26 +64,28 @@ public class Binaryswitch extends JumpInstruction {
     }
 
     @Override
-    public void print(CodePrinter printer) {
+    public void print(InstructionPrinter printer) {
+        printer.beginSwitch();
         printer.printName("binaryswitch");
         if (literals.length > 0) {
-            int last = destIps[0];
+            int last = pcCases[0];
             int last_index = 0;
             for (int i = 1; i < literals.length; i++) {
-                if (destIps[i] == last) {
+                if (pcCases[i] == last) {
                     continue;
                 }
-                printer.printCase(java.util.Arrays.copyOfRange(literals, last_index, i), destIps[last_index]);
-                last = destIps[i];
+                printer.printCase(copyOfRange(literals, last_index, i), pcCases[last_index]);
+                last = pcCases[i];
                 last_index = i;
             }
-            printer.printCase(java.util.Arrays.copyOfRange(literals, last_index, literals.length), destIps[last_index]);
+            printer.printCase(copyOfRange(literals, last_index, literals.length), pcCases[last_index]);
         }
-        printer.printCase(null, _elsePoint /* default ip */);
+        printer.printCase(null, defaultPC);
+        printer.endSwitch();
     }
 
     @Override
     public boolean run(InterpreterState state) {
-        return state.impl_binaryswitch(literals, destIps, _elsePoint);
+        return state.impl_binaryswitch(literals, pcCases, defaultPC);
     }
 }

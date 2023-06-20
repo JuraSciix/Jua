@@ -24,7 +24,7 @@ public class ConstantPoolWriter {
     @Deprecated
     public int writeNull() { return write(null); }
 
-    private int write(Object value) {
+    public int write(Object value) {
         checkOverflow();
         return pool.lookup(value);
     }

@@ -113,32 +113,25 @@ public class Items {
      */
     class LiteralItem extends Item {
 
-        final Types.Type type;
+        final Object value;
 
-        LiteralItem(Types.Type type) {
-            this.type = type;
+        LiteralItem(Object value) {
+            this.value = value;
         }
 
         @Override
         Item load() {
             code.position(tree);
-            if (type.isBoolean()) {
-                if (type.booleanValue()) {
-                    code.addInstruction(const_true);
-                } else {
-                    code.addInstruction(const_false);
-                }
-            } else if (type.isNull()) {
+            if (value == null) {
                 code.addInstruction(const_null);
+            } else if (value == Boolean.TRUE) {
+                code.addInstruction(const_true);
+            } else if (value == Boolean.FALSE) {
+                code.addInstruction(const_false);
+            } else if (value.getClass() == Long.class && -1 <= ((long) value) && ((long) value) <= 1) {
+                code.addInstruction(const_ix[((Long) value).intValue() + 1]);
             } else {
-                if (type.isLong()) {
-                    long lv = type.longValue();
-                    if (-1L <= lv && lv <= 1L) {
-                        code.addInstruction(const_ix[(int) lv + 1]);
-                        return makeStack();
-                    }
-                }
-                code.addInstruction(new Push(type.resolvePoolConstant(code)));
+                code.addInstruction(new Push(constantIndex()));
             }
             return makeStack();
         }
@@ -148,7 +141,7 @@ public class Items {
 
         @Override
         int constantIndex() {
-            return type.resolvePoolConstant(code);
+            return code.constantPoolWriter().write(value);
         }
     }
 
@@ -369,10 +362,11 @@ public class Items {
 
         @Override
         Item load() {
+            int tos = code.tos();
             value.load();
             item.stash();
             item.store();
-            Chain exitChain = code.branch(new Goto());
+            Chain exitChain = code.branch(new Goto(), tos);
             code.resolve(whenItemPresentChain);
             item.load();
             code.resolve(exitChain);
@@ -420,31 +414,38 @@ public class Items {
     }
 
     class SafeItem extends Item {
+        final Item target;
 
-        final Item child;
+        /**
+         * Цепь условных переходов из конструкции в точку её обнуления.
+         * Когда справа налево встречается первый нулевой элемент цепи обращений,
+         * из любого места будет выполнен переход к обнулению всей конструкции.
+         */
+        Chain whenNullChain;
 
-        Chain whenNullChain, whenNonNullChain;
-
-
-        SafeItem(Item child) {
-            this.child = child;
+        SafeItem(Item target) {
+            this.target = target;
         }
 
         @Override
         Item load() {
-            child.load();
-            Chain avoidNullinChain = code.branch(new Goto());
+            target.load();
+            Chain avoidNullingChain = code.branch(new Goto());
             code.resolve(whenNullChain);
             code.addInstruction(pop);
             code.addInstruction(const_null);
-            code.resolve(whenNonNullChain);
-            code.resolve(avoidNullinChain);
+            code.resolve(avoidNullingChain);
             return makeStack();
         }
 
         @Override
+        void drop() {
+
+        }
+
+        @Override
         void stash() {
-            child.stash();
+            target.stash();
         }
 
         @Override
@@ -513,8 +514,8 @@ public class Items {
         return stackItem;
     }
 
-    LiteralItem makeLiteral(Types.Type type) {
-        return new LiteralItem(type);
+    LiteralItem makeLiteral(Object value) {
+        return new LiteralItem(value);
     }
 
     LocalItem makeLocal(int index) {
@@ -529,7 +530,7 @@ public class Items {
         return new AssignItem(var);
     }
 
-    SafeItem makeNullSafe(Item child) {
+    SafeItem makeSafe(Item child) {
         return new SafeItem(child);
     }
 

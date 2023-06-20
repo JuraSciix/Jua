@@ -11,16 +11,16 @@ public class Ifnz extends JumpInstruction {
     public int stackAdjustment() { return -1; }
 
     @Override
-    public JumpInstruction negated() { return new Ifz().elsePoint(_elsePoint); }
+    public JumpInstruction negated() { return new Ifz().offsetJump(offsetJump); }
 
     @Override
-    public void print(CodePrinter printer) {
+    public void print(InstructionPrinter printer) {
         printer.printName("ifnz");
         super.print(printer);
     }
 
     @Override
     public boolean run(InterpreterState state) {
-        return state.ifnz(_elsePoint);
+        return state.ifnz(offsetJump);
     }
 }

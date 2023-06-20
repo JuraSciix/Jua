@@ -17,9 +17,9 @@ public class Call implements Instruction {
     public int stackAdjustment() { return -argc + 1; }
 
     @Override
-    public void print(CodePrinter printer) {
+    public void print(InstructionPrinter printer) {
         printer.printName("call");
-        printer.printFunctionRef(index);
+        printer.printFuncRef(index);
         printer.print(argc);
     }
 

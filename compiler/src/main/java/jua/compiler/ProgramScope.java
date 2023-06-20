@@ -2,12 +2,11 @@ package jua.compiler;
 
 import jua.compiler.Tree.ConstDef;
 import jua.compiler.Tree.FuncDef;
-import jua.compiler.Types.Type;
 import jua.interpreter.Address;
 import jua.interpreter.AddressUtils;
+import jua.runtime.ConstantMemory;
 import jua.runtime.Function;
 import jua.runtime.NativeStdlib;
-import jua.runtime.Types;
 import jua.runtime.VirtualMachine;
 import jua.utils.List;
 
@@ -41,14 +40,14 @@ public final class ProgramScope {
 
         final String name;
         final int id;
-        final Type type;
+        final Object value;
         final ConstDef.Definition tree;
 
-        ConstantSymbol(String name, int id, Type type, ConstDef.Definition tree) {
+        ConstantSymbol(String name, int id, Object value, ConstDef.Definition tree) {
             super(id);
             this.name = name;
             this.id = id;
-            this.type = type;
+            this.value = value;
             this.tree = tree;
         }
     }
@@ -91,23 +90,7 @@ public final class ProgramScope {
 
     private void registerNatives() {
         NativeStdlib.getNativeConstants().entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> {
-                    Address a = e.getValue();
-                    switch (a.getType()) {
-                        case Types.T_INT:
-                            return new jua.compiler.Types.LongType(a.getLong());
-                        case Types.T_FLOAT:
-                            return new jua.compiler.Types.DoubleType(a.getDouble());
-                        case Types.T_BOOLEAN:
-                            return jua.compiler.Types.ofBoolean(a.getBoolean());
-                        case Types.T_STRING:
-                            return new jua.compiler.Types.StringType(a.getStringHeap().toString());
-                        case Types.T_NULL:
-                            return jua.compiler.Types.TYPE_NULL;
-                        default:
-                            throw new AssertionError(a.getType());
-                    }
-                }))
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toObject()))
                         .forEach(this::defineNativeConstant);
         NativeStdlib.getNativeFunctions().forEach(this::defineNativeFunction);
     }
@@ -120,7 +103,7 @@ public final class ProgramScope {
         return functions.containsKey(name.toString());
     }
 
-    public ConstantSymbol defineNativeConstant(String name, Type type) {
+    public ConstantSymbol defineNativeConstant(String name, Object value) {
         if (constants.containsKey(name)) {
             throw new IllegalArgumentException("Duplicate constant: " + name);
         }
@@ -128,7 +111,7 @@ public final class ProgramScope {
         ConstantSymbol sym = new ConstantSymbol(
                 name,
                 nextId,
-                type,
+                value,
                 null
         );
         constants.put(name, sym);
@@ -157,7 +140,7 @@ public final class ProgramScope {
     public ConstantSymbol defineUserConstant(ConstDef.Definition def) {
         String name = def.name.toString();
         int nextId = constnextaddr++;
-        Type type = TreeInfo.literalType(def.expr);
+        Object type = TreeInfo.literalType(def.expr);
         ConstantSymbol sym = new ConstantSymbol(
                 name,
                 nextId,
@@ -198,7 +181,7 @@ public final class ProgramScope {
         ConstantSymbol sym = new ConstantSymbol(
                 nameString,
                 -1,
-                jua.compiler.Types.TYPE_NULL,
+                null,
                 null
         );
         constants.put(nameString, sym);
@@ -236,12 +219,13 @@ public final class ProgramScope {
         return functions;
     }
 
-    public Address[] collectConstantAddresses() {
-        Address[] constantAddresses = AddressUtils.allocateMemory(constants.size(), 0);
-        for (ConstantSymbol constantSymbol : constants.values()) {
-            constantSymbol.type.write2address(constantAddresses[constantSymbol.id]);
+    public ConstantMemory[] collectConstants() {
+        ConstantMemory[] constants = new ConstantMemory[this.constants.size()];
+        for (ConstantSymbol sym : this.constants.values()) {
+            constants[sym.id] = new ConstantMemory(sym.name, new Address());
+            AddressUtils.assignObject(constants[sym.id].address, sym.value);
         }
-        return constantAddresses;
+        return constants;
     }
 
     /**

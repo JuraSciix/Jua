@@ -13,13 +13,13 @@ public class Goto extends JumpInstruction {
     }
 
     @Override
-    public void print(CodePrinter printer) {
+    public void print(InstructionPrinter printer) {
         printer.printName("goto");
         super.print(printer);
     }
 
     @Override
     public boolean run(InterpreterState state) {
-        return state._goto(_elsePoint);
+        return state._goto(offsetJump);
     }
 }

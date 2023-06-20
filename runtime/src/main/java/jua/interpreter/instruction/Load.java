@@ -14,7 +14,7 @@ public class Load implements Instruction {
     public int stackAdjustment() { return 1; }
 
     @Override
-    public void print(CodePrinter printer) {
+    public void print(InstructionPrinter printer) {
         printer.printName("load");
         printer.printLocal(id);
     }

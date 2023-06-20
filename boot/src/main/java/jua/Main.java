@@ -1,7 +1,7 @@
 package jua;
 
 import jua.compiler.JuaCompiler;
-import jua.compiler.Program;
+import jua.compiler.Module;
 import jua.runtime.RuntimeErrorException;
 
 import java.io.File;
@@ -43,7 +43,7 @@ public class Main {
         compiler.setPrettyTreeMode(Options.isShouldPrettyTree());
         compiler.setLogLimit(Options.logMaxErrors());
         compiler.setGenJvmLoops(Options.genJvmLoops());
-        Program result = compiler.compile();
+        Module result = compiler.compile();
 
         if (result == null) return;
         if (Options.isShouldPrintCode()) {

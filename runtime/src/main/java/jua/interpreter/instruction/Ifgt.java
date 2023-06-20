@@ -8,16 +8,16 @@ public class Ifgt extends JumpInstruction {
     public int stackAdjustment() { return -1 + -1; }
 
     @Override
-    public JumpInstruction negated() { return new Ifle().elsePoint(_elsePoint); }
+    public JumpInstruction negated() { return new Ifle().offsetJump(offsetJump); }
 
     @Override
-    public void print(CodePrinter printer) {
+    public void print(InstructionPrinter printer) {
         printer.printName("ifgt");
         super.print(printer);
     }
 
     @Override
     public boolean run(InterpreterState state) {
-        return state.ifgt(_elsePoint);
+        return state.ifgt(offsetJump);
     }
 }

@@ -5,8 +5,8 @@ import jua.compiler.Items.*;
 import jua.compiler.ProgramScope.ConstantSymbol;
 import jua.compiler.Tree.*;
 import jua.compiler.Tree.Return;
-import jua.compiler.Types.LongType;
 import jua.interpreter.Address;
+import jua.interpreter.AddressUtils;
 import jua.interpreter.instruction.*;
 import jua.runtime.Function;
 import jua.utils.Assert;
@@ -14,6 +14,7 @@ import jua.utils.List;
 
 import java.util.ArrayList;
 
+import static jua.compiler.Code.mergeChains;
 import static jua.compiler.InstructionFactory.*;
 import static jua.compiler.InstructionUtils.*;
 import static jua.compiler.TreeInfo.isLiteralNull;
@@ -139,7 +140,7 @@ public class Gen extends Scanner {
             if (param.expr != null) {
                 Literal literal = (Literal) stripParens(param.expr);
                 Address address = new Address();
-                literal.type.write2address(address);
+                AddressUtils.assignObject(address, literal.value);
                 defaults.add(address);
             }
         }
@@ -331,7 +332,7 @@ public class Gen extends Scanner {
 
         if (caseBodyAlive) {
             // Неявный break
-            flow.exitChain = Code.mergeChains(flow.exitChain, code.branch(new Goto()));
+            flow.exitChain = mergeChains(flow.exitChain, code.branch(new Goto()));
         }
     }
 
@@ -340,7 +341,7 @@ public class Gen extends Scanner {
         FlowEnv env = searchEnv(false);
         Assert.checkNonNull(env);
         code.putPos(tree.pos);
-        env.exitChain = Code.mergeChains(env.exitChain, code.branch(new Goto()));
+        env.exitChain = mergeChains(env.exitChain, code.branch(new Goto()));
         code.dead();
     }
 
@@ -349,7 +350,7 @@ public class Gen extends Scanner {
         FlowEnv env = searchEnv(false);
         Assert.checkNonNull(env);
         code.putPos(tree.pos);
-        env.contChain = Code.mergeChains(env.contChain, code.branch(new Goto()));
+        env.contChain = mergeChains(env.contChain, code.branch(new Goto()));
         code.dead();
     }
 
@@ -358,7 +359,7 @@ public class Gen extends Scanner {
         FlowEnv env = searchEnv(true);
         Assert.checkNonNull(env);
         code.putPos(tree.pos);
-        env.contChain = Code.mergeChains(env.contChain, code.branch(new Goto()));
+        env.contChain = mergeChains(env.contChain, code.branch(new Goto()));
         code.dead();
     }
 
@@ -375,7 +376,7 @@ public class Gen extends Scanner {
         for (VarDef.Definition def : tree.defs) {
             code.putPos(def.name.pos);
             if (def.init == null) {
-                items.makeLiteral(Types.TYPE_NULL).load();
+                items.makeLiteral(null).load();
             } else {
                 genExpr(def.init).load();
             }
@@ -402,18 +403,18 @@ public class Gen extends Scanner {
 
     @Override
     public void visitLiteral(Literal tree) {
-        result = items.makeLiteral(tree.type);
+        result = items.makeLiteral(tree.value);
     }
 
     @Override
     public void visitListLiteral(ListLiteral tree) {
         code.putPos(tree.pos);
-        items.makeLiteral(new LongType(tree.entries.count())).load();
+        items.makeLiteral((long) tree.entries.count()).load();
         code.addInstruction(newlist);
-        long index = 0L;
+        int index = 0;
         for (Expression entry : tree.entries) {
             items.makeStack().duplicate();
-            items.makeLiteral(new LongType(index++)).load();
+            items.makeLiteral((long) index++).load();
             genExpr(entry).load();
             items.makeAccess().store();
         }
@@ -447,7 +448,7 @@ public class Gen extends Scanner {
 
     @Override
     public void visitMemberAccess(MemberAccess tree) {
-        genAccess(tree, tree.expr, tree.member.toLiteral(), Tag.MEMACCSF);
+        genAccess(tree, tree.expr, new Literal(tree.member.pos, tree.member.toString()), Tag.MEMACCSF);
     }
 
     @Override
@@ -459,19 +460,19 @@ public class Gen extends Scanner {
         Item exprItem = genExpr(expr);
         Item resultItem = items.makeAccess();
         if (tree.hasTag(safeTag)) {
-            SafeItem exprSafeItem = exprItem.asSafe();
-            SafeItem resultSafeItem = items.makeNullSafe(resultItem);
-            resultItem = resultSafeItem;
-            Item safeChildItem = exprSafeItem.child.load();
-            safeChildItem.duplicate();
-            CondItem nonNullCond = safeChildItem.nonNullCheck();
-            resultSafeItem.whenNullChain = nonNullCond.elseJumps();
-            resultSafeItem.whenNonNullChain = nonNullCond.thenChain;
+            SafeItem safeExprItem = exprItem.asSafe();
+            Item stackTargetItem = safeExprItem.target.load();
+            stackTargetItem.duplicate();
+            CondItem nonNullCond = stackTargetItem.nonNullCheck();
+            code.resolve(nonNullCond.thenChain);
+            SafeItem safeResultItem = items.makeSafe(resultItem);
+            safeResultItem.whenNullChain = mergeChains(safeResultItem.whenNullChain, nonNullCond.elseJumps());
+            resultItem = safeResultItem;
         } else {
             exprItem.load();
         }
         genExpr(key).load();
-        result = resultItem.treeify(tree);
+        result = resultItem;
     }
 
     @Override
@@ -547,7 +548,7 @@ public class Gen extends Scanner {
                 CondItem rcond = genExpr(tree.rhs).asCond();
                 result = items.makeCond(rcond.opcode,
                         rcond.thenChain,
-                        Code.mergeChains(falseJumps, rcond.elseChain))
+                        mergeChains(falseJumps, rcond.elseChain))
                         .treeify(tree);
                 break;
             }
@@ -558,7 +559,7 @@ public class Gen extends Scanner {
                 code.resolve(lcond.elseChain);
                 CondItem rcond = genExpr(tree.rhs).asCond();
                 result = items.makeCond(rcond.opcode,
-                        Code.mergeChains(trueJumps, rcond.thenChain),
+                        mergeChains(trueJumps, rcond.thenChain),
                         rcond.elseChain)
                         .treeify(tree);
                 break;
@@ -592,7 +593,7 @@ public class Gen extends Scanner {
 
             case COALESCE: {
                 SafeItem lhsSafeItem = genExpr(tree.lhs).asSafe();
-                Item item = lhsSafeItem.child.load();
+                Item item = lhsSafeItem.target.load();
                 item.duplicate();
                 CondItem nonNullCond = item.nonNullCheck(); // treeify is unnecessary
                 Chain whenNonNullChain = nonNullCond.thenJumps();

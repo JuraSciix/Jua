@@ -255,7 +255,7 @@ public class Pretty extends Scanner {
 
     @Override
     public void visitLiteral(Literal tree) {
-        print(tree.type.toString());
+        print(tree.value.toString());
     }
 
     @Override
@@ -276,7 +276,7 @@ public class Pretty extends Scanner {
         printEnumeration(tree.entries, entry -> {
             if (entry.field) {
                 Literal key = (Literal) entry.key;
-                print(key.type.stringValue());
+                print(key.value);
             } else {
                 print("[");
                 scan(entry.key);

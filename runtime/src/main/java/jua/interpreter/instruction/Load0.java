@@ -8,8 +8,9 @@ public class Load0 implements Instruction {
     public int stackAdjustment() { return 1; }
 
     @Override
-    public void print(CodePrinter printer) {
+    public void print(InstructionPrinter printer) {
         printer.printName("load_0");
+        printer.printLocal(0);
     }
 
     @Override

@@ -20,8 +20,8 @@ public final class InterpreterState {
     private final Address[] slots;
 
     InterpreterState(CodeData cs) {
-        this.stack = AddressUtils.allocateMemory(cs.stackSize, 0);
-        this.slots = AddressUtils.allocateMemory(cs.registers, 0);
+        this.stack = AddressUtils.allocateMemory(cs.stack, 0);
+        this.slots = AddressUtils.allocateMemory(cs.locals, 0);
     }
 
     public void executeTick(InterpreterThread thread, InterpreterFrame frame) {

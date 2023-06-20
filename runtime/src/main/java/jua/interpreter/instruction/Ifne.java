@@ -8,16 +8,16 @@ public class Ifne extends JumpInstruction {
     public int stackAdjustment() { return -1 + -1; }
 
     @Override
-    public JumpInstruction negated() { return new Ifeq().elsePoint(_elsePoint); }
+    public JumpInstruction negated() { return new Ifeq().offsetJump(offsetJump); }
 
     @Override
-    public void print(CodePrinter printer) {
+    public void print(InstructionPrinter printer) {
         printer.printName("ifne");
         super.print(printer);
     }
 
     @Override
     public boolean run(InterpreterState state) {
-        return state.ifne(_elsePoint);
+        return state.ifne(offsetJump);
     }
 }

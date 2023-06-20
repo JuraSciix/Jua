@@ -9,7 +9,6 @@ import jua.utils.List;
 import java.util.stream.Collectors;
 
 import static jua.compiler.Tokens.TokenType.*;
-import static jua.compiler.Types.*;
 
 public final class JuaParser {
 
@@ -759,7 +758,7 @@ public final class JuaParser {
                 pError(token.pos, "missing expected expression.");
             }
             case FALSE: {
-                return new Literal(token.pos, ofBoolean(false));
+                return new Literal(token.pos, false);
             }
             case FLOATLITERAL: {
                 return parseFloat(token);
@@ -780,13 +779,13 @@ public final class JuaParser {
                 return parseParens(token.pos);
             }
             case NULL: {
-                return new Literal(token.pos, nullType());
+                return new Literal(token.pos, null);
             }
             case STRINGLITERAL: {
-                return new Literal(token.pos, new StringType(token.value()));
+                return new Literal(token.pos, token.value());
             }
             case TRUE: {
-                return new Literal(token.pos, ofBoolean(true));
+                return new Literal(token.pos, true);
             }
             default:
                 unexpected(token, List.of(
@@ -803,7 +802,7 @@ public final class JuaParser {
         if (Double.isInfinite(d)) {
             pError(token.pos, "number too large.");
         }
-        return new Literal(token.pos, new DoubleType(d));
+        return new Literal(token.pos, d);
     }
 
     private Expression parseIdentifier(Token token) {
@@ -851,7 +850,7 @@ public final class JuaParser {
     private Expression parseInt(Token token) {
         try {
             long value = Conversions.parseLong(token.value(), token.radix());
-            return new Literal(token.pos, new LongType(value));
+            return new Literal(token.pos, value);
         } catch (NumberFormatException e) {
             pError(token.pos, "number too large.");
             return null;
@@ -898,7 +897,7 @@ public final class JuaParser {
                             key = parseInt(token);
                             break;
                         case IDENTIFIER:
-                            key = new Literal(token.pos, new StringType(token.name()));
+                            key = new Literal(token.pos, token.name());
                             break;
                         default:
                             unexpected(token, List.of(FLOATLITERAL, INTLITERAL, IDENTIFIER));

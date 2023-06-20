@@ -2,13 +2,14 @@ package jua.compiler;
 
 import jua.interpreter.Address;
 import jua.interpreter.InterpreterThread;
+import jua.runtime.ConstantMemory;
 import jua.runtime.Function;
 import jua.runtime.JuaEnvironment;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public final class Program {
+public final class Module {
 
     public final Source source;
 
@@ -16,10 +17,10 @@ public final class Program {
 
     public final Function[] functions;
 
-    public final Address[] constants;
+    public final ConstantMemory[] constants;
 
     // Trusting constructor
-    Program(Source source, Function main, Function[] functions, Address[] constants) {
+    Module(Source source, Function main, Function[] functions, ConstantMemory[] constants) {
         this.source = source;
         this.main = main;
         this.functions = functions;
@@ -31,8 +32,7 @@ public final class Program {
     }
 
     public void print() {
-        CodePrinter.print(this, main.userCode(), 0);
-        CodePrinter.printFunctions(this, new ArrayList<>(Arrays.asList(functions)));
+        InstructionPrinterImpl.printModule(this);
     }
 
     public void run() {

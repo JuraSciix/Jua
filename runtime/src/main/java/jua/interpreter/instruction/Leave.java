@@ -8,7 +8,7 @@ public class Leave implements Instruction {
     public int stackAdjustment() { return 0; }
 
     @Override
-    public void print(CodePrinter printer) {
+    public void print(InstructionPrinter printer) {
         printer.printName("leave");
     }
 

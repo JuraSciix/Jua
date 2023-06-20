@@ -8,7 +8,7 @@ public class Astore implements Instruction {
     public int stackAdjustment() { return -1 + -1 + -1; }
 
     @Override
-    public void print(CodePrinter printer) {
+    public void print(InstructionPrinter printer) {
         printer.printName("astore");
     }
 

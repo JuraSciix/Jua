@@ -1,9 +1,6 @@
 package jua.compiler;
 
 import jua.compiler.Tree.*;
-import jua.compiler.Types.ListType;
-import jua.compiler.Types.Type;
-import jua.utils.Assert;
 
 public final class TreeInfo {
 
@@ -81,31 +78,20 @@ public final class TreeInfo {
         }
     }
 
-    public static Type literalType(Expression tree) {
+    public static Object literalType(Expression tree) {
         Expression innerTree = stripParens(tree);
-        switch (innerTree.getTag()) {
-            case LITERAL:
-                Literal literalTree = (Literal) innerTree;
-                return literalTree.type;
-            case LISTLIT:
-                ListLiteral listTree = (ListLiteral) innerTree;
-                return new ListType(listTree.entries.map(TreeInfo::literalType).toArray(Type[]::new));
-            case MAPLIT:
-                MapLiteral mapTree = (MapLiteral) innerTree;
-                return new Types.MapType(
-                        mapTree.entries.map(e -> literalType(e.key)).toArray(Type[]::new),
-                        mapTree.entries.map(e -> literalType(e.value)).toArray(Type[]::new)
-                );
-            default:
-                throw new AssertionError(innerTree.getTag());
+        if (innerTree.hasTag(Tag.LITERAL)) {
+            Literal literalTree = (Literal) innerTree;
+            return literalTree.value;
         }
+        throw new AssertionError(innerTree.getTag());
     }
 
     public static boolean isLiteralNull(Expression tree) {
         Expression innerTree = stripParens(tree);
         if (innerTree.hasTag(Tag.LITERAL)) {
             Literal literalTree = (Literal) innerTree;
-            return literalTree.type.isNull();
+            return literalTree.value == null;
         }
         return false;
     }
@@ -114,29 +100,19 @@ public final class TreeInfo {
         Expression innerTree = stripParens(tree);
         if (innerTree.hasTag(Tag.LITERAL)) {
             Literal literalTree = (Literal) innerTree;
-            if (literalTree.type.isLong()) {
-                long longVal = literalTree.type.longValue();
+            if (literalTree.value instanceof Long) {
+                long longVal = (long) literalTree.value;
                 return (longVal >>> 16) == 0;
             }
         }
         return false;
     }
 
-    public static short getLiteralShort(Expression tree) {
-        Expression innerTree = stripParens(tree);
-        Assert.check(innerTree.hasTag(Tag.LITERAL));
-        Literal literalTree = (Literal) innerTree;
-        Assert.check(literalTree.type.isLong());
-        long longVal = literalTree.type.longValue();
-        Assert.check((longVal >>> 16) == 0);
-        return (short) longVal;
-    }
-
     public static boolean isLiteralTrue(Expression tree) {
         Expression innerTree = stripParens(tree);
         if (innerTree.hasTag(Tag.LITERAL)) {
             Literal literalTree = (Literal) innerTree;
-            return literalTree.type.booleanValue();
+            return literalTree.value != null; // todo
         }
         if (innerTree.hasTag(Tag.MAPLIT)) {
             MapLiteral arrayTree = (MapLiteral) innerTree;
@@ -149,7 +125,7 @@ public final class TreeInfo {
         Expression innerTree = stripParens(tree);
         if (innerTree.hasTag(Tag.LITERAL)) {
             Literal literalTree = (Literal) innerTree;
-            return !literalTree.type.booleanValue();
+            return literalTree.value == null;
         }
         if (innerTree.hasTag(Tag.MAPLIT)) {
             MapLiteral arrayTree = (MapLiteral) innerTree;
@@ -158,7 +134,9 @@ public final class TreeInfo {
         return false;
     }
 
-    /** Возвращает приоритет оператора. */
+    /**
+     * Возвращает приоритет оператора.
+     */
     public static int getOperatorPrecedence(Tag tag) {
         switch (tag) {
             case ASSIGN: case ASG_ADD: case ASG_SUB:

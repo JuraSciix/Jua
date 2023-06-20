@@ -142,8 +142,6 @@ public final class Tokens {
 
         public Name toName() { throw unsupportedOperationException(); }
 
-        public Types.Type toType() { throw unsupportedOperationException(); }
-
         public String name() { throw unsupportedOperationException(); }
 
         public String value() { throw unsupportedOperationException(); }
@@ -165,7 +163,7 @@ public final class Tokens {
         }
 
         @Override
-        public Name toName() { return new Name(name, pos); }
+        public Name toName() { return new Name(pos, name); }
 
         @Override
         public String name() { return name; }
@@ -181,9 +179,6 @@ public final class Tokens {
         }
 
         @Override
-        public Types.Type toType() { return super.toType(); }
-
-        @Override
         public String value() { return value; }
     }
 
@@ -195,9 +190,6 @@ public final class Tokens {
             super(type, pos, value);
             this.radix = radix;
         }
-
-        @Override
-        public Types.Type toType() { return super.toType(); }
 
         @Override
         public int radix() { return radix; }

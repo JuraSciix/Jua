@@ -3,13 +3,17 @@ package jua.runtime.code;
 import jua.interpreter.instruction.Instruction;
 import jua.runtime.Function;
 
+// todo: удалить к чертям собачьим этот Function.Handle и вернуть два поля - CodeData, NativeExecutor
 public final class CodeData implements Function.Handle {
 
     /** Число слотов на стеке, используемых в коде. */
-    public final int stackSize;
+    public final int stack;
 
     /** Число регистров (локальных переменных), используемых в коде. */
-    public final int registers;
+    public final int locals;
+
+    /** Имена переменных. */
+    public final String[] localNames;
 
     /** Последовательность инструкций. */
     public final Instruction[] code;
@@ -20,33 +24,12 @@ public final class CodeData implements Function.Handle {
     /** Таблица строк. */
     public final LineNumberTable lineNumTable;
 
-    public CodeData(int stackSize, int registers, Instruction[] code, ConstantPool constantPool, LineNumberTable lineNumTable) {
-        validateFields(stackSize, registers, code, constantPool, lineNumTable);
-        this.stackSize = stackSize;
-        this.registers = registers;
+    public CodeData(int stack, int locals, String[] localNames, Instruction[] code, ConstantPool constantPool, LineNumberTable lineNumTable) {
+        this.stack = stack;
+        this.locals = locals;
+        this.localNames = localNames;
         this.code = code;
         this.constantPool = constantPool;
         this.lineNumTable = lineNumTable;
-    }
-
-    public static void validateFields(int stackSize, int registers, Instruction[] code, ConstantPool constantPool, LineNumberTable lineNumTable) {
-        if (stackSize < 0 || stackSize > 0xFFFF) {
-            throw new IllegalArgumentException("stack size must be in the range from 0 to 65535: " + stackSize);
-        }
-        if (registers < 0 || registers > 0xFFFF) {
-            throw new IllegalArgumentException("the number of registers must be in the range from 0 to 65535: " + registers);
-        }
-        if (code == null) {
-            throw new IllegalArgumentException("instructions array (code) must not be null");
-        }
-        if (code.length == 0) {
-            throw new IllegalArgumentException("instructions array (code) must not be empty");
-        }
-        if (constantPool == null) {
-            throw new IllegalArgumentException("constant pool must not be empty");
-        }
-        if (lineNumTable == null) {
-            throw new IllegalArgumentException("line number table must not be null");
-        }
     }
 }

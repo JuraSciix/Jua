@@ -19,7 +19,7 @@ public class Fake implements Instruction {
     public int stackAdjustment() { return stackAdjustment; }
 
     @Override
-    public void print(CodePrinter printer) { throw new AssertionError(this); }
+    public void print(InstructionPrinter printer) { throw new AssertionError(this); }
 
     @Override
     public boolean run(InterpreterState state) { throw new AssertionError(this); }

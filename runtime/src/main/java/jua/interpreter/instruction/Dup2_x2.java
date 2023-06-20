@@ -10,7 +10,7 @@ public class Dup2_x2 implements Instruction {
     }
 
     @Override
-    public void print(CodePrinter printer) {
+    public void print(InstructionPrinter printer) {
         printer.printName("dup_x2");
     }
 

@@ -2,7 +2,7 @@ package jua.compiler;
 
 import jua.utils.Assert;
 
-import static java.lang.Character.*;
+import static java.lang.Character.digit;
 import static jua.compiler.Tokens.*;
 import static jua.compiler.Tokens.TokenType.*;
 

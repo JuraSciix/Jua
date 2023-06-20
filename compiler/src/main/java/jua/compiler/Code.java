@@ -16,18 +16,14 @@ import java.util.TreeMap;
 public final class Code {
 
     static class Chain {
-
-        final int pc;
-
+        final int pc, tos;
         final Chain next;
 
-        final int tos;
-
-        Chain(int pc, Chain next, int tos) {
+        Chain(int pc, int tos, Chain next) {
             Assert.check(next == null || next.tos == tos);
             this.pc = pc;
-            this.next = next;
             this.tos = tos;
+            this.next = next;
         }
     }
 
@@ -36,9 +32,9 @@ public final class Code {
         if (rhs == null) return lhs;
         // Рекурсивная сортировка
         if (lhs.pc <= rhs.pc)
-            return new Chain(lhs.pc, mergeChains(lhs.next, rhs), lhs.tos);
+            return new Chain(lhs.pc, lhs.tos, mergeChains(lhs.next, rhs));
         else  // lhs.pc > rhs.pc
-            return new Chain(rhs.pc, mergeChains(rhs.next, lhs), rhs.tos);
+            return new Chain(rhs.pc, rhs.tos, mergeChains(rhs.next, lhs));
     }
 
     private final ArrayList<Instruction> instructions = new ArrayList<>();
@@ -77,11 +73,11 @@ public final class Code {
     }
 
     public Chain branch(Instruction instr) {
-        return new Chain(addInstruction(instr), null, tos());
+        return new Chain(addInstruction(instr), tos(), null);
     }
 
     public Chain branch(Instruction instr, int tos) {
-        return new Chain(addInstruction(instr), null, tos);
+        return new Chain(addInstruction(instr), tos, null);
     }
 
     public int lineNum() {
@@ -189,8 +185,9 @@ public final class Code {
     public CodeData buildCodeSegment() {
         ConstantPool cp = buildConstantPool();
         return new CodeData(
-                this.limTos,
-                this.nlocals,
+                limTos,
+                nlocals,
+                localNames.keySet().toArray(new String[0]),
                 buildCode(cp),
                 cp,
                 buildLineNumberTable());
@@ -235,9 +232,10 @@ public final class Code {
 
     public void resolve(Chain chain, int destPC) {
         if (chain == null) return;
-        assertTosEquality(chain.tos);
+//        assertTosEquality(chain.tos);
+        tos(chain.tos);
         do {
-            get(chain.pc).elsePoint(destPC - chain.pc);
+            get(chain.pc).offsetJump(destPC - chain.pc);
             chain = chain.next;
         } while (chain != null);
     }
@@ -245,7 +243,7 @@ public final class Code {
     public void assertTosEquality(int tos) {
         Assert.check(tos() == tos, () ->
                 String.format(
-                        "TOS violation: BEFORE=%d, AFTER=%d, PC=%d, LINE=%d",
+                        "TOS violation: EXPECTED=%d, ACTUAL=%d, PC=%d, LINE=%d",
                         tos, tos(), pc(), lineNum()));
     }
 }

@@ -8,8 +8,9 @@ public class Store2 implements Instruction {
     public int stackAdjustment() { return -1; }
 
     @Override
-    public void print(CodePrinter printer) {
+    public void print(InstructionPrinter printer) {
         printer.printName("store_2");
+        printer.printLocal(2);
     }
 
     @Override

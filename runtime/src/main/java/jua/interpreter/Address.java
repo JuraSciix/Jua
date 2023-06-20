@@ -6,6 +6,7 @@ import jua.runtime.heap.Heap;
 import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.MapHeap;
 import jua.runtime.heap.StringHeap;
+import jua.utils.Conversions;
 
 import static jua.interpreter.InterpreterThread.threadError;
 import static jua.runtime.Types.*;
@@ -900,12 +901,26 @@ public final class Address implements Comparable<Address>, ConstantPool.Entry {
     public String toBeautifulString() {
         switch (type) {
             case T_NULL:      return Types.getTypeName(T_NULL);
-            case T_INT:       return Types.getTypeName(T_INT) + ":" + getLong();
-            case T_FLOAT:     return Types.getTypeName(T_FLOAT) + ":" + getDouble();
-            case T_BOOLEAN:   return Types.getTypeName(T_BOOLEAN) + ":" + getBoolean();
-            case T_STRING:    return Types.getTypeName(T_STRING) + ":" + getStringHeap();
-            case T_MAP:       return Types.getTypeName(T_MAP) + ":" + getMapHeap();
-            case T_LIST:      return Types.getTypeName(T_LIST) + ":" + getListHeap();
+            case T_INT:       return Long.toString(getLong());
+            case T_FLOAT:     return Double.toString(getDouble());
+            case T_BOOLEAN:   return Boolean.toString(getBoolean());
+            case T_STRING:    return '"' + getStringHeap().toString() + '"';
+            case T_MAP:       return getMapHeap().toString();
+            case T_LIST:      return  getListHeap().toString();
+            case T_UNDEFINED: // fallthrough
+            default: throw new AssertionError(type);
+        }
+    }
+
+    public Object toObject() {
+        switch (type) {
+            case T_NULL:      return null;
+            case T_INT:       return l;
+            case T_FLOAT:     return d;
+            case T_BOOLEAN:   return Types.l2b(l);
+            case T_STRING:    return getStringHeap();
+            case T_MAP:       return getMapHeap();
+            case T_LIST:      return getListHeap();
             case T_UNDEFINED: // fallthrough
             default: throw new AssertionError(type);
         }

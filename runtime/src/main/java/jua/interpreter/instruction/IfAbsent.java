@@ -8,16 +8,16 @@ public class IfAbsent extends JumpInstruction {
     public int stackAdjustment() { return -1 + -1; }
 
     @Override
-    public JumpInstruction negated() { return new IfPresent().elsePoint(_elsePoint); }
+    public JumpInstruction negated() { return new IfPresent().offsetJump(offsetJump); }
 
     @Override
-    public void print(CodePrinter printer) {
+    public void print(InstructionPrinter printer) {
         printer.printName("if_absent");
         super.print(printer);
     }
 
     @Override
     public boolean run(InterpreterState state) {
-        return state.if_absent(_elsePoint);
+        return state.if_absent(offsetJump);
     }
 }

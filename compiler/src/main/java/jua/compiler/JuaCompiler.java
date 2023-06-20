@@ -3,6 +3,7 @@ package jua.compiler;
 import jua.compiler.Tokens.Token;
 import jua.compiler.Tokens.TokenType;
 import jua.interpreter.Address;
+import jua.runtime.ConstantMemory;
 import jua.runtime.Function;
 import jua.utils.IOUtils;
 
@@ -65,7 +66,7 @@ public final class JuaCompiler {
         this.file = file;
     }
 
-    public Program compile() {
+    public Module compile() {
         char[] filecontents;
         try {
             filecontents = IOUtils.readFileCharBuffer(new File(file), charset);
@@ -114,9 +115,9 @@ public final class JuaCompiler {
 
             Function mainFunction = compilationUnit.sym.runtimefunc;
             Function[] functions = programScope.collectFunctions();
-            Address[] constantAddresses = programScope.collectConstantAddresses();
+            ConstantMemory[] constantAddresses = programScope.collectConstants();
 
-            return new Program(source, mainFunction, functions, constantAddresses);
+            return new Module(source, mainFunction, functions, constantAddresses);
         } catch (CompileException e) {
             System.err.println("Compiler error occurred");
             e.printStackTrace();
