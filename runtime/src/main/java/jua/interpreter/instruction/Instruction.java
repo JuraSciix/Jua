@@ -15,7 +15,7 @@ public interface Instruction {
     }
 
     default Instruction offsetJump(int pc) {
-        throw new UnsupportedOperationException(getClass().getName() + " have no point field");
+        throw new UnsupportedOperationException(getClass().getName() + " have no offset jump field");
     }
 
     /**

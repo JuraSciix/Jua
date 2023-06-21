@@ -4,6 +4,7 @@ import jua.interpreter.Address;
 import jua.interpreter.AddressUtils;
 import jua.interpreter.instruction.Binaryswitch;
 import jua.interpreter.instruction.Instruction;
+import jua.interpreter.instruction.JumpInstruction;
 import jua.runtime.code.CodeData;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.LineNumberTable;
@@ -72,11 +73,13 @@ public final class Code {
         gen.source = source;
     }
 
-    public Chain branch(Instruction instr) {
+    public Chain branch(JumpInstruction instr) {
+        if (!isAlive()) return null;
         return new Chain(addInstruction(instr), tos(), null);
     }
 
     public Chain branch(Instruction instr, int tos) {
+        if (!isAlive()) return null;
         return new Chain(addInstruction(instr), tos, null);
     }
 

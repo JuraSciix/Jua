@@ -284,8 +284,10 @@ public class Gen extends Scanner {
         code.putPos(tree.pos);
         code.addInstruction(new Fake(-1)); // Резервируем место под инструкцию
 
+        boolean codeAlive = true;
+
         for (Case c : tree.cases) {
-            c.accept(this);
+            codeAlive &= genBranch(c);
             env.resolveCont();
             env.contChain = null;
         }
@@ -303,11 +305,9 @@ public class Gen extends Scanner {
 
         env.resolveExit();
 
-//        if (tree._final) {
-//            // Ни один кейз не был закрыт с помощью break.
-//            // Это значит, что после switch находится недостижимый код.
-//            code.dead();
-//        }
+        if (!codeAlive) {
+            code.dead();
+        }
 
         flow = env.parent;
     }
@@ -328,12 +328,10 @@ public class Gen extends Scanner {
             }
         }
 
-        boolean caseBodyAlive = genBranch(tree.body);
+        // Весь кейз целиком это один из дочерних бранчей switch.
+        scan(tree.body);
 
-        if (caseBodyAlive) {
-            // Неявный break
-            flow.exitChain = mergeChains(flow.exitChain, code.branch(new Goto()));
-        }
+        flow.exitChain = mergeChains(flow.exitChain, code.branch(new Goto()));
     }
 
     @Override

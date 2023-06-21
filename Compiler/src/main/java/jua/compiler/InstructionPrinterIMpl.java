@@ -57,7 +57,7 @@ public class InstructionPrinterImpl implements InstructionPrinter {
             k("%5s: %-12s %s ", pc, name, String.join(", ", operands));
 
             if (!cases.isEmpty()) {
-                f("{ %n");
+                k("{ %n");
                 adjustIndent(3);
                 cases.forEach(c -> f("%s %n", c));
                 adjustIndent(-3);

@@ -464,15 +464,15 @@ public class Items {
      */
     class CondItem extends Item {
 
-        final Instruction opcode;
+        final JumpInstruction opcode;
         Chain thenChain;
         Chain elseChain;
 
-        CondItem(Instruction opcode) {
+        CondItem(JumpInstruction opcode) {
             this(opcode, null, null);
         }
 
-        CondItem(Instruction opcode, Chain thenChain, Chain elseChain) {
+        CondItem(JumpInstruction opcode, Chain thenChain, Chain elseChain) {
             this.opcode = opcode;
             this.thenChain = thenChain;
             this.elseChain = elseChain;
@@ -534,11 +534,11 @@ public class Items {
         return new SafeItem(child);
     }
 
-    CondItem makeCond(Instruction opcode) {
+    CondItem makeCond(JumpInstruction opcode) {
         return new CondItem(opcode);
     }
 
-    CondItem makeCond(Instruction opcode, Chain truejumps, Chain falsejumps) {
+    CondItem makeCond(JumpInstruction opcode, Chain truejumps, Chain falsejumps) {
         return new CondItem(opcode, truejumps, falsejumps);
     }
 }

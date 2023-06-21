@@ -27,7 +27,13 @@ public class NativeStdlib {
         nfp.add(new PanicFunction());
         nfp.add(new StrCodePointsFunction());
         nfp.add(new _SizeOfFunction());
-        nfp.add(new SqrtFunction());
+        nfp.add(new MSqrtFunction());
+        nfp.add(new MCosFunction());
+        nfp.add(new MSinFunction());
+        nfp.add(new MAtan2Function());
+        nfp.add(new MLogFunction());
+        nfp.add(new MExpFunction());
+        nfp.add(new MAbsFunction());
         nfp.add(new StrCharArrayFunction());
         nfp.add(new StrCmpFunction());
     }
@@ -142,10 +148,10 @@ public class NativeStdlib {
         }
     }
 
-    static class SqrtFunction extends NativeFunctionPresent {
+    static class MSqrtFunction extends NativeFunctionPresent {
 
-        SqrtFunction() {
-            super("sqrt", ParamsData.create().add("x"));
+        MSqrtFunction() {
+            super("m_sqrt", ParamsData.create().add("x"));
         }
 
         @Override
@@ -153,6 +159,109 @@ public class NativeStdlib {
             Address doubleVal = new Address();
             if (args[0].doubleVal(doubleVal)) {
                 returnAddress.set(Math.sqrt(doubleVal.getDouble()));
+                return true;
+            }
+            return false;
+        }
+    }
+
+    static class MCosFunction extends NativeFunctionPresent {
+
+        MCosFunction() {
+            super("m_cos", ParamsData.create().add("x"));
+        }
+
+        @Override
+        public boolean execute(Address[] args, int argc, Address returnAddress) {
+            Address doubleVal = new Address();
+            if (args[0].doubleVal(doubleVal)) {
+                returnAddress.set(Math.cos(doubleVal.getDouble()));
+                return true;
+            }
+            return false;
+        }
+    }
+
+    static class MSinFunction extends NativeFunctionPresent {
+
+        MSinFunction() {
+            super("m_sin", ParamsData.create().add("x"));
+        }
+
+        @Override
+        public boolean execute(Address[] args, int argc, Address returnAddress) {
+            Address doubleVal = new Address();
+            if (args[0].doubleVal(doubleVal)) {
+                returnAddress.set(Math.sin(doubleVal.getDouble()));
+                return true;
+            }
+            return false;
+        }
+    }
+
+    static class MAtan2Function extends NativeFunctionPresent {
+
+        MAtan2Function() {
+            super("m_atan2", ParamsData.create().add("x").add("y"));
+        }
+
+        @Override
+        public boolean execute(Address[] args, int argc, Address returnAddress) {
+            Address doubleValX = new Address();
+            Address doubleValY = new Address();
+            if (args[0].doubleVal(doubleValX) && args[1].doubleVal(doubleValY)) {
+                returnAddress.set(Math.atan2(doubleValX.getDouble(), doubleValY.getDouble()));
+                return true;
+            }
+            return false;
+        }
+    }
+
+    static class MLogFunction extends NativeFunctionPresent {
+
+        MLogFunction() {
+            super("m_log", ParamsData.create().add("x"));
+        }
+
+        @Override
+        public boolean execute(Address[] args, int argc, Address returnAddress) {
+            Address doubleVal = new Address();
+            if (args[0].doubleVal(doubleVal)) {
+                returnAddress.set(Math.log(doubleVal.getDouble()));
+                return true;
+            }
+            return false;
+        }
+    }
+
+    static class MExpFunction extends NativeFunctionPresent {
+
+        MExpFunction() {
+            super("m_exp", ParamsData.create().add("x"));
+        }
+
+        @Override
+        public boolean execute(Address[] args, int argc, Address returnAddress) {
+            Address doubleVal = new Address();
+            if (args[0].doubleVal(doubleVal)) {
+                returnAddress.set(Math.exp(doubleVal.getDouble()));
+                return true;
+            }
+            return false;
+        }
+    }
+
+    static class MAbsFunction extends NativeFunctionPresent {
+
+        MAbsFunction() {
+            super("m_abs", ParamsData.create().add("x"));
+        }
+
+        @Override
+        public boolean execute(Address[] args, int argc, Address returnAddress) {
+            Address doubleVal = new Address();
+            if (args[0].doubleVal(doubleVal)) {
+                returnAddress.set(Math.abs(doubleVal.getDouble()));
                 return true;
             }
             return false;

@@ -61,5 +61,14 @@ fn complex_compare(a, b) {
     var br = R(b);
     var bi = I(b);
     // Сравниваем модули комплексных чисел.
-    return compare_numbeR(ar * ar + ai * ai, br * br + bi * bi);
+    return compare_number(ar * ar + ai * ai, br * br + bi * bi);
+}
+
+fn complex_pow(z, n) = complex_exp(complex_mul(complex_log(z), complex_create(n, 0)));
+
+fn complex_log(z) = complex_create(m_log(complex_abs(z)), atan2(R(z), I(z)));
+
+fn complex_exp(z) {
+    var r_exp = m_exp(R(z));
+    return complex_create(r_exp * cos(I(z)), r_exp * sin(I(z)));
 }
