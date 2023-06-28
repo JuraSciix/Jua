@@ -78,7 +78,6 @@ public final class Tokens {
         SWITCH("switch"),
         TILDE("~"),
         TRUE("true"),
-        USE("use"),
         VAR("var"),
         WHILE("while"),
         YIELD("yield");

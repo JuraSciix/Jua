@@ -2,7 +2,6 @@ package jua.compiler;
 
 import jua.compiler.Tokens.Token;
 import jua.compiler.Tokens.TokenType;
-import jua.interpreter.Address;
 import jua.runtime.ConstantMemory;
 import jua.runtime.Function;
 import jua.utils.IOUtils;

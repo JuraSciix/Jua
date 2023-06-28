@@ -91,6 +91,7 @@ public class InstructionPrinterImpl implements InstructionPrinter {
         InstructionPrinterImpl printer = new InstructionPrinterImpl(module, System.out);
         printer.f("Source \"%s\": %n", module.source.fileName);
         printer.adjustIndent(2);
+        printer.printFunction(module.main);
         for (Function function : module.functions) {
             Assert.check(function != null, "module contains null-reference function");
             if ((function.flags & Function.FLAG_NATIVE) != 0) {

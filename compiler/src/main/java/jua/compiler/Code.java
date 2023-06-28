@@ -117,7 +117,7 @@ public final class Code {
         return pc;
     }
 
-    public void position(Tree tree) {
+    public void markTreePos(Tree tree) {
         if (tree != null) {
             putPos(tree.pos);
         }
@@ -150,16 +150,12 @@ public final class Code {
         limTos = Math.max(limTos, _tos);
     }
 
-    public void dead() {
-        alive = false;
-    }
-
     public boolean isAlive() {
         return alive;
     }
 
-    public void setAlive() {
-        alive = true;
+    public void setAlive(boolean alive) {
+        this.alive = alive;
     }
 
     public boolean localExists(String name) {
@@ -235,7 +231,6 @@ public final class Code {
 
     public void resolve(Chain chain, int destPC) {
         if (chain == null) return;
-//        assertTosEquality(chain.tos);
         tos(chain.tos);
         do {
             get(chain.pc).offsetJump(destPC - chain.pc);
@@ -243,7 +238,7 @@ public final class Code {
         } while (chain != null);
     }
 
-    public void assertTosEquality(int tos) {
+    public void checkTosConvergence(int tos) {
         Assert.check(tos() == tos, () ->
                 String.format(
                         "TOS violation: EXPECTED=%d, ACTUAL=%d, PC=%d, LINE=%d",

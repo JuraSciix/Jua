@@ -1,199 +1,22 @@
-fn test1(user) {
-    print(user.name ?? "No name");
-}
-// 0: load "user"
-// 1: push "name"
-// 2: dup2
-// 3: if_absent 6
-// 4: aload
-// 5: goto 8
-// 6: pop2
-// 7: push "No name"
-// 8: call "print"
-// 9: pop
-//10: leave
+fn test1(a, b) = a ?? b;
+// 0: load a
+// 1: ifnull 4
+// 2: load a
+// 3: goto 5
+// 4: load b
+// 5: return
 
 
+fn test2(a, b) = print(a?.x ?? b);
 
-fn test2(user) {
-    print(user.name ?? user.prev_name ?? "No name");
-}
-// 0: load "user"
-// 1: push "name"
-// 2: dup2
-// 3: if_absent 6
-// 4: aload
-// 5: goto 15
-// 6: pop2
-// 7: load "user"
-// 8: push "prev_name"
-// 9: dup2
-//10: if_absent 13
-//11: aload
-//12: goto 15
-//13: pop2
-//14: push "No name"
-//15: call "print"
-//16: pop
-//17: leave
-
-
-
-fn test3(user) {
-    print(user?.name);
-}
-// 0: load "user"
+// 0: load a
 // 1: dup
 // 2: ifnull 6
-// 3: push "name"
+// 3: push "x"
 // 4: aload
-// 5: goto
+// 5: goto 8
 // 6: pop
 // 7: const_null
-// 8: call "print"
-// 9: pop
-//10: leave
+// 8:
 
 
-
-fn test4(user) {
-    print(user?.job?.vacancy);
-}
-// 0: load "user"
-// 1: dup
-// 2: ifnull 10
-// 3: push "job"
-// 4: aload
-// 5: dup
-// 6: ifnull 10
-// 7: push "vacancy"
-// 8: aload
-// 9: goto
-//10: pop
-//11: const_null
-//12: call "print"
-//13: pop
-//14: leave
-
-
-
-fn test5(user) {
-    user.name ??= "No name";
-}
-// 0: load "user"
-// 1: push "name"
-// 2: dup2
-// 3: if_present 7
-// 4: push "No name"
-// 5: astore
-// 6: goto 8
-// 7: pop2
-// 8: leave
-
-
-
-fn test6(user) {
-    print(user.name ??= "No name");
-}
-// 0: load "user"
-// 1: push "name"
-// 2: dup2
-// 3: if_present 8
-// 4: push "No name"
-// 5: dup_x2
-// 6: astore
-// 7: goto 9
-// 8: aload
-// 9: call "print"
-//10: pop
-//11: leave
-
-
-
-fn test7(user) {
-    user.name ??= user.prev_name ?? "No name";
-}
-// 0: load "user"
-// 1: push "name"
-// 2: dup2
-// 3: if_present 14
-// 4: load "user"
-// 5: push "prev_name"
-// 6: dup2
-// 7: if_absent 10
-// 8: aload
-// 9: goto 12
-//10: pop2
-//11: push "No name"
-//12: astore
-//13: goto 15
-//14: pop2
-//15: leave
-
-
-
-fn test8(user) {
-    print(user.name ??= user.prev_name ?? "No name");
-}
-// 0: load "user"
-// 1: push "name"
-// 2: dup2
-// 3: if_present 15
-// 4: load "user"
-// 5: push "prev_name"
-// 6: dup2
-// 7: if_absent 10
-// 8: aload
-// 9: goto 12
-//10: pop2
-//11: push "No name"
-//12: dup_x2
-//13: astore
-//14: goto 16
-//15: aload
-//16: call "print"
-//17: pop
-//18: leave
-
-
-fn test9(user) {
-    print((user.name ??= user.prev_name) ?? "No name");
-}
-// 0: load "user"
-// 1: push "name"
-// 2: dup2
-// 3: if_present 10
-// 4: load "user"
-// 5: load "prev_name"
-// 6: aload
-// 7: dup_x2
-// 8: astore
-// 9: goto 12
-//10: aload
-//11: goto 15
-//12: dup
-//13: ifnonnull 16
-//14: pop
-//15: push "No name"
-//16: call "print"
-//17: leave
-
-
-
-fn test10(user) {
-    print(user?.name ?? "No name");
-}
-// 0: load "user"
-// 1: dup
-// 2: ifnull 9
-// 3: push "name"
-// 4: dup2
-// 5: if_absent 8
-// 6: aload
-// 7: goto 10
-// 8: pop
-// 9: pop
-//10: push "No name"
-//11: call "print"
-//12: pop
-//13: leave

@@ -1,10 +1,12 @@
 package jua.compiler;
 
 import jua.compiler.Code.Chain;
-import jua.compiler.Items.*;
+import jua.compiler.Items.CondItem;
+import jua.compiler.Items.Item;
+import jua.compiler.Items.SafeAccessItem;
 import jua.compiler.ProgramScope.ConstantSymbol;
-import jua.compiler.Tree.*;
 import jua.compiler.Tree.Return;
+import jua.compiler.Tree.*;
 import jua.interpreter.Address;
 import jua.interpreter.AddressUtils;
 import jua.interpreter.instruction.*;
@@ -17,13 +19,12 @@ import java.util.ArrayList;
 import static jua.compiler.Code.mergeChains;
 import static jua.compiler.InstructionFactory.*;
 import static jua.compiler.InstructionUtils.*;
-import static jua.compiler.TreeInfo.isLiteralNull;
+import static jua.compiler.TreeInfo.isNull;
 import static jua.compiler.TreeInfo.stripParens;
 
 public class Gen extends Scanner {
 
-    class FlowEnv {
-
+    static class FlowEnv {
         final FlowEnv parent;
 
         Chain contChain = null;
@@ -32,14 +33,9 @@ public class Gen extends Scanner {
         FlowEnv(FlowEnv parent) {
             this.parent = parent;
         }
-
-        void resolveCont() { code.resolve(contChain); }
-        void resolveCont(int cp) { code.resolve(contChain, cp); }
-        void resolveExit() { code.resolve(exitChain); }
-        void resolveExit(int cp) { code.resolve(exitChain, cp); }
     }
 
-    class SwitchEnv extends FlowEnv {
+    static class SwitchEnv extends FlowEnv {
 
         /** Указатель на инструкцию, где находится switch. */
         int switchStartPC;
@@ -79,9 +75,11 @@ public class Gen extends Scanner {
     }
 
     /**
-     * Генерирует код оператора в дочерней ветке и возвращает жива ли она.
+     * Генерирует код оператора в изолированном блоке.
+     *
+     * @return {@code true}, если изолированный блок жив, {@code false}, если нет.
      */
-    private boolean genBranch(Statement statement) {
+    private boolean genBlock(Statement statement) {
         boolean alive = code.isAlive();
         int tos = code.tos();
 
@@ -89,20 +87,8 @@ public class Gen extends Scanner {
             statement.accept(this);
             return code.isAlive();
         } finally {
-            if (alive) {
-                code.setAlive();
-            }
-            code.assertTosEquality(tos);
-        }
-    }
-
-    @Override
-    public void scan(Tree tree) {
-        try {
-            tree.accept(this);
-        } catch (Throwable e) {
-            System.err.printf("ERROR: PC=%d, LN=%d %n", code.pc(), code.lineNum());
-            throw e;
+            code.setAlive(alive);
+            code.checkTosConvergence(tos);
         }
     }
 
@@ -148,14 +134,14 @@ public class Gen extends Scanner {
         assert tree.body != null;
 
         if (tree.body.hasTag(Tag.BLOCK)) {
-            genBranch(tree.body);
+            genBlock(tree.body);
             code.addInstruction(leave);
         } else {
             Assert.check(tree.body.hasTag(Tag.DISCARDED), "Function body neither block ner expression");
             genExpr(((Discarded) tree.body).expr).load();
             code.addInstruction(return_);
         }
-        code.dead();
+        code.setAlive(false);
 
         tree.sym.runtimefunc = new Function(
                 tree.name.toString(),
@@ -172,107 +158,55 @@ public class Gen extends Scanner {
     @Override
     public void visitIf(If tree) {
         CondItem condItem = genExpr(tree.cond).asCond();
-        Chain falseJumps = condItem.elseJumps();
-        code.resolve(condItem.thenChain);
-        boolean tbState = genBranch(tree.thenbody); // then branch state
+        Chain falseJumps = condItem.falseJumps();
+        code.resolve(condItem.trueChain);
+        boolean tbState = genBlock(tree.thenbody); // then branch state
         if (tree.elsebody == null) {
             code.resolve(falseJumps);
         } else {
             Chain avoidElseBranchChain = tbState ? code.branch(new Goto()) : null;
             code.resolve(falseJumps);
-            boolean ebState = genBranch(tree.elsebody); // else branch state
+            boolean ebState = genBlock(tree.elsebody); // else branch state
             code.resolve(avoidElseBranchChain);
 
-            if (!tbState && !ebState) code.dead();
+            if (!tbState && !ebState) code.setAlive(false);
         }
     }
 
     @Override
     public void visitWhileLoop(WhileLoop tree) {
-        genLoop(tree.pos, null, tree.cond, null, tree.body, true);
+        genLoop(tree, List.empty(), tree.cond, List.empty(), tree.body, true);
     }
 
     @Override
     public void visitDoLoop(DoLoop tree) {
-        genLoop(tree.pos, null, tree.cond, null, tree.body, false);
+        genLoop(tree, List.empty(), tree.cond, List.empty(), tree.body, false);
     }
 
     @Override
     public void visitForLoop(ForLoop tree) {
-        genLoop(tree.pos, tree.init, tree.cond, tree.step, tree.body, true);
+        genLoop(tree, tree.init, tree.cond, tree.step, tree.body, true);
     }
 
-    private void genLoop(int pos, List<Statement> init, Expression cond, List<Discarded> update, Statement body, boolean testFirst) {
-        code.putPos(pos);
+    private void genLoop(Statement tree, List<Statement> init, Expression cond, List<Expression> step, Statement body, boolean testFirst) {
+        FlowEnv parentFlow = flow;
+        flow = new FlowEnv(parentFlow);
 
+        code.markTreePos(tree);
         scan(init);
+        Chain skipBodyChain = testFirst ? code.branch(new Goto()) : null;
+        int loopStartPC = code.pc();
+        scan(body);
+        step.forEach(s -> genExpr(s).drop());
+        code.resolve(skipBodyChain);
+        code.resolve(flow.contChain);
+        CondItem condItem = genExpr(cond).asCond();
+        code.resolve(condItem.trueJumps(), loopStartPC);
+        code.resolve(condItem.falseChain);
+        code.resolve(flow.exitChain);
 
-        flow = new FlowEnv(flow);
-
-        boolean condInfinite = (cond == null || TreeInfo.isLiteralTrue(cond));
-
-        if (genJvmLoops) {
-            genJvmLoop(cond, update, body, testFirst, condInfinite);
-        } else {
-            genJuaLoop(cond, update, body, testFirst, condInfinite);
-        }
-
-        flow.resolveExit();
-        flow = flow.parent;
-    }
-
-    private void genJvmLoop(Expression cond,
-                            List<Discarded> update, Statement body, boolean testFirst,
-                            boolean infinitecond) {
-        int loopstartPC = code.pc();
-        if (infinitecond) {
-            genBranch(body);
-            flow.resolveCont(loopstartPC);
-            code.resolve(code.branch(new Goto()), loopstartPC);
-        } else {
-            if (testFirst) {
-                CondItem condItem = genExpr(cond).asCond();
-                Chain falseJumps = condItem.elseJumps();
-                code.resolve(condItem.thenChain);
-                genBranch(body);
-                flow.resolveCont(loopstartPC);
-                scan(update);
-                code.resolve(code.branch(new Goto()), loopstartPC);
-                code.resolve(falseJumps);
-            } else {
-                genBranch(body);
-                flow.resolveCont();
-                scan(update);
-                CondItem condItem = genExpr(cond).asCond();
-                code.resolve(condItem.thenJumps(), loopstartPC);
-                code.resolve(condItem.elseChain);
-            }
-        }
-    }
-
-    private void genJuaLoop(Expression cond, List<Discarded> update,
-                            Statement body, boolean testFirst, boolean infinitecond) {
-        int loopstartPC;
-        if (testFirst && !infinitecond) {
-            Chain skipBodyPC = code.branch(new Goto());
-            loopstartPC = code.pc();
-            genBranch(body);
-            flow.resolveCont();
-            scan(update);
-            code.resolve(skipBodyPC);
-        } else {
-            loopstartPC = code.pc();
-            genBranch(body);
-            flow.resolveCont();
-            scan(update);
-        }
-        if (infinitecond) {
-            code.resolve(code.branch(new Goto()), loopstartPC);
-        } else {
-            CondItem condItem = genExpr(cond).asCond();
-            code.resolve(condItem.thenJumps(), loopstartPC);
-            code.resolve(condItem.elseChain);
-        }
+        Assert.check(flow.parent == parentFlow);
+        flow = parentFlow;
     }
 
     @Override
@@ -287,8 +221,8 @@ public class Gen extends Scanner {
         boolean codeAlive = true;
 
         for (Case c : tree.cases) {
-            codeAlive &= genBranch(c);
-            env.resolveCont();
+            codeAlive &= genBlock(c);
+            code.resolve(env.contChain);
             env.contChain = null;
         }
 
@@ -303,10 +237,10 @@ public class Gen extends Scanner {
                 ? new Linearswitch(literals, destIps, env.switchDefaultOffset)
                 : new Binaryswitch(literals, destIps, env.switchDefaultOffset));
 
-        env.resolveExit();
+        code.resolve(env.exitChain);
 
         if (!codeAlive) {
-            code.dead();
+            code.setAlive(false);
         }
 
         flow = env.parent;
@@ -340,7 +274,7 @@ public class Gen extends Scanner {
         Assert.checkNonNull(env);
         code.putPos(tree.pos);
         env.exitChain = mergeChains(env.exitChain, code.branch(new Goto()));
-        code.dead();
+        code.setAlive(false);
     }
 
     @Override
@@ -349,7 +283,7 @@ public class Gen extends Scanner {
         Assert.checkNonNull(env);
         code.putPos(tree.pos);
         env.contChain = mergeChains(env.contChain, code.branch(new Goto()));
-        code.dead();
+        code.setAlive(false);
     }
 
     @Override
@@ -358,7 +292,7 @@ public class Gen extends Scanner {
         Assert.checkNonNull(env);
         code.putPos(tree.pos);
         env.contChain = mergeChains(env.contChain, code.branch(new Goto()));
-        code.dead();
+        code.setAlive(false);
     }
 
     private FlowEnv searchEnv(boolean isSwitch) {
@@ -374,24 +308,24 @@ public class Gen extends Scanner {
         for (VarDef.Definition def : tree.defs) {
             code.putPos(def.name.pos);
             if (def.init == null) {
-                items.makeLiteral(null).load();
+                items.makeLiteralItem(null).load();
             } else {
                 genExpr(def.init).load();
             }
-            items.makeAssign(items.makeLocal(code.resolveLocal(def.name))).drop();
+            items.makeAssignItem(items.makeLocal(code.resolveLocal(def.name))).drop();
         }
     }
 
     @Override
     public void visitReturn(Return tree) {
         code.putPos(tree.pos);
-        if (tree.expr == null || isLiteralNull(tree.expr)) {
+        if (tree.expr == null || isNull(tree.expr)) {
             code.addInstruction(leave);
         } else {
             genExpr(tree.expr).load();
             code.addInstruction(return_);
         }
-        code.dead();
+        code.setAlive(false);
     }
 
     @Override
@@ -401,22 +335,22 @@ public class Gen extends Scanner {
 
     @Override
     public void visitLiteral(Literal tree) {
-        result = items.makeLiteral(tree.value);
+        result = items.makeLiteralItem(tree.value);
     }
 
     @Override
     public void visitListLiteral(ListLiteral tree) {
         code.putPos(tree.pos);
-        items.makeLiteral((long) tree.entries.count()).load();
+        items.makeLiteralItem((long) tree.entries.count()).load();
         code.addInstruction(newlist);
         int index = 0;
         for (Expression entry : tree.entries) {
-            items.makeStack().duplicate();
-            items.makeLiteral((long) index++).load();
+            items.makeStackItem().duplicate();
+            items.makeLiteralItem((long) index++).load();
             genExpr(entry).load();
-            items.makeAccess().store();
+            items.makeAccessitem().store();
         }
-        result = items.makeStack();
+        result = items.makeStackItem();
     }
 
     @Override
@@ -424,13 +358,13 @@ public class Gen extends Scanner {
         code.putPos(tree.pos);
         code.addInstruction(newmap);
         for (MapLiteral.Entry entry : tree.entries) {
-            items.makeStack().duplicate();
+            items.makeStackItem().duplicate();
             genExpr(entry.key).load();
             genExpr(entry.value).load();
             code.putPos(entry.pos);
-            items.makeAccess().store();
+            items.makeAccessitem().store();
         }
-        result = items.makeStack();
+        result = items.makeStackItem();
     }
 
     @Override
@@ -438,9 +372,9 @@ public class Gen extends Scanner {
         if (tree.sym instanceof ConstantSymbol) {
             code.putPos(tree.pos);
             code.addInstruction(new Getconst(tree.sym.id));
-            result = items.makeStack();
+            result = items.makeStackItem();
         } else {
-            result = items.makeLocal(code.resolveLocal(tree.name)).treeify(tree);
+            result = items.makeLocal(code.resolveLocal(tree.name)).t(tree);
         }
     }
 
@@ -456,16 +390,14 @@ public class Gen extends Scanner {
 
     private void genAccess(Expression tree, Expression expr, Expression key, Tag safeTag) {
         Item exprItem = genExpr(expr);
-        Item resultItem = items.makeAccess();
+        Item resultItem = items.makeAccessitem();
         if (tree.hasTag(safeTag)) {
-            SafeItem safeExprItem = exprItem.asSafe();
-            Item stackTargetItem = safeExprItem.target.load();
-            stackTargetItem.duplicate();
-            CondItem nonNullCond = stackTargetItem.nonNullCheck();
-            code.resolve(nonNullCond.thenChain);
-            SafeItem safeResultItem = items.makeSafe(resultItem);
-            safeResultItem.whenNullChain = mergeChains(safeResultItem.whenNullChain, nonNullCond.elseJumps());
-            resultItem = safeResultItem;
+            SafeAccessItem exprSafeItem = exprItem.asSafe(null);
+            Item targetItem = exprSafeItem.item.load();
+            targetItem.duplicate();
+            CondItem nonNullCond = targetItem.asNonNullCond();
+            resultItem = resultItem.asSafe(nonNullCond.falseJumps());
+            code.resolve(nonNullCond.trueChain);
         } else {
             exprItem.load();
         }
@@ -483,19 +415,19 @@ public class Gen extends Scanner {
                 genExpr(tree.args.first().expr).load();
                 code.putPos(tree.pos);
                 code.addInstruction(length);
-                result = items.makeStack();
+                result = items.makeStackItem();
                 break;
             case "list":
                 genExpr(tree.args.first().expr).load();
                 code.putPos(tree.pos);
                 code.addInstruction(newlist);
-                result = items.makeStack();
+                result = items.makeStackItem();
                 break;
             default:
                 tree.args.forEach(a -> genExpr(a.expr).load());
                 code.putPos(tree.pos);
                 code.addInstruction(new Call(tree.sym.id, tree.args.count()));
-                result = items.makeStack();
+                result = items.makeStackItem();
         }
     }
 
@@ -503,7 +435,7 @@ public class Gen extends Scanner {
     public void visitAssign(Assign tree) {
         Item varItem = genExpr(tree.var);
         genExpr(tree.expr).load();
-        result = items.makeAssign(varItem).treeify(tree);
+        result = items.makeAssignItem(varItem).t(tree);
     }
 
     @Override
@@ -511,126 +443,106 @@ public class Gen extends Scanner {
         Item varItem = genExpr(tree.var);
         if (tree.hasTag(Tag.ASG_COALESCE)) {
             varItem.duplicate();
-            CondItem presentCond = varItem.presentCheck();
-            Chain whenItemPresentChain = presentCond.thenJumps();
-            code.resolve(presentCond.elseChain);
-            result = varItem.coalesce(genExpr(tree.expr), whenItemPresentChain);
+            CondItem presentCond = varItem.asPresentCond();
+            Chain skipCoalesceChain = presentCond.trueJumps();
+            code.resolve(presentCond.falseChain);
+            genExpr(tree.expr).load();
+            result = varItem.coalesceAsg(skipCoalesceChain).t(tree);
         } else {
             varItem.load();
             genExpr(tree.expr).load();
             code.addInstruction(fromBinaryAsgOpTag(tree.tag));
-            result = items.makeAssign(varItem).treeify(tree);
+            result = items.makeAssignItem(varItem).t(tree);
         }
     }
 
     @Override
     public void visitTernaryOp(TernaryOp tree) {
         CondItem condItem = genExpr(tree.cond).asCond();
-        Chain falseJumps = condItem.elseJumps();
-        code.resolve(condItem.thenChain);
-        genExpr(tree.thenexpr).load();
+        Chain falseJumps = condItem.falseJumps();
+        code.resolve(condItem.trueChain);
+        genExpr(tree.ths).load();
         Chain trueJumps = code.branch(new Goto());
         code.resolve(falseJumps);
-        genExpr(tree.elseexpr).load();
+        genExpr(tree.fhs).load();
         code.resolve(trueJumps);
-        result = items.makeStack();
+        result = items.makeStackItem();
     }
 
     @Override
     public void visitBinaryOp(BinaryOp tree) {
         switch (tree.tag) {
             case AND: {
-                CondItem lcond = genExpr(tree.lhs).asCond();
-                Chain falseJumps = lcond.elseJumps();
-                code.resolve(lcond.thenChain);
-                CondItem rcond = genExpr(tree.rhs).asCond();
-                result = items.makeCond(rcond.opcode,
-                        rcond.thenChain,
-                        mergeChains(falseJumps, rcond.elseChain))
-                        .treeify(tree);
+                CondItem lhsCond = genExpr(tree.lhs).asCond();
+                Chain falseJumps = lhsCond.falseJumps();
+                code.resolve(lhsCond.trueChain);
+                CondItem rhsCond = genExpr(tree.rhs).asCond();
+                Chain skipOtherConditionsChain = mergeChains(falseJumps, rhsCond.falseChain);
+                result = items.makeCondItem(rhsCond.opcode, rhsCond.trueChain, skipOtherConditionsChain).t(tree);
                 break;
             }
 
             case OR: {
-                CondItem lcond = genExpr(tree.lhs).asCond();
-                Chain trueJumps = lcond.thenJumps();
-                code.resolve(lcond.elseChain);
-                CondItem rcond = genExpr(tree.rhs).asCond();
-                result = items.makeCond(rcond.opcode,
-                        mergeChains(trueJumps, rcond.thenChain),
-                        rcond.elseChain)
-                        .treeify(tree);
+                CondItem lhsCond = genExpr(tree.lhs).asCond();
+                Chain trueJumps = lhsCond.trueJumps();
+                code.resolve(lhsCond.falseChain);
+                CondItem rhsCond = genExpr(tree.rhs).asCond();
+                Chain skipOtherConditionsChain = mergeChains(trueJumps, rhsCond.trueChain);
+                result = items.makeCondItem(rhsCond.opcode, skipOtherConditionsChain, rhsCond.falseChain).t(tree);
                 break;
             }
 
             case EQ: case NE:
-                if (isLiteralNull(tree.rhs)) {
-                    Item lhsItem = genExpr(tree.lhs).load();
-                    result = (tree.hasTag(Tag.NE)
-                            ? lhsItem.nonNullCheck()
-                            : lhsItem.nonNullCheck().negate())
-                            .treeify(tree);
-                    break;
-                }
-                if (isLiteralNull(tree.lhs)) {
-                    Item rhsItem = genExpr(tree.rhs).load();
-                    result = (tree.hasTag(Tag.NE)
-                            ? rhsItem.nonNullCheck()
-                            : rhsItem.nonNullCheck().negate())
-                            .treeify(tree);
-                    break;
-                }
-                // fallthrough
-
             case GT: case GE:
             case LT: case LE:
                 genExpr(tree.lhs).load();
                 genExpr(tree.rhs).load();
-                result = items.makeCond(fromComparisonOpTag(tree.tag)).treeify(tree);
+                result = items.makeCondItem(fromComparisonOpTag(tree.tag)).t(tree);
                 break;
 
             case COALESCE: {
-                SafeItem lhsSafeItem = genExpr(tree.lhs).asSafe();
-                Item item = lhsSafeItem.target.load();
-                item.duplicate();
-                CondItem nonNullCond = item.nonNullCheck(); // treeify is unnecessary
-                Chain whenNonNullChain = nonNullCond.thenJumps();
-                code.resolve(nonNullCond.elseChain);
-                code.resolve(lhsSafeItem.whenNullChain);
-                item.drop();
+                Item lhsItem = genExpr(tree.lhs).load();
+                lhsItem.duplicate();
+                CondItem presentCond = lhsItem.asNonNullCond();
+                Chain ifNonNull = presentCond.trueJumps();
+                code.resolve(presentCond.falseChain);
+                lhsItem.drop();
                 genExpr(tree.rhs).load();
-                code.resolve(whenNonNullChain);
-                result = items.makeStack();
+                code.resolve(ifNonNull);
+                result = items.makeStackItem();
                 break;
             }
 
             default:
                 genExpr(tree.lhs).load();
                 genExpr(tree.rhs).load();
-                code.putPos(tree.pos);
+                code.markTreePos(tree);
                 code.addInstruction(fromBinaryOpTag(tree.tag));
-                result = items.makeStack();
+                result = items.makeStackItem();
         }
     }
 
     @Override
     public void visitUnaryOp(UnaryOp tree) {
         switch (tree.tag) {
-            case POSTDEC: case PREDEC:
-            case POSTINC: case PREINC:
-                result = genExpr(tree.expr).increase(tree.tag).treeify(tree);
+            case POSTINC: case POSTDEC:
+            case PREINC: case PREDEC:
+                result = genExpr(tree.expr).increase(tree.tag).t(tree);
                 break;
 
             case NOT:
-                CondItem exprItem = genExpr(tree.expr).asCond();
-                result = exprItem.negate().treeify(tree);
+                result = genExpr(tree.expr).asCond().negated().t(tree);
+                break;
+
+            case NULLCHK:
+                result = genExpr(tree.expr).asNonNullCond().t(tree);
                 break;
 
             default:
                 genExpr(tree.expr).load();
-                code.putPos(tree.pos);
+                code.markTreePos(tree);
                 code.addInstruction(fromUnaryOpTag(tree.tag));
-                result = items.makeStack();
+                result = items.makeStackItem();
                 // break is unnecessary
         }
     }

@@ -2,7 +2,7 @@ package jua.interpreter.instruction;
 
 import jua.interpreter.InterpreterState;
 
-import static java.util.Arrays.*;
+import static java.util.Arrays.copyOfRange;
 
 public class Linearswitch implements Instruction {
     private final int[] literals;

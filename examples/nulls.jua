@@ -43,12 +43,11 @@ fn test3(user) {
     print(user?.name);
 }
 // 0: load "user"
-// 1: dup
-// 2: ifnull 6
+// 1: ifnull 6
+// 2: load "user"
 // 3: push "name"
 // 4: aload
-// 5: goto
-// 6: pop
+// 6: goto 8
 // 7: const_null
 // 8: call "print"
 // 9: pop
@@ -56,19 +55,19 @@ fn test3(user) {
 
 
 
-fn test4(user) {
-    print(user?.job?.vacancy);
+fn test4(a) {
+    print(a?.b?.c);
 }
-// 0: load "user"
+// 0: load a
 // 1: dup
 // 2: ifnull 10
-// 3: push "job"
+// 3: push "b"
 // 4: aload
 // 5: dup
 // 6: ifnull 10
-// 7: push "vacancy"
+// 7: push "c"
 // 8: aload
-// 9: goto
+// 9: goto 12
 //10: pop
 //11: const_null
 //12: call "print"
@@ -183,6 +182,16 @@ fn test9(user) {
 fn test10(user) {
     print(user?.name ?? "No name");
 }
+// 0: load "user"
+// 1: dup
+// 2: ifnull X
+// 3: push "name"
+// 4: dup2
+// 5: if_absent X
+// 6: aload
+// 7: goto Y
+// 8: pop2
+
 // 0: load "user"
 // 1: dup
 // 2: ifnull 9

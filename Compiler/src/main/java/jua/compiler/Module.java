@@ -6,9 +6,6 @@ import jua.runtime.ConstantMemory;
 import jua.runtime.Function;
 import jua.runtime.JuaEnvironment;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-
 public final class Module {
 
     public final Source source;

@@ -6,7 +6,6 @@ import jua.runtime.heap.Heap;
 import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.MapHeap;
 import jua.runtime.heap.StringHeap;
-import jua.utils.Conversions;
 
 import static jua.interpreter.InterpreterThread.threadError;
 import static jua.runtime.Types.*;

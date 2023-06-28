@@ -48,15 +48,9 @@ public class Check extends Scanner {
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
         source = tree.source;
-        scan(tree.imports);
         scan(tree.constants);
         scan(tree.functions);
         scan(tree.stats);
-    }
-
-    @Override
-    public void visitImport(Import tree) {
-        report(tree.pos, "'use' statements are not supported yet");
     }
 
     @Override

@@ -6,14 +6,14 @@ import jua.interpreter.instruction.*;
 
 import java.util.Objects;
 
+import static jua.compiler.Code.mergeChains;
 import static jua.compiler.InstructionFactory.*;
 import static jua.compiler.InstructionUtils.arrayIncreaseFromTag;
 import static jua.compiler.InstructionUtils.increaseFromTag;
 
-public class Items {
-
+public final class Items {
+    // Поля не должны быть видны вне класса Items
     private final Code code;
-
     private final StackItem stackItem = new StackItem();
 
     public Items(Code code) {
@@ -21,34 +21,32 @@ public class Items {
     }
 
     abstract class Item {
-
         Tree tree;
 
         @SuppressWarnings("unchecked")
-        <T extends Item>T treeify(Tree tree) {
+        <T extends Item> T t(Tree tree) {
             this.tree = tree;
-            return (T)this;
+            return (T) this;
         }
 
         Item load() {
-            throw new AssertionError(this);
+            throw new UnsupportedOperationException(getClass().getName());
         }
 
         void drop() {
-            load();
-            code.addInstruction(pop);
+            load().drop();
         }
 
         void duplicate() {
-            load().duplicate();
+            throw new UnsupportedOperationException(getClass().getName());
         }
 
         void stash() {
-            throw new AssertionError(this);
+            throw new UnsupportedOperationException(getClass().getName());
         }
 
         void store() {
-            throw new AssertionError(this);
+            throw new UnsupportedOperationException(getClass().getName());
         }
 
         CondItem asCond() {
@@ -56,35 +54,36 @@ public class Items {
             return new CondItem(new Ifnz());
         }
 
-        CondItem nonNullCheck() {
+        CondItem asNonNullCond() {
             load();
             return new CondItem(new Ifnonnull());
         }
 
-        CondItem presentCheck() {
-            throw new AssertionError(this);
+        CondItem asPresentCond() {
+            return asNonNullCond();
         }
 
-        int constantIndex() {
-            throw new AssertionError(this);
-        }
-
-        SafeItem asSafe() {
-            return new SafeItem(this);
+        SafeAccessItem asSafe(Chain chain) {
+            return new SafeAccessItem(this, chain);
         }
 
         Item increase(Tag increaseTag) {
-            throw new AssertionError(this);
+            throw new UnsupportedOperationException(getClass().getName());
         }
 
-        Item coalesce(Item value, Chain whenItemPresentChain) {
-            throw new AssertionError(this);
+        Item coalesceAsg(Chain skipCoalesceChain) {
+            throw new UnsupportedOperationException(getClass().getName());
+        }
+
+        Item coalesce() {
+            throw new UnsupportedOperationException(getClass().getName());
+        }
+
+        int constantIndex() {
+            throw new UnsupportedOperationException(getClass().getName());
         }
     }
 
-    /**
-     * Динамическое значение.
-     */
     class StackItem extends Item {
 
         @Override
@@ -101,18 +100,9 @@ public class Items {
         void duplicate() {
             code.addInstruction(dup);
         }
-
-        @Override
-        void stash() {
-            code.addInstruction(dup);
-        }
     }
 
-    /**
-     * Литерал.
-     */
     class LiteralItem extends Item {
-
         final Object value;
 
         LiteralItem(Object value) {
@@ -121,7 +111,7 @@ public class Items {
 
         @Override
         Item load() {
-            code.position(tree);
+            code.markTreePos(tree);
             if (value == null) {
                 code.addInstruction(const_null);
             } else if (value == Boolean.TRUE) {
@@ -133,11 +123,12 @@ public class Items {
             } else {
                 code.addInstruction(new Push(constantIndex()));
             }
-            return makeStack();
+            return makeStackItem();
         }
 
         @Override
-        void drop() { /* no-op */ }
+        void drop() {
+        }
 
         @Override
         int constantIndex() {
@@ -149,49 +140,25 @@ public class Items {
      * Обращение к локальной переменной.
      */
     class LocalItem extends Item {
-
         final int index;
+
         LocalItem(int index) {
             this.index = index;
         }
 
         @Override
-        void duplicate() {
-            // none
-        }
-
-        @Override
         Item load() {
-            code.position(tree);
+            code.markTreePos(tree);
             code.addInstruction((index <= 2) ? load_x[index] : new Load(index));
-            return makeStack();
+            return makeStackItem();
         }
 
         @Override
         void drop() {
-            // Ранее переменная загружалась для того,
-            // чтобы убедиться в её существовании во
-            // времени выполнения. Сейчас переменная
-            // декларируется в коде явно, поэтому
-            // эта механика неактуальна.
-//            load();
-//            code.addInstruction(pop);
         }
 
         @Override
-        void store() {
-            code.position(tree);
-            code.addInstruction((index <= 2) ? store_x[index] : new Store(index));
-        }
-
-        @Override
-        CondItem presentCheck() {
-            return nonNullCheck();
-        }
-
-        @Override
-        Item increase(Tag increaseTag) {
-            return new LocalIncreaseItem(this, increaseTag);
+        void duplicate() {
         }
 
         @Override
@@ -200,8 +167,26 @@ public class Items {
         }
 
         @Override
-        Item coalesce(Item value, Chain whenItemPresentChain) {
-            return new LocalCoalesceItem(this, value, whenItemPresentChain);
+        void store() {
+            code.markTreePos(tree);
+            code.addInstruction((index <= 2) ? store_x[index] : new Store(index));
+        }
+
+        @Override
+        CondItem asPresentCond() {
+            return asNonNullCond();
+        }
+
+        @Override
+        Item increase(Tag increaseTag) {
+            return new LocalIncreaseItem(this, increaseTag);
+        }
+
+        @Override
+        Item coalesceAsg(Chain skipCoalesceChain) {
+            store();
+            code.resolve(skipCoalesceChain);
+            return this;
         }
     }
 
@@ -223,7 +208,7 @@ public class Items {
                 item.load();
                 drop();
             }
-            return makeStack();
+            return makeStackItem();
         }
 
         @Override
@@ -232,55 +217,13 @@ public class Items {
         }
     }
 
-    class LocalCoalesceItem extends Item {
-        final LocalItem item;
-        final Item value;
-        final Chain whenItemPresentChain;
-
-        LocalCoalesceItem(LocalItem item, Item value, Chain whenItemPresentChain) {
-            this.item = item;
-            this.value = value;
-            this.whenItemPresentChain = whenItemPresentChain;
-        }
-
-        @Override
-        Item load() {
-            Item result = value.load();
-            result.duplicate();
-            item.store();
-            Chain exitChain = code.branch(new Goto());
-            code.resolve(whenItemPresentChain);
-            item.load();
-            code.resolve(exitChain);
-            return result;
-        }
-
-        @Override
-        void drop() {
-            value.load();
-            item.store();
-            code.resolve(whenItemPresentChain);
-        }
-
-        // todo: Оптимизация выражения (a ??= b) ?? c
-//        @Override
-//        SafeItem asSafe() {
-//            SafeItem safeItem = new SafeItem(this);
-//            safeItem.exitChain = whenItemPresentChain;
-//            return safeItem;
-//        }
-    }
-
-    /**
-     * Обращение к элементу массива.
-     */
     class AccessItem extends Item {
 
         @Override
         Item load() {
-            code.position(tree);
+            code.markTreePos(tree);
             code.addInstruction(aload);
-            return makeStack();
+            return makeStackItem();
         }
 
         @Override
@@ -290,23 +233,23 @@ public class Items {
 
         @Override
         void store() {
-            code.position(tree);
+            code.markTreePos(tree);
             code.addInstruction(astore);
         }
 
         @Override
-        CondItem presentCheck() {
+        CondItem asPresentCond() {
             return new CondItem(new IfPresent());
         }
 
         @Override
         Item increase(Tag increaseTag) {
-            return new AccessIncreaseItem(this, increaseTag);
+            return new AccessIncreaseItem(increaseTag);
         }
 
         @Override
-        Item coalesce(Item value, Chain whenItemPresentChain) {
-            return new AccessCoalesceItem(this, value, whenItemPresentChain);
+        Item coalesceAsg(Chain skipCoalesceChain) {
+            return new AccessCoalesceItem(skipCoalesceChain);
         }
 
         @Override
@@ -321,11 +264,9 @@ public class Items {
     }
 
     class AccessIncreaseItem extends Item {
-        final AccessItem item;
         final Tag increaseTag;
 
-        AccessIncreaseItem(AccessItem item, Tag increaseTag) {
-            this.item = item;
+        AccessIncreaseItem(Tag increaseTag) {
             this.increaseTag = increaseTag;
         }
 
@@ -333,13 +274,13 @@ public class Items {
         Item load() {
             // adec/ainc оставляют после себя старое значение.
             if (increaseTag == Tag.PREINC || increaseTag == Tag.PREDEC) {
-                item.duplicate();
+                code.addInstruction(dup2);
                 drop();
-                item.load();
+                code.addInstruction(aload);
             } else {
                 code.addInstruction(arrayIncreaseFromTag(increaseTag));
             }
-            return makeStack();
+            return makeStackItem();
         }
 
         @Override
@@ -350,37 +291,60 @@ public class Items {
     }
 
     class AccessCoalesceItem extends Item {
-        final AccessItem item;
-        final Item value;
-        final Chain whenItemPresentChain;
+        final Chain skipCoalesceChain;
 
-        AccessCoalesceItem(AccessItem item, Item value, Chain whenItemPresentChain) {
-            this.item = item;
-            this.value = value;
-            this.whenItemPresentChain = whenItemPresentChain;
+        AccessCoalesceItem(Chain skipCoalesceChain) {
+            this.skipCoalesceChain = skipCoalesceChain;
         }
 
         @Override
         Item load() {
-            int tos = code.tos();
-            value.load();
-            item.stash();
-            item.store();
-            Chain exitChain = code.branch(new Goto(), tos);
-            code.resolve(whenItemPresentChain);
-            item.load();
+            code.addInstruction(dup_x2);
+            code.addInstruction(astore);
+            Chain exitChain = code.branch(new Goto());
+            code.resolve(skipCoalesceChain);
+            code.addInstruction(aload);
             code.resolve(exitChain);
-            return makeStack();
+            return makeStackItem();
         }
 
         @Override
         void drop() {
-            value.load();
-            item.store();
+            code.addInstruction(astore);
             Chain exitChain = code.branch(new Goto());
-            code.resolve(whenItemPresentChain);
-            item.drop();
+            code.resolve(skipCoalesceChain);
+            code.addInstruction(pop2);
             code.resolve(exitChain);
+        }
+    }
+
+    class SafeAccessItem extends Item {
+        final Item item;
+        /**
+         * Цепь условных переходов из конструкции в точку её обнуления.
+         * Когда справа налево встречается первый нулевой элемент цепи обращений,
+         * из любого места будет выполнен переход к обнулению всей конструкции.
+         */
+        Chain constNullChain;
+
+        SafeAccessItem(Item item, Chain constNullChain) {
+            this.item = item;
+            this.constNullChain = constNullChain;
+        }
+
+        @Override
+        Item load() {
+            item.load();
+            Chain skipNullingChain = code.branch(new Goto());
+            code.resolve(constNullChain);
+            code.addInstruction(const_null);
+            code.resolve(skipNullingChain);
+            return makeStackItem();
+        }
+
+        @Override
+        SafeAccessItem asSafe(Chain chain) {
+            return new SafeAccessItem(item, mergeChains(constNullChain, chain));
         }
     }
 
@@ -388,7 +352,6 @@ public class Items {
      * Присвоение.
      */
     class AssignItem extends Item {
-
         final Item var;
 
         AssignItem(Item var) {
@@ -399,7 +362,7 @@ public class Items {
         Item load() {
             var.stash();
             var.store();
-            return makeStack();
+            return makeStackItem();
         }
 
         @Override
@@ -408,54 +371,8 @@ public class Items {
         }
 
         @Override
-        void stash() {
-            var.stash();
-        }
-    }
-
-    class SafeItem extends Item {
-        final Item target;
-
-        /**
-         * Цепь условных переходов из конструкции в точку её обнуления.
-         * Когда справа налево встречается первый нулевой элемент цепи обращений,
-         * из любого места будет выполнен переход к обнулению всей конструкции.
-         */
-        Chain whenNullChain;
-
-        SafeItem(Item target) {
-            this.target = target;
-        }
-
-        @Override
-        Item load() {
-            target.load();
-            Chain avoidNullingChain = code.branch(new Goto());
-            code.resolve(whenNullChain);
-            code.addInstruction(pop);
-            code.addInstruction(const_null);
-            code.resolve(avoidNullingChain);
-            return makeStack();
-        }
-
-        @Override
-        void drop() {
-
-        }
-
-        @Override
-        void stash() {
-            target.stash();
-        }
-
-        @Override
-        CondItem presentCheck() {
-            return new CondItem(new IfPresent());
-        }
-
-        @Override
-        SafeItem asSafe() {
-            return this;
+        void duplicate() {
+            load().duplicate();
         }
     }
 
@@ -463,58 +380,62 @@ public class Items {
      * Условное разветвление.
      */
     class CondItem extends Item {
-
         final JumpInstruction opcode;
-        Chain thenChain;
-        Chain elseChain;
+        Chain trueChain;
+        Chain falseChain;
 
         CondItem(JumpInstruction opcode) {
             this(opcode, null, null);
         }
 
-        CondItem(JumpInstruction opcode, Chain thenChain, Chain elseChain) {
+        CondItem(JumpInstruction opcode, Chain trueChain, Chain elseChain) {
             this.opcode = opcode;
-            this.thenChain = thenChain;
-            this.elseChain = elseChain;
+            this.trueChain = trueChain;
+            this.falseChain = elseChain;
         }
 
         @Override
-        Item load() {
-            Chain falseJumps = elseJumps();
-            code.resolve(thenChain);
+        public Item load() {
+            Chain falseJumps = falseJumps();
+            code.resolve(trueChain);
             code.addInstruction(const_true);
-            Chain trueChain = code.branch(new Goto());
+            Chain skipElsePartChain = code.branch(new Goto());
             code.resolve(falseJumps);
             code.addInstruction(const_false);
-            code.resolve(trueChain);
-            return makeStack();
+            code.resolve(skipElsePartChain);
+            return makeStackItem();
         }
 
         @Override
-        CondItem asCond() {
+        public void drop() {
+            code.addInstruction(pop);
+        }
+
+        @Override
+        public CondItem asCond() {
             return this;
         }
 
-        CondItem negate() {
-            return new CondItem(opcode.negated(), elseChain, thenChain).treeify(tree);
+        public CondItem negated() {
+            return new CondItem(opcode.negated(), falseChain, trueChain).t(tree);
         }
 
-        Chain thenJumps() {
-            code.position(tree);
-            return Code.mergeChains(thenChain, code.branch(opcode));
+        public Chain trueJumps() {
+            code.markTreePos(tree);
+            return mergeChains(trueChain, code.branch(opcode));
         }
 
-        Chain elseJumps() {
-            code.position(tree);
-            return Code.mergeChains(elseChain, code.branch(opcode.negated()));
+        public Chain falseJumps() {
+            code.markTreePos(tree);
+            return mergeChains(falseChain, code.branch(opcode.negated()));
         }
     }
 
-    StackItem makeStack() {
+    StackItem makeStackItem() {
         return stackItem;
     }
 
-    LiteralItem makeLiteral(Object value) {
+    LiteralItem makeLiteralItem(Object value) {
         return new LiteralItem(value);
     }
 
@@ -522,23 +443,19 @@ public class Items {
         return new LocalItem(index);
     }
 
-    AccessItem makeAccess() {
+    AccessItem makeAccessitem() {
         return new AccessItem();
     }
 
-    AssignItem makeAssign(Item var) {
+    AssignItem makeAssignItem(Item var) {
         return new AssignItem(var);
     }
 
-    SafeItem makeSafe(Item child) {
-        return new SafeItem(child);
-    }
-
-    CondItem makeCond(JumpInstruction opcode) {
+    CondItem makeCondItem(JumpInstruction opcode) {
         return new CondItem(opcode);
     }
 
-    CondItem makeCond(JumpInstruction opcode, Chain truejumps, Chain falsejumps) {
-        return new CondItem(opcode, truejumps, falsejumps);
+    CondItem makeCondItem(JumpInstruction opcode, Chain trueJumps, Chain falseJumps) {
+        return new CondItem(opcode, trueJumps, falseJumps);
     }
 }

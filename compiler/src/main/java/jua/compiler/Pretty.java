@@ -44,13 +44,6 @@ public class Pretty extends Scanner {
 
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
-        for (Import anImport : tree.imports) {
-            scan(anImport);
-            printLine();
-        }
-
-        if (tree.imports.nonEmpty()) printLine();
-
         for (ConstDef constDef : tree.constants) {
             scan(constDef);
             printLine();
@@ -68,15 +61,6 @@ public class Pretty extends Scanner {
             scan(stmt);
             printLine();
         }
-    }
-
-    @Override
-    public void visitImport(Import tree) {
-        print("use ");
-        print(tree.lib);
-        print(".");
-        print(tree.target == null ? "*" : tree.target);
-        print(";");
     }
 
     @Override
@@ -181,7 +165,7 @@ public class Pretty extends Scanner {
         print(" ");
         scan(tree.cond);
         print("; ");
-        printEnumeration(tree.step, update -> scan(update.expr));
+        printEnumeration(tree.step, this::scan);
         printBody(tree.body);
     }
 
@@ -367,9 +351,9 @@ public class Pretty extends Scanner {
     public void visitTernaryOp(TernaryOp tree) {
         scan(tree.cond);
         print(" ? ");
-        scan(tree.thenexpr);
+        scan(tree.ths);
         print(" : ");
-        scan(tree.elseexpr);
+        scan(tree.fhs);
     }
 
     @Override

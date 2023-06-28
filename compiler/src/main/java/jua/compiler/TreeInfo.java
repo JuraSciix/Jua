@@ -87,7 +87,7 @@ public final class TreeInfo {
         throw new AssertionError(innerTree.getTag());
     }
 
-    public static boolean isLiteralNull(Expression tree) {
+    public static boolean isNull(Expression tree) {
         Expression innerTree = stripParens(tree);
         if (innerTree.hasTag(Tag.LITERAL)) {
             Literal literalTree = (Literal) innerTree;
@@ -112,11 +112,7 @@ public final class TreeInfo {
         Expression innerTree = stripParens(tree);
         if (innerTree.hasTag(Tag.LITERAL)) {
             Literal literalTree = (Literal) innerTree;
-            return literalTree.value != null; // todo
-        }
-        if (innerTree.hasTag(Tag.MAPLIT)) {
-            MapLiteral arrayTree = (MapLiteral) innerTree;
-            return !arrayTree.entries.isEmpty();
+            return SemanticInfo.ofBoolean(literalTree.value).isTrue();
         }
         return false;
     }

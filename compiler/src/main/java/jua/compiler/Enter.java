@@ -112,7 +112,6 @@ public class Enter extends Scanner {
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
         source = tree.source;
-        scan(tree.imports);
 
         for (ConstDef constant : tree.constants) {
             for (ConstDef.Definition def : constant.defs) {
@@ -148,11 +147,6 @@ public class Enter extends Scanner {
                 0,
                 List.empty()
         );
-    }
-
-    @Override
-    public void visitImport(Import tree) {
-        // NO-OP yet
     }
 
     @Override

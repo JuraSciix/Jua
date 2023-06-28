@@ -9,7 +9,6 @@ public abstract class Tree {
 
     public enum Tag {
         TOP,
-        IMPORT,
         FUNCDEF,
         CONSTDEF,
         BLOCK,
@@ -74,12 +73,12 @@ public abstract class Tree {
         PREINC,
         PREDEC,
         POSTINC,
-        POSTDEC
+        POSTDEC,
+        NULLCHK
     }
 
     public interface Visitor {
         void visitCompilationUnit(CompilationUnit tree);
-        void visitImport(Import tree);
         void visitConstDef(ConstDef tree);
         void visitFuncDef(FuncDef tree);
         void visitBlock(Block tree);
@@ -113,9 +112,6 @@ public abstract class Tree {
     public static abstract class AbstractVisitor implements Visitor {
         @Override
         public void visitCompilationUnit(CompilationUnit tree) { visitTree(tree); }
-
-        @Override
-        public void visitImport(Import tree) { visitTree(tree); }
 
         @Override
         public void visitConstDef(ConstDef tree) { visitTree(tree); }
@@ -223,14 +219,10 @@ public abstract class Tree {
 
         @Override
         public void visitCompilationUnit(CompilationUnit tree) {
-            scan(tree.imports);
             scan(tree.constants);
             scan(tree.functions);
             scan(tree.stats);
         }
-
-        @Override
-        public void visitImport(Import tree) {}
 
         @Override
         public void visitConstDef(ConstDef tree) {
@@ -374,8 +366,8 @@ public abstract class Tree {
         @Override
         public void visitTernaryOp(TernaryOp tree) {
             scan(tree.cond);
-            scan(tree.thenexpr);
-            scan(tree.elseexpr);
+            scan(tree.ths);
+            scan(tree.fhs);
         }
 
         @Override
@@ -419,15 +411,11 @@ public abstract class Tree {
 
         @Override
         public void visitCompilationUnit(CompilationUnit tree) {
-            tree.imports = translate(tree.imports);
             tree.constants = translate(tree.constants);
             tree.functions = translate(tree.functions);
             tree.stats = translate(tree.stats);
             result = tree;
         }
-
-        @Override
-        public void visitImport(Import tree) { result = tree; }
 
         @Override
         public void visitConstDef(ConstDef tree) {
@@ -591,8 +579,8 @@ public abstract class Tree {
         @Override
         public void visitTernaryOp(TernaryOp tree) {
             tree.cond = translate(tree.cond);
-            tree.thenexpr = translate(tree.thenexpr);
-            tree.elseexpr = translate(tree.elseexpr);
+            tree.ths = translate(tree.ths);
+            tree.fhs = translate(tree.fhs);
             result = tree;
         }
 
@@ -629,8 +617,6 @@ public abstract class Tree {
 
         public final Source source;
 
-        public List<Import> imports;
-
         public List<Statement> stats;
 
         public List<FuncDef> functions;
@@ -640,13 +626,11 @@ public abstract class Tree {
         public FunctionSymbol sym;
 
         public CompilationUnit(int pos, Source source,
-                               List<Import> imports,
                                List<ConstDef> constants,
                                List<FuncDef> functions,
                                List<Statement> stats) {
             super(pos);
             this.source = source;
-            this.imports = imports;
             this.constants = constants;
             this.functions = functions;
             this.stats = stats;
@@ -664,25 +648,6 @@ public abstract class Tree {
         protected Statement(int pos) {
             super(pos);
         }
-    }
-
-    public static class Import extends Tree {
-
-        public final Name lib;
-
-        public final Name target;
-
-        public Import(int pos, Name lib, Name target) {
-            super(pos);
-            this.lib = lib;
-            this.target = target;
-        }
-
-        @Override
-        public Tag getTag() { return Tag.IMPORT; }
-
-        @Override
-        public void accept(Visitor visitor) { visitor.visitImport(this); }
     }
 
     public static class ConstDef extends Tree {
@@ -835,11 +800,11 @@ public abstract class Tree {
 
         public Expression cond;
 
-        public List<Discarded> step;
+        public List<Expression> step;
 
         public Statement body;
 
-        public ForLoop(int pos, List<Statement> init, Expression cond, List<Discarded> step, Statement body) {
+        public ForLoop(int pos, List<Statement> init, Expression cond, List<Expression> step, Statement body) {
             super(pos);
             this.init = init;
             this.cond = cond;
@@ -1211,13 +1176,13 @@ public abstract class Tree {
 
     public static class TernaryOp extends Expression {
 
-        public Expression cond, thenexpr, elseexpr;
+        public Expression cond, ths, fhs;
 
-        public TernaryOp(int pos, Expression cond, Expression thenexpr, Expression elseexpr) {
+        public TernaryOp(int pos, Expression cond, Expression ths, Expression fhs) {
             super(pos);
             this.cond = cond;
-            this.thenexpr = thenexpr;
-            this.elseexpr = elseexpr;
+            this.ths = ths;
+            this.fhs = fhs;
         }
 
         @Override

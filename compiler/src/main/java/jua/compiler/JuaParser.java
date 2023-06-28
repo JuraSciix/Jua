@@ -47,25 +47,6 @@ public final class JuaParser {
         nextToken();
 
         int pos = token.pos;
-        List<Import> imports = new List<>();
-        while (acceptToken(USE)) {
-            try {
-                Token lib = token;
-                expectToken(IDENTIFIER);
-                expectToken(DOT);
-                if (acceptToken(STAR)) {
-                    imports.add(new Import(pos, lib.toName(), null));
-                } else {
-                    Token target = token;
-                    expectToken(IDENTIFIER);
-                    imports.add(new Import(pos, lib.toName(), target.toName()));
-                }
-                expectToken(SEMI);
-            } catch (ParseNodeExit e) {
-                report(e);
-            }
-            pos = token.pos;
-        }
 
         while (!acceptToken(EOF)) {
             pos = token.pos;
@@ -83,7 +64,7 @@ public final class JuaParser {
                 report(e);
             }
         }
-        return new CompilationUnit(0, source, imports, constDefs, funcDefs, stats);
+        return new CompilationUnit(0, source, constDefs, funcDefs, stats);
     }
 
     private void report(ParseNodeExit e) {
@@ -314,15 +295,15 @@ public final class JuaParser {
             cond = parseExpression();
             expectToken(SEMI);
         }
-        List<Discarded> step = null;
+        List<Expression> step = null;
 
         if (parens) {
             if (!acceptToken(RPAREN)) {
-                step = parseExpressions().map(expr -> new Discarded(expr.pos, expr));
+                step = parseExpressions();
                 expectToken(RPAREN);
             }
         } else {
-            step = parseExpressions().map(expr -> new Discarded(expr.pos, expr));
+            step = parseExpressions();
         }
         return new ForLoop(position, init, cond, step, parseStatement());
     }

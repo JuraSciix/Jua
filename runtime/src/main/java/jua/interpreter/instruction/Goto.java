@@ -9,7 +9,7 @@ public class Goto extends JumpInstruction {
 
     @Override
     public JumpInstruction negated() {
-        throw new AssertionError("goto doesn't have a negative instruction yet");
+        throw new UnsupportedOperationException(getClass().getName());
     }
 
     @Override

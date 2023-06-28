@@ -6,6 +6,8 @@ import jua.compiler.Tree.Tag;
 import java.util.HashMap;
 import java.util.Objects;
 
+import static jua.compiler.SemanticInfo.ofBoolean;
+
 public class Operators {
 
     @FunctionalInterface
@@ -63,6 +65,14 @@ public class Operators {
             UnaryOperatorKey k = (UnaryOperatorKey) o;
             return tag == k.tag && Objects.equals(xt, k.xt);
         }
+    }
+
+    private static Class<?> getClass0(Object o) {
+        return (o != null) ? o.getClass() : null;
+    }
+
+    private static Class<?> getSuperClass(Class<?> c) {
+        return (c != null && c != Object.class) ? c.getSuperclass() : null;
     }
 
     private final HashMap<BinaryOperatorKey, BinaryOperator<?, ?>> binaryOperators = new HashMap<>();
@@ -141,6 +151,9 @@ public class Operators {
         addBinaryOperator(Tag.NE, Double.class, Long.class, (x, y) -> x != y.doubleValue());
         addBinaryOperator(Tag.NE, Double.class, Double.class, (x, y) -> x.doubleValue() != y.doubleValue());
 
+        addBinaryOperator(Tag.AND, Object.class, Object.class, (x, y) -> ofBoolean(x).toBoolean() && ofBoolean(y).toBoolean());
+        addBinaryOperator(Tag.OR, Object.class, Object.class, (x, y) -> ofBoolean(x).toBoolean() || ofBoolean(y).toBoolean());
+
 
         addUnaryOperator(Tag.POS, Long.class, x -> x);
         addUnaryOperator(Tag.POS, Double.class, x -> x);
@@ -151,6 +164,8 @@ public class Operators {
         addUnaryOperator(Tag.BIT_INV, Long.class, x -> ~x);
 
         addUnaryOperator(Tag.NOT, Boolean.class, x -> !x);
+
+        addUnaryOperator(Tag.NULLCHK, Object.class, x -> x != null);
     }
 
     private <L, R> void addBinaryOperator(Tag tag, Class<L> lt, Class<R> rt, BinaryOperator<L, R> operator) {
@@ -163,31 +178,49 @@ public class Operators {
 
     @SuppressWarnings("unchecked")
     public <X, Y> Tree applyBinaryOperator(Tag tag, int pos, X x, Y y, Tree tree) {
-        Class<?> lt = null;
-        Class<?> rt = null;
-        if (x != null) lt = x.getClass();
-        if (y != null) rt = y.getClass();
-        BinaryOperatorKey key = new BinaryOperatorKey(tag, lt, rt);
-        if (binaryOperators.containsKey(key)) {
-            BinaryOperator<X, Y> operator = (BinaryOperator<X, Y>) binaryOperators.get(key);
-            try {
-                return new Literal(pos, operator.apply(x, y));
-            } catch (ArithmeticException e) {
-                return tree;
-            }
+        BinaryOperator<X, Y> operator = (BinaryOperator<X, Y>) findBinaryOperator(tag, getClass0(x), getClass0(y));
+
+        if (operator == null) {
+            return tree;
         }
-        return tree;
+
+        try {
+            return new Literal(pos, operator.apply(x, y));
+        } catch (ArithmeticException e) {
+            return tree;
+        }
+    }
+
+    private BinaryOperator<?, ?> findBinaryOperator(Tag tag, Class<?> xt, Class<?> yt) {
+        BinaryOperatorKey key = new BinaryOperatorKey(tag, xt, yt);
+        if (binaryOperators.containsKey(key)) return binaryOperators.get(key);
+        if (xt != null && xt != Object.class) {
+            BinaryOperator<?, ?> operator = findBinaryOperator(tag, xt.getSuperclass(), yt);
+            if (operator != null) return operator;
+        }
+        if (yt != null && yt != Object.class) {
+            return findBinaryOperator(tag, xt, yt.getSuperclass());
+        }
+        return null;
     }
 
     @SuppressWarnings("unchecked")
     public <X> Tree applyUnaryOperator(Tag tag, int pos, X x, Tree tree) {
-        Class<?> xt = null;
-        if (x != null) xt = x.getClass();
-        UnaryOperatorKey key = new UnaryOperatorKey(tag, xt);
-        if (unaryOperators.containsKey(key)) {
-            UnaryOperator<X> operator = (UnaryOperator<X>) unaryOperators.get(key);
-            return new Literal(pos, operator.apply(x));
+        UnaryOperator<X> operator = (UnaryOperator<X>) findUnaryOperator(tag, getClass0(x));
+
+        if (operator == null) {
+            return tree;
         }
-        return tree;
+
+        return new Literal(pos, operator.apply(x));
+    }
+
+    private UnaryOperator<?> findUnaryOperator(Tag tag, Class<?> xt) {
+        UnaryOperatorKey key = new UnaryOperatorKey(tag, xt);
+        if (unaryOperators.containsKey(key)) return unaryOperators.get(key);
+        if (xt != null && xt != Object.class) {
+            return findUnaryOperator(tag, xt.getSuperclass());
+        }
+        return null;
     }
 }
