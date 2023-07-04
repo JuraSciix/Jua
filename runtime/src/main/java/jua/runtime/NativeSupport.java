@@ -32,10 +32,10 @@ public interface NativeSupport {
                     .map(param -> param.name)
                     .toArray(String[]::new);
             Address[] defaults = paramsData.params.stream()
-                    .filter(param -> !AddressUtils.invalid(param.defaultValue))
+                    .filter(param -> AddressUtils.valid(param.defaultValue))
                     .map(param -> param.defaultValue)
                     .toArray(Address[]::new);
-            return new Function(name, module, params.length - defaults.length, params.length, params, defaults, Function.FLAG_NATIVE, this);
+            return new Function(name, module, params.length - defaults.length, params.length, params, defaults, Function.FLAG_NATIVE, null, this);
         }
     }
 

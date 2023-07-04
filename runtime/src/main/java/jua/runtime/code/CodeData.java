@@ -1,10 +1,8 @@
 package jua.runtime.code;
 
 import jua.interpreter.instruction.Instruction;
-import jua.runtime.Function;
 
-// todo: удалить к чертям собачьим этот Function.Handle и вернуть два поля - CodeData, NativeExecutor
-public final class CodeData implements Function.Handle {
+public final class CodeData {
 
     /** Число слотов на стеке, используемых в коде. */
     public final int stack;

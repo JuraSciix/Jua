@@ -107,7 +107,8 @@ public class Gen extends Scanner {
                 new String[0],
                 new Address[0],
                 0L,
-                code.buildCodeSegment()
+                code.buildCodeSegment(),
+                null
         );
     }
 
@@ -151,7 +152,8 @@ public class Gen extends Scanner {
                 tree.params.map(param -> param.name.toString()).toArray(String[]::new),
                 defaults.toArray(Address[]::new),
                 0L,
-                code.buildCodeSegment()
+                code.buildCodeSegment(),
+                null
         );
     }
 

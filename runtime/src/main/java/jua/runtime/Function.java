@@ -7,13 +7,11 @@ import jua.runtime.code.ConstantPool;
 import jua.utils.StringUtils;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 public final class Function implements ConstantPool.Entry {
 
     public static final long FLAG_NATIVE = 0x01; /* Нативная функция. */
-
-    /** Интерфейс для типов, которые могут быть handle функций. */
-    public interface Handle {}
 
     /** Название функции. */
     public final String name;
@@ -36,11 +34,11 @@ public final class Function implements ConstantPool.Entry {
     /** Флаги функции. */
     public final long flags;
 
-    /** Ссылка на {@link CodeData}, если функция нативная, или {@link NativeExecutor}, если нет. */
-    public final Handle handle;
+    public final CodeData code;
 
-    public Function(String name, String module, int minArgc, int maxArgc, String[] params, Address[] defaults, long flags, Handle handle) {
-        validateFields(name, module, minArgc, maxArgc, params, defaults, flags, handle);
+    public final NativeExecutor nativeBody;
+
+    public Function(String name, String module, int minArgc, int maxArgc, String[] params, Address[] defaults, long flags, CodeData code, NativeExecutor nativeBody) {
         this.name = name;
         this.module = module;
         this.minArgc = minArgc;
@@ -48,78 +46,22 @@ public final class Function implements ConstantPool.Entry {
         this.params = params;
         this.defaults = defaults;
         this.flags = flags;
-        this.handle = handle;
-    }
-
-    public static void validateFields(String name, String module, int minArgc, int maxArgc, String[] params, Address[] defaults, long flags, Object executor) {
-        if (StringUtils.isBlank(name)) {
-            throw new IllegalArgumentException("name should not be blank");
-        }
-        if (StringUtils.isBlank(module)) {
-            throw new IllegalArgumentException("module should not be blank");
-        }
-        if (minArgc < 0) {
-            throw new IllegalArgumentException("minArgc should not be negative: " + minArgc);
-        }
-        if (minArgc > maxArgc) {
-            throw new IllegalArgumentException("minArgc should not exceed maxArgc: " + minArgc + ", " + maxArgc);
-        }
-        if (maxArgc > 0xff) {
-            throw new IllegalArgumentException("maxArgc should not exceed 255: " + maxArgc);
-        }
-        if (params == null) {
-            throw new IllegalArgumentException("params array should not be null");
-        }
-        if (params.length != maxArgc) {
-            throw new IllegalArgumentException("the length of params array should be equal to maxArgc: " + params.length + ", " + maxArgc);
-        }
-        for (int i = 0; i < params.length; i++) {
-            if (StringUtils.isBlank(params[i])) {
-                throw new IllegalArgumentException("params array should not contain null values: " + Arrays.toString(params) + " at " + i);
-            }
-        }
-        if (defaults == null) {
-            throw new IllegalArgumentException("defaults array should not be null");
-        }
-        if (defaults.length != (maxArgc - minArgc)) {
-            throw new IllegalArgumentException("the length of defaults array should be equal to the number of optional args: " + defaults.length + ", " + (maxArgc - minArgc));
-        }
-        for (int i = 0; i < defaults.length; i++) {
-            if (AddressUtils.invalid(defaults[i])) {
-                throw new IllegalArgumentException("defaults array should not contain invalid addresses: " + Arrays.toString(defaults) + " at " + i);
-            }
-        }
-        boolean isNative = (flags & FLAG_NATIVE) != 0;
-        if (isNative && !(executor instanceof NativeExecutor)) {
-            throw new IllegalArgumentException("the handle of the native function must be a " + NativeExecutor.class.getName());
-        }
-        if (!isNative && !(executor instanceof CodeData)) {
-            throw new IllegalArgumentException("the handle of the user function must be a " + CodeData.class.getName());
-        }
+        this.code = code;
+        this.nativeBody = nativeBody;
     }
 
     public NativeExecutor nativeExecutor() {
-        try {
-            return (NativeExecutor) handle;
-        } catch (ClassCastException e) {
-            if ((flags & FLAG_NATIVE) == 0L) {
-                throw new IllegalStateException("trying to access the native executor of a non-native function");
-            } else {
-                throw e;
-            }
+        if ((flags & FLAG_NATIVE) == 0L) {
+            throw new IllegalStateException("trying to access the native executor of a non-native function");
         }
+        return nativeBody;
     }
 
     public CodeData userCode() {
-        try {
-            return (CodeData) handle;
-        } catch (ClassCastException e) {
-            if ((flags & FLAG_NATIVE) != 0L) {
-                throw new IllegalStateException("trying to access the user code of a native function");
-            } else {
-                throw e;
-            }
+        if ((flags & FLAG_NATIVE) != 0L) {
+            throw new IllegalStateException("trying to access the user code of a native function");
         }
+        return code;
     }
 
     @Override
@@ -131,7 +73,8 @@ public final class Function implements ConstantPool.Entry {
         result = result * 17 + Arrays.hashCode(params);
         result = result * 17 + Arrays.hashCode(defaults);
         result = result * 17 + Long.hashCode(flags);
-        result = result * 17 + handle.hashCode();
+        result = result * 17 + Objects.hashCode(code);
+        result = result * 17 + Objects.hashCode(nativeBody);
         return result;
     }
 
@@ -148,7 +91,8 @@ public final class Function implements ConstantPool.Entry {
                 module.equals(f.module) &&
                 Arrays.equals(params, f.params) &&
                 Arrays.equals(defaults, f.defaults) &&
-                handle.equals(f.handle);
+                Objects.equals(code, f.code) &&
+                Objects.equals(nativeBody, f.nativeBody);
     }
 
     /**
