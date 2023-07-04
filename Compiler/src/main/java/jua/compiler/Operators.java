@@ -4,11 +4,11 @@ import jua.compiler.Tree.Literal;
 import jua.compiler.Tree.Tag;
 
 import java.util.HashMap;
-import java.util.Objects;
 
 import static jua.compiler.SemanticInfo.ofBoolean;
 
-public class Operators {
+@SuppressWarnings("Convert2MethodRef")
+public final class Operators {
 
     @FunctionalInterface
     private interface BinaryOperator<X, Y> {
@@ -22,7 +22,7 @@ public class Operators {
 
     private static class BinaryOperatorKey {
         final Tag tag; // Никогда не равен нулю.
-        final Class<?> xt, yt; // могут быть равны нулю
+        final Class<?> xt, yt; // Никогда не равны нулю.
 
         BinaryOperatorKey(Tag tag, Class<?> xt, Class<?> yt) {
             this.tag = tag;
@@ -32,7 +32,7 @@ public class Operators {
 
         @Override
         public int hashCode() {
-            return 29791 + tag.hashCode() * 961 + Objects.hashCode(xt) * 31 + Objects.hashCode(yt);
+            return 29791 + tag.hashCode() * 961 + xt.hashCode() * 31 + yt.hashCode();
         }
 
         @Override
@@ -40,13 +40,13 @@ public class Operators {
             // [this == o] никогда не верно
             if (o == null || getClass() != o.getClass()) return false;
             BinaryOperatorKey k = (BinaryOperatorKey) o;
-            return tag == k.tag && Objects.equals(xt, k.xt) && Objects.equals(yt, k.yt);
+            return tag == k.tag && xt.equals(k.xt) && yt.equals(k.yt);
         }
     }
 
     private static class UnaryOperatorKey {
-        final Tag tag;
-        final Class<?> xt;
+        final Tag tag; // Никогда не равен нулю
+        final Class<?> xt; // Никогда не равен нулю
 
         UnaryOperatorKey(Tag tag, Class<?> xt) {
             this.tag = tag;
@@ -55,7 +55,7 @@ public class Operators {
 
         @Override
         public int hashCode() {
-            return 961 + tag.hashCode() * 31 + Objects.hashCode(xt);
+            return 961 + tag.hashCode() * 31 + xt.hashCode();
         }
 
         @Override
@@ -63,53 +63,41 @@ public class Operators {
             // [this == o] никогда не верно
             if (o == null || getClass() != o.getClass()) return false;
             UnaryOperatorKey k = (UnaryOperatorKey) o;
-            return tag == k.tag && Objects.equals(xt, k.xt);
+            return tag == k.tag && xt.equals(k.xt);
         }
     }
 
     private static Class<?> getClass0(Object o) {
-        return (o != null) ? o.getClass() : null;
-    }
-
-    private static Class<?> getSuperClass(Class<?> c) {
-        return (c != null && c != Object.class) ? c.getSuperclass() : null;
+        return (o != null) ? o.getClass() : Object.class;
     }
 
     private final HashMap<BinaryOperatorKey, BinaryOperator<?, ?>> binaryOperators = new HashMap<>();
     private final HashMap<UnaryOperatorKey, UnaryOperator<?>> unaryOperators = new HashMap<>();
 
     public Operators() {
+        // Тип Object включает null.
+
         addBinaryOperator(Tag.ADD, Long.class, Long.class, (x, y) -> x + y);
-        addBinaryOperator(Tag.ADD, Long.class, Double.class, (x, y) -> x + y);
-        addBinaryOperator(Tag.ADD, Long.class, String.class, (x, y) -> x + y);
-        addBinaryOperator(Tag.ADD, Double.class, Long.class, (x, y) -> x + y);
-        addBinaryOperator(Tag.ADD, Double.class, Double.class, (x, y) -> x + y);
-        addBinaryOperator(Tag.ADD, Double.class, String.class, (x, y) -> x + y);
-        addBinaryOperator(Tag.ADD, String.class, Long.class, (x, y) -> x + y);
-        addBinaryOperator(Tag.ADD, String.class, Double.class, (x, y) -> x + y);
-        addBinaryOperator(Tag.ADD, String.class, String.class, (x, y) -> x + y);
-        addBinaryOperator(Tag.ADD, String.class, null, (x, y) -> x + y);
-        addBinaryOperator(Tag.ADD, null, String.class, (x, y) -> x + y);
+        addBinaryOperator(Tag.ADD, Double.class, Number.class, (x, y) -> x + y.doubleValue());
+        addBinaryOperator(Tag.ADD, Number.class, Double.class, (x, y) -> x.doubleValue() + y);
+        addBinaryOperator(Tag.ADD, String.class, Object.class, (x, y) -> x + y);
+        addBinaryOperator(Tag.ADD, Object.class, String.class, (x, y) -> x + y);
 
         addBinaryOperator(Tag.SUB, Long.class, Long.class, (x, y) -> x - y);
-        addBinaryOperator(Tag.SUB, Long.class, Double.class, (x, y) -> x - y);
-        addBinaryOperator(Tag.SUB, Double.class, Long.class, (x, y) -> x - y);
-        addBinaryOperator(Tag.SUB, Double.class, Double.class, (x, y) -> x - y);
+        addBinaryOperator(Tag.SUB, Double.class, Number.class, (x, y) -> x - y.doubleValue());
+        addBinaryOperator(Tag.SUB, Number.class, Double.class, (x, y) -> x.doubleValue() - y);
 
         addBinaryOperator(Tag.MUL, Long.class, Long.class, (x, y) -> x * y);
-        addBinaryOperator(Tag.MUL, Long.class, Double.class, (x, y) -> x * y);
-        addBinaryOperator(Tag.MUL, Double.class, Long.class, (x, y) -> x * y);
-        addBinaryOperator(Tag.MUL, Double.class, Double.class, (x, y) -> x * y);
+        addBinaryOperator(Tag.MUL, Double.class, Number.class, (x, y) -> x * y.doubleValue());
+        addBinaryOperator(Tag.MUL, Number.class, Double.class, (x, y) -> x.doubleValue() * y);
 
         addBinaryOperator(Tag.DIV, Long.class, Long.class, (x, y) -> x / y);
-        addBinaryOperator(Tag.DIV, Long.class, Double.class, (x, y) -> x / y);
-        addBinaryOperator(Tag.DIV, Double.class, Long.class, (x, y) -> x / y);
-        addBinaryOperator(Tag.DIV, Double.class, Double.class, (x, y) -> x / y);
+        addBinaryOperator(Tag.DIV, Double.class, Number.class, (x, y) -> x / y.doubleValue());
+        addBinaryOperator(Tag.DIV, Number.class, Double.class, (x, y) -> x.doubleValue() / y);
 
         addBinaryOperator(Tag.REM, Long.class, Long.class, (x, y) -> x % y);
-        addBinaryOperator(Tag.REM, Long.class, Double.class, (x, y) -> x % y);
-        addBinaryOperator(Tag.REM, Double.class, Long.class, (x, y) -> x % y);
-        addBinaryOperator(Tag.REM, Double.class, Double.class, (x, y) -> x % y);
+        addBinaryOperator(Tag.REM, Double.class, Number.class, (x, y) -> x % y.doubleValue());
+        addBinaryOperator(Tag.REM, Number.class, Double.class, (x, y) -> x.doubleValue() % y);
 
         addBinaryOperator(Tag.BIT_AND, Long.class, Long.class, (x, y) -> x & y);
 
@@ -122,38 +110,31 @@ public class Operators {
         addBinaryOperator(Tag.SR, Long.class, Long.class, (x, y) -> x >> y);
 
         addBinaryOperator(Tag.GT, Long.class, Long.class, (x, y) -> x > y);
-        addBinaryOperator(Tag.GT, Long.class, Double.class, (x, y) -> x > y);
-        addBinaryOperator(Tag.GT, Double.class, Long.class, (x, y) -> x > y);
-        addBinaryOperator(Tag.GT, Double.class, Double.class, (x, y) -> x > y);
+        addBinaryOperator(Tag.GT, Double.class, Number.class, (x, y) -> x > y.doubleValue());
+        addBinaryOperator(Tag.GT, Number.class, Double.class, (x, y) -> x.doubleValue() > y);
 
         addBinaryOperator(Tag.GE, Long.class, Long.class, (x, y) -> x >= y);
-        addBinaryOperator(Tag.GE, Long.class, Double.class, (x, y) -> x >= y);
-        addBinaryOperator(Tag.GE, Double.class, Long.class, (x, y) -> x >= y);
-        addBinaryOperator(Tag.GE, Double.class, Double.class, (x, y) -> x >= y);
+        addBinaryOperator(Tag.GE, Double.class, Number.class, (x, y) -> x >= y.doubleValue());
+        addBinaryOperator(Tag.GE, Number.class, Double.class, (x, y) -> x.doubleValue() >= y);
 
         addBinaryOperator(Tag.LT, Long.class, Long.class, (x, y) -> x < y);
-        addBinaryOperator(Tag.LT, Long.class, Double.class, (x, y) -> x < y);
-        addBinaryOperator(Tag.LT, Double.class, Long.class, (x, y) -> x < y);
-        addBinaryOperator(Tag.LT, Double.class, Double.class, (x, y) -> x < y);
+        addBinaryOperator(Tag.LT, Double.class, Number.class, (x, y) -> x < y.doubleValue());
+        addBinaryOperator(Tag.LT, Number.class, Double.class, (x, y) -> x.doubleValue() < y);
 
         addBinaryOperator(Tag.LE, Long.class, Long.class, (x, y) -> x <= y);
-        addBinaryOperator(Tag.LE, Long.class, Double.class, (x, y) -> x <= y);
-        addBinaryOperator(Tag.LE, Double.class, Long.class, (x, y) -> x <= y);
-        addBinaryOperator(Tag.LE, Double.class, Double.class, (x, y) -> x <= y);
+        addBinaryOperator(Tag.LE, Number.class, Double.class, (x, y) -> x.doubleValue() <= y);
+        addBinaryOperator(Tag.LE, Double.class, Number.class, (x, y) -> x <= y.doubleValue());
 
         addBinaryOperator(Tag.EQ, Long.class, Long.class, (x, y) -> x.longValue() == y.longValue());
-        addBinaryOperator(Tag.EQ, Long.class, Double.class, (x, y) -> x.doubleValue() == y);
-        addBinaryOperator(Tag.EQ, Double.class, Long.class, (x, y) -> x == y.doubleValue());
-        addBinaryOperator(Tag.EQ, Double.class, Double.class, (x, y) -> x.doubleValue() == y.doubleValue());
+        addBinaryOperator(Tag.EQ, Double.class, Number.class, (x, y) -> x == y.doubleValue());
+        addBinaryOperator(Tag.EQ, Number.class, Double.class, (x, y) -> x.doubleValue() == y);
 
         addBinaryOperator(Tag.NE, Long.class, Long.class, (x, y) -> x.longValue() != y.longValue());
-        addBinaryOperator(Tag.NE, Long.class, Double.class, (x, y) -> x.doubleValue() != y);
-        addBinaryOperator(Tag.NE, Double.class, Long.class, (x, y) -> x != y.doubleValue());
-        addBinaryOperator(Tag.NE, Double.class, Double.class, (x, y) -> x.doubleValue() != y.doubleValue());
+        addBinaryOperator(Tag.NE, Double.class, Number.class, (x, y) -> x != y.doubleValue());
+        addBinaryOperator(Tag.NE, Number.class, Double.class, (x, y) -> x.doubleValue() != y);
 
         addBinaryOperator(Tag.AND, Object.class, Object.class, (x, y) -> ofBoolean(x).toBoolean() && ofBoolean(y).toBoolean());
         addBinaryOperator(Tag.OR, Object.class, Object.class, (x, y) -> ofBoolean(x).toBoolean() || ofBoolean(y).toBoolean());
-
 
         addUnaryOperator(Tag.POS, Long.class, x -> x);
         addUnaryOperator(Tag.POS, Double.class, x -> x);
@@ -194,11 +175,11 @@ public class Operators {
     private BinaryOperator<?, ?> findBinaryOperator(Tag tag, Class<?> xt, Class<?> yt) {
         BinaryOperatorKey key = new BinaryOperatorKey(tag, xt, yt);
         if (binaryOperators.containsKey(key)) return binaryOperators.get(key);
-        if (xt != null && xt != Object.class) {
+        if (xt != Object.class) {
             BinaryOperator<?, ?> operator = findBinaryOperator(tag, xt.getSuperclass(), yt);
             if (operator != null) return operator;
         }
-        if (yt != null && yt != Object.class) {
+        if (yt != Object.class) {
             return findBinaryOperator(tag, xt, yt.getSuperclass());
         }
         return null;
@@ -218,7 +199,7 @@ public class Operators {
     private UnaryOperator<?> findUnaryOperator(Tag tag, Class<?> xt) {
         UnaryOperatorKey key = new UnaryOperatorKey(tag, xt);
         if (unaryOperators.containsKey(key)) return unaryOperators.get(key);
-        if (xt != null && xt != Object.class) {
+        if (xt != Object.class) {
             return findUnaryOperator(tag, xt.getSuperclass());
         }
         return null;
