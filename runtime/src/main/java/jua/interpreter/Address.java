@@ -10,7 +10,7 @@ import jua.runtime.heap.StringHeap;
 import static jua.interpreter.InterpreterThread.threadError;
 import static jua.runtime.Types.*;
 
-public final class Address implements Comparable<Address>, ConstantPool.Entry {
+public final class Address implements Comparable<Address> {
 
     /** Тип текущего значения. */
     private byte type;

@@ -9,7 +9,7 @@ import jua.utils.StringUtils;
 import java.util.Arrays;
 import java.util.Objects;
 
-public final class Function implements ConstantPool.Entry {
+public final class Function {
 
     public static final long FLAG_NATIVE = 0x01; /* Нативная функция. */
 

@@ -5,15 +5,12 @@ import jua.runtime.Function;
 
 public final class ConstantPool {
 
-    /** Интерфейс для типов, которые могут находиться в пуле констант. */
-    public interface Entry {}
-
     /** Максимальный размер пула констант. */
     public static final int MAX_SIZE = 65535;
 
-    private final Entry[] entries;
+    private final Object[] entries;
 
-    public ConstantPool(Entry[] entries) {
+    public ConstantPool(Object[] entries) {
         if (entries == null) {
             throw new IllegalArgumentException("array of entries must not be null");
         }
