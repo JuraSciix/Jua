@@ -1,22 +1,38 @@
-fn test1(a, b) = a ?? b;
-// 0: load a
-// 1: ifnull 4
-// 2: load a
-// 3: goto 5
-// 4: load b
-// 5: return
-
-
-fn test2(a, b) = print(a?.x ?? b);
-
+fn test1(a, b, c) = a ?? b ?? c;
 // 0: load a
 // 1: dup
-// 2: ifnull 6
-// 3: push "x"
+// 2: ifnonnull 9
+// 3: pop
+// 4: load b
+// 5: dup
+// 6: ifnonnull 9
+// 7: pop
+// 8: load c
+// 9: return
+
+fn test2(a) = a?.b?.c;
+// 0: load a
+// 1: dup
+// 2: ifnull 10
+// 3: push "b"
 // 4: aload
-// 5: goto 8
-// 6: pop
-// 7: const_null
-// 8:
+// 5: dup
+// 6: ifnull 10
+// 7: push "c"
+// 8: aload
+// 9: goto 12
+//10: pop
+//11: const_null
+//12: return
 
-
+fn test3(a, c) = a?.b ?? c;
+// 0: load a
+// 1: dup
+// 2: ifnull 7
+// 3: push "b"
+// 4: aload
+// 5: dup
+// 6: ifnonnull 9
+// 7: pop
+// 8: load c
+// 9: return

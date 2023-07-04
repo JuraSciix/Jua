@@ -3,7 +3,7 @@ package jua.compiler;
 import jua.compiler.Code.Chain;
 import jua.compiler.Items.CondItem;
 import jua.compiler.Items.Item;
-import jua.compiler.Items.SafeAccessItem;
+import jua.compiler.Items.SafeItem;
 import jua.compiler.ProgramScope.ConstantSymbol;
 import jua.compiler.Tree.Return;
 import jua.compiler.Tree.*;
@@ -308,7 +308,7 @@ public class Gen extends Scanner {
         for (VarDef.Definition def : tree.defs) {
             code.putPos(def.name.pos);
             if (def.init == null) {
-                items.makeLiteralItem(null).load();
+                items.mkLiteral(null).load();
             } else {
                 genExpr(def.init).load();
             }
@@ -335,22 +335,22 @@ public class Gen extends Scanner {
 
     @Override
     public void visitLiteral(Literal tree) {
-        result = items.makeLiteralItem(tree.value);
+        result = items.mkLiteral(tree.value);
     }
 
     @Override
     public void visitListLiteral(ListLiteral tree) {
         code.putPos(tree.pos);
-        items.makeLiteralItem((long) tree.entries.count()).load();
+        items.mkLiteral((long) tree.entries.count()).load();
         code.addInstruction(newlist);
         int index = 0;
         for (Expression entry : tree.entries) {
-            items.makeStackItem().duplicate();
-            items.makeLiteralItem((long) index++).load();
+            items.mkStackItem().duplicate();
+            items.mkLiteral((long) index++).load();
             genExpr(entry).load();
-            items.makeAccessitem().store();
+            items.mkAccessItem().store();
         }
-        result = items.makeStackItem();
+        result = items.mkStackItem();
     }
 
     @Override
@@ -358,13 +358,13 @@ public class Gen extends Scanner {
         code.putPos(tree.pos);
         code.addInstruction(newmap);
         for (MapLiteral.Entry entry : tree.entries) {
-            items.makeStackItem().duplicate();
+            items.mkStackItem().duplicate();
             genExpr(entry.key).load();
             genExpr(entry.value).load();
             code.putPos(entry.pos);
-            items.makeAccessitem().store();
+            items.mkAccessItem().store();
         }
-        result = items.makeStackItem();
+        result = items.mkStackItem();
     }
 
     @Override
@@ -372,7 +372,7 @@ public class Gen extends Scanner {
         if (tree.sym instanceof ConstantSymbol) {
             code.putPos(tree.pos);
             code.addInstruction(new Getconst(tree.sym.id));
-            result = items.makeStackItem();
+            result = items.mkStackItem();
         } else {
             result = items.makeLocal(code.resolveLocal(tree.name)).t(tree);
         }
@@ -389,20 +389,21 @@ public class Gen extends Scanner {
     }
 
     private void genAccess(Expression tree, Expression expr, Expression key, Tag safeTag) {
-        Item exprItem = genExpr(expr);
-        Item resultItem = items.makeAccessitem();
         if (tree.hasTag(safeTag)) {
-            SafeAccessItem exprSafeItem = exprItem.asSafe(null);
-            Item targetItem = exprSafeItem.item.load();
-            targetItem.duplicate();
-            CondItem nonNullCond = targetItem.asNonNullCond();
-            resultItem = resultItem.asSafe(nonNullCond.falseJumps());
+            SafeItem exprSafeItem = genExpr(expr).asSafe(null, null);
+            Item childItem = exprSafeItem.child.load();
+            childItem.duplicate();
+            CondItem nonNullCond = childItem.asNonNullCond();
+            Chain ifNullJumps = nonNullCond.falseJumps();
             code.resolve(nonNullCond.trueChain);
+            genExpr(key).load();
+            result = items.mkAccessItem().asSafe(items.mkLiteral(null),
+                    mergeChains(exprSafeItem.coalesceChain, ifNullJumps)).t(tree);
         } else {
-            exprItem.load();
+            genExpr(expr).load();
+            genExpr(key).load();
+            result = items.mkAccessItem().t(tree);
         }
-        genExpr(key).load();
-        result = resultItem;
     }
 
     @Override
@@ -415,19 +416,19 @@ public class Gen extends Scanner {
                 genExpr(tree.args.first().expr).load();
                 code.putPos(tree.pos);
                 code.addInstruction(length);
-                result = items.makeStackItem();
+                result = items.mkStackItem();
                 break;
             case "list":
                 genExpr(tree.args.first().expr).load();
                 code.putPos(tree.pos);
                 code.addInstruction(newlist);
-                result = items.makeStackItem();
+                result = items.mkStackItem();
                 break;
             default:
                 tree.args.forEach(a -> genExpr(a.expr).load());
                 code.putPos(tree.pos);
                 code.addInstruction(new Call(tree.sym.id, tree.args.count()));
-                result = items.makeStackItem();
+                result = items.mkStackItem();
         }
     }
 
@@ -466,7 +467,7 @@ public class Gen extends Scanner {
         code.resolve(falseJumps);
         genExpr(tree.fhs).load();
         code.resolve(trueJumps);
-        result = items.makeStackItem();
+        result = items.mkStackItem();
     }
 
     @Override
@@ -501,15 +502,15 @@ public class Gen extends Scanner {
                 break;
 
             case COALESCE: {
-                Item lhsItem = genExpr(tree.lhs).load();
-                lhsItem.duplicate();
-                CondItem presentCond = lhsItem.asNonNullCond();
-                Chain ifNonNull = presentCond.trueJumps();
-                code.resolve(presentCond.falseChain);
-                lhsItem.drop();
+                Item a = genExpr(tree.lhs).load();
+                a.duplicate();
+                CondItem c = a.asNonNullCond();
+                Chain b = c.trueJumps();
+                code.resolve(c.falseChain);
+                a.drop();
                 genExpr(tree.rhs).load();
-                code.resolve(ifNonNull);
-                result = items.makeStackItem();
+                code.resolve(b);
+                result = items.mkStackItem();
                 break;
             }
 
@@ -518,7 +519,7 @@ public class Gen extends Scanner {
                 genExpr(tree.rhs).load();
                 code.markTreePos(tree);
                 code.addInstruction(fromBinaryOpTag(tree.tag));
-                result = items.makeStackItem();
+                result = items.mkStackItem();
         }
     }
 
@@ -542,7 +543,7 @@ public class Gen extends Scanner {
                 genExpr(tree.expr).load();
                 code.markTreePos(tree);
                 code.addInstruction(fromUnaryOpTag(tree.tag));
-                result = items.makeStackItem();
+                result = items.mkStackItem();
                 // break is unnecessary
         }
     }

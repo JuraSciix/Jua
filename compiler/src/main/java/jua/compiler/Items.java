@@ -38,7 +38,7 @@ public final class Items {
         }
 
         void duplicate() {
-            throw new UnsupportedOperationException(getClass().getName());
+            load().duplicate();
         }
 
         void stash() {
@@ -63,8 +63,8 @@ public final class Items {
             return asNonNullCond();
         }
 
-        SafeAccessItem asSafe(Chain chain) {
-            return new SafeAccessItem(this, chain);
+        SafeItem asSafe(Item coalesce, Chain chain) {
+            return new SafeItem(this, coalesce, chain);
         }
 
         Item increase(Tag increaseTag) {
@@ -123,7 +123,7 @@ public final class Items {
             } else {
                 code.addInstruction(new Push(constantIndex()));
             }
-            return makeStackItem();
+            return mkStackItem();
         }
 
         @Override
@@ -150,7 +150,7 @@ public final class Items {
         Item load() {
             code.markTreePos(tree);
             code.addInstruction((index <= 2) ? load_x[index] : new Load(index));
-            return makeStackItem();
+            return mkStackItem();
         }
 
         @Override
@@ -208,7 +208,7 @@ public final class Items {
                 item.load();
                 drop();
             }
-            return makeStackItem();
+            return mkStackItem();
         }
 
         @Override
@@ -223,7 +223,7 @@ public final class Items {
         Item load() {
             code.markTreePos(tree);
             code.addInstruction(aload);
-            return makeStackItem();
+            return mkStackItem();
         }
 
         @Override
@@ -280,7 +280,7 @@ public final class Items {
             } else {
                 code.addInstruction(arrayIncreaseFromTag(increaseTag));
             }
-            return makeStackItem();
+            return mkStackItem();
         }
 
         @Override
@@ -305,7 +305,7 @@ public final class Items {
             code.resolve(skipCoalesceChain);
             code.addInstruction(aload);
             code.resolve(exitChain);
-            return makeStackItem();
+            return mkStackItem();
         }
 
         @Override
@@ -318,33 +318,37 @@ public final class Items {
         }
     }
 
-    class SafeAccessItem extends Item {
-        final Item item;
+    class SafeItem extends Item {
+        final Item child;
+        final Item coalesce;
+
         /**
          * Цепь условных переходов из конструкции в точку её обнуления.
          * Когда справа налево встречается первый нулевой элемент цепи обращений,
          * из любого места будет выполнен переход к обнулению всей конструкции.
          */
-        Chain constNullChain;
+        Chain coalesceChain;
 
-        SafeAccessItem(Item item, Chain constNullChain) {
-            this.item = item;
-            this.constNullChain = constNullChain;
+        SafeItem(Item child, Item coalesce, Chain coalesceChain) {
+            this.child = child;
+            this.coalesce = coalesce;
+            this.coalesceChain = coalesceChain;
         }
 
         @Override
         Item load() {
-            item.load();
-            Chain skipNullingChain = code.branch(new Goto());
-            code.resolve(constNullChain);
-            code.addInstruction(const_null);
-            code.resolve(skipNullingChain);
-            return makeStackItem();
+            Item load = child.load();
+            Chain skipCoalesceLoadChain = code.branch(new Goto());
+            code.resolve(coalesceChain);
+            load.drop();
+            coalesce.load();
+            code.resolve(skipCoalesceLoadChain);
+            return mkStackItem();
         }
 
         @Override
-        SafeAccessItem asSafe(Chain chain) {
-            return new SafeAccessItem(item, mergeChains(constNullChain, chain));
+        SafeItem asSafe(Item coalesce, Chain chain) {
+            return new SafeItem(child, coalesce, mergeChains(coalesceChain, chain));
         }
     }
 
@@ -362,17 +366,12 @@ public final class Items {
         Item load() {
             var.stash();
             var.store();
-            return makeStackItem();
+            return mkStackItem();
         }
 
         @Override
         void drop() {
             var.store();
-        }
-
-        @Override
-        void duplicate() {
-            load().duplicate();
         }
     }
 
@@ -403,7 +402,7 @@ public final class Items {
             code.resolve(falseJumps);
             code.addInstruction(const_false);
             code.resolve(skipElsePartChain);
-            return makeStackItem();
+            return mkStackItem();
         }
 
         @Override
@@ -431,11 +430,11 @@ public final class Items {
         }
     }
 
-    StackItem makeStackItem() {
+    StackItem mkStackItem() {
         return stackItem;
     }
 
-    LiteralItem makeLiteralItem(Object value) {
+    LiteralItem mkLiteral(Object value) {
         return new LiteralItem(value);
     }
 
@@ -443,7 +442,7 @@ public final class Items {
         return new LocalItem(index);
     }
 
-    AccessItem makeAccessitem() {
+    AccessItem mkAccessItem() {
         return new AccessItem();
     }
 
