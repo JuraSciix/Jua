@@ -98,7 +98,6 @@ public final class JuaCompiler {
             compilationUnit.functions.forEach(funcDef -> funcDef.sym.code = new Code(programScope, source));
 
             compilationUnit.accept(new Check(programScope, log));
-            compilationUnit.accept(new Flow());
 
             if (log.hasErrors()) {
                 return null;
