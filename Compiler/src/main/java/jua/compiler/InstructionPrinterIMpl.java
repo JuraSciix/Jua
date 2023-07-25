@@ -123,19 +123,19 @@ public class InstructionPrinterImpl implements InstructionPrinter {
             tosAdjustment = instr.stackAdjustment();
             tos += tosAdjustment;
             instr.print(this);
-            this.instr.doPrint();
+            instrData.doPrint();
         }
         endFunction();
     }
 
     private void initPrinter() {
-        instr = new InstructionData();
+        instrData = new InstructionData();
     }
 
     private final Module module;
     private final PrintStream stream;
 
-    private InstructionData instr;
+    private InstructionData instrData;
     private int indent = 0;
     private char[] indentString = new char[0];
     private TosRestoring tosRestoring;
@@ -192,12 +192,12 @@ public class InstructionPrinterImpl implements InstructionPrinter {
 
     @Override
     public void printName(String name) {
-        instr.name = name;
+        instrData.name = name;
     }
 
     @Override
     public void printLocal(int index) {
-        instr.operands.add(function.userCode().localNames[index]);
+        instrData.operands.add(function.userCode().localNames[index]);
     }
 
     @Override
@@ -207,7 +207,7 @@ public class InstructionPrinterImpl implements InstructionPrinter {
 
     @Override
     public void print(Object operand) {
-        instr.operands.add(String.valueOf(operand));
+        instrData.operands.add(String.valueOf(operand));
     }
 
     @Override
@@ -219,12 +219,12 @@ public class InstructionPrinterImpl implements InstructionPrinter {
 
     @Override
     public void printCase(int[] operands, int offsetJump) {
-        instr.cases.add(new Case(operands, pc + offsetJump));
+        instrData.cases.add(new Case(operands, pc + offsetJump));
     }
 
     @Override
     public void printLiteral(int index) {
-        instr.operands.add(function.userCode().constantPool.getAddress(index).toBeautifulString());
+        instrData.operands.add(function.userCode().constantPool.getAddress(index).toBeautifulString());
     }
 
     @Override
@@ -239,11 +239,11 @@ public class InstructionPrinterImpl implements InstructionPrinter {
 
     @Override
     public void printFuncRef(int index) {
-        instr.operands.add('"' + function.name + '"');
+        instrData.operands.add('"' + module.functions[index].name + '"');
     }
 
     @Override
     public void printConstRef(int index) {
-        instr.operands.add('"' + module.constants[index].name + '"');
+        instrData.operands.add('"' + module.constants[index].name + '"');
     }
 }
