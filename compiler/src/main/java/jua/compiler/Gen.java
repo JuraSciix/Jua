@@ -220,10 +220,10 @@ public class Gen extends Scanner {
         code.putPos(tree.pos);
         code.addInstruction(new Fake(-1)); // Резервируем место под инструкцию
 
-        boolean codeAlive = true;
+        boolean codeAlive = false;
 
         for (Case c : tree.cases) {
-            codeAlive &= genBlock(c);
+            codeAlive |= genBlock(c);
             code.resolve(env.contChain);
             env.contChain = null;
         }
