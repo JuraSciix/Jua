@@ -1,6 +1,7 @@
 package jua.compiler;
 
-import jua.interpreter.instruction.*;
+import jua.interpreter.instruction.Instruction;
+import jua.interpreter.instruction.InstructionImpls.*;
 
 public interface InstructionFactory {
 
@@ -16,27 +17,26 @@ public interface InstructionFactory {
     Xor xor                = new Xor();
     Neg neg                = new Neg();
     Pos pos                = new Pos();
-    Aload aload            = new Aload();
-    Astore astore          = new Astore();
-    Adrop adrop            = new Adrop();
-    Ainc ainc              = new Ainc();
-    Adec adec              = new Adec();
+    ArrayLoad aload        = new ArrayLoad();
+    ArrayStore astore      = new ArrayStore();
+    ArrayInc ainc          = new ArrayInc();
+    ArrayDec adec          = new ArrayDec();
     Leave leave            = new Leave();
     Length length          = new Length();
     ConstFalse const_false = new ConstFalse();
     ConstTrue const_true   = new ConstTrue();
     ConstNull const_null   = new ConstNull();
-    ConstIm1 const_im1     = new ConstIm1();
-    ConstI0 const_i0       = new ConstI0();
-    ConstI1 const_i1       = new ConstI1();
+    ConstIntM1 const_im1   = new ConstIntM1();
+    ConstInt0 const_i0     = new ConstInt0();
+    ConstInt1 const_i1     = new ConstInt1();
     Dup dup                = new Dup();
     Dup2 dup2              = new Dup2();
-    Dup_x1 dup_x1          = new Dup_x1();
-    Dup_x2 dup_x2          = new Dup_x2();
-    Dup2_x1 dup2_x1        = new Dup2_x1();
-    Dup2_x2 dup2_x2        = new Dup2_x2();
-    Newmap newmap          = new Newmap();
-    Newlist newlist        = new Newlist();
+    DupX1 dup_x1           = new DupX1();
+    DupX2 dup_x2           = new DupX2();
+    Dup2X1 dup2_x1         = new Dup2X1();
+    Dup2X2 dup2_x2         = new Dup2X2();
+    NewMap newmap          = new NewMap();
+    NewList newlist        = new NewList();
     Pop pop                = new Pop();
     Pop2 pop2              = new Pop2();
     Rem rem                = new Rem();

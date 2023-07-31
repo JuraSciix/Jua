@@ -1,28 +1,31 @@
 package jua.interpreter.instruction;
 
-import jua.interpreter.InterpreterState;
+import jua.interpreter.ExecutionContext;
 
 public interface Instruction {
 
-    /** @return Влияние инструкции на вершину стека. */
+    /**
+     * @return Влияние инструкции на вершину стека.
+     */
     int stackAdjustment();
 
-    /** Печатает информацию об инструкции */
+    /**
+     * Печатает информацию об инструкции
+     */
     void print(InstructionPrinter printer);
 
-    default Instruction negated() {
+    default JumpInstruction negated() {
         throw new UnsupportedOperationException(getClass().getName() + " cannot be negated");
     }
 
-    default Instruction offsetJump(int pc) {
-        throw new UnsupportedOperationException(getClass().getName() + " have no offset jump field");
+    default JumpInstruction withNextCp(int nextCp) {
+        throw new UnsupportedOperationException(getClass().getName() + " have no next-cp jump field");
     }
 
     /**
      * Выполняет инструкцию.
      *
-     * @param state Состояние фрейма.
-     * @return {@code true}, если инструкция успешно выполнена и следует переходить к следующей; {@code false}, если произошла ошибка или необходимо прервать выполнение.
+     * @param context Контекст выполнения функции.
      */
-    boolean run(InterpreterState state);
+    void execute(ExecutionContext context);
 }

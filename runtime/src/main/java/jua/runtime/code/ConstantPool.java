@@ -1,6 +1,6 @@
 package jua.runtime.code;
 
-import jua.interpreter.Address;
+import jua.interpreter.address.Address;
 import jua.runtime.Function;
 
 public final class ConstantPool {
@@ -24,7 +24,7 @@ public final class ConstantPool {
         return (Function) entries[index];
     }
 
-    public Address getAddress(int index) {
+    public Address getAddressEntry(int index) {
         return (Address) entries[index];
     }
 }

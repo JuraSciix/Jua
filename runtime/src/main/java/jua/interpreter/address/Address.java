@@ -1,7 +1,6 @@
-package jua.interpreter;
+package jua.interpreter.address;
 
 import jua.runtime.Types;
-import jua.runtime.code.ConstantPool;
 import jua.runtime.heap.Heap;
 import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.MapHeap;
@@ -11,6 +10,21 @@ import static jua.interpreter.InterpreterThread.threadError;
 import static jua.runtime.Types.*;
 
 public final class Address implements Comparable<Address> {
+
+    public static final int RESULT_FALSE = 0;
+    public static final int RESULT_TRUE = 1;
+    public static final int RESULT_FAILURE = -1;
+
+    public static int toResult(boolean value) {
+        return value ? RESULT_TRUE : RESULT_FALSE;
+    }
+
+    public static boolean fromResult(int result) {
+        if (result == RESULT_FAILURE) {
+            throw new RuntimeException("Failure");
+        }
+        return result == RESULT_TRUE;
+    }
 
     /** Тип текущего значения. */
     private byte type;
@@ -708,24 +722,22 @@ public final class Address implements Comparable<Address> {
         return false;
     }
 
-    public boolean contains(Address key, Address consumer) {
+    public int contains(Address key) {
         if (type == T_LIST) {
             int index = validateIndex(key, false);
             if (index >= 0) {
-                consumer.set(getListHeap().contains(key));
-                return true;
+                return toResult(getListHeap().contains(key));
             }
-            return false;
+            return RESULT_FAILURE;
         }
         if (type == T_MAP) {
             if (validateKey(key, false)) {
-                consumer.set(getMapHeap().containsKey(key));
-                return true;
+                return toResult(getMapHeap().containsKey(key));
             }
-            return false;
+            return RESULT_FAILURE;
         }
         threadError("trying to check array-element from %s", getTypeName());
-        return false;
+        return RESULT_FAILURE;
     }
 
     private int validateIndex(Address indexAddress, boolean validateBounds) {
@@ -787,57 +799,6 @@ public final class Address implements Comparable<Address> {
         return false;
     }
 
-    public int weakCompare(Address rhs, int except) {
-        int union = getTypeUnion(type, rhs.type);
-
-        if (getTypeUnion(T_INT, T_INT) == union) {
-            return Long.compare(getLong(), rhs.getLong());
-        }
-
-        if (getTypeUnion(T_INT, T_FLOAT) == union) {
-            return Double.compare(getLong(), rhs.getDouble());
-        }
-
-        if (getTypeUnion(T_FLOAT, T_INT) == union) {
-            return Double.compare(getDouble(), rhs.getLong());
-        }
-
-        if (getTypeUnion(T_FLOAT, T_FLOAT) == union) {
-            if (Double.isNaN(getDouble()) || Double.isNaN(rhs.getDouble()))
-                return except;
-            else
-                return Double.compare(getDouble(), rhs.getDouble());
-        }
-
-        if (getTypeUnion(T_STRING, T_STRING) == union) {
-            return getStringHeap().compareTo(rhs.getStringHeap());
-        }
-
-        if (getTypeUnion(T_MAP, T_MAP) == union) {
-            return getMapHeap().compare(rhs.getMapHeap(), except);
-        }
-
-        if (getTypeUnion(T_LIST, T_LIST) == union) {
-            return getListHeap().compare(rhs.getListHeap(), except);
-        }
-
-        if (getTypeUnion(T_NULL, T_NULL) == union) {
-            return 0;
-        }
-
-        return except;
-    }
-
-    public int quickConstCompare(short value, int except) {
-        if (type == T_INT) {
-            return Long.compare(getLong(), value);
-        }
-        if (type == T_FLOAT) {
-            return Double.compare(getDouble(), value);
-        }
-        return except;
-    }
-
     @Override
     public int compareTo(Address o) {
         if (this == o) return 0;
@@ -876,6 +837,47 @@ public final class Address implements Comparable<Address> {
         throw new IllegalArgumentException("Unable to compare " + getTypeName() + " with " + o.getTypeName());
     }
 
+    public int fastCompareWith(Address a, int unexpected) {
+        int union = getTypeUnion(type, a.type);
+
+        if (getTypeUnion(T_INT, T_INT) == union) {
+            return Long.compare(getLong(), a.getLong());
+        }
+
+        if (getTypeUnion(T_INT, T_FLOAT) == union) {
+            return Double.compare(getLong(), a.getDouble());
+        }
+
+        if (getTypeUnion(T_FLOAT, T_INT) == union) {
+            return Double.compare(getDouble(), a.getLong());
+        }
+
+        if (getTypeUnion(T_FLOAT, T_FLOAT) == union) {
+            if (Double.isNaN(getDouble()) || Double.isNaN(a.getDouble()))
+                return unexpected;
+            else
+                return Double.compare(getDouble(), a.getDouble());
+        }
+
+        if (getTypeUnion(T_STRING, T_STRING) == union) {
+            return getStringHeap().fastCompareWith(a.getStringHeap());
+        }
+
+        if (getTypeUnion(T_MAP, T_MAP) == union) {
+            return getMapHeap().fastCompareWith(a.getMapHeap(), unexpected);
+        }
+
+        if (getTypeUnion(T_LIST, T_LIST) == union) {
+            return getListHeap().fastCompare(a.getListHeap(), unexpected);
+        }
+
+        if (getTypeUnion(T_NULL, T_NULL) == union) {
+            return 0;
+        }
+
+        return unexpected;
+    }
+
     @Override
     public int hashCode() {
         switch (type) {
@@ -894,7 +896,7 @@ public final class Address implements Comparable<Address> {
     public boolean equals(Object o) {
         if (this == o) return true; // Очень маловероятно
         if (o == null || getClass() != o.getClass()) return false;
-        return weakCompare((Address) o, Integer.MIN_VALUE) == 0;
+        return fastCompareWith((Address) o, Integer.MIN_VALUE) == 0;
     }
 
     public String toBeautifulString() {

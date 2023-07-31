@@ -142,6 +142,12 @@ public final class StringHeap extends Heap implements CharSequence, Comparable<S
         }
     }
 
+    public int fastCompareWith(StringHeap o) {
+        if (length() != o.length())
+            return length() - o.length();
+        return compareTo(o);
+    }
+
     @Override
     public int compareTo(StringHeap o) {
         if (this == o) return 0;

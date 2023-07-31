@@ -1,6 +1,6 @@
 package jua.compiler;
 
-import jua.interpreter.Address;
+import jua.interpreter.address.Address;
 import jua.interpreter.InterpreterThread;
 import jua.runtime.ConstantMemory;
 import jua.runtime.Function;

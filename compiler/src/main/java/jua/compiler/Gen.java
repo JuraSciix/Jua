@@ -7,9 +7,12 @@ import jua.compiler.Items.SafeItem;
 import jua.compiler.ProgramScope.ConstantSymbol;
 import jua.compiler.Tree.Return;
 import jua.compiler.Tree.*;
-import jua.interpreter.Address;
-import jua.interpreter.AddressUtils;
-import jua.interpreter.instruction.*;
+import jua.interpreter.ExecutionContext;
+import jua.interpreter.address.Address;
+import jua.interpreter.address.AddressUtils;
+import jua.interpreter.instruction.Instruction;
+import jua.interpreter.instruction.InstructionImpls.*;
+import jua.interpreter.instruction.InstructionPrinter;
 import jua.runtime.Function;
 import jua.utils.Assert;
 import jua.utils.List;
@@ -166,7 +169,7 @@ public class Gen extends Scanner {
         if (tree.elsebody == null) {
             code.resolve(falseJumps);
         } else {
-            Chain avoidElseBranchChain = tbState ? code.branch(new Goto()) : null;
+            Chain avoidElseBranchChain = tbState ? code.branch(new Goto(0)) : null;
             code.resolve(falseJumps);
             boolean ebState = genBlock(tree.elsebody); // else branch state
             code.resolve(avoidElseBranchChain);
@@ -196,7 +199,7 @@ public class Gen extends Scanner {
 
         code.markTreePos(tree);
         scan(init);
-        Chain skipBodyChain = testFirst ? code.branch(new Goto()) : null;
+        Chain skipBodyChain = testFirst ? code.branch(new Goto(0)) : null;
         int loopStartPC = code.pc();
         scan(body);
         step.forEach(s -> genExpr(s).drop());
@@ -218,7 +221,18 @@ public class Gen extends Scanner {
         flow = env;
         env.switchStartPC = code.pc();
         code.putPos(tree.pos);
-        code.addInstruction(new Fake(-1)); // Резервируем место под инструкцию
+        code.addInstruction(new Instruction() { // todo: убрать поддельную инструкцию.
+            @Override
+            public int stackAdjustment() {
+                return -1;
+            }
+
+            @Override
+            public void print(InstructionPrinter printer) {}
+
+            @Override
+            public void execute(ExecutionContext context) {}
+        }); // Резервируем место под инструкцию
 
         boolean codeAlive = false;
 
@@ -230,14 +244,14 @@ public class Gen extends Scanner {
 
         if (env.switchDefaultOffset == -1) {
             // Явного default-case не было
-            env.switchDefaultOffset = code.pc() - env.switchStartPC;
+            env.switchDefaultOffset = code.pc() - 1;
         }
 
         int[] literals = env.caseLabelsConstantIndexes.stream().mapToInt(a -> a).toArray();
         int[] destIps = env.switchCaseOffsets.stream().mapToInt(a -> a).toArray();
         code.setInstruction(env.switchStartPC, (env.caseLabelsConstantIndexes.size() <= 16)
-                ? new Linearswitch(literals, destIps, env.switchDefaultOffset)
-                : new Binaryswitch(literals, destIps, env.switchDefaultOffset));
+                ? new LinearSwitch(literals, destIps, env.switchDefaultOffset)
+                : new BinarySwitch(literals, destIps, env.switchDefaultOffset));
 
         code.resolve(env.exitChain);
 
@@ -254,20 +268,20 @@ public class Gen extends Scanner {
         SwitchEnv env = (SwitchEnv) flow;
         if (tree.labels == null) {
             // default case
-            env.switchDefaultOffset = code.pc() - env.switchStartPC;
+            env.switchDefaultOffset = code.pc() - 1;
         } else {
             for (Expression label : tree.labels) {
                 env.caseLabelsConstantIndexes.add(genExpr(label).constantIndex());
                 // Это не ошибка. Следующая строчка должна находиться именно в цикле
                 // Потому что инструкция switch ассоциирует значения к переходам в масштабе 1 к 1.
-                env.switchCaseOffsets.add(code.pc() - env.switchStartPC);
+                env.switchCaseOffsets.add(code.pc() - 1);
             }
         }
 
         // Весь кейз целиком это один из дочерних бранчей switch.
         scan(tree.body);
 
-        flow.exitChain = mergeChains(flow.exitChain, code.branch(new Goto()));
+        flow.exitChain = mergeChains(flow.exitChain, code.branch(new Goto(0)));
     }
 
     @Override
@@ -275,7 +289,7 @@ public class Gen extends Scanner {
         FlowEnv env = searchEnv(false);
         Assert.checkNonNull(env);
         code.putPos(tree.pos);
-        env.exitChain = mergeChains(env.exitChain, code.branch(new Goto()));
+        env.exitChain = mergeChains(env.exitChain, code.branch(new Goto(0)));
         code.setAlive(false);
     }
 
@@ -284,7 +298,7 @@ public class Gen extends Scanner {
         FlowEnv env = searchEnv(false);
         Assert.checkNonNull(env);
         code.putPos(tree.pos);
-        env.contChain = mergeChains(env.contChain, code.branch(new Goto()));
+        env.contChain = mergeChains(env.contChain, code.branch(new Goto(0)));
         code.setAlive(false);
     }
 
@@ -293,7 +307,7 @@ public class Gen extends Scanner {
         FlowEnv env = searchEnv(true);
         Assert.checkNonNull(env);
         code.putPos(tree.pos);
-        env.contChain = mergeChains(env.contChain, code.branch(new Goto()));
+        env.contChain = mergeChains(env.contChain, code.branch(new Goto(0)));
         code.setAlive(false);
     }
 
@@ -373,7 +387,7 @@ public class Gen extends Scanner {
     public void visitVariable(Var tree) {
         if (tree.sym instanceof ConstantSymbol) {
             code.putPos(tree.pos);
-            code.addInstruction(new Getconst(tree.sym.id));
+            code.addInstruction(new GetConst(tree.sym.id));
             result = items.mkStackItem();
         } else {
             result = items.makeLocal(code.resolveLocal(tree.name)).t(tree);
@@ -465,7 +479,7 @@ public class Gen extends Scanner {
         Chain falseJumps = condItem.falseJumps();
         code.resolve(condItem.trueChain);
         genExpr(tree.ths).load();
-        Chain trueJumps = code.branch(new Goto());
+        Chain trueJumps = code.branch(new Goto(0));
         code.resolve(falseJumps);
         genExpr(tree.fhs).load();
         code.resolve(trueJumps);

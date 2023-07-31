@@ -1,5 +1,6 @@
 package jua.interpreter;
 
+import jua.interpreter.address.Address;
 import jua.runtime.Function;
 import jua.runtime.StackTraceElement;
 
@@ -29,7 +30,7 @@ public final class InterpreterFrame {
     /** Возвращает номер строки, которая сейчас выполняется. */
     int executingLineNumber() {
         if (state == null) return -1; // native function
-        int cp = state.cp();
+        int cp = state.getCp();
         return owner.userCode().lineNumTable.getLineNumber(cp);
     }
 

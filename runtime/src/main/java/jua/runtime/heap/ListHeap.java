@@ -1,7 +1,7 @@
 package jua.runtime.heap;
 
-import jua.interpreter.Address;
-import jua.interpreter.AddressUtils;
+import jua.interpreter.address.Address;
+import jua.interpreter.address.AddressUtils;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -66,8 +66,10 @@ public final class ListHeap extends Heap implements Iterable<Address> {
 
     public boolean contains(Address value) {
         for (Address e : data) {
-            if (e != null && e.weakCompare(value, -1) == 0) {
-                return true;
+            if (e != null) {
+                if (e.fastCompareWith(value, -1) == 0) {
+                    return true;
+                }
             }
         }
         return false;
@@ -79,13 +81,19 @@ public final class ListHeap extends Heap implements Iterable<Address> {
                 && !data[index].isNull();
     }
 
+    public int fastCompare(ListHeap that, int unexpected) {
+        if (length() != that.length())
+            return length() - that.length();
+        return compare(that, unexpected);
+    }
+
     public int compare(ListHeap another, int except) {
         Address[] te = this.data;
         Address[] ae = another.data;
         int minlen = Math.min(te.length, ae.length);
         for (int i = 0; i < minlen; i++) {
             if (te[i] == null || ae[i] == null) continue;
-            int cmp = te[i].weakCompare(ae[i], except);
+            int cmp = te[i].fastCompareWith(ae[i], except);
             if (cmp != 0) return cmp;
         }
         return te.length - ae.length;

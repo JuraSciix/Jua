@@ -3,6 +3,7 @@ package jua.compiler;
 import jua.compiler.Code.Chain;
 import jua.compiler.Tree.Tag;
 import jua.interpreter.instruction.*;
+import jua.interpreter.instruction.InstructionImpls.*;
 
 import java.util.Objects;
 
@@ -51,12 +52,12 @@ public final class Items {
 
         CondItem asCond() {
             load();
-            return new CondItem(new Ifnz());
+            return new CondItem(new IfNz(0));
         }
 
         CondItem asNonNullCond() {
             load();
-            return new CondItem(new Ifnonnull());
+            return new CondItem(new IfNonNull(0));
         }
 
         CondItem asPresentCond() {
@@ -239,7 +240,7 @@ public final class Items {
 
         @Override
         CondItem asPresentCond() {
-            return new CondItem(new IfPresent());
+            return new CondItem(new IfPresent(0));
         }
 
         @Override
@@ -301,7 +302,7 @@ public final class Items {
         Item load() {
             code.addInstruction(dup_x2);
             code.addInstruction(astore);
-            Chain exitChain = code.branch(new Goto());
+            Chain exitChain = code.branch(new InstructionImpls.Goto(0));
             code.resolve(skipCoalesceChain);
             code.addInstruction(aload);
             code.resolve(exitChain);
@@ -311,7 +312,7 @@ public final class Items {
         @Override
         void drop() {
             code.addInstruction(astore);
-            Chain exitChain = code.branch(new Goto());
+            Chain exitChain = code.branch(new Goto(0));
             code.resolve(skipCoalesceChain);
             code.addInstruction(pop2);
             code.resolve(exitChain);
@@ -338,7 +339,7 @@ public final class Items {
         @Override
         Item load() {
             Item load = child.load();
-            Chain skipCoalesceLoadChain = code.branch(new Goto());
+            Chain skipCoalesceLoadChain = code.branch(new Goto(0));
             code.resolve(coalesceChain);
             load.drop();
             coalesce.load();
@@ -398,7 +399,7 @@ public final class Items {
             Chain falseJumps = falseJumps();
             code.resolve(trueChain);
             code.addInstruction(const_true);
-            Chain skipElsePartChain = code.branch(new Goto());
+            Chain skipElsePartChain = code.branch(new Goto(0));
             code.resolve(falseJumps);
             code.addInstruction(const_false);
             code.resolve(skipElsePartChain);

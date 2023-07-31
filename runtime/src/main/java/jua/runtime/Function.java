@@ -1,10 +1,7 @@
 package jua.runtime;
 
-import jua.interpreter.Address;
-import jua.interpreter.AddressUtils;
+import jua.interpreter.address.Address;
 import jua.runtime.code.CodeData;
-import jua.runtime.code.ConstantPool;
-import jua.utils.StringUtils;
 
 import java.util.Arrays;
 import java.util.Objects;

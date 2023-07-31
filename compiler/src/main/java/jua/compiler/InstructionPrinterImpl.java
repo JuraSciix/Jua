@@ -30,7 +30,7 @@ public class InstructionPrinterImpl implements InstructionPrinter {
             if (operands == null)
                 return "default -> " + casePC;
             String agentLiterals = Arrays.stream(operands)
-                    .mapToObj(index -> function.userCode().constantPool.getAddress(index).toBeautifulString())
+                    .mapToObj(index -> function.userCode().constantPool.getAddressEntry(index).toBeautifulString())
                     .collect(Collectors.joining(", "));
             return String.format("%s -> %d", agentLiterals, casePC);
         }
@@ -201,8 +201,8 @@ public class InstructionPrinterImpl implements InstructionPrinter {
     }
 
     @Override
-    public void printOffsetJump(int offsetJump) {
-        print(String.valueOf(pc + offsetJump));
+    public void printCp(int offsetJump) {
+        print(String.valueOf(offsetJump));
     }
 
     @Override
@@ -224,7 +224,7 @@ public class InstructionPrinterImpl implements InstructionPrinter {
 
     @Override
     public void printLiteral(int index) {
-        instrData.operands.add(function.userCode().constantPool.getAddress(index).toBeautifulString());
+        instrData.operands.add(function.userCode().constantPool.getAddressEntry(index).toBeautifulString());
     }
 
     @Override

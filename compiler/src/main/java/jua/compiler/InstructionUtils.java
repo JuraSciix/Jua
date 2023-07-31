@@ -2,6 +2,7 @@ package jua.compiler;
 
 import jua.compiler.Tree.Tag;
 import jua.interpreter.instruction.*;
+import jua.interpreter.instruction.InstructionImpls.*;
 
 import static jua.compiler.InstructionFactory.*;
 
@@ -57,12 +58,12 @@ public class InstructionUtils {
 
     public static JumpInstruction fromComparisonOpTag(Tag tag) {
         switch (tag) {
-            case EQ: return new Ifeq();
-            case NE: return new Ifne();
-            case GT: return new Ifgt();
-            case GE: return new Ifge();
-            case LT: return new Iflt();
-            case LE: return new Ifle();
+            case EQ: return new IfEq(0);
+            case NE: return new IfNe(0);
+            case GT: return new IfGt(0);
+            case GE: return new IfGe(0);
+            case LT: return new IfLt(0);
+            case LE: return new IfLe(0);
             default: throw new AssertionError(tag);
         }
     }

@@ -1,9 +1,9 @@
 package jua.compiler;
 
-import jua.interpreter.Address;
-import jua.interpreter.AddressUtils;
-import jua.interpreter.instruction.Binaryswitch;
+import jua.interpreter.address.Address;
+import jua.interpreter.address.AddressUtils;
 import jua.interpreter.instruction.Instruction;
+import jua.interpreter.instruction.InstructionImpls.BinarySwitch;
 import jua.interpreter.instruction.JumpInstruction;
 import jua.runtime.code.CodeData;
 import jua.runtime.code.ConstantPool;
@@ -196,8 +196,8 @@ public final class Code {
     private Instruction[] buildCode(ConstantPool cp) {
         Instruction[] instructions = this.instructions.toArray(EMPTY_INSTRUCTIONS);
         for (Instruction instruction : instructions) {
-            if (instruction.getClass() == Binaryswitch.class) {
-                Binaryswitch switch_ = (Binaryswitch) instruction;
+            if (instruction.getClass() == BinarySwitch.class) {
+                BinarySwitch switch_ = (BinarySwitch) instruction;
                 switch_.sort(cp);
             }
         }
@@ -233,7 +233,8 @@ public final class Code {
         if (chain == null) return;
         tos(chain.tos);
         do {
-            get(chain.pc).offsetJump(destPC - chain.pc);
+            setInstruction(chain.pc,
+                    get(chain.pc).withNextCp(destPC));
             chain = chain.next;
         } while (chain != null);
     }

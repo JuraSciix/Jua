@@ -2,20 +2,13 @@ package jua.interpreter.instruction;
 
 public abstract class JumpInstruction implements Instruction {
 
-    protected int offsetJump;
+    private final int nextCp;
 
-    @Override
-    public abstract JumpInstruction negated();
-
-    @Override
-    public JumpInstruction offsetJump(int offsetJump) {
-        this.offsetJump = offsetJump;
-        return this;
+    protected JumpInstruction(int nextCp) {
+        this.nextCp = nextCp;
     }
 
-    @Override
-    public void print(InstructionPrinter printer) {
-        printer.printOffsetJump(offsetJump);
-        printer.restoreTosIn(offsetJump);
+    public int getNextCp() {
+        return nextCp;
     }
 }

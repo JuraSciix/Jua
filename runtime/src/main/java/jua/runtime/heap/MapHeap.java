@@ -1,7 +1,7 @@
 package jua.runtime.heap;
 
-import jua.interpreter.Address;
-import jua.interpreter.AddressUtils;
+import jua.interpreter.address.Address;
+import jua.interpreter.address.AddressUtils;
 import jua.interpreter.InterpreterThread;
 import jua.runtime.Types;
 
@@ -36,7 +36,13 @@ public final class MapHeap extends Heap {
 
     public MapHeap deepCopy() { return new MapHeap(this); }
 
-    public int compare(MapHeap that, int except) {
+    public int fastCompareWith(MapHeap that, int unexpected) {
+        if (size() != that.size())
+            return size() - that.size();
+        return compare(that, unexpected);
+    }
+
+    public int compare(MapHeap that, int unexpected) {
         Map<Address, Address> m1 = map;
         Map<Address, Address> m2 = that.map;
         Iterator<Map.Entry<Address, Address>> i1 = m1.entrySet().iterator();
@@ -44,9 +50,9 @@ public final class MapHeap extends Heap {
         while (i1.hasNext() && i2.hasNext()) {
             Map.Entry<Address, Address> e1 = i1.next();
             Map.Entry<Address, Address> e2 = i2.next();
-            int cmp1 = e1.getKey().weakCompare(e2.getKey(), except);
+            int cmp1 = e1.getKey().fastCompareWith(e2.getKey(), unexpected);
             if (cmp1 != 0) return cmp1;
-            int cmp2 = e1.getValue().weakCompare(e2.getValue(), except);
+            int cmp2 = e1.getValue().fastCompareWith(e2.getValue(), unexpected);
             if (cmp2 != 0) return cmp2;
         }
         return m1.size() - m2.size();

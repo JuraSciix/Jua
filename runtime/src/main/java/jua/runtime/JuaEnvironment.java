@@ -1,6 +1,6 @@
 package jua.runtime;
 
-import jua.interpreter.Address;
+import jua.interpreter.address.Address;
 
 public class JuaEnvironment {
 

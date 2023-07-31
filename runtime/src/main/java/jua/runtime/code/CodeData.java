@@ -30,4 +30,8 @@ public final class CodeData {
         this.constantPool = constantPool;
         this.lineNumTable = lineNumTable;
     }
+
+    public ConstantPool constantPool() {
+        return constantPool;
+    }
 }

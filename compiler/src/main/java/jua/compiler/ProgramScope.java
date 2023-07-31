@@ -2,8 +2,8 @@ package jua.compiler;
 
 import jua.compiler.Tree.ConstDef;
 import jua.compiler.Tree.FuncDef;
-import jua.interpreter.Address;
-import jua.interpreter.AddressUtils;
+import jua.interpreter.address.Address;
+import jua.interpreter.address.AddressUtils;
 import jua.runtime.ConstantMemory;
 import jua.runtime.Function;
 import jua.runtime.NativeStdlib;

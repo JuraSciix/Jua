@@ -1,6 +1,6 @@
 package jua.runtime;
 
-import jua.interpreter.Address;
+import jua.interpreter.address.Address;
 import jua.interpreter.InterpreterThread;
 import jua.runtime.NativeSupport.NativeFunctionPresent;
 import jua.runtime.NativeSupport.ParamsData;

@@ -1,9 +1,15 @@
 package jua.interpreter;
 
+import jua.interpreter.address.Address;
+import jua.interpreter.address.AddressUtils;
+import jua.interpreter.instruction.Instruction;
+import jua.interpreter.memory.Memory;
+import jua.interpreter.memory.SimpleMemory;
 import jua.runtime.Function;
 import jua.runtime.JuaEnvironment;
 import jua.runtime.RuntimeErrorException;
 import jua.runtime.StackTraceElement;
+import jua.runtime.code.CodeData;
 import jua.utils.Assert;
 
 import java.io.PrintStream;
@@ -43,6 +49,10 @@ public final class InterpreterThread {
 
     InterpreterFrame executingFrame = null;
 
+    public InterpreterFrame currentFrame() {
+        return executingFrame;
+    }
+
     private Function callee;
 
     private int numArgs;
@@ -77,7 +87,7 @@ public final class InterpreterThread {
         return jvmThread;
     }
 
-    public JuaEnvironment environment() {
+    public JuaEnvironment getEnvironment() {
         return environment;
     }
 
@@ -96,13 +106,18 @@ public final class InterpreterThread {
                 Assert.check(isCrashed());
             }
         } else {
-            InterpreterState state = new InterpreterState(callee.userCode());
+            CodeData codeData = callee.userCode();
+            InterpreterState state = new InterpreterState(
+                    new SimpleMemory(AddressUtils.allocateMemory(codeData.stack, 0)),
+                    new SimpleMemory(AddressUtils.allocateMemory(codeData.locals, 0))
+            );
+
             executingFrame = new InterpreterFrame(executingFrame, callee, state, returnAddress);
             for (int i = 0; i < numArgs; i++) {
-                state.store(i, args[i]);
+                state.storeSlotFrom(i, args[i]);
             }
             for (int i = numArgs; i < callee.maxArgc; i++) {
-                state.store(i, callee.defaults[i - callee.minArgc]);
+                state.storeSlotFrom(i, callee.defaults[i - callee.minArgc]);
             }
             set_msg(MSG_RUNNING_FRAME);
         }
@@ -127,9 +142,15 @@ public final class InterpreterThread {
         this.msg = msg;
     }
 
-    public void prepareCall(Function function, Address[] args, int argc, Address returnAddress) {
-        callee = function;
-        numArgs = argc;
+    public void prepareCall(int calleeId, int argCount, Memory stackMemory,
+                            Address returnAddress) {
+        callee = getEnvironment().getFunction(calleeId);
+        numArgs = argCount;
+
+        Address[] args = new Address[argCount];
+        for (int i = 0; i < argCount; i++) {
+            args[i] = stackMemory.getAddress(argCount - i - 1);
+        }
         this.args = args;
         this.returnAddress = returnAddress;
         set_msg(MSG_CALLING_FRAME);
@@ -243,8 +264,8 @@ public final class InterpreterThread {
             } else if ((executingFrame.owner.flags & Function.FLAG_NATIVE) != 0) {
                 details = "<NATIVE>";
             } else {
-                details = "CP=" + executingFrame.state.cp() +
-                        ", SP=" + executingFrame.state.sp();
+                details = "CP=" + executingFrame.state.getCp() +
+                        ", SP=" + executingFrame.state.getTos();
             }
             printStackTrace();
             t.printStackTrace();
@@ -284,7 +305,14 @@ public final class InterpreterThread {
                     Assert.error("unexpected msg: " + msg);
             }
 
-            executingFrame.state.executeTick(this, executingFrame);
+            Instruction[] code = currentFrame().owner().userCode().code;
+            ExecutionContext context = new ExecutionContext(this, currentFrame().state());
+
+            while (isRunning()) {
+                int cp = context.getNextCp();
+                context.setNextCp(cp + 1);
+                code[cp].execute(context);
+            }
         }
     }
 

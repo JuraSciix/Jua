@@ -14,7 +14,7 @@ public interface InstructionPrinter {
     /**
      * Печатает значение типа счетчика программы.
      */
-    void printOffsetJump(int pc);
+    void printCp(int pc);
 
     /**
      * Печатает номер переменной.
