@@ -60,7 +60,7 @@ public final class InterpreterThread {
     @Deprecated
     private final Address tempAddress = new Address();
 
-    private Address[] args;
+    private Memory argMemory;
 
     private String error_msg;
 
@@ -97,6 +97,10 @@ public final class InterpreterThread {
         if ((callee.flags & Function.FLAG_NATIVE) != 0) {
             executingFrame = new InterpreterFrame(executingFrame, callee, null, returnAddress);
             set_msg(MSG_RUNNING_FRAME);
+            Address[] args = AddressUtils.allocateMemory(argMemory.size(), 0);
+            for (int i = 0; i < numArgs; i++) {
+                args[i].set(argMemory.getAddress(i));
+            }
             boolean success = callee.nativeExecutor().execute(args, numArgs, returnAddress);
             if (success) {
                 set_msg(MSG_POPPING_FRAME);
@@ -114,7 +118,7 @@ public final class InterpreterThread {
 
             executingFrame = new InterpreterFrame(executingFrame, callee, state, returnAddress);
             for (int i = 0; i < numArgs; i++) {
-                state.storeSlotFrom(i, args[i]);
+                state.storeSlotFrom(i, argMemory.getAddress(i));
             }
             for (int i = numArgs; i < callee.maxArgc; i++) {
                 state.storeSlotFrom(i, callee.defaults[i - callee.minArgc]);
@@ -142,17 +146,11 @@ public final class InterpreterThread {
         this.msg = msg;
     }
 
-    public void prepareCall(int calleeId, int argCount, Memory stackMemory,
-                            Address returnAddress) {
+    public void prepareCall(int calleeId, int argCount, Memory argMemory) {
         callee = getEnvironment().getFunction(calleeId);
         numArgs = argCount;
-
-        Address[] args = new Address[argCount];
-        for (int i = 0; i < argCount; i++) {
-            args[i] = stackMemory.getAddress(argCount - i - 1);
-        }
-        this.args = args;
-        this.returnAddress = returnAddress;
+        returnAddress = argMemory.getAddress(0);
+        this.argMemory = argMemory;
         set_msg(MSG_CALLING_FRAME);
     }
 
@@ -192,7 +190,7 @@ public final class InterpreterThread {
     public boolean callAndWait(Function function, Address[] args, Address returnAddress) {
         set_msg(MSG_CALLING_FRAME);
         callee = function;
-        this.args = args;
+        this.argMemory = new SimpleMemory(args);
         numArgs = args.length;
         this.returnAddress = returnAddress;
         run();

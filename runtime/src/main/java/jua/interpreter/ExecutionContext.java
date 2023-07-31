@@ -14,8 +14,6 @@ public class ExecutionContext {
 
     private final ConstantPool constantPool;
 
-//    private int nextCp = 0; // Next Code Point
-
     public ExecutionContext(InterpreterThread thread, InterpreterState state) {
         this.thread = thread;
         this.state = state;
@@ -482,8 +480,9 @@ public class ExecutionContext {
     }
 
     public void doCall(int calleeId, int argCount) {
-        getThread().prepareCall(calleeId, argCount, getState().getStack(),
-                getState().getStackAddress(-argCount));
+        int tos = getState().getTos();
+        getThread().prepareCall(calleeId, argCount,
+                getState().getStack().subMemory(tos - argCount, Math.max(argCount, 1)));
         getState().addTos(-argCount + 1);
     }
 

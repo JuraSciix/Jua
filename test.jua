@@ -1,11 +1,8 @@
-switch (10) {
-    case 1: println("one");
-    case 2: println("two");
-    case 3: println("three");
-    case 4: { println("four"); fallthrough; }
-    default: println("default");
+while true {
+    var i = time();
+    for var j = 0; j < 1_000_000; j++{ test(); }
+    var k = time();
+    println(k - i);
 }
 
-for var i = 0; i < 10; i++ {
-    println(i);
-}
+fn test() {}
