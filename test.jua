@@ -1,8 +1,3 @@
-while true {
-    var i = time();
-    for var j = 0; j < 1_000_000; j++{ test(); }
-    var k = time();
-    println(k - i);
-}
+println(sum(2, "d"));
 
-fn test() {}
+fn sum(a, b) = a + b;

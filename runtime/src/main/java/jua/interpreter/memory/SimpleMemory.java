@@ -21,7 +21,7 @@ public class SimpleMemory implements Memory {
 
     @Override
     public Memory subMemory(int offset, int count) {
-        if (offset < 0 || count < 0 || (offset + count) >= size()) {
+        if (offset < 0 || count < 0 || (offset + count) > size()) {
             throw new IndexOutOfBoundsException("size: " + size() + ",offset: " + offset + ", count: " + count);
         }
         return new SegmentMemory(memory, offset, count);
