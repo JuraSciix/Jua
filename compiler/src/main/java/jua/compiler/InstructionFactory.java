@@ -29,6 +29,7 @@ public interface InstructionFactory {
     ConstIntM1 const_im1   = new ConstIntM1();
     ConstInt0 const_i0     = new ConstInt0();
     ConstInt1 const_i1     = new ConstInt1();
+    ConstInt2 const_i2     = new ConstInt2();
     Dup dup                = new Dup();
     Dup2 dup2              = new Dup2();
     DupX1 dup_x1           = new DupX1();
@@ -51,5 +52,5 @@ public interface InstructionFactory {
 
     Instruction[] load_x = {load_0, load_1, load_2};
     Instruction[] store_x = {store_0, store_1, store_2};
-    Instruction[] const_ix = {const_im1, const_i0, const_i1};
+    Instruction[] const_ix = {const_im1, const_i0, const_i1, const_i2};
 }
