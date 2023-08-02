@@ -3,8 +3,7 @@ package jua.interpreter;
 import jua.interpreter.address.Address;
 import jua.interpreter.address.AddressUtils;
 import jua.interpreter.instruction.Instruction;
-import jua.interpreter.memory.Memory;
-import jua.interpreter.memory.SimpleMemory;
+import jua.interpreter.memory.*;
 import jua.runtime.Function;
 import jua.runtime.JuaEnvironment;
 import jua.runtime.RuntimeErrorException;
@@ -57,9 +56,6 @@ public final class InterpreterThread {
 
     private int numArgs;
 
-    @Deprecated
-    private final Address tempAddress = new Address();
-
     private Memory argMemory;
 
     private String error_msg;
@@ -68,12 +64,15 @@ public final class InterpreterThread {
 
     private Address returnAddress;
 
+    private final StackMemoryManager memoryManager;
+
     public InterpreterThread(Thread jvmThread, JuaEnvironment environment) {
         Objects.requireNonNull(jvmThread, "JVM thread");
         Objects.requireNonNull(environment, "environment");
         bind();
         this.jvmThread = jvmThread;
         this.environment = environment;
+        memoryManager = new StaticStackMemoryManagerImpl(1024);
     }
 
     private void bind() {
@@ -112,8 +111,8 @@ public final class InterpreterThread {
         } else {
             CodeData codeData = callee.userCode();
             InterpreterState state = new InterpreterState(
-                    new SimpleMemory(AddressUtils.allocateMemory(codeData.stack, 0)),
-                    new SimpleMemory(AddressUtils.allocateMemory(codeData.locals, 0))
+                    memoryManager.allocate(codeData.stack),
+                    memoryManager.allocate(codeData.locals)
             );
 
             executingFrame = new InterpreterFrame(executingFrame, callee, state, returnAddress);
@@ -154,18 +153,17 @@ public final class InterpreterThread {
         set_msg(MSG_CALLING_FRAME);
     }
 
-    @Deprecated
-    public Address getTempAddress() {
-        return tempAddress;
-    }
-
     public void doReturn(Address result) {
         executingFrame.returnAddress().set(result);
+        CodeData codeData = executingFrame.owner().userCode();
+        memoryManager.free(codeData.locals + codeData.stack);
         set_msg(MSG_POPPING_FRAME);
     }
 
     public void leave() {
         executingFrame.returnAddress().setNull();
+        CodeData codeData = executingFrame.owner().userCode();
+        memoryManager.free(codeData.locals + codeData.stack);
         set_msg(MSG_POPPING_FRAME);
     }
 
@@ -303,9 +301,9 @@ public final class InterpreterThread {
                     Assert.error("unexpected msg: " + msg);
             }
 
-            Instruction[] code = currentFrame().owner().userCode().code;
+            CodeData codeData = currentFrame().owner().userCode();
+            Instruction[] code = codeData.code;
             ExecutionContext context = new ExecutionContext(this, currentFrame().state());
-
             while (isRunning()) {
                 int cp = context.getNextCp();
                 context.setNextCp(cp + 1);

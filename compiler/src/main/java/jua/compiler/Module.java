@@ -34,6 +34,6 @@ public final class Module {
 
     public void run() {
         InterpreterThread thread = new InterpreterThread(Thread.currentThread(), createEnvironment());
-        thread.callAndWait(main, new Address[0], thread.getTempAddress());
+        thread.callAndWait(main, new Address[0], new Address());
     }
 }
