@@ -482,7 +482,7 @@ public class ExecutionContext {
     public void doCall(int calleeId, int argCount) {
         int tos = getState().getTos();
         getThread().prepareCall(calleeId, argCount,
-                getState().getStack().subMemory(tos - argCount, Math.max(argCount, 1)));
+                getState().getStack().subRegion(tos - argCount, Math.max(argCount, 1)));
         getState().addTos(-argCount + 1);
     }
 
