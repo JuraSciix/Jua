@@ -1175,7 +1175,7 @@ public interface InstructionImpls {
 
     class Leave implements Instruction {
         @Override
-        public int stackAdjustment() { return -1; }
+        public int stackAdjustment() { return 0; }
 
         @Override
         public void print(InstructionPrinter printer) {
