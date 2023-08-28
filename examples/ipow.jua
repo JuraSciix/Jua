@@ -1,5 +1,5 @@
 /** Возводит вещественное число в целую степень. */
-fn int_pow(base, power) {
+fn _ipow(base, power) {
     var p = power;
     var b = base;
     var r = 1.0;
