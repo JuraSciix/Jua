@@ -406,7 +406,7 @@ public final class JuaParser {
     }
 
     private Expression parseAssignment() {
-        Expression expr = parseCoalesce();
+        Expression expr = parseTernary();
         int position = token.pos;
 
         switch (token.type) {
@@ -460,16 +460,6 @@ public final class JuaParser {
             }
             default: return expr;
         }
-    }
-
-    private Expression parseCoalesce() {
-        Expression expr = parseTernary();
-        int pos = token.pos;
-
-        if (acceptToken(QUESQUES)) {
-            expr = new BinaryOp(pos, Tag.COALESCE, expr, parseCoalesce());
-        }
-        return expr;
     }
 
     private Expression parseTernary() {
@@ -629,21 +619,31 @@ public final class JuaParser {
     }
 
     private Expression parseMultiplicative() {
-        Expression expr = parseUnary();
+        Expression expr = parseCoalesce();
 
         while (true) {
             int position = token.pos;
 
             if (acceptToken(PERCENT)) {
-                expr = new BinaryOp(position, Tag.REM, expr, parseUnary());
+                expr = new BinaryOp(position, Tag.REM, expr, parseCoalesce());
             } else if (acceptToken(SLASH)) {
-                expr = new BinaryOp(position, Tag.DIV, expr, parseUnary());
+                expr = new BinaryOp(position, Tag.DIV, expr, parseCoalesce());
             } else if (acceptToken(STAR)) {
-                expr = new BinaryOp(position, Tag.MUL, expr, parseUnary());
+                expr = new BinaryOp(position, Tag.MUL, expr, parseCoalesce());
             } else {
                 return expr;
             }
         }
+    }
+
+    private Expression parseCoalesce() {
+        Expression expr = parseUnary();
+        int pos = token.pos;
+
+        if (acceptToken(QUESQUES)) {
+            expr = new BinaryOp(pos, Tag.COALESCE, expr, parseCoalesce());
+        }
+        return expr;
     }
 
     private Expression parseUnary() {
