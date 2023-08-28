@@ -1,0 +1,29 @@
+/** Возвращает натуральный квадратный корень из натурального числа */
+fn _isqrt(x) {
+    if x < 0 {
+        panic("negative x");
+    }
+    if x < 2 {
+        return x;
+    }
+
+    var r = 0;
+    var b = 1 << 62;
+    var n = x;
+
+    while b > n {
+        b >>= 2;
+    }
+
+    while b {
+        if (n >= r + b) {
+            n -= r + b;
+            r = (r >> 1) + b;
+        } else {
+            r >>= 1;
+        }
+        b >>= 2;
+    }
+
+    return r;
+}
