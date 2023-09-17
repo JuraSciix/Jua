@@ -8,8 +8,8 @@ import jua.compiler.ProgramScope.ConstantSymbol;
 import jua.compiler.Tree.Return;
 import jua.compiler.Tree.*;
 import jua.interpreter.ExecutionContext;
-import jua.interpreter.address.Address;
-import jua.interpreter.address.AddressUtils;
+import jua.interpreter.memory.Address;
+import jua.interpreter.memory.AddressUtils;
 import jua.interpreter.instruction.Instruction;
 import jua.interpreter.instruction.InstructionImpls.*;
 import jua.interpreter.instruction.InstructionPrinter;
@@ -516,7 +516,7 @@ public class Gen extends Scanner {
                 genExpr(tree.rhs).load();
                 result = items.makeCondItem(fromComparisonOpTag(tree.tag)).t(tree);
                 break;
-
+                
             case COALESCE: {
                 Item a = genExpr(tree.lhs).load();
                 a.duplicate();

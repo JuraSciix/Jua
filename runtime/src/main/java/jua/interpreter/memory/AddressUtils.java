@@ -1,4 +1,4 @@
-package jua.interpreter.address;
+package jua.interpreter.memory;
 
 import jua.runtime.heap.StringHeap;
 

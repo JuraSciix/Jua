@@ -1,6 +1,6 @@
 package jua.runtime;
 
-import jua.interpreter.address.Address;
+import jua.interpreter.memory.Address;
 import jua.interpreter.InterpreterThread;
 import jua.runtime.NativeSupport.NativeFunctionPresent;
 import jua.runtime.NativeSupport.ParamsData;
@@ -63,10 +63,14 @@ public class NativeStdlib {
 
         @Override
         public boolean execute(Address[] args, int argc, Address returnAddress) {
-            Address buffer = new Address();
-            boolean error = !args[0].stringVal(buffer);
-            if (error) return false;
-            System.out.println(buffer.getStringHeap().toString());
+            String str = "";
+            if (argc > 0) {
+                Address buffer = new Address();
+                boolean error = !args[0].stringVal(buffer);
+                if (error) return false;
+                str = buffer.getStringHeap().toString();
+            }
+            System.out.println(str);
             returnAddress.setNull();
             return true;
         }

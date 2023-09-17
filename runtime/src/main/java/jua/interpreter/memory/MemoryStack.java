@@ -1,6 +1,6 @@
 package jua.interpreter.memory;
 
-public interface StackMemoryManager {
+public interface MemoryStack {
 
     /**
      * Выделяет регион памяти заданного размера.

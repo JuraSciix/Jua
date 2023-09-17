@@ -30,7 +30,7 @@ public class Types {
             case T_STRING:  return "string";
             case T_MAP:     return "map";
             case T_LIST:    return "list";
-            default: throw new AssertionError(type);
+            default:        return "UNDEFINED";
         }
     }
 

@@ -12,6 +12,10 @@ import static jua.compiler.InstructionFactory.*;
 import static jua.compiler.InstructionUtils.arrayIncreaseFromTag;
 import static jua.compiler.InstructionUtils.increaseFromTag;
 
+/**
+ * Item - это такая хуйня, которая получается после компиляции (генерации кода)
+ * узла абстрактного дерева исходного кода, которой можно манипулировать.
+ */
 public final class Items {
     // Поля не должны быть видны вне класса Items
     private final Code code;
@@ -76,7 +80,7 @@ public final class Items {
             throw new UnsupportedOperationException(getClass().getName());
         }
 
-        Item coalesce() {
+        Item coalesce(Item item) {
             throw new UnsupportedOperationException(getClass().getName());
         }
 

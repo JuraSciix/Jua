@@ -1,7 +1,7 @@
 package jua.runtime;
 
-import jua.interpreter.address.Address;
-import jua.interpreter.address.AddressUtils;
+import jua.interpreter.memory.Address;
+import jua.interpreter.memory.AddressUtils;
 
 import java.util.ArrayList;
 

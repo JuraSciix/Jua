@@ -1,4 +1,4 @@
-package jua.interpreter.address;
+package jua.interpreter.memory;
 
 import jua.runtime.Types;
 import jua.runtime.heap.Heap;
@@ -650,7 +650,7 @@ public final class Address implements Comparable<Address> {
             }
             return false;
         }
-        threadError("trying to load array-element from %s", getTypeName());
+        threadError("trying to increment array-element of %s", getTypeName());
         return false;
     }
 
@@ -672,7 +672,7 @@ public final class Address implements Comparable<Address> {
             }
             return false;
         }
-        threadError("trying to load array-element from %s", getTypeName());
+        threadError("trying to decrement array-element of %s", getTypeName());
         return false;
     }
 
@@ -698,7 +698,7 @@ public final class Address implements Comparable<Address> {
             }
             return false;
         }
-        threadError("trying to load array-element from %s", getTypeName());
+        threadError("trying to store array-element to %s", getTypeName());
         return false;
     }
 

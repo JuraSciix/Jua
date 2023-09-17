@@ -1,7 +1,7 @@
 package jua.interpreter.instruction;
 
 import jua.interpreter.ExecutionContext;
-import jua.interpreter.address.Address;
+import jua.interpreter.memory.Address;
 import jua.runtime.code.ConstantPool;
 
 import java.util.Arrays;
@@ -1084,6 +1084,7 @@ public interface InstructionImpls {
             qsort2(cp, labels, cps, 0, labels.length - 1);
         }
 
+        // todo: переместить в Gen.java
         private static void qsort2(ConstantPool cp, int[] keys, int[] values, int lo, int hi) {
             int i = lo;
             int j = hi;
@@ -1141,6 +1142,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doCall(calleeId, argCount); }
     }
 
+    @Deprecated
     class GetConst implements Instruction {
         private final int constantId;
 
@@ -1160,6 +1162,7 @@ public interface InstructionImpls {
         @Override
         public void execute(ExecutionContext context) { context.doGetConst(constantId); }
     }
+
     class Return implements Instruction {
         @Override
         public int stackAdjustment() { return -1; }

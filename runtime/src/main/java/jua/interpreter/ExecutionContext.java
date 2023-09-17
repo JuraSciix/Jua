@@ -1,6 +1,7 @@
 package jua.interpreter;
 
-import jua.interpreter.address.Address;
+import jua.interpreter.memory.Address;
+import jua.interpreter.memory.Memory;
 import jua.runtime.Types;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.heap.ListHeap;
@@ -10,19 +11,12 @@ public class ExecutionContext {
 
     private final InterpreterThread thread;
 
-    private final InterpreterState state;
+    private InterpreterState state;
 
-    private final ConstantPool constantPool;
+    private ConstantPool constantPool;
 
-    public ExecutionContext(InterpreterThread thread, InterpreterState state) {
+    public ExecutionContext(InterpreterThread thread) {
         this.thread = thread;
-        this.state = state;
-
-        constantPool = thread
-                .currentFrame()
-                .owner()
-                .userCode()
-                .constantPool();
     }
 
     public InterpreterThread getThread() {
@@ -33,8 +27,16 @@ public class ExecutionContext {
         return state;
     }
 
+    public void setState(InterpreterState state) {
+        this.state = state;
+    }
+
     public ConstantPool getConstantPool() {
         return constantPool;
+    }
+
+    public void setConstantPool(ConstantPool constantPool) {
+        this.constantPool = constantPool;
     }
 
     public int getNextCp() {
@@ -109,10 +111,10 @@ public class ExecutionContext {
     public void doDupX2() {
         // Нужно переместить 3 элемента на 2 позиции вправо
         // Затем последний элемент скопировать в элемент на 3 позиции левее.
-        Address a1 = getState().getStackAddress(-2);
-        Address a2 = getState().getStackAddress(-1);
-        Address a3 = getState().getStackAddress(0);
-        Address a4 = getState().getStackAddress(1);
+        Address a1 = getState().getStackAddress(-3);
+        Address a2 = getState().getStackAddress(-2);
+        Address a3 = getState().getStackAddress(-1);
+        Address a4 = getState().getStackAddress(0);
         a4.set(a3);
         a3.set(a2);
         a2.set(a1);
@@ -123,34 +125,44 @@ public class ExecutionContext {
     public void doDup2x1() {
         // Нужно переместить 3 элемента на 2 позиции вправо
         // Затем 2 последних элементах скопировать в элементы на 3 позиции левее.
-        Address a1 = getState().getStackAddress(0);
-        Address a2 = getState().getStackAddress(1);
-        Address a3 = getState().getStackAddress(2);
-        Address a4 = getState().getStackAddress(3);
-        Address a5 = getState().getStackAddress(4);
-        a5.set(a4);
-        a4.set(a3);
-        a3.set(a2);
-        a2.set(a4);
-        a1.set(a3);
+
+        // -3 -2 -1  0  1
+        //  H  A  B  _  _
+        //  _  _  H  A  B
+        //  A  B  H  A  B
+        Address m3 = getState().getStackAddress(-3);
+        Address m2 = getState().getStackAddress(-2);
+        Address m1 = getState().getStackAddress(-1);
+        Address p0 = getState().getStackAddress(0);
+        Address p1 = getState().getStackAddress(1);
+        p1.set(m1);
+        p0.set(m2);
+        m1.set(m3);
+        m2.set(p1);
+        m3.set(p0);
         getState().addTos(2);
     }
 
     public void doDup2x2() {
         // Нужно переместить 4 элемента на 2 позиции вправо
         // Затем 2 последних элементах скопировать в элементы на 4 позиции левее.
-        Address a1 = getState().getStackAddress(0);
-        Address a2 = getState().getStackAddress(1);
-        Address a3 = getState().getStackAddress(2);
-        Address a4 = getState().getStackAddress(3);
-        Address a5 = getState().getStackAddress(4);
-        Address a6 = getState().getStackAddress(5);
-        a6.set(a5);
-        a5.set(a4);
-        a4.set(a3);
-        a3.set(a2);
-        a2.set(a6);
-        a1.set(a5);
+
+        // -4 -3 -2 -1  0  1
+        //  G  H  A  B  _  _
+        //  G  H  G  H  A  B
+        //  A  B  G  H  A  B
+        Address m4 = getState().getStackAddress(-4);
+        Address m3 = getState().getStackAddress(-3);
+        Address m2 = getState().getStackAddress(-2);
+        Address m1 = getState().getStackAddress(-1);
+        Address p0 = getState().getStackAddress(0);
+        Address p1 = getState().getStackAddress(1);
+        p1.set(m1);
+        p0.set(m2);
+        m1.set(m3);
+        m2.set(m4);
+        m3.set(p1);
+        m4.set(p0);
         getState().addTos(2);
     }
 
@@ -276,6 +288,7 @@ public class ExecutionContext {
         Address arr = getState().getStackAddress(-2);
         Address key = getState().getStackAddress(-1);
         arr.load(key, arr);
+        getState().addTos(-1);
     }
 
     public void doArrayStore() {
@@ -301,7 +314,7 @@ public class ExecutionContext {
     }
 
     public void doNewList() {
-        Address value = getState().getStackAddress(0);
+        Address value = getState().getStackAddress(-1);
         long a;
         if (!value.hasType(Types.T_INT) ||
                 (a = value.getLong()) < 0 ||
@@ -316,7 +329,6 @@ public class ExecutionContext {
         getState().getStackAddress(0).set(new MapHeap());
         getState().addTos(1);
     }
-
 
     public void doJumpIfEq(int nextCp) {
         Address lhs = getState().getStackAddress(-2);
@@ -480,12 +492,13 @@ public class ExecutionContext {
     }
 
     public void doCall(int calleeId, int argCount) {
-        int tos = getState().getTos();
-        getThread().prepareCall(calleeId, argCount,
-                getState().getStack().subRegion(tos - argCount, Math.max(argCount, 1)));
-        getState().addTos(-argCount + 1);
+        InterpreterState s = getState();
+        Memory argMemory = s.getStack().subRegion(s.getTos() - argCount, Math.max(argCount, 1));
+        getThread().prepareCall(calleeId, argCount, argMemory);
+        s.addTos(-argCount + 1);
     }
 
+    @Deprecated
     public void doGetConst(int constantId) {
         getState().storeStackFrom(getThread().getEnvironment().getConstant(constantId));
     }

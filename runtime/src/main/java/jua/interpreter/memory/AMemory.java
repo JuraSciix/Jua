@@ -1,41 +1,55 @@
 package jua.interpreter.memory;
 
-public class SegmentMemory implements Memory {
+public class AMemory implements Memory {
 
     private final Address[] memory;
-    private final int offset;
-    private final int count;
 
-    public SegmentMemory(Address[] memory, int offset, int count) {
+    private int offset;
+    private int count;
+
+    public AMemory(Address[] memory) {
         if (memory == null)
             throw new NullPointerException("Memory is null");
-        if (offset < 0 || count < 0 || (offset + count) > memory.length)
-            throw new IndexOutOfBoundsException("size: " + memory.length +
-                    ", offset: " + offset +
-                    ", count: " + count);
         this.memory = memory;
-        this.offset = offset;
-        this.count = count;
+        offset = memory.length - 1;
     }
 
-    private static void checkBounds(int size, int offset, int count) {
-        if (offset < 0 || count < 0 || (offset + count) > size)
-            throw new IndexOutOfBoundsException("size: " + size +
-                    ", offset: " + offset +
-                    ", count: " + count);
+    public int getOffset() {
+        return offset;
+    }
+
+    public int getCount() {
+        return count;
+    }
+
+    public void setOffset(int offset) {
+        this.offset = offset;
+    }
+
+    public void setCount(int count) {
+        this.count = count;
     }
 
     @Override
     public Address getAddress(int i) {
-        if (i < 0 || i >= size())
-            throw new IndexOutOfBoundsException("size: " + size() + ", i: " + i);
-        return memory[offset + i];
+        if (i < 0) {
+            throw new IndexOutOfBoundsException("Negative address pointer: " + i);
+        }
+        if (offset < i) {
+            throw new IndexOutOfBoundsException("Address pointer exceeds offset: " + offset + ", pointer: " + i);
+        }
+        return memory[offset - i];
     }
+
+    AMemory a;
 
     @Override
     public Memory subRegion(int offset, int count) {
-        // Проверки на применимость offset и count уже находятся в конструкторе.
-        return new SegmentMemory(memory, this.offset + offset, count);
+        if (a == null)
+            a = new AMemory(memory);
+        a.offset = this.offset - offset;
+        a.count = count;
+        return a;
     }
 
     @Override
@@ -44,7 +58,7 @@ public class SegmentMemory implements Memory {
             throw new IndexOutOfBoundsException("size: " + size() +
                     ", offset: " + offset +
                     ", count: " + count);
-        int start = this.offset + offset;
+        int start = this.offset;
         int end = start + count;
         for (int i = start; i < end; i++) {
             memory[i].reset();

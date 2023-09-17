@@ -1,7 +1,5 @@
 package jua.interpreter.memory;
 
-import jua.interpreter.address.Address;
-
 public class SimpleMemory implements Memory {
 
     private final Address[] memory;

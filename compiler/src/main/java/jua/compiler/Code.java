@@ -1,7 +1,7 @@
 package jua.compiler;
 
-import jua.interpreter.address.Address;
-import jua.interpreter.address.AddressUtils;
+import jua.interpreter.memory.Address;
+import jua.interpreter.memory.AddressUtils;
 import jua.interpreter.instruction.Instruction;
 import jua.interpreter.instruction.InstructionImpls.BinarySwitch;
 import jua.interpreter.instruction.JumpInstruction;

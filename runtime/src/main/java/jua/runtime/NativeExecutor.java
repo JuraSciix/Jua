@@ -1,6 +1,6 @@
 package jua.runtime;
 
-import jua.interpreter.address.Address;
+import jua.interpreter.memory.Address;
 
 @FunctionalInterface
 public interface NativeExecutor {

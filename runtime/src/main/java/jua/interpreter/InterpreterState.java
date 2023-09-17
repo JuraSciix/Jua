@@ -1,56 +1,31 @@
 package jua.interpreter;
 
-import jua.interpreter.address.Address;
+import jua.interpreter.memory.Address;
 import jua.interpreter.memory.Memory;
 
-public class InterpreterState {
+public interface InterpreterState {
 
-    private final Memory stack;
+    int getCp();
 
-    private final Memory slots;
+    void setCp(int cp);
 
-    private int cp = 0; // Code Pointer
+    int getTos();
 
-    private int tos = 0; // Top Of Stack
+    void setTos(int tos);
 
-    public InterpreterState(Memory stack, Memory slots) {
-        this.stack = stack;
-        this.slots = slots;
+    Memory getStack();
+
+    Memory getSlots();
+
+    default void addTos(int tos) {
+        setTos(getTos() + tos);
     }
 
-    public int getCp() {
-        return cp;
-    }
-
-    public void setCp(int cp) {
-        this.cp = cp;
-    }
-
-    public int getTos() {
-        return tos;
-    }
-
-    public void setTos(int tos) {
-        this.tos = tos;
-    }
-
-    public Memory getStack() {
-        return stack;
-    }
-
-    public Memory getSlots() {
-        return slots;
-    }
-
-    public void addTos(int tos) {
-        this.tos += tos;
-    }
-
-    public void loadStackTo(Address a) {
+    default void loadStackTo(Address a) {
         a.set(getStack().getAddress(getTos()));
     }
 
-    public void storeStackFrom(Address a) {
+    default void storeStackFrom(Address a) {
         getStack().getAddress(getTos()).set(a);
     }
 
@@ -58,19 +33,19 @@ public class InterpreterState {
      * Возвращает регистр стека.
      * Если {@code i < 0}, то возвращается записанный регистр, иначе свободный.
      */
-    public Address getStackAddress(int i) {
+    default Address getStackAddress(int i) {
         return getStack().getAddress(getTos() + i);
     }
 
-    public void loadSlotTo(int i, Address a) {
+    default void loadSlotTo(int i, Address a) {
         a.set(getStack().getAddress(i));
     }
 
-    public void storeSlotFrom(int i, Address a) {
+    default void storeSlotFrom(int i, Address a) {
         getSlots().getAddress(i).set(a);
     }
 
-    public Address getSlot(int i) {
+    default Address getSlot(int i) {
         return getSlots().getAddress(i);
     }
 }

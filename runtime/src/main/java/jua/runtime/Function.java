@@ -1,6 +1,6 @@
 package jua.runtime;
 
-import jua.interpreter.address.Address;
+import jua.interpreter.memory.Address;
 import jua.runtime.code.CodeData;
 
 import java.util.Arrays;
@@ -45,6 +45,10 @@ public final class Function {
         this.flags = flags;
         this.code = code;
         this.nativeBody = nativeBody;
+    }
+
+    public boolean isUserDefined() {
+        return (flags & FLAG_NATIVE) == 0;
     }
 
     public NativeExecutor nativeExecutor() {
