@@ -123,7 +123,7 @@ public final class Items {
                 code.addInstruction(const_true);
             } else if (value == Boolean.FALSE) {
                 code.addInstruction(const_false);
-            } else if (value.getClass() == Long.class && -1 <= ((long) value) && ((long) value) <= 1) {
+            } else if (value.getClass() == Long.class && -1 <= ((long) value) && ((long) value) <= 2) {
                 code.addInstruction(const_ix[((Long) value).intValue() + 1]);
             } else {
                 code.addInstruction(new Push(constantIndex()));
