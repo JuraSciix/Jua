@@ -542,19 +542,22 @@ public class Lexer {
             }
         }
 
-        type = TokenType.lookupIdentifier(buffer.toString());
+        type = lookup(buffer.toString());
+        if (type == null) {
+            type = IDENTIFIER;
+        }
     }
 
     private void scanOperator() {
         buffer.appendCodePoint(reader.peek());
         TokenType a = null;
-        TokenType b = TokenType.lookupNullable(buffer.toString());
+        TokenType b = lookup(buffer.toString());
 
         while (b != null) {
             a = b;
             reader.next();
             buffer.appendCodePoint(reader.peek());
-            b = TokenType.lookupNullable(buffer.toString());
+            b = lookup(buffer.toString());
         }
 
         Assert.checkNonNull(a, "token type not installed");

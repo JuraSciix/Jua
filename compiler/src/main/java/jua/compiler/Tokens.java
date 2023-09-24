@@ -1,6 +1,7 @@
 package jua.compiler;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public final class Tokens {
 
@@ -8,6 +9,7 @@ public final class Tokens {
         AMP("&"),
         AMPAMP("&&"),
         AMPEQ("&="),
+        ARROW("->"),
         AT("@"),
         BANG("!"),
         BANGEQ("!="),
@@ -82,24 +84,21 @@ public final class Tokens {
         WHILE("while"),
         YIELD("yield");
 
-        private static class Lookup extends HashMap<String, TokenType> {
-            static final Lookup INSTANCE = new Lookup();
+        private static final Map<String, TokenType> LOOKUP = new HashMap<>(16, 1f);
 
-            Lookup() {
-                super(16, 1.0f);
+        static {
+            for (TokenType type : values()) {
+                if (type != null) {
+                    LOOKUP.put(type.value, type);
+                }
             }
         }
 
-        public static TokenType lookupNullable(String value) {
-            return Lookup.INSTANCE.get(value);
-        }
-
-        public static TokenType lookupIdentifier(String value) {
-            return Lookup.INSTANCE.getOrDefault(value, IDENTIFIER);
+        public static TokenType lookup(String value) {
+            return LOOKUP.get(value);
         }
 
         public final String value;
-
         public final TokenKind kind;
 
         TokenType() {
@@ -117,7 +116,6 @@ public final class Tokens {
         TokenType(String value, TokenKind kind) {
             this.value = value;
             this.kind = kind;
-            if (value != null) Lookup.INSTANCE.put(value, this);
         }
     }
 
