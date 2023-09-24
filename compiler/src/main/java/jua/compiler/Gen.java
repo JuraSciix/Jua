@@ -20,7 +20,7 @@ import jua.utils.List;
 import java.util.ArrayList;
 
 import static jua.compiler.Code.mergeChains;
-import static jua.compiler.InstructionFactory.*;
+import static jua.compiler.InstructionUtils.InstructionFactory.*;
 import static jua.compiler.InstructionUtils.*;
 import static jua.compiler.TreeInfo.isNull;
 import static jua.compiler.TreeInfo.stripParens;

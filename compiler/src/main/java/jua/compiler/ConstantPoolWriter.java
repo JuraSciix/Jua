@@ -31,7 +31,7 @@ public class ConstantPoolWriter {
 
     private void checkOverflow() {
         if (pool.count() >= MAX_SIZE) {
-            throw new CompileException("constant pool cannot contain greater than " + MAX_SIZE + " entries");
+            throw new JuaCompiler.CompileException("constant pool cannot contain greater than " + MAX_SIZE + " entries");
         }
     }
 

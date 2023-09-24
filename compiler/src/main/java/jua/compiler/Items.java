@@ -8,7 +8,7 @@ import jua.interpreter.instruction.InstructionImpls.*;
 import java.util.Objects;
 
 import static jua.compiler.Code.mergeChains;
-import static jua.compiler.InstructionFactory.*;
+import static jua.compiler.InstructionUtils.InstructionFactory.*;
 import static jua.compiler.InstructionUtils.arrayIncreaseFromTag;
 import static jua.compiler.InstructionUtils.increaseFromTag;
 

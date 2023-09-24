@@ -150,4 +150,10 @@ public final class JuaCompiler {
         }
     }
 
+    public static class CompileException extends RuntimeException {
+
+        public CompileException(String message) {
+            super(message);
+        }
+    }
 }
