@@ -610,9 +610,6 @@ public abstract class Tree {
 
     public boolean hasTag(Tag tag) { return getTag() == tag; }
 
-    @Override
-    public String toString() { return Pretty.stringifyTree(this); }
-
     public static class CompilationUnit extends Tree {
 
         public final Source source;
