@@ -28,10 +28,9 @@ public final class Items {
     abstract class Item {
         Tree tree;
 
-        @SuppressWarnings("unchecked")
-        <T extends Item> T t(Tree tree) {
+        Item t(Tree tree) {
             this.tree = tree;
-            return (T) this;
+            return this;
         }
 
         Item load() {
@@ -77,10 +76,6 @@ public final class Items {
         }
 
         Item coalesceAsg(Chain skipCoalesceChain) {
-            throw new UnsupportedOperationException(getClass().getName());
-        }
-
-        Item coalesce(Item item) {
             throw new UnsupportedOperationException(getClass().getName());
         }
 
@@ -396,6 +391,12 @@ public final class Items {
             this.opcode = opcode;
             this.trueChain = trueChain;
             this.falseChain = elseChain;
+        }
+
+        @Override
+        CondItem t(Tree tree) {
+            super.t(tree);
+            return this;
         }
 
         @Override

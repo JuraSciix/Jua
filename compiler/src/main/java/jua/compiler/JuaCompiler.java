@@ -85,7 +85,8 @@ public final class JuaCompiler {
             JuaParser parser = new JuaParser(source, log);
             Tree.CompilationUnit compilationUnit = parser.parseCompilationUnit();
             if (prettyTreeMode) {
-                compilationUnit.accept(new Pretty(System.err));
+                System.err.println("Prettier isn't available.");
+//                compilationUnit.accept(new Pretty(System.err));
                 return null;
             }
             ProgramScope programScope = new ProgramScope();
