@@ -45,8 +45,6 @@ public final class Code {
 
     private final ConstantPoolWriter constantPoolWriter = new ConstantPoolWriter();
 
-    private int nlocals = 0;
-
     /** Top of stack. */
     private int tos = 0;
 
@@ -165,18 +163,17 @@ public final class Code {
         return constantPoolWriter;
     }
 
-    public String[] paramnames;
-    public int reqargs, totargs;
-    public Object[] defs;
-
     public Executable toExecutable() {
         return new Executable(sym.name, gen.source.fileName,
                 instructions.toArray(new InstrNode[0]),
-                nlocals,
+                sym.nlocals,
                 limTos,
                 buildConstantPool(),
-                buildLineNumberTable(), reqargs, totargs, defs,
-                paramnames);
+                buildLineNumberTable(),
+                sym.minArgc,
+                sym.maxArgc,
+                sym.defs,
+                sym.params.toArray(String[]::new));
     }
 
     private LineNumberTable buildLineNumberTable() {
@@ -219,4 +216,5 @@ public final class Code {
                         "TOS violation: EXPECTED=%d, ACTUAL=%d, PC=%d, LINE=%d",
                         tos, tos(), pc(), lineNum()));
     }
+
 }

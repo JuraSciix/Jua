@@ -22,16 +22,19 @@ public final class ModuleScope {
         public final String name;
         public final int id;
         public final int minArgc, maxArgc;
+        public Object[] defs;
         public final JuaList<String> params; // null if tree is null
         public Code code;
 
         public Executable executable;
+        public int nlocals;
 
-        FunctionSymbol(String name, int id, int minArgc, int maxArgc, JuaList<String> params) {
+        FunctionSymbol(String name, int id, int minArgc, int maxArgc, Object[] defs, JuaList<String> params) {
             this.name = name;
             this.id = id;
             this.minArgc = minArgc;
             this.maxArgc = maxArgc;
+            this.defs = defs;
             this.params = params;
         }
     }
@@ -76,6 +79,7 @@ public final class ModuleScope {
                 -1,
                 1,
                 1,
+                new Object[0],
                 JuaList.of("value")
         ));
         functions.put("list", new FunctionSymbol(
@@ -83,6 +87,7 @@ public final class ModuleScope {
                 -1,
                 1,
                 1,
+                new Object[0],
                 JuaList.of("size")
         ));
     }
@@ -110,9 +115,8 @@ public final class ModuleScope {
         return sym;
     }
 
-    public FunctionSymbol defineNativeFunction(Function function) {
+    public FunctionSymbol defineNativeFunction(String name, int minArgc, int maxArgc, Object[] defs, String[] params) {
         // todo: Именованные аргументы у нативных функций
-        String name = function.name;
         if (functions.containsKey(name)) {
             throw new IllegalArgumentException("Duplicate function: " + name);
         }
@@ -120,9 +124,10 @@ public final class ModuleScope {
         FunctionSymbol sym = new FunctionSymbol(
                 name,
                 nextId,
-                function.minArgc,
-                function.maxArgc,
-                JuaList.of(function.params)
+                minArgc,
+                maxArgc,
+                defs,
+                JuaList.of(params)
         );
         functions.put(name, sym);
         return sym;
@@ -142,7 +147,7 @@ public final class ModuleScope {
         return sym;
     }
 
-    public FunctionSymbol defineUserFunction(FuncDef tree) {
+    public FunctionSymbol defineUserFunction(FuncDef tree, int nlocals) {
         String name = tree.name.toString();
         int nextId = funcnextaddr++;
         // The legacy code is present below
@@ -161,8 +166,9 @@ public final class ModuleScope {
                 nextId,
                 minargs,
                 maxargs,
-                params
+                null, params
         );
+        sym.nlocals = nlocals;
         functions.put(name, sym);
         return sym;
     }
@@ -186,7 +192,7 @@ public final class ModuleScope {
                 -1,
                 0,
                 255,
-                null
+                new Object[0], null
         );
         functions.put(nameString, sym);
         return sym;

@@ -196,7 +196,7 @@ public class ModulePrinter {
         adjustIndent(2);                                              //   _
         f("Code: %n");                                               //   Code:
         adjustIndent(2);                                              //     _
-        f("stack=%d, locals=%d %n", executable.stackSize, executable.reqargs); //     stack=2, locals=0
+        f("stack=%d, locals=%d %n", executable.stackSize, executable.regSize); //     stack=2, locals=0
         adjustIndent(2);                                              //       _
     }
 

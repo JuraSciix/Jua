@@ -124,11 +124,7 @@ public class Gen extends Scanner {
         }
         code.setAlive(false);
 
-        code.paramnames = tree.params.map(p -> p.name.toString()).toArray(String[]::new);
-        code.reqargs = tree.params.count() - defaults.size();
-        code.totargs = tree.params.count();
-        code.defs = defaults.toArray(new Object[0]);
-
+        tree.sym.defs = defaults.toArray();
         tree.sym.executable = code.toExecutable();
     }
 

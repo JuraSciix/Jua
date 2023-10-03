@@ -1,5 +1,0 @@
-var x = null; // id=0
-if x {
-    var y = x; // id=1
-}
-var z = x; // id=1

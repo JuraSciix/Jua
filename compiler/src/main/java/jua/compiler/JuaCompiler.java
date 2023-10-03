@@ -97,13 +97,13 @@ public final class JuaCompiler {
             ModuleScope programScope = getModuleScope();
             // todo: Проверить, что тут надо было пофиксить.
             compilationUnit.accept(new Lower(programScope));
+            compilationUnit.accept(new Enter(programScope, log));
             compilationUnit.accept(new Check(programScope, log));
 
             if (log.hasErrors()) {
                 return null;
             }
 
-            compilationUnit.accept(new Enter(programScope, log));
             compilationUnit.functions.forEach(funcDef -> funcDef.sym.code = new Code(programScope, source));
 
             compilationUnit.functions

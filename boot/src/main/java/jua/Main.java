@@ -64,9 +64,10 @@ public class Main {
             // Все константы будут встроены в код.
             ms.defineNativeConstant(cm.getKey(), cm.getValue().toObject());
         }
-        for (Function function : NativeStdlib.getNativeFunctions()) {
-            FunctionSymbol sym = ms.defineNativeFunction(function);
-            nativeFunctions.put(sym.id, function);
+        for (Function f : NativeStdlib.getNativeFunctions()) {
+            FunctionSymbol sym = ms.defineNativeFunction(f.name, f.minArgc, f.maxArgc,
+                    Arrays.stream(f.defaults).map(Address::toObject).toArray(), f.params);
+            nativeFunctions.put(sym.id, f);
         }
 
         module = c.compile();

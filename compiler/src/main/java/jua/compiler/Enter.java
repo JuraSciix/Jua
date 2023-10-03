@@ -14,15 +14,16 @@ import java.util.HashMap;
 public class Enter extends Scanner {
 
     private static class VarScope extends HashMap<String, VarSymbol> {
-
         /** Родительская область. */
         private final VarScope parent;
-
-        private int nextId;
-
+        private int nextId = 0;
+        int maxId = 0;
         VarScope(VarScope parent) {
             this.parent = parent;
-            this.nextId = (parent == null) ? 0 : parent.nextId;
+            if (parent != null) {
+                nextId = parent.nextId;
+                maxId = parent.maxId;
+            }
         }
 
         boolean defined(Name name) {
@@ -37,6 +38,13 @@ public class Enter extends Scanner {
 
         VarSymbol define(Name name) {
             int id = nextId++;
+            if (nextId > maxId) {
+                // nextId и maxId у текущей области всегда >= чем у parent.
+                // В таком случае, id больше maxId любой области текущей цепи.
+                for (VarScope scope = this; scope != null; scope = scope.parent) {
+                    scope.maxId = nextId;
+                }
+            }
             VarSymbol sym = new VarSymbol(id);
             put(name.toString(), sym);
             return sym;
@@ -160,7 +168,7 @@ public class Enter extends Scanner {
             report(tree.name.pos, "function redefinition");
             tree.sym = globalScope.lookupFunction(tree.name);
         } else {
-            tree.sym = globalScope.defineUserFunction(tree);
+            tree.sym = globalScope.defineUserFunction(tree, scope.maxId);
         }
 
         ensureScopeChainUnaffected(null);
