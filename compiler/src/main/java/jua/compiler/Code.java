@@ -42,7 +42,6 @@ public final class Code {
     private final List<InstrNode> instructions = new ArrayList<>();
     private final TreeMap<Short, Integer> lineTable = new TreeMap<>();
 
-    private final LinkedHashMap<String, Integer> localNames = new LinkedHashMap<>();
 
     private final ConstantPoolWriter constantPoolWriter = new ConstantPoolWriter();
 
@@ -162,32 +161,13 @@ public final class Code {
         this.alive = alive;
     }
 
-    public boolean localExists(String name) {
-        return this.localNames.containsKey(name);
-    }
-
-    public int resolveLocal(Name name) {
-        return resolveLocal(name.toString());
-    }
-
-    public int resolveLocal(String name) {
-//        if (!isAlive()) return -1;
-        if (!localExists(name)) {
-            int newIndex = this.nlocals++;
-            this.localNames.put(name, newIndex);
-            return newIndex;
-        } else {
-            return this.localNames.get(name);
-        }
-    }
-
     public ConstantPoolWriter constantPoolWriter() {
         return constantPoolWriter;
     }
 
+    public String[] paramnames;
     public int reqargs, totargs;
     public Object[] defs;
-
 
     public Executable toExecutable() {
         return new Executable(sym.name, gen.source.fileName,
@@ -196,7 +176,7 @@ public final class Code {
                 limTos,
                 buildConstantPool(),
                 buildLineNumberTable(), reqargs, totargs, defs,
-                localNames.keySet().toArray(new String[0]));
+                paramnames);
     }
 
     private LineNumberTable buildLineNumberTable() {

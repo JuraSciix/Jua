@@ -13,26 +13,22 @@ import java.util.HashMap;
  */
 public class Enter extends Scanner {
 
-    private static class Scope {
+    private static class VarScope extends HashMap<String, VarSymbol> {
 
-        /** Родительская (внешняя) область. */
-        final Scope parent;
+        /** Родительская область. */
+        private final VarScope parent;
 
-        final HashMap<Name, VarSymbol> varSymbols = new HashMap<>();
+        private int nextId;
 
-        int nextVarId;
-
-        Scope(Scope parent) {
+        VarScope(VarScope parent) {
             this.parent = parent;
-
-            if (parent != null) {
-                nextVarId = parent.nextVarId;
-            }
+            this.nextId = (parent == null) ? 0 : parent.nextId;
         }
 
         boolean defined(Name name) {
-            for (Scope scope = this; scope != null; scope = scope.parent) {
-                if (scope.varSymbols.containsKey(name)) {
+            String key = name.toString();
+            for (VarScope scope = this; scope != null; scope = scope.parent) {
+                if (scope.containsKey(key)) {
                     return true;
                 }
             }
@@ -40,17 +36,18 @@ public class Enter extends Scanner {
         }
 
         VarSymbol define(Name name) {
-            int id = nextVarId++;
+            int id = nextId++;
             VarSymbol sym = new VarSymbol(id);
-            varSymbols.put(name, sym);
+            put(name.toString(), sym);
             return sym;
         }
 
         VarSymbol resolve(Name name) {
-            for (Scope scope = this; scope != null; scope = scope.parent) {
+            String key = name.toString();
+            for (VarScope scope = this; scope != null; scope = scope.parent) {
                 // Халтурно избегаем двойного поиска (containsKey + get),
                 // оставляя для ясности .getOrDefault(x, null)
-                VarSymbol sym = scope.varSymbols.getOrDefault(name, null);
+                VarSymbol sym = scope.getOrDefault(key, null);
                 if (sym != null) {
                     return sym;
                 }
@@ -66,7 +63,7 @@ public class Enter extends Scanner {
     private Source source;
 
     /** Текущая область видимости. */
-    private Scope scope;
+    private VarScope scope;
 
     public Enter(ModuleScope globalScope, Log log) {
         this.globalScope = globalScope;
@@ -77,7 +74,7 @@ public class Enter extends Scanner {
         Assert.check(scope == null, "non-root scope");
     }
 
-    private void ensureScopeChainUnaffected(Scope parent) {
+    private void ensureScopeChainUnaffected(VarScope parent) {
         Assert.check(scope.parent == parent, "scope chain has been affected");
     }
 
@@ -91,8 +88,8 @@ public class Enter extends Scanner {
         }
     }
 
-    private Scope scanInnerScope(Scope parentScope, JuaList<? extends Tree> trees) {
-        Scope innerScope = new Scope(parentScope);
+    private VarScope scanInnerScope(VarScope parentScope, JuaList<? extends Tree> trees) {
+        VarScope innerScope = new VarScope(parentScope);
         if (trees.nonEmpty()) {
             scope = innerScope;
             scan(trees);
@@ -102,7 +99,7 @@ public class Enter extends Scanner {
         return innerScope;
     }
 
-    private void scanBody(Scope parentScope, Tree tree) {
+    private void scanBody(VarScope parentScope, Tree tree) {
         if (tree != null) {
             checkNotVarDef(tree);
             scanInnerScope(parentScope, JuaList.of(tree));
@@ -123,17 +120,17 @@ public class Enter extends Scanner {
 
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
+        ensureRootScope();
         source = tree.source;
         scan(tree.constants);
         scan(tree.functions);
-        ensureRootScope();
         scanInnerScope(null, tree.stats);
     }
 
     @Override
     public void visitFuncDef(FuncDef tree) {
         ensureRootScope();
-        scope = new Scope(null);
+        scope = new VarScope(null);
 
         for (FuncDef.Parameter param : tree.params) {
             if (scope.defined(param.name)) {
@@ -196,8 +193,8 @@ public class Enter extends Scanner {
 
     @Override
     public void visitForLoop(ForLoop tree) {
-        Scope parentScope = scope;
-        Scope initScope = scanInnerScope(parentScope, tree.init);
+        VarScope parentScope = scope;
+        VarScope initScope = scanInnerScope(parentScope, tree.init);
         scanInnerScope(initScope, JuaList.of(tree.cond));
         scanBody(initScope, tree.body);
         scanInnerScope(initScope, tree.step);

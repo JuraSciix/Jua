@@ -106,7 +106,6 @@ public class Gen extends Scanner {
 
         java.util.List<Object> defaults = new ArrayList<>();
         for (FuncDef.Parameter param : tree.params) {
-            code.resolveLocal(param.name);
             if (param.expr != null) {
                 Literal literal = (Literal) stripParens(param.expr);
                 defaults.add(literal.value);
@@ -125,6 +124,7 @@ public class Gen extends Scanner {
         }
         code.setAlive(false);
 
+        code.paramnames = tree.params.map(p -> p.name.toString()).toArray(String[]::new);
         code.reqargs = tree.params.count() - defaults.size();
         code.totargs = tree.params.count();
         code.defs = defaults.toArray(new Object[0]);
@@ -295,7 +295,7 @@ public class Gen extends Scanner {
             } else {
                 genExpr(def.init).load();
             }
-            items.makeAssignItem(items.makeLocal(code.resolveLocal(def.name))).drop();
+            items.makeAssignItem(items.makeLocal(def.sym.id)).drop();
         }
     }
 
@@ -357,7 +357,7 @@ public class Gen extends Scanner {
             code.emitIndexed(OPCodes.GetConst, tree.sym.id);
             result = items.mkStackItem();
         } else {
-            result = items.makeLocal(code.resolveLocal(tree.name)).t(tree);
+            result = items.makeLocal(tree.sym.id).t(tree);
         }
     }
 
