@@ -3,7 +3,7 @@ package jua.compiler;
 import jua.compiler.Tokens.Token;
 import jua.compiler.Tokens.TokenType;
 import jua.runtime.ConstantMemory;
-import jua.utils.IOUtils;
+import jua.compiler.utils.IOUtils;
 
 import java.io.File;
 import java.io.IOException;

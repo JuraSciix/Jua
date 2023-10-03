@@ -6,8 +6,8 @@ import jua.compiler.Items.Item;
 import jua.compiler.Items.SafeItem;
 import jua.compiler.ModuleScope.ConstantSymbol;
 import jua.compiler.Tree.*;
-import jua.utils.Assert;
-import jua.utils.JuaList;
+import jua.runtime.utils.Assert;
+import jua.compiler.utils.JuaList;
 
 import java.util.ArrayList;
 

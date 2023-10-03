@@ -2,14 +2,13 @@ package jua.compiler;
 
 import jua.compiler.Tree.ConstDef;
 import jua.compiler.Tree.FuncDef;
-import jua.interpreter.memory.Address;
-import jua.interpreter.memory.AddressUtils;
+import jua.runtime.interpreter.memory.Address;
+import jua.runtime.interpreter.memory.AddressUtils;
 import jua.runtime.ConstantMemory;
 import jua.runtime.Function;
 import jua.runtime.VirtualMachine;
-import jua.utils.JuaList;
+import jua.compiler.utils.JuaList;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 

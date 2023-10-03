@@ -4,11 +4,11 @@ import jua.compiler.InstructionUtils.IndexedInstrNode;
 import jua.compiler.InstructionUtils.InstrNode;
 import jua.compiler.InstructionUtils.JumpInstrNode;
 import jua.compiler.InstructionUtils.SingleInstrNode;
-import jua.interpreter.memory.Address;
-import jua.interpreter.memory.AddressUtils;
+import jua.runtime.interpreter.memory.Address;
+import jua.runtime.interpreter.memory.AddressUtils;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.LineNumberTable;
-import jua.utils.Assert;
+import jua.runtime.utils.Assert;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

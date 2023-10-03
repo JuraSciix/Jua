@@ -2,7 +2,7 @@ package jua.compiler;
 
 import jua.compiler.ModuleScope.FunctionSymbol;
 import jua.compiler.Tree.*;
-import jua.utils.Assert;
+import jua.runtime.utils.Assert;
 
 import static jua.compiler.TreeInfo.*;
 

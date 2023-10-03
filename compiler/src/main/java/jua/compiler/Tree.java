@@ -3,7 +3,7 @@ package jua.compiler;
 import jua.compiler.ModuleScope.ConstantSymbol;
 import jua.compiler.ModuleScope.FunctionSymbol;
 import jua.compiler.ModuleScope.VarSymbol;
-import jua.utils.JuaList;
+import jua.compiler.utils.JuaList;
 
 public abstract class Tree {
 

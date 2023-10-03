@@ -3,8 +3,8 @@ package jua.compiler;
 import jua.compiler.Tokens.Token;
 import jua.compiler.Tokens.TokenType;
 import jua.compiler.Tree.*;
-import jua.utils.Conversions;
-import jua.utils.JuaList;
+import jua.runtime.utils.Conversions;
+import jua.compiler.utils.JuaList;
 
 import java.util.stream.Collectors;
 

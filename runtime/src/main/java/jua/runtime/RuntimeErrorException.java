@@ -1,6 +1,6 @@
 package jua.runtime;
 
-import jua.interpreter.InterpreterThread;
+import jua.runtime.interpreter.InterpreterThread;
 
 import java.util.Objects;
 

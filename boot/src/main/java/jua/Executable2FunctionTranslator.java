@@ -2,9 +2,9 @@ package jua;
 
 import jua.compiler.Executable;
 import jua.compiler.InstructionUtils;
-import jua.interpreter.instruction.Instruction;
-import jua.interpreter.memory.Address;
-import jua.interpreter.memory.AddressUtils;
+import jua.runtime.interpreter.instruction.Instruction;
+import jua.runtime.interpreter.memory.Address;
+import jua.runtime.interpreter.memory.AddressUtils;
 import jua.runtime.Function;
 import jua.runtime.code.CodeData;
 

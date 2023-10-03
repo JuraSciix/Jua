@@ -1,6 +1,6 @@
 package jua.compiler;
 
-import jua.utils.StringUtils;
+import jua.runtime.utils.StringUtils;
 
 import java.io.PrintStream;
 import java.io.PrintWriter;

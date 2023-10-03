@@ -3,7 +3,7 @@ package jua.compiler;
 import jua.compiler.ModuleScope.ConstantSymbol;
 import jua.compiler.SemanticInfo.BooleanEquivalent;
 import jua.compiler.Tree.*;
-import jua.utils.JuaList;
+import jua.compiler.utils.JuaList;
 
 import java.util.Objects;
 

@@ -1,8 +1,8 @@
 package jua.runtime.heap;
 
-import jua.interpreter.memory.Address;
-import jua.interpreter.memory.AddressUtils;
-import jua.interpreter.InterpreterThread;
+import jua.runtime.interpreter.memory.Address;
+import jua.runtime.interpreter.memory.AddressUtils;
+import jua.runtime.interpreter.InterpreterThread;
 import jua.runtime.Types;
 
 import java.util.HashMap;

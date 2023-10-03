@@ -1,7 +1,7 @@
 package jua.compiler;
 
 import jua.runtime.code.ConstantPool;
-import jua.utils.Pool;
+import jua.compiler.utils.Pool;
 
 public class ConstantPoolWriter {
 

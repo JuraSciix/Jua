@@ -1,7 +1,7 @@
 package jua.runtime.heap;
 
-import jua.interpreter.memory.Address;
-import jua.interpreter.memory.AddressUtils;
+import jua.runtime.interpreter.memory.Address;
+import jua.runtime.interpreter.memory.AddressUtils;
 
 import java.util.Arrays;
 import java.util.Iterator;

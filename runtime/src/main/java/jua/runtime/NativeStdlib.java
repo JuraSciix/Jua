@@ -1,12 +1,12 @@
 package jua.runtime;
 
-import jua.interpreter.memory.Address;
-import jua.interpreter.InterpreterThread;
+import jua.runtime.interpreter.memory.Address;
+import jua.runtime.interpreter.InterpreterThread;
 import jua.runtime.NativeSupport.NativeFunctionPresent;
 import jua.runtime.NativeSupport.ParamsData;
 import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.StringHeap;
-import jua.utils.ObjectSizeAnalyzing;
+import jua.runtime.utils.ObjectSizeAnalyzing;
 
 import java.util.ArrayList;
 import java.util.Collections;

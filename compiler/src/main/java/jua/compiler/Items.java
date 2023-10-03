@@ -3,8 +3,6 @@ package jua.compiler;
 import jua.compiler.Code.Chain;
 import jua.compiler.InstructionUtils.OPCodes;
 import jua.compiler.Tree.Tag;
-import jua.interpreter.instruction.*;
-import jua.interpreter.instruction.InstructionImpls.*;
 
 import java.util.Objects;
 

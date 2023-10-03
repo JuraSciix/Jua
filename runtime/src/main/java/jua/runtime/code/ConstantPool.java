@@ -1,6 +1,6 @@
 package jua.runtime.code;
 
-import jua.interpreter.memory.Address;
+import jua.runtime.interpreter.memory.Address;
 import jua.runtime.Function;
 
 public final class ConstantPool {

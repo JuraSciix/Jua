@@ -1,8 +1,8 @@
 package jua;
 
 import jua.compiler.InstructionUtils.*;
-import jua.interpreter.instruction.Instruction;
-import jua.interpreter.instruction.InstructionImpls.*;
+import jua.runtime.interpreter.instruction.Instruction;
+import jua.runtime.interpreter.instruction.InstructionImpls.*;
 
 import java.util.ArrayList;
 import java.util.List;
