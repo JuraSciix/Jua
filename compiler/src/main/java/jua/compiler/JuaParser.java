@@ -4,7 +4,7 @@ import jua.compiler.Tokens.Token;
 import jua.compiler.Tokens.TokenType;
 import jua.compiler.Tree.*;
 import jua.utils.Conversions;
-import jua.utils.List;
+import jua.utils.JuaList;
 
 import java.util.stream.Collectors;
 
@@ -41,9 +41,9 @@ public final class JuaParser {
     }
 
     public CompilationUnit parseCompilationUnit() {
-        List<Statement> stats = new List<>();
-        List<FuncDef> funcDefs = new List<>();
-        List<ConstDef> constDefs = new List<>();
+        JuaList<Statement> stats = new JuaList<>();
+        JuaList<FuncDef> funcDefs = new JuaList<>();
+        JuaList<ConstDef> constDefs = new JuaList<>();
         nextToken();
 
         int pos = token.pos;
@@ -133,7 +133,7 @@ public final class JuaParser {
             }
             case SEMI: {
                 nextToken();
-                return new Block(pos, new List<>());
+                return new Block(pos, new JuaList<>());
             }
             case SWITCH: {
                 nextToken();
@@ -156,7 +156,7 @@ public final class JuaParser {
     }
 
     private VarDef parseVar(int pos) {
-        List<VarDef.Definition> defs = new List<>();
+        JuaList<VarDef.Definition> defs = new JuaList<>();
         do {
             Token name = token;
             expectToken(IDENTIFIER);
@@ -176,7 +176,7 @@ public final class JuaParser {
     }
 
     private ConstDef parseConst(int position) {
-        List<ConstDef.Definition> definitions = new List<>();
+        JuaList<ConstDef.Definition> definitions = new JuaList<>();
 
         do {
             try {
@@ -221,7 +221,7 @@ public final class JuaParser {
         Name funcName = token.toName();
         expectToken(IDENTIFIER);
         expectToken(LPAREN);
-        List<FuncDef.Parameter> params = new List<>();
+        JuaList<FuncDef.Parameter> params = new JuaList<>();
         boolean comma = false, optionalState = false;
 
         while (!acceptToken(RPAREN)) {
@@ -258,8 +258,8 @@ public final class JuaParser {
         return null;
     }
 
-    private List<Statement> parseStatements() {
-        List<Statement> expressions = new List<>();
+    private JuaList<Statement> parseStatements() {
+        JuaList<Statement> expressions = new JuaList<>();
 
         do {
             expressions.add(parseStatement());
@@ -268,8 +268,8 @@ public final class JuaParser {
         return expressions;
     }
 
-    private List<Statement> parseForInit() {
-        List<Statement> init = List.empty();
+    private JuaList<Statement> parseForInit() {
+        JuaList<Statement> init = JuaList.empty();
         int pos = token.pos;
         if (acceptToken(VAR)) {
             init.add(parseVar(pos));
@@ -287,7 +287,7 @@ public final class JuaParser {
 
     private Statement parseFor(int position) {
         boolean parens = acceptToken(LPAREN);
-        List<Statement> init = acceptToken(SEMI) ? List.empty() : parseForInit();
+        JuaList<Statement> init = acceptToken(SEMI) ? JuaList.empty() : parseForInit();
 
         Expression cond = null;
 
@@ -295,7 +295,7 @@ public final class JuaParser {
             cond = parseExpression();
             expectToken(SEMI);
         }
-        List<Expression> step = null;
+        JuaList<Expression> step = null;
 
         if (parens) {
             if (!acceptToken(RPAREN)) {
@@ -319,7 +319,7 @@ public final class JuaParser {
     }
 
     private Statement parseBlock(int position) {
-        List<Statement> statements = new List<>();
+        JuaList<Statement> statements = new JuaList<>();
 
         while (!acceptToken(RBRACE)) {
             if (acceptToken(EOF)) {
@@ -350,7 +350,7 @@ public final class JuaParser {
 
     private Statement parseSwitch(int position) {
         Expression selector = parseExpression();
-        List<Case> cases = new List<>();
+        JuaList<Case> cases = new JuaList<>();
         expectToken(LBRACE);
 
         while (!acceptToken(RBRACE)) {
@@ -371,14 +371,14 @@ public final class JuaParser {
             } else if (acceptToken(EOF)) {
                 expectToken(RBRACE);
             } else {
-                unexpected(token, List.of(CASE, DEFAULT, RBRACE));
+                unexpected(token, JuaList.of(CASE, DEFAULT, RBRACE));
             }
         }
         return new Switch(position, selector, cases);
     }
 
     private Case parseCase(int position, boolean isDefault) {
-        List<Expression> expressions = null;
+        JuaList<Expression> expressions = null;
 
         if (!isDefault) {
             expressions = parseExpressions();
@@ -395,8 +395,8 @@ public final class JuaParser {
         return new Discarded(position, expr);
     }
 
-    private List<Expression> parseExpressions() {
-        List<Expression> expressions = new List<>();
+    private JuaList<Expression> parseExpressions() {
+        JuaList<Expression> expressions = new JuaList<>();
 
         do {
             expressions.add(parseExpression());
@@ -691,7 +691,7 @@ public final class JuaParser {
         Expression expr = parseAccess();
 
         if (acceptToken(LPAREN)) {
-            List<Invocation.Argument> args = parseInvocationArgs();
+            JuaList<Invocation.Argument> args = parseInvocationArgs();
             expectToken(RPAREN);
             return new Invocation(pos, expr, args);
         }
@@ -769,7 +769,7 @@ public final class JuaParser {
                 return new Literal(token.pos, true);
             }
             default:
-                unexpected(token, List.of(
+                unexpected(token, JuaList.of(
                         FALSE, FLOATLITERAL, IDENTIFIER,
                         INTLITERAL, LBRACE, LBRACKET,
                         LPAREN, NULL, STRINGLITERAL, TRUE
@@ -793,8 +793,8 @@ public final class JuaParser {
         return new Var(token.pos, token.toName());
     }
 
-    private List<Invocation.Argument> parseInvocationArgs() {
-        List<Invocation.Argument> args = new List<>();
+    private JuaList<Invocation.Argument> parseInvocationArgs() {
+        JuaList<Invocation.Argument> args = new JuaList<>();
         boolean comma = false;
 
         while (!matchesToken(RPAREN)) {
@@ -821,7 +821,7 @@ public final class JuaParser {
     }
 
     private Expression parseInvocation(Token token) {
-        List<Invocation.Argument> args = parseInvocationArgs();
+        JuaList<Invocation.Argument> args = parseInvocationArgs();
         expectToken(RPAREN);
         return new Invocation(token.pos,
                 new MemberAccess(token.pos, Tag.MEMACCESS, null, token.toName()),
@@ -839,7 +839,7 @@ public final class JuaParser {
     }
 
     private ListLiteral parseListInit(int pos) {
-        List<Expression> entries = new List<>();
+        JuaList<Expression> entries = new JuaList<>();
         if (!acceptToken(RBRACKET)) {
             do {
                 entries.add(parseExpression());
@@ -852,14 +852,14 @@ public final class JuaParser {
                 if (acceptToken(RBRACKET)) {
                     break;
                 }
-                unexpected(token, List.of(COMMA, RBRACKET));
+                unexpected(token, JuaList.of(COMMA, RBRACKET));
             } while (true);
         }
         return new ListLiteral(pos, entries);
     }
 
     private MapLiteral parseMapInit(int pos) {
-        List<MapLiteral.Entry> entries = new List<>();
+        JuaList<MapLiteral.Entry> entries = new JuaList<>();
         if (!acceptToken(RBRACE)) {
             do {
                 int entryPos = token.pos;
@@ -881,7 +881,7 @@ public final class JuaParser {
                             key = new Literal(token.pos, token.name());
                             break;
                         default:
-                            unexpected(token, List.of(FLOATLITERAL, INTLITERAL, IDENTIFIER));
+                            unexpected(token, JuaList.of(FLOATLITERAL, INTLITERAL, IDENTIFIER));
                             throw new AssertionError(); // UNREACHABLE
                     }
                     nextToken();
@@ -901,7 +901,7 @@ public final class JuaParser {
                 if (acceptToken(RBRACE)) {
                     break;
                 }
-                unexpected(token, List.of(COMMA, RBRACE));
+                unexpected(token, JuaList.of(COMMA, RBRACE));
             } while (true);
         }
         return new MapLiteral(pos, entries);
@@ -979,7 +979,7 @@ public final class JuaParser {
         pError(token.pos, "unexpected " + token2string(token) + '.');
     }
 
-    private void unexpected(Token foundToken, List<TokenType> expectedTypes) {
+    private void unexpected(Token foundToken, JuaList<TokenType> expectedTypes) {
         String expects = expectedTypes
                 .stream()
                 .map(JuaParser::type2string)

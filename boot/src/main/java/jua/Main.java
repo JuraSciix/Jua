@@ -1,80 +1,106 @@
 package jua;
 
+import jua.compiler.ModulePrinter;
 import jua.compiler.JuaCompiler;
 import jua.compiler.Module;
-import jua.runtime.RuntimeErrorException;
+import jua.compiler.ModuleScope;
+import jua.compiler.ModuleScope.FunctionSymbol;
+import jua.interpreter.InterpreterThread;
+import jua.interpreter.memory.Address;
+import jua.runtime.ConstantMemory;
+import jua.runtime.Function;
+import jua.runtime.JuaEnvironment;
+import jua.runtime.NativeStdlib;
 
 import java.io.File;
-import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Main {
 
-    // todo: jua test.jua -p=examples
+    private static Module module;
+    private static final Map<Integer, Function> nativeFunctions = new HashMap<>();
 
-    public static final String NAME = "Jua";
-    // todo: Разделить версию на мажорную и минорную
-    public static final String VERSION = "1.95.209";
 
-    public static String binary() {
-        return NAME;
+    public static void main(String[] args) {
+        parseOptions(args);
+        targetFile();
+        compile();
+        interpret();
     }
 
-    public static String version() {
-        return VERSION;
-    }
-
-    // todo: Мне лень сейчас обработкой исключений заниматься..
-    public static void main(String[] args) throws IOException {
+    private static void parseOptions(String[] args) {
         try {
             Options.bind(args);
-        } catch (IllegalArgumentException e) {
-            error("unrecognized option: " + e.getMessage());
-        } catch (Throwable t) {
-            error("can't parse console arguments: " + t);
-        }
-
-        // todo: Работа с несколькими файлами одновременно
-
-        File file = testTargetFile();
-        JuaCompiler compiler = new JuaCompiler();
-        compiler.setFile(file.getName());
-        compiler.setCharset(Options.charset());
-        compiler.setLintMode(Options.isLintEnabled());
-        compiler.setPrettyTreeMode(Options.isShouldPrettyTree());
-        compiler.setLogLimit(Options.logMaxErrors());
-        compiler.setGenJvmLoops(Options.genJvmLoops());
-        Module result = compiler.compile();
-
-        if (result == null) return;
-        if (Options.isShouldPrintCode()) {
-            result.print();
-            return;
-        }
-        try {
-            result.run();
-        } catch (RuntimeErrorException e) {
-            // todo: Починить вывод который влад сломал
-            e.printStackTrace();
+        } catch (RuntimeException e) {
+            System.err.println("Unable to parse options: " + e);
+            System.exit(1);
         }
     }
 
-    private static File testTargetFile() {
-        String filename = Options.firstFile();
-
-        if (filename == null) {
-            error("main file not specified.");
-            throw new ThreadDeath(); // avoiding warnings
-        }
-        File file = new File(filename);
-
+    private static void targetFile() {
+        File file = new File(Options.firstFile());
         if (!file.isFile()) {
-            error("main file not found.");
+            System.err.println("Unable to find file " + Options.firstFile());
+            System.exit(1);
         }
-        return file;
     }
 
-    private static void error(String message) {
-        System.err.printf("Error: %s%n", message);
-        System.exit(1);
+    private static void compile() {
+        JuaCompiler c = new JuaCompiler();
+        c.setCharset(Options.charset());
+        c.setFile(Options.firstFile());
+        c.setGenJvmLoops(Options.genJvmLoops());
+        c.setStderr(System.err);
+        c.setStdout(System.out);
+        c.setLintMode(Options.isLintEnabled());
+//        c.setPrettyTreeMode(Options.isShouldPrettyTree());
+        c.setLogLimit(Options.logMaxErrors());
+
+        // Регистрируем нативные члены.
+        ModuleScope ms = c.getModuleScope();
+        for (Map.Entry<String, Address> cm : NativeStdlib.getNativeConstants().entrySet()) {
+            // Все константы будут встроены в код.
+            ms.defineNativeConstant(cm.getKey(), cm.getValue().toObject());
+        }
+        for (Function function : NativeStdlib.getNativeFunctions()) {
+            FunctionSymbol sym = ms.defineNativeFunction(function);
+            nativeFunctions.put(sym.id, function);
+        }
+
+        module = c.compile();
+        if (module == null) {
+            // todo: Сделать нормальную проверку на ошибку компиляции.
+            System.exit(1);
+        }
+
+        if (Options.isShouldPrintCode()) {
+            ModulePrinter.printModule(module);
+            System.exit(1);
+        }
+    }
+
+    private static void interpret() {
+        ConstantMemory[] constants = module.constants;
+        Function[] functions = Arrays.stream(module.executables)
+                .map(Executable2FunctionTranslator::translate)
+                .toArray(Function[]::new);
+
+        // Привязываем нативные функции к их дескрипторам.
+        for (Map.Entry<Integer, Function> nativeFn : nativeFunctions.entrySet()) {
+            assert functions[nativeFn.getKey()] == null;
+            functions[nativeFn.getKey()] = nativeFn.getValue();
+        }
+
+        Function mainFn = Arrays.stream(functions)
+                .filter(f -> f.name.equals("<main>"))
+                .findAny().orElseThrow(AssertionError::new);
+
+        JuaEnvironment env = new JuaEnvironment(functions, constants);
+        InterpreterThread thread = new InterpreterThread(Thread.currentThread(), env);
+        Address response = new Address();
+        thread.callAndWait(mainFn, new Address[0], response);
+        // Если будет интересно, что вернул код, то можно напечатать response.
     }
 }

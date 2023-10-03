@@ -6,28 +6,29 @@ import jua.interpreter.memory.Address;
 import jua.interpreter.memory.AddressUtils;
 import jua.runtime.ConstantMemory;
 import jua.runtime.Function;
-import jua.runtime.NativeStdlib;
 import jua.runtime.VirtualMachine;
-import jua.utils.List;
+import jua.utils.JuaList;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-public final class ProgramScope {
+public final class ModuleScope {
 
     // todo: Переместить все классы *Symbol в отдельный файл Symbols.java
+    // todo: Убрать числовые идентификаторы у функций. Они должны определяться во время выполнения.
 
     public static class FunctionSymbol {
 
-        final String name;
-        final int id;
-        final int minArgc, maxArgc;
-        final List<String> params; // null if tree is null
-        Function runtimefunc;
-        Code code;
+        public final String name;
+        public final int id;
+        public final int minArgc, maxArgc;
+        public final JuaList<String> params; // null if tree is null
+        public Code code;
 
-        FunctionSymbol(String name, int id, int minArgc, int maxArgc, List<String> params) {
+        public Executable executable;
+
+        FunctionSymbol(String name, int id, int minArgc, int maxArgc, JuaList<String> params) {
             this.name = name;
             this.id = id;
             this.minArgc = minArgc;
@@ -61,14 +62,13 @@ public final class ProgramScope {
         }
     }
 
-    private final HashMap<String, FunctionSymbol> functions = new HashMap<>();
+    private final LinkedHashMap<String, FunctionSymbol> functions = new LinkedHashMap<>();
     private int funcnextaddr = 0;
-    private final HashMap<String, ConstantSymbol> constants = new HashMap<>();
+    private final LinkedHashMap<String, ConstantSymbol> constants = new LinkedHashMap<>();
     private int constnextaddr = 0;
 
-    public ProgramScope() {
+    public ModuleScope() {
         registerOperators();
-        registerNatives();
     }
 
     private void registerOperators() {
@@ -77,22 +77,15 @@ public final class ProgramScope {
                 -1,
                 1,
                 1,
-                List.of("value")
+                JuaList.of("value")
         ));
         functions.put("list", new FunctionSymbol(
                 "list",
                 -1,
                 1,
                 1,
-                List.of("size")
+                JuaList.of("size")
         ));
-    }
-
-    private void registerNatives() {
-        NativeStdlib.getNativeConstants().entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toObject()))
-                        .forEach(this::defineNativeConstant);
-        NativeStdlib.getNativeFunctions().forEach(this::defineNativeFunction);
     }
 
     public boolean isConstantDefined(Name name) {
@@ -130,9 +123,8 @@ public final class ProgramScope {
                 nextId,
                 function.minArgc,
                 function.maxArgc,
-                List.of(function.params)
+                JuaList.of(function.params)
         );
-        sym.runtimefunc = function;
         functions.put(name, sym);
         return sym;
     }
@@ -157,7 +149,7 @@ public final class ProgramScope {
         // The legacy code is present below
         int minargs = tree.params.count();
         int maxargs = 0;
-        List<String> params = new List<>();
+        JuaList<String> params = new JuaList<>();
         for (FuncDef.Parameter param : tree.params) {
             params.add(param.name.toString());
             if (param.expr != null && minargs > maxargs) {
@@ -209,14 +201,20 @@ public final class ProgramScope {
         return functions.get(name.toString());
     }
 
-    public Function[] collectFunctions() {
-        Function[] functions = new Function[funcnextaddr];
+    public Executable[] collectExecutables() {
+        Executable[] executables = new Executable[funcnextaddr];
         this.functions.values().forEach(symbol -> {
-            if (symbol.runtimefunc != null) {
-                functions[symbol.id] = symbol.runtimefunc;
-            }
+            if (symbol.id < 0) return;
+            executables[symbol.id] = symbol.executable;
         });
-        return functions;
+        return executables;
+    }
+
+    public String[] functionNames() {
+        return functions.entrySet().stream()
+                .filter(e -> e.getValue().id >= 0)
+                .map(Map.Entry::getKey)
+                .toArray(String[]::new);
     }
 
     public ConstantMemory[] collectConstants() {

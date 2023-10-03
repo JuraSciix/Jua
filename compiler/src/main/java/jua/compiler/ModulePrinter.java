@@ -1,18 +1,14 @@
 package jua.compiler;
 
-import jua.interpreter.instruction.Instruction;
-import jua.interpreter.instruction.InstructionPrinter;
-import jua.runtime.Function;
-import jua.runtime.code.CodeData;
-import jua.utils.Assert;
-
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.stream.Collectors;
 
-public class InstructionPrinterImpl implements InstructionPrinter {
+import static jua.compiler.InstructionUtils.*;
+
+public class ModulePrinter {
 
     private static final boolean PRINT_STACK_ADJUSTMENT = true;
 
@@ -30,7 +26,7 @@ public class InstructionPrinterImpl implements InstructionPrinter {
             if (operands == null)
                 return "default -> " + casePC;
             String agentLiterals = Arrays.stream(operands)
-                    .mapToObj(index -> function.userCode().constantPool.getAddressEntry(index).toBeautifulString())
+                    .mapToObj(index -> executable.constantPool.getAddressEntry(index).toBeautifulString())
                     .collect(Collectors.joining(", "));
             return String.format("%s -> %d", agentLiterals, casePC);
         }
@@ -42,7 +38,7 @@ public class InstructionPrinterImpl implements InstructionPrinter {
         final Collection<Case> cases = new LinkedList<>();
 
         void doPrint() {
-            int line = function.userCode().lineNumTable.getLineNumber(pc);
+            int line = executable.lineNumberTable.getLineNumber(pc);
             if (curLineNum != line) {
                 k("L%-5d ", line);
                 curLineNum = line;
@@ -88,41 +84,78 @@ public class InstructionPrinterImpl implements InstructionPrinter {
     }
 
     public static void printModule(Module module) {
-        InstructionPrinterImpl printer = new InstructionPrinterImpl(module, System.out);
+        ModulePrinter printer = new ModulePrinter(module, System.out);
         printer.f("Source \"%s\": %n", module.source.fileName);
         printer.adjustIndent(2);
-        printer.printFunction(module.main);
-        for (Function function : module.functions) {
-            Assert.check(function != null, "module contains null-reference function");
-            if ((function.flags & Function.FLAG_NATIVE) != 0) {
+        for (Executable executable : module.executables) {
+            if (executable == null) {
+                // Native.
                 continue;
             }
-            printer.printFunction(function);
+            printer.printFunction(executable);
         }
         printer.adjustIndent(-2);
     }
 
-    private void printFunction(Function function) {
-        this.function = function;
+    private class InstrNodePrinter implements InstrVisitor {
+
+        @Override
+        public void visitJump(JumpInstrNode node) {
+            printOPCode(node.opcode);
+            printCp(node.offset);
+        }
+
+        @Override
+        public void visitSingle(SingleInstrNode node) {
+            printOPCode(node.opcode);
+        }
+
+        @Override
+        public void visitCall(CallInstrNode node) {
+            printOPCode(node.opcode); // node.opcode always must be OPCodes.Call
+            printFuncRef(node.callee);
+            print(node.argc);
+        }
+
+        @Override
+        public void visitIndexed(IndexedInstrNode node) {
+            printOPCode(node.opcode);
+            if (node.opcode == OPCodes.GetConst) {
+                // todo: remove getconst
+                printConstRef(node.index);
+            } else {
+                printLocal(node.index);
+            }
+        }
+
+        @Override
+        public void visitConst(ConstantInstrNode node) {
+            printOPCode(node.opcode);
+            printLiteral(node.index);
+        }
+    }
+
+    private void printFunction(Executable executable) {
+        this.executable = executable;
         beginFunction();
         // Сбрасываем поля.
         tos = 0;
         tosAdjustment = 0;
         pc = 0;
         curLineNum = 0;
-        CodeData code = function.userCode();
-        for (int i = 0; i < code.code.length; i++) {
+        InstrNodePrinter printer = new InstrNodePrinter();
+        for (int i = 0; i < executable.code.length; i++) {
             initPrinter();
-            Instruction instr = code.code[i];
+            InstrNode node = executable.code[i];
             pc = i;
             while (tosRestoring != null && tosRestoring.pc <= pc) {
 //                System.out.printf("Restoring TOS at PC=%d, TOS=%d %n", pc, tosRestoring.tos);
                 tos = tosRestoring.tos;
                 tosRestoring = tosRestoring.next;
             }
-            tosAdjustment = instr.stackAdjustment();
+            tosAdjustment = node.stackAdjustment();
             tos += tosAdjustment;
-            instr.print(this);
+            node.accept(printer);
             instrData.doPrint();
         }
         endFunction();
@@ -140,11 +173,11 @@ public class InstructionPrinterImpl implements InstructionPrinter {
     private char[] indentString = new char[0];
     private TosRestoring tosRestoring;
 
-    Function function;
+    Executable executable;
     int pc = 0, tos = 0, tosAdjustment;
     int curLineNum = 0;
 
-    private InstructionPrinterImpl(Module module, PrintStream stream) {
+    private ModulePrinter(Module module, PrintStream stream) {
         this.module = module;
         this.stream = stream;
     }
@@ -158,13 +191,12 @@ public class InstructionPrinterImpl implements InstructionPrinter {
     }
 
     private void beginFunction() {
-        String sig = String.join(", ", Arrays.copyOf(function.userCode().localNames, function.maxArgc));
-        CodeData code = function.userCode();
-        f("fn %s(%s): %n", function.name, sig);                      // fn sum(a, b):
+        String sig = String.join(", ", Arrays.copyOf(executable.varnames, executable.totargs));
+        f("fn %s(%s): %n", executable.name, sig);                      // fn sum(a, b):
         adjustIndent(2);                                              //   _
         f("Code: %n");                                               //   Code:
         adjustIndent(2);                                              //     _
-        f("stack=%d, locals=%d %n", code.stack, code.locals); //     stack=2, locals=0
+        f("stack=%d, locals=%d %n", executable.stackSize, executable.reqargs); //     stack=2, locals=0
         adjustIndent(2);                                              //       _
     }
 
@@ -190,59 +222,48 @@ public class InstructionPrinterImpl implements InstructionPrinter {
         stream.printf(str, args);
     }
 
-    @Override
-    public void printName(String name) {
-        instrData.name = name;
+    public void printOPCode(int opcode) {
+        instrData.name = getOpcodeName(opcode);
     }
 
-    @Override
     public void printLocal(int index) {
-        instrData.operands.add(function.userCode().localNames[index]);
+        instrData.operands.add(executable.varnames[index]);
     }
 
-    @Override
     public void printCp(int offsetJump) {
         print(String.valueOf(offsetJump));
     }
 
-    @Override
     public void print(Object operand) {
         instrData.operands.add(String.valueOf(operand));
     }
 
-    @Override
     public void restoreTosIn(int offset) {
         if (offset > 0) {
             tosRestoring = mergeTos(tosRestoring, new TosRestoring(pc + offset, tos, null));
         }
     }
 
-    @Override
     public void printCase(int[] operands, int offsetJump) {
         instrData.cases.add(new Case(operands, pc + offsetJump));
     }
 
-    @Override
     public void printLiteral(int index) {
-        instrData.operands.add(function.userCode().constantPool.getAddressEntry(index).toBeautifulString());
+        instrData.operands.add(executable.constantPool.getAddressEntry(index).toBeautifulString());
     }
 
-    @Override
     public void beginSwitch() {
 
     }
 
-    @Override
     public void endSwitch() {
 
     }
 
-    @Override
     public void printFuncRef(int index) {
-        instrData.operands.add('"' + module.functions[index].name + '"');
+        instrData.operands.add('"' + module.functionNames[index] + '"');
     }
 
-    @Override
     public void printConstRef(int index) {
         instrData.operands.add('"' + module.constants[index].name + '"');
     }

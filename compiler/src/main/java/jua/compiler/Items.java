@@ -1,6 +1,7 @@
 package jua.compiler;
 
 import jua.compiler.Code.Chain;
+import jua.compiler.InstructionUtils.OPCodes;
 import jua.compiler.Tree.Tag;
 import jua.interpreter.instruction.*;
 import jua.interpreter.instruction.InstructionImpls.*;
@@ -8,7 +9,6 @@ import jua.interpreter.instruction.InstructionImpls.*;
 import java.util.Objects;
 
 import static jua.compiler.Code.mergeChains;
-import static jua.compiler.InstructionUtils.InstructionFactory.*;
 import static jua.compiler.InstructionUtils.arrayIncreaseFromTag;
 import static jua.compiler.InstructionUtils.increaseFromTag;
 
@@ -55,12 +55,12 @@ public final class Items {
 
         CondItem asCond() {
             load();
-            return new CondItem(new IfNz(0));
+            return new CondItem(OPCodes.IfNz);
         }
 
         CondItem asNonNullCond() {
             load();
-            return new CondItem(new IfNonNull(0));
+            return new CondItem(OPCodes.IfNonNull);
         }
 
         CondItem asPresentCond() {
@@ -93,12 +93,12 @@ public final class Items {
 
         @Override
         void drop() {
-            code.addInstruction(pop);
+            code.emitSingle(OPCodes.Pop);
         }
 
         @Override
         void duplicate() {
-            code.addInstruction(dup);
+            code.emitSingle(OPCodes.Dup);
         }
     }
 
@@ -113,15 +113,15 @@ public final class Items {
         Item load() {
             code.markTreePos(tree);
             if (value == null) {
-                code.addInstruction(const_null);
+                code.emitSingle(OPCodes.ConstNull);
             } else if (value == Boolean.TRUE) {
-                code.addInstruction(const_true);
+                code.emitSingle(OPCodes.ConstTrue);
             } else if (value == Boolean.FALSE) {
-                code.addInstruction(const_false);
+                code.emitSingle(OPCodes.ConstFalse);
             } else if (value.getClass() == Long.class && -1 <= ((long) value) && ((long) value) <= 2) {
-                code.addInstruction(const_ix[((Long) value).intValue() + 1]);
+                code.emitSingle(OPCodes.ConstIntM1 + ((Long) value).intValue() + 1);
             } else {
-                code.addInstruction(new Push(constantIndex()));
+                code.emitConst(constantIndex());
             }
             return mkStackItem();
         }
@@ -149,7 +149,11 @@ public final class Items {
         @Override
         Item load() {
             code.markTreePos(tree);
-            code.addInstruction((index <= 2) ? load_x[index] : new Load(index));
+            if (index <= 2) {
+                code.emitSingle(OPCodes.Load0 + index);
+            } else {
+                code.emitIndexed(OPCodes.Load, index);
+            }
             return mkStackItem();
         }
 
@@ -163,18 +167,17 @@ public final class Items {
 
         @Override
         void stash() {
-            code.addInstruction(dup);
+            code.emitSingle(OPCodes.Dup);
         }
 
         @Override
         void store() {
             code.markTreePos(tree);
-            code.addInstruction((index <= 2) ? store_x[index] : new Store(index));
-        }
-
-        @Override
-        CondItem asPresentCond() {
-            return asNonNullCond();
+            if (index <= 2) {
+                code.emitSingle(OPCodes.Store0 + index);
+            } else {
+                code.emitIndexed(OPCodes.Store, index);
+            }
         }
 
         @Override
@@ -213,7 +216,7 @@ public final class Items {
 
         @Override
         void drop() {
-            code.addInstruction(increaseFromTag(increaseTag, item.index));
+            code.emitIndexed(increaseFromTag(increaseTag), item.index);
         }
     }
 
@@ -222,24 +225,24 @@ public final class Items {
         @Override
         Item load() {
             code.markTreePos(tree);
-            code.addInstruction(aload);
+            code.emitSingle(OPCodes.ArrayLoad);
             return mkStackItem();
         }
 
         @Override
         void drop() {
-            code.addInstruction(pop2);
+            code.emitSingle(OPCodes.Pop2);
         }
 
         @Override
         void store() {
             code.markTreePos(tree);
-            code.addInstruction(astore);
+            code.emitSingle(OPCodes.ArrayStore);
         }
 
         @Override
         CondItem asPresentCond() {
-            return new CondItem(new IfPresent(0));
+            return new CondItem(OPCodes.IfPresent);
         }
 
         @Override
@@ -254,12 +257,12 @@ public final class Items {
 
         @Override
         void duplicate() {
-            code.addInstruction(dup2);
+            code.emitSingle(OPCodes.Dup2);
         }
 
         @Override
         void stash() {
-            code.addInstruction(dup_x2);
+            code.emitSingle(OPCodes.DupX2);
         }
     }
 
@@ -274,19 +277,19 @@ public final class Items {
         Item load() {
             // adec/ainc оставляют после себя старое значение.
             if (increaseTag == Tag.PREINC || increaseTag == Tag.PREDEC) {
-                code.addInstruction(dup2);
+                code.emitSingle(OPCodes.Dup2);
                 drop();
-                code.addInstruction(aload);
+                code.emitSingle(OPCodes.ArrayLoad);
             } else {
-                code.addInstruction(arrayIncreaseFromTag(increaseTag));
+                code.emitSingle(arrayIncreaseFromTag(increaseTag));
             }
             return mkStackItem();
         }
 
         @Override
         void drop() {
-            code.addInstruction(arrayIncreaseFromTag(increaseTag));
-            code.addInstruction(pop);
+            code.emitSingle(arrayIncreaseFromTag(increaseTag));
+            code.emitSingle(OPCodes.Pop);
         }
     }
 
@@ -299,21 +302,21 @@ public final class Items {
 
         @Override
         Item load() {
-            code.addInstruction(dup_x2);
-            code.addInstruction(astore);
-            Chain exitChain = code.branch(new InstructionImpls.Goto(0));
+            code.emitSingle(OPCodes.DupX2);
+            code.emitSingle(OPCodes.ArrayStore);
+            Chain exitChain = code.branch(OPCodes.Goto);
             code.resolve(skipCoalesceChain);
-            code.addInstruction(aload);
+            code.emitSingle(OPCodes.ArrayLoad);
             code.resolve(exitChain);
             return mkStackItem();
         }
 
         @Override
         void drop() {
-            code.addInstruction(astore);
-            Chain exitChain = code.branch(new Goto(0));
+            code.emitSingle(OPCodes.ArrayStore);
+            Chain exitChain = code.branch(OPCodes.Goto);
             code.resolve(skipCoalesceChain);
-            code.addInstruction(pop2);
+            code.emitSingle(OPCodes.Pop2);
             code.resolve(exitChain);
         }
     }
@@ -338,7 +341,7 @@ public final class Items {
         @Override
         Item load() {
             Item load = child.load();
-            Chain skipCoalesceLoadChain = code.branch(new Goto(0));
+            Chain skipCoalesceLoadChain = code.branch(OPCodes.Goto);
             code.resolve(coalesceChain);
             load.drop();
             coalesce.load();
@@ -379,15 +382,15 @@ public final class Items {
      * Условное разветвление.
      */
     class CondItem extends Item {
-        final JumpInstruction opcode;
+        final int opcode;
         Chain trueChain;
         Chain falseChain;
 
-        CondItem(JumpInstruction opcode) {
+        CondItem(int opcode) {
             this(opcode, null, null);
         }
 
-        CondItem(JumpInstruction opcode, Chain trueChain, Chain elseChain) {
+        CondItem(int opcode, Chain trueChain, Chain elseChain) {
             this.opcode = opcode;
             this.trueChain = trueChain;
             this.falseChain = elseChain;
@@ -403,17 +406,17 @@ public final class Items {
         public Item load() {
             Chain falseJumps = falseJumps();
             code.resolve(trueChain);
-            code.addInstruction(const_true);
-            Chain skipElsePartChain = code.branch(new Goto(0));
+            code.emitSingle(OPCodes.ConstTrue);
+            Chain skipElsePartChain = code.branch(OPCodes.Goto);
             code.resolve(falseJumps);
-            code.addInstruction(const_false);
+            code.emitSingle(OPCodes.ConstFalse);
             code.resolve(skipElsePartChain);
             return mkStackItem();
         }
 
         @Override
         public void drop() {
-            code.addInstruction(pop);
+            code.emitSingle(OPCodes.Pop);
         }
 
         @Override
@@ -422,7 +425,7 @@ public final class Items {
         }
 
         public CondItem negated() {
-            return new CondItem(opcode.negated(), falseChain, trueChain).t(tree);
+            return new CondItem(InstructionUtils.negate(opcode), falseChain, trueChain).t(tree);
         }
 
         public Chain trueJumps() {
@@ -432,7 +435,7 @@ public final class Items {
 
         public Chain falseJumps() {
             code.markTreePos(tree);
-            return mergeChains(falseChain, code.branch(opcode.negated()));
+            return mergeChains(falseChain, code.branch(InstructionUtils.negate(opcode)));
         }
     }
 
@@ -456,11 +459,11 @@ public final class Items {
         return new AssignItem(var);
     }
 
-    CondItem makeCondItem(JumpInstruction opcode) {
+    CondItem makeCondItem(int opcode) {
         return new CondItem(opcode);
     }
 
-    CondItem makeCondItem(JumpInstruction opcode, Chain trueJumps, Chain falseJumps) {
+    CondItem makeCondItem(int opcode, Chain trueJumps, Chain falseJumps) {
         return new CondItem(opcode, trueJumps, falseJumps);
     }
 }

@@ -3,7 +3,6 @@ package jua.compiler;
 import jua.compiler.Tokens.Token;
 import jua.compiler.Tokens.TokenType;
 import jua.runtime.ConstantMemory;
-import jua.runtime.Function;
 import jua.utils.IOUtils;
 
 import java.io.File;
@@ -26,6 +25,12 @@ public final class JuaCompiler {
     private boolean prettyTreeMode;
 
     private Charset charset = Charset.defaultCharset();
+
+    private final ModuleScope moduleScope = new ModuleScope();
+
+    public ModuleScope getModuleScope() {
+        return moduleScope;
+    }
 
     public boolean isGenJvmLoops() {
         return genJvmLoops;
@@ -89,35 +94,31 @@ public final class JuaCompiler {
 //                compilationUnit.accept(new Pretty(System.err));
                 return null;
             }
-            ProgramScope programScope = new ProgramScope();
-            // fixme
+            ModuleScope programScope = getModuleScope();
+            // todo: Проверить, что тут надо было пофиксить.
             compilationUnit.accept(new Lower(programScope));
-            compilationUnit.accept(new Enter(programScope, log));
-            compilationUnit.accept(new Lower(programScope));
-
-            compilationUnit.sym.code = new Code(programScope, source);
-            compilationUnit.functions.forEach(funcDef -> funcDef.sym.code = new Code(programScope, source));
-
             compilationUnit.accept(new Check(programScope, log));
 
             if (log.hasErrors()) {
                 return null;
             }
 
-            compilationUnit.sym.code.gen.genJvmLoops = genJvmLoops;
-            compilationUnit.accept(compilationUnit.sym.code.gen);
+            compilationUnit.accept(new Enter(programScope, log));
+            compilationUnit.functions.forEach(funcDef -> funcDef.sym.code = new Code(programScope, source));
+
             compilationUnit.functions
                     .forEach(funcDef -> {
                         funcDef.accept(funcDef.sym.code.gen);
-                        programScope.lookupFunction(funcDef.name).runtimefunc = funcDef.sym.runtimefunc;
+                        programScope.lookupFunction(funcDef.name).executable = funcDef.sym.executable;
                     });
 
-            Function mainFunction = compilationUnit.sym.runtimefunc;
-            Function[] functions = programScope.collectFunctions();
+            Executable[] functions = programScope.collectExecutables();
             ConstantMemory[] constantAddresses = programScope.collectConstants();
 
-            return new Module(source, mainFunction, functions, constantAddresses);
-        } catch (CompileException e) {
+            Module m = new Module(source, functions, constantAddresses);
+            m.functionNames = moduleScope.functionNames();
+            return m;
+        } catch (RuntimeException e) {
             System.err.println("Compiler error occurred");
             e.printStackTrace();
             return null;

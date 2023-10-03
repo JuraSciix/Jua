@@ -1,9 +1,9 @@
 package jua.compiler;
 
-import jua.compiler.ProgramScope.ConstantSymbol;
-import jua.compiler.ProgramScope.FunctionSymbol;
-import jua.compiler.ProgramScope.VarSymbol;
-import jua.utils.List;
+import jua.compiler.ModuleScope.ConstantSymbol;
+import jua.compiler.ModuleScope.FunctionSymbol;
+import jua.compiler.ModuleScope.VarSymbol;
+import jua.utils.JuaList;
 
 public abstract class Tree {
 
@@ -208,7 +208,7 @@ public abstract class Tree {
             }
         }
 
-        public void scan(List<? extends Tree> trees) {
+        public void scan(JuaList<? extends Tree> trees) {
             if (trees != null && trees.nonEmpty()) {
                 for (Tree tree : trees) {
                     // В списке не должно быть null-значений.
@@ -398,9 +398,9 @@ public abstract class Tree {
         }
 
         @SuppressWarnings("unchecked")
-        public <T extends Tree> List<T> translate(List<T> trees) {
+        public <T extends Tree> JuaList<T> translate(JuaList<T> trees) {
             if (trees != null && trees.nonEmpty()) {
-                for (List.Node<T> node = trees.head(); node != null; node = node.next()) {
+                for (JuaList.Node<T> node = trees.head(); node != null; node = node.next()) {
                     node.value.accept(this);
                     node.value = (T) result;
                     result = null;
@@ -614,18 +614,15 @@ public abstract class Tree {
 
         public final Source source;
 
-        public List<Statement> stats;
+        public JuaList<Statement> stats;
 
-        public List<FuncDef> functions;
+        public JuaList<FuncDef> functions;
 
-        public List<ConstDef> constants;
-
-        public FunctionSymbol sym;
-
+        public JuaList<ConstDef> constants;
         public CompilationUnit(int pos, Source source,
-                               List<ConstDef> constants,
-                               List<FuncDef> functions,
-                               List<Statement> stats) {
+                               JuaList<ConstDef> constants,
+                               JuaList<FuncDef> functions,
+                               JuaList<Statement> stats) {
             super(pos);
             this.source = source;
             this.constants = constants;
@@ -663,9 +660,9 @@ public abstract class Tree {
             }
         }
 
-        public List<Definition> defs;
+        public JuaList<Definition> defs;
 
-        public ConstDef(int pos, List<Definition> defs) {
+        public ConstDef(int pos, JuaList<Definition> defs) {
             super(pos);
             this.defs = defs;
         }
@@ -695,13 +692,13 @@ public abstract class Tree {
         
         public final Name name;
 
-        public List<Parameter> params;
+        public JuaList<Parameter> params;
 
         public Statement body;
 
         public FunctionSymbol sym;
 
-        public FuncDef(int pos, Name name, List<Parameter> params, Statement body) {
+        public FuncDef(int pos, Name name, JuaList<Parameter> params, Statement body) {
             super(pos);
             this.name = name;
             this.params = params;
@@ -717,9 +714,9 @@ public abstract class Tree {
 
     public static class Block extends Statement {
 
-        public List<Statement> stats;
+        public JuaList<Statement> stats;
 
-        public Block(int pos, List<Statement> stats) {
+        public Block(int pos, JuaList<Statement> stats) {
             super(pos);
             this.stats = stats;
         }
@@ -793,15 +790,15 @@ public abstract class Tree {
 
     public static class ForLoop extends Statement {
 
-        public List<Statement> init;
+        public JuaList<Statement> init;
 
         public Expression cond;
 
-        public List<Expression> step;
+        public JuaList<Expression> step;
 
         public Statement body;
 
-        public ForLoop(int pos, List<Statement> init, Expression cond, List<Expression> step, Statement body) {
+        public ForLoop(int pos, JuaList<Statement> init, Expression cond, JuaList<Expression> step, Statement body) {
             super(pos);
             this.init = init;
             this.cond = cond;
@@ -820,9 +817,9 @@ public abstract class Tree {
 
         public Expression expr;
 
-        public List<Case> cases;
+        public JuaList<Case> cases;
 
-        public Switch(int pos, Expression expr, List<Case> cases) {
+        public Switch(int pos, Expression expr, JuaList<Case> cases) {
             super(pos);
             this.expr = expr;
             this.cases = cases;
@@ -837,11 +834,11 @@ public abstract class Tree {
 
     public static class Case extends Statement {
 
-        public List<Expression> labels;
+        public JuaList<Expression> labels;
 
         public Statement body;
 
-        public Case(int pos, List<Expression> labels, Statement body) {
+        public Case(int pos, JuaList<Expression> labels, Statement body) {
             super(pos);
             this.labels = labels;
             this.body = body;
@@ -909,9 +906,9 @@ public abstract class Tree {
             }
         }
 
-        public List<Definition> defs;
+        public JuaList<Definition> defs;
 
-        public VarDef(int pos, List<Definition> defs) {
+        public VarDef(int pos, JuaList<Definition> defs) {
             super(pos);
             this.defs = defs;
         }
@@ -980,9 +977,9 @@ public abstract class Tree {
 
     public static class ListLiteral extends Expression {
 
-        public List<Expression> entries;
+        public JuaList<Expression> entries;
 
-        public ListLiteral(int pos, List<Expression> entries) {
+        public ListLiteral(int pos, JuaList<Expression> entries) {
             super(pos);
             this.entries = entries;
         }
@@ -1011,9 +1008,9 @@ public abstract class Tree {
             }
         }
         
-        public List<Entry> entries;
+        public JuaList<Entry> entries;
 
-        public MapLiteral(int pos, List<Entry> entries) {
+        public MapLiteral(int pos, JuaList<Entry> entries) {
             super(pos);
             this.entries = entries;
         }
@@ -1101,11 +1098,11 @@ public abstract class Tree {
         
         public final Expression target;
 
-        public List<Argument> args;
+        public JuaList<Argument> args;
 
         public FunctionSymbol sym;
 
-        public Invocation(int pos, Expression target, List<Argument> args) {
+        public Invocation(int pos, Expression target, JuaList<Argument> args) {
             super(pos);
             this.target = target;
             this.args = args;

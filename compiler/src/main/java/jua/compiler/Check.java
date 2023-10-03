@@ -1,6 +1,6 @@
 package jua.compiler;
 
-import jua.compiler.ProgramScope.FunctionSymbol;
+import jua.compiler.ModuleScope.FunctionSymbol;
 import jua.compiler.Tree.*;
 import jua.utils.Assert;
 
@@ -8,7 +8,7 @@ import static jua.compiler.TreeInfo.*;
 
 public class Check extends Scanner {
 
-    private final ProgramScope programScope;
+    private final ModuleScope programScope;
 
     private final Log log;
 
@@ -16,7 +16,7 @@ public class Check extends Scanner {
 
     private boolean allowsBreak, allowsContinue, allowsFallthrough;
 
-    public Check(ProgramScope programScope, Log log) {
+    public Check(ModuleScope programScope, Log log) {
         this.programScope = programScope;
         this.log = log;
     }

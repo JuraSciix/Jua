@@ -1,22 +1,23 @@
 package jua.compiler;
 
+import jua.compiler.InstructionUtils.IndexedInstrNode;
+import jua.compiler.InstructionUtils.InstrNode;
+import jua.compiler.InstructionUtils.JumpInstrNode;
+import jua.compiler.InstructionUtils.SingleInstrNode;
 import jua.interpreter.memory.Address;
 import jua.interpreter.memory.AddressUtils;
-import jua.interpreter.instruction.Instruction;
-import jua.interpreter.instruction.InstructionImpls.BinarySwitch;
-import jua.interpreter.instruction.JumpInstruction;
-import jua.runtime.code.CodeData;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.LineNumberTable;
 import jua.utils.Assert;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.TreeMap;
 
 public final class Code {
 
-    static class Chain {
+    public static class Chain {
         final int pc, tos;
         final Chain next;
 
@@ -38,14 +39,12 @@ public final class Code {
             return new Chain(rhs.pc, rhs.tos, mergeChains(rhs.next, lhs));
     }
 
-    private final ArrayList<Instruction> instructions = new ArrayList<>();
-
+    private final List<InstrNode> instructions = new ArrayList<>();
     private final TreeMap<Short, Integer> lineTable = new TreeMap<>();
 
     private final LinkedHashMap<String, Integer> localNames = new LinkedHashMap<>();
 
     private final ConstantPoolWriter constantPoolWriter = new ConstantPoolWriter();
-
 
     private int nlocals = 0;
 
@@ -60,12 +59,15 @@ public final class Code {
 
     private boolean alive = true;
 
-    public final ProgramScope programScope;
+    public final ModuleScope programScope;
     public final Gen gen;
 
     private LineMap lineMap;
 
-    public Code(ProgramScope programScope, Source source) {
+    // Set from Gen.visitFuncDef or Gen.visitCompilationUnit
+    public ModuleScope.FunctionSymbol sym;
+
+    public Code(ModuleScope programScope, Source source) {
         this.programScope = programScope;
         this.lineMap = source.getLineMap();
         gen = new Gen();
@@ -73,49 +75,51 @@ public final class Code {
         gen.source = source;
     }
 
-    public Chain branch(JumpInstruction instr) {
-        if (!isAlive()) return null;
-        return new Chain(addInstruction(instr), tos(), null);
-    }
-
-    public Chain branch(Instruction instr, int tos) {
-        if (!isAlive()) return null;
-        return new Chain(addInstruction(instr), tos, null);
+    public Chain branch(int opcode) {
+        return new Chain(emitJump(opcode), tos(), null);
     }
 
     public int lineNum() {
         return cLineNum;
     }
 
-    public Instruction get(int pc) {
+    public InstrNode get(int pc) {
         return instructions.get(pc);
     }
 
     public int pc() {
-        return this.instructions.size();
+        return instructions.size();
     }
 
-    public void setInstruction(int cp, Instruction instruction) {
-        instructions.set(cp, instruction);
+    public int emitSingle(int opcode) {
+        return emitNode(new SingleInstrNode(opcode));
     }
 
-    public int addInstruction(Instruction instr) {
-        int pc = instructions.size();
+    public int emitIndexed(int opcode, int index) {
+        return emitNode(new IndexedInstrNode(opcode, index));
+    }
+
+    public int emitJump(int opcode) {
+        return emitNode(new JumpInstrNode(opcode));
+    }
+
+    public int emitConst(int index) {
+        return emitNode(new InstructionUtils.ConstantInstrNode(InstructionUtils.OPCodes.Push, index));
+    }
+
+    public int emitCall(int callee, int argc) {
+        return emitNode(new InstructionUtils.CallInstrNode(InstructionUtils.OPCodes.Call, callee, argc));
+    }
+
+    public int emitNode(InstrNode node) {
+        int pc = pc();
         if (isAlive()) {
-            instructions.add(instr);
-            adjustStack(instr.stackAdjustment());
+            instructions.add(node);
+            adjustStack(node.stackAdjustment());
         }
         return pc;
     }
 
-    private int addInstruction0(Instruction instruction) {
-        int pc = instructions.size();
-        if (isAlive()) {
-            instructions.add(instruction);
-            adjustStack(instruction.stackAdjustment());
-        }
-        return pc;
-    }
 
     public void markTreePos(Tree tree) {
         if (tree != null) {
@@ -181,27 +185,18 @@ public final class Code {
         return constantPoolWriter;
     }
 
-    public CodeData buildCodeSegment() {
-        ConstantPool cp = buildConstantPool();
-        return new CodeData(
-                limTos,
-                nlocals,
-                localNames.keySet().toArray(new String[0]),
-                buildCode(cp),
-                cp,
-                buildLineNumberTable());
-    }
+    public int reqargs, totargs;
+    public Object[] defs;
 
-    private static final Instruction[] EMPTY_INSTRUCTIONS = new Instruction[0];
-    private Instruction[] buildCode(ConstantPool cp) {
-        Instruction[] instructions = this.instructions.toArray(EMPTY_INSTRUCTIONS);
-        for (Instruction instruction : instructions) {
-            if (instruction.getClass() == BinarySwitch.class) {
-                BinarySwitch switch_ = (BinarySwitch) instruction;
-                switch_.sort(cp);
-            }
-        }
-        return instructions;
+
+    public Executable toExecutable() {
+        return new Executable(sym.name, gen.source.fileName,
+                instructions.toArray(new InstrNode[0]),
+                nlocals,
+                limTos,
+                buildConstantPool(),
+                buildLineNumberTable(), reqargs, totargs, defs,
+                localNames.keySet().toArray(new String[0]));
     }
 
     private LineNumberTable buildLineNumberTable() {
@@ -233,8 +228,7 @@ public final class Code {
         if (chain == null) return;
         tos(chain.tos);
         do {
-            setInstruction(chain.pc,
-                    get(chain.pc).withNextCp(destPC));
+            get(chain.pc).setOffset(destPC);
             chain = chain.next;
         } while (chain != null);
     }

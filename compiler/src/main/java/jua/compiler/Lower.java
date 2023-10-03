@@ -1,8 +1,9 @@
 package jua.compiler;
 
-import jua.compiler.ProgramScope.ConstantSymbol;
+import jua.compiler.ModuleScope.ConstantSymbol;
 import jua.compiler.SemanticInfo.BooleanEquivalent;
 import jua.compiler.Tree.*;
+import jua.utils.JuaList;
 
 import java.util.Objects;
 
@@ -10,11 +11,28 @@ import static jua.compiler.SemanticInfo.ofBoolean;
 import static jua.compiler.TreeInfo.*;
 
 public final class Lower extends Translator {
-    private final ProgramScope scope;
+    private final ModuleScope scope;
     private final Operators operators = new Operators();
 
-    public Lower(ProgramScope scope) {
+    public Lower(ModuleScope scope) {
         this.scope = Objects.requireNonNull(scope);
+    }
+
+
+    @Override
+    public void visitCompilationUnit(CompilationUnit tree) {
+        // Jua, начиная с версии 3.1 от 10/3/2023 не поддерживает выполняемые инструкции вне функций.
+        // Для временной обратной совместимости, компилятор преобразовывает код вне функций в код функции <main>.
+        // Возможно, в будущем времени компилятор полностью перестанет работать с кодом вне функций.
+
+        // Заметка: в tree.stats не могут находиться операторы Tag.FUNCDEF и Tag.CONSTDEF.
+        int pos = tree.pos;
+        tree.functions.add(new FuncDef(pos,
+                new Name(pos, "<main>"),
+                JuaList.empty(),
+                new Block(pos, tree.stats)));
+        tree.stats = JuaList.empty();
+        result = tree;
     }
 
     @Override

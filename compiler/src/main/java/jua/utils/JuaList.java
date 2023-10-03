@@ -4,20 +4,25 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
+import java.util.stream.Collector;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public class List<E> implements Iterable<E> {
+public class JuaList<E> implements Iterable<E> {
+
+    public static <T> Collector<T, JuaList<T>, JuaList<T>> collector() {
+        return Collector.of(JuaList::new, JuaList::add, (l1, l2) -> { l1.addAll(l2); return l1; });
+    }
 
     public static class Node<E> {
 
-        private final List<E> owner;
+        private final JuaList<E> owner;
 
         public E value;
 
         private Node<E> prev, next;
 
-        Node(List<E> owner, E value) {
+        Node(JuaList<E> owner, E value) {
             this.owner = owner;
             this.value = value;
 
@@ -61,25 +66,25 @@ public class List<E> implements Iterable<E> {
         }
     }
 
-    public static <E> List<E> empty() {
-        return new List<>();
+    public static <E> JuaList<E> empty() {
+        return new JuaList<>();
     }
 
-    public static <E> List<E> of(E e) {
-        List<E> list = new List<>();
+    public static <E> JuaList<E> of(E e) {
+        JuaList<E> list = new JuaList<>();
         list.add(e);
         return list;
     }
 
-    public static <E> List<E> of(E e1, E e2) {
-        List<E> list = new List<>();
+    public static <E> JuaList<E> of(E e1, E e2) {
+        JuaList<E> list = new JuaList<>();
         list.add(e1);
         list.add(e2);
         return list;
     }
 
-    public static <E> List<E> of(E e1, E e2, E e3) {
-        List<E> list = new List<>();
+    public static <E> JuaList<E> of(E e1, E e2, E e3) {
+        JuaList<E> list = new JuaList<>();
         list.add(e1);
         list.add(e2);
         list.add(e3);
@@ -87,16 +92,16 @@ public class List<E> implements Iterable<E> {
     }
 
     @SafeVarargs
-    public static <E> List<E> of(E... elements) {
-        List<E> list = new List<>();
+    public static <E> JuaList<E> of(E... elements) {
+        JuaList<E> list = new JuaList<>();
         for (E element : elements) {
             list.add(element);
         }
         return list;
     }
 
-    public static <E> List<E> of(Collection<? extends E> collection) {
-        List<E> list = new List<>();
+    public static <E> JuaList<E> of(Collection<? extends E> collection) {
+        JuaList<E> list = new JuaList<>();
         for (E element : collection) {
             list.add(element);
         }
@@ -156,7 +161,7 @@ public class List<E> implements Iterable<E> {
         }
     }
 
-    public void addAll(List<? extends E> elements) {
+    public void addAll(JuaList<? extends E> elements) {
         for (E element : elements) {
             add(element);
         }
@@ -236,8 +241,8 @@ public class List<E> implements Iterable<E> {
         return false;
     }
 
-    public List<E> intersection(List<? extends E> list) {
-        List<E> intersection = new List<>();
+    public JuaList<E> intersection(JuaList<? extends E> list) {
+        JuaList<E> intersection = new JuaList<>();
         for (E element : this) {
             if (list.contains(element)) {
                 intersection.add(element);
@@ -246,8 +251,8 @@ public class List<E> implements Iterable<E> {
         return intersection;
     }
 
-    public List<E> diff(List<? extends E> list) {
-        List<E> diff = new List<>();
+    public JuaList<E> diff(JuaList<? extends E> list) {
+        JuaList<E> diff = new JuaList<>();
         for (E element : this) {
             if (!list.contains(element)) {
                 diff.add(element);
@@ -261,8 +266,8 @@ public class List<E> implements Iterable<E> {
         return diff;
     }
 
-    public List<E> sum(List<? extends E> list) {
-        List<E> sum = new List<>();
+    public JuaList<E> sum(JuaList<? extends E> list) {
+        JuaList<E> sum = new JuaList<>();
         sum.addAll(this);
         sum.addAll(list);
         return sum;
@@ -280,8 +285,8 @@ public class List<E> implements Iterable<E> {
         return modCount;
     }
 
-    public <U> List<U> map(Function<? super E, ? extends U> mapper) {
-        List<U> mappedList = new List<>();
+    public <U> JuaList<U> map(Function<? super E, ? extends U> mapper) {
+        JuaList<U> mappedList = new JuaList<>();
 
         for (E element : this) {
             mappedList.add(mapper.apply(element));
@@ -290,8 +295,8 @@ public class List<E> implements Iterable<E> {
         return mappedList;
     }
 
-    public <U> List<U> flatMap(Function<? super E, ? extends List<U>> mapper) {
-        List<U> mappedList = new List<>();
+    public <U> JuaList<U> flatMap(Function<? super E, ? extends JuaList<U>> mapper) {
+        JuaList<U> mappedList = new JuaList<>();
 
         for (E element : this) {
             mappedList.addAll(mapper.apply(element));
@@ -325,7 +330,7 @@ public class List<E> implements Iterable<E> {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || o.getClass() != getClass()) return false;
-        List<?> l = (List<?>) o;
+        JuaList<?> l = (JuaList<?>) o;
         // Определяем равенство на основе биекции множеств A и B.
         for (Object element : l) {
             if (!contains(element)) {

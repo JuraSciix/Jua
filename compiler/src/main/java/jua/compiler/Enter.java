@@ -1,10 +1,10 @@
 package jua.compiler;
 
-import jua.compiler.ProgramScope.FunctionSymbol;
-import jua.compiler.ProgramScope.VarSymbol;
+import jua.compiler.ModuleScope.FunctionSymbol;
+import jua.compiler.ModuleScope.VarSymbol;
 import jua.compiler.Tree.*;
 import jua.utils.Assert;
-import jua.utils.List;
+import jua.utils.JuaList;
 
 import java.util.HashMap;
 
@@ -59,7 +59,7 @@ public class Enter extends Scanner {
         }
     }
 
-    private final ProgramScope globalScope;
+    private final ModuleScope globalScope;
 
     private final Log log;
 
@@ -68,7 +68,7 @@ public class Enter extends Scanner {
     /** Текущая область видимости. */
     private Scope scope;
 
-    public Enter(ProgramScope globalScope, Log log) {
+    public Enter(ModuleScope globalScope, Log log) {
         this.globalScope = globalScope;
         this.log = log;
     }
@@ -91,7 +91,7 @@ public class Enter extends Scanner {
         }
     }
 
-    private Scope scanInnerScope(Scope parentScope, List<? extends Tree> trees) {
+    private Scope scanInnerScope(Scope parentScope, JuaList<? extends Tree> trees) {
         Scope innerScope = new Scope(parentScope);
         if (trees.nonEmpty()) {
             scope = innerScope;
@@ -105,48 +105,29 @@ public class Enter extends Scanner {
     private void scanBody(Scope parentScope, Tree tree) {
         if (tree != null) {
             checkNotVarDef(tree);
-            scanInnerScope(parentScope, List.of(tree));
+            scanInnerScope(parentScope, JuaList.of(tree));
+        }
+    }
+
+    @Override
+    public void visitConstDef(ConstDef tree) {
+        for (ConstDef.Definition def : tree.defs) {
+            if (globalScope.isConstantDefined(def.name)) {
+                report(def.name.pos, "constant redefinition");
+                def.sym = globalScope.lookupConstant(def.name);
+                continue;
+            }
+            def.sym = globalScope.defineUserConstant(def);
         }
     }
 
     @Override
     public void visitCompilationUnit(CompilationUnit tree) {
         source = tree.source;
-
-        for (ConstDef constant : tree.constants) {
-            for (ConstDef.Definition def : constant.defs) {
-                if (globalScope.isConstantDefined(def.name)) {
-                    report(def.name.pos, "constant redefinition");
-                    def.sym = globalScope.lookupConstant(def.name);
-                    continue;
-                }
-                def.sym = globalScope.defineUserConstant(def);
-            }
-        }
-
         scan(tree.constants);
-
-        for (FuncDef function : tree.functions) {
-            if (globalScope.isFunctionDefined(function.name)) {
-                report(function.name.pos, "function redefinition");
-                function.sym = globalScope.lookupFunction(function.name);
-                continue;
-            }
-            function.sym = globalScope.defineUserFunction(function);
-        }
-
         scan(tree.functions);
-
         ensureRootScope();
         scanInnerScope(null, tree.stats);
-
-        tree.sym = new FunctionSymbol(
-                "<main>",
-                -1,
-                0,
-                0,
-                List.empty()
-        );
     }
 
     @Override
@@ -176,6 +157,13 @@ public class Enter extends Scanner {
                 break;
             default:
                 Assert.error(tree.body.getTag());
+        }
+
+        if (globalScope.isFunctionDefined(tree.name)) {
+            report(tree.name.pos, "function redefinition");
+            tree.sym = globalScope.lookupFunction(tree.name);
+        } else {
+            tree.sym = globalScope.defineUserFunction(tree);
         }
 
         ensureScopeChainUnaffected(null);
@@ -210,7 +198,7 @@ public class Enter extends Scanner {
     public void visitForLoop(ForLoop tree) {
         Scope parentScope = scope;
         Scope initScope = scanInnerScope(parentScope, tree.init);
-        scanInnerScope(initScope, List.of(tree.cond));
+        scanInnerScope(initScope, JuaList.of(tree.cond));
         scanBody(initScope, tree.body);
         scanInnerScope(initScope, tree.step);
         ensureScopeChainUnaffected(parentScope);
@@ -266,7 +254,7 @@ public class Enter extends Scanner {
             return;
         }
         // Халтурно избегаем двойного поиска (isConstantDefined + lookupConstant)
-        ProgramScope.ConstantSymbol constSym = globalScope.lookupConstant(tree.name);
+        ModuleScope.ConstantSymbol constSym = globalScope.lookupConstant(tree.name);
         if (constSym != null) {
             tree.sym = constSym;
             return;
