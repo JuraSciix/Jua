@@ -861,7 +861,7 @@ public interface InstructionImpls {
 
         @Override
         public void execute(ExecutionContext context) {
-            context.doJumpIfTrue(getNextCp());
+            context.doJumpIfNonZero(getNextCp());
         }
     }
 
@@ -887,7 +887,7 @@ public interface InstructionImpls {
 
         @Override
         public void execute(ExecutionContext context) {
-            context.doJumpIfFalse(getNextCp());
+            context.doJumpIfZero(getNextCp());
         }
     }
 

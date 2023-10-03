@@ -1,30 +1,17 @@
 package jua.runtime.interpreter.memory;
 
+import jua.runtime.Operations;
 import jua.runtime.Types;
 import jua.runtime.heap.Heap;
 import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.MapHeap;
 import jua.runtime.heap.StringHeap;
 
+import static jua.runtime.Operations.toResultCode;
 import static jua.runtime.interpreter.InterpreterThread.threadError;
 import static jua.runtime.Types.*;
 
 public final class Address implements Comparable<Address> {
-
-    public static final int RESULT_FALSE = 0;
-    public static final int RESULT_TRUE = 1;
-    public static final int RESULT_FAILURE = -1;
-
-    public static int toResult(boolean value) {
-        return value ? RESULT_TRUE : RESULT_FALSE;
-    }
-
-    public static boolean fromResult(int result) {
-        if (result == RESULT_FAILURE) {
-            throw new RuntimeException("Failure");
-        }
-        return result == RESULT_TRUE;
-    }
 
     /** Тип текущего значения. */
     private byte type;
@@ -726,18 +713,18 @@ public final class Address implements Comparable<Address> {
         if (type == T_LIST) {
             int index = validateIndex(key, false);
             if (index >= 0) {
-                return toResult(getListHeap().contains(key));
+                return toResultCode(getListHeap().contains(key));
             }
-            return RESULT_FAILURE;
+            return Operations.RESULT_FAILURE;
         }
         if (type == T_MAP) {
             if (validateKey(key, false)) {
-                return toResult(getMapHeap().containsKey(key));
+                return toResultCode(getMapHeap().containsKey(key));
             }
-            return RESULT_FAILURE;
+            return Operations.RESULT_FAILURE;
         }
         threadError("trying to check array-element from %s", getTypeName());
-        return RESULT_FAILURE;
+        return Operations.RESULT_FAILURE;
     }
 
     private int validateIndex(Address indexAddress, boolean validateBounds) {

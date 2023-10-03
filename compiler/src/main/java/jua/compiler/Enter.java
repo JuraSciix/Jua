@@ -151,6 +151,13 @@ public class Enter extends Scanner {
             // Сканировать param.expr не нужно, поскольку это должен быть литерал.
         }
 
+        if (globalScope.isFunctionDefined(tree.name)) {
+            report(tree.name.pos, "function redefinition");
+            tree.sym = globalScope.lookupFunction(tree.name);
+        } else {
+            tree.sym = globalScope.defineUserFunction(tree, scope.maxId);
+        }
+
         switch (tree.body.getTag()) {
             case BLOCK:
                 Block blockTree = (Block) tree.body;
@@ -162,13 +169,6 @@ public class Enter extends Scanner {
                 break;
             default:
                 Assert.error(tree.body.getTag());
-        }
-
-        if (globalScope.isFunctionDefined(tree.name)) {
-            report(tree.name.pos, "function redefinition");
-            tree.sym = globalScope.lookupFunction(tree.name);
-        } else {
-            tree.sym = globalScope.defineUserFunction(tree, scope.maxId);
         }
 
         ensureScopeChainUnaffected(null);

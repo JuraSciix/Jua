@@ -1,11 +1,14 @@
 package jua.runtime.interpreter;
 
-import jua.runtime.interpreter.memory.Address;
-import jua.runtime.interpreter.memory.Memory;
 import jua.runtime.Types;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.MapHeap;
+import jua.runtime.interpreter.memory.Address;
+import jua.runtime.interpreter.memory.Memory;
+
+import static jua.runtime.Operations.isResultFalse;
+import static jua.runtime.Operations.isResultTrue;
 
 public class ExecutionContext {
 
@@ -392,7 +395,7 @@ public class ExecutionContext {
         }
     }
 
-    public void doJumpIfTrue(int nextCp) {
+    public void doJumpIfNonZero(int nextCp) {
         Address value = getState().getStackAddress(-1);
         getState().addTos(-1);
         if (value.booleanVal()) {
@@ -400,7 +403,7 @@ public class ExecutionContext {
         }
     }
 
-    public void doJumpIfFalse(int nextCp) {
+    public void doJumpIfZero(int nextCp) {
         Address value = getState().getStackAddress(-1);
         getState().addTos(-1);
         if (!value.booleanVal()) {
@@ -420,7 +423,8 @@ public class ExecutionContext {
         Address arr = getState().getStackAddress(-2);
         Address key = getState().getStackAddress(-1);
         getState().addTos(-2);
-        if (arr.contains(key) == Address.RESULT_TRUE) {
+        int responseCode = arr.contains(key);
+        if (isResultTrue(responseCode)) {
             setNextCp(nextCp);
         }
     }
@@ -429,7 +433,8 @@ public class ExecutionContext {
         Address arr = getState().getStackAddress(-2);
         Address key = getState().getStackAddress(-1);
         getState().addTos(-2);
-        if (arr.contains(key) == Address.RESULT_FALSE) {
+        int responseCode = arr.contains(key);
+        if (isResultFalse(responseCode)) {
             setNextCp(nextCp);
         }
     }
