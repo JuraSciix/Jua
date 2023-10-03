@@ -10,7 +10,7 @@ import jua.runtime.interpreter.memory.Memory;
 import static jua.runtime.Operations.isResultFalse;
 import static jua.runtime.Operations.isResultTrue;
 
-public class ExecutionContext {
+public final class ExecutionContext {
 
     private final InterpreterThread thread;
 
