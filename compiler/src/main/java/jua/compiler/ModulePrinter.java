@@ -153,10 +153,12 @@ public class ModulePrinter {
                 tos = tosRestoring.tos;
                 tosRestoring = tosRestoring.next;
             }
+            // tos должен обновляться после того, как напечатается инструкция,
+            // чтобы принтер отображал реальное значение tos перед выполнением инструкции.
             tosAdjustment = node.stackAdjustment();
-            tos += tosAdjustment;
             node.accept(printer);
             instrData.doPrint();
+            tos += tosAdjustment;
         }
         endFunction();
     }
