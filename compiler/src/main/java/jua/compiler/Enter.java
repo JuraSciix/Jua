@@ -155,7 +155,7 @@ public class Enter extends Scanner {
             report(tree.name.pos, "function redefinition");
             tree.sym = globalScope.lookupFunction(tree.name);
         } else {
-            tree.sym = globalScope.defineUserFunction(tree, scope.maxId);
+            tree.sym = globalScope.defineUserFunction(tree, 0);
         }
 
         switch (tree.body.getTag()) {
@@ -170,6 +170,8 @@ public class Enter extends Scanner {
             default:
                 Assert.error(tree.body.getTag());
         }
+
+        tree.sym.nlocals = scope.maxId;
 
         ensureScopeChainUnaffected(null);
         scope = null;

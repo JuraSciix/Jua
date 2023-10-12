@@ -1,7 +1,7 @@
 package jua;
 
-import jua.compiler.Executable;
 import jua.compiler.InstructionUtils;
+import jua.compiler.Module;
 import jua.runtime.interpreter.instruction.Instruction;
 import jua.runtime.interpreter.memory.Address;
 import jua.runtime.interpreter.memory.AddressUtils;
@@ -12,7 +12,7 @@ import java.util.Arrays;
 
 public class Executable2FunctionTranslator {
 
-    public static Function translate(Executable executable) {
+    public static Function translate(Module.Executable executable) {
         if (executable == null) {
             // Native
             return null;
@@ -32,7 +32,7 @@ public class Executable2FunctionTranslator {
                 0L,
                 new CodeData(
                         executable.stackSize,
-                        executable.reqargs,
+                        executable.regSize,
                         executable.varnames,
                         translateCode(executable.code), // todo
                         executable.constantPool,

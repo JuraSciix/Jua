@@ -87,7 +87,7 @@ public class ModulePrinter {
         ModulePrinter printer = new ModulePrinter(module, System.out);
         printer.f("Source \"%s\": %n", module.source.fileName);
         printer.adjustIndent(2);
-        for (Executable executable : module.executables) {
+        for (Module.Executable executable : module.executables) {
             if (executable == null) {
                 // Native.
                 continue;
@@ -135,7 +135,7 @@ public class ModulePrinter {
         }
     }
 
-    private void printFunction(Executable executable) {
+    private void printFunction(Module.Executable executable) {
         this.executable = executable;
         beginFunction();
         // Сбрасываем поля.
@@ -175,7 +175,7 @@ public class ModulePrinter {
     private char[] indentString = new char[0];
     private TosRestoring tosRestoring;
 
-    Executable executable;
+    Module.Executable executable;
     int pc = 0, tos = 0, tosAdjustment;
     int curLineNum = 0;
 

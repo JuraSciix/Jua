@@ -11,7 +11,6 @@ import jua.runtime.code.LineNumberTable;
 import jua.runtime.utils.Assert;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.TreeMap;
 
@@ -163,8 +162,8 @@ public final class Code {
         return constantPoolWriter;
     }
 
-    public Executable toExecutable() {
-        return new Executable(sym.name, gen.source.fileName,
+    public Module.Executable toExecutable() {
+        return new Module.Executable(sym.name, gen.source.fileName,
                 instructions.toArray(new InstrNode[0]),
                 sym.nlocals,
                 limTos,

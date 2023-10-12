@@ -112,7 +112,7 @@ public final class JuaCompiler {
                         programScope.lookupFunction(funcDef.name).executable = funcDef.sym.executable;
                     });
 
-            Executable[] functions = programScope.collectExecutables();
+            Module.Executable[] functions = programScope.collectExecutables();
             ConstantMemory[] constantAddresses = programScope.collectConstants();
 
             Module m = new Module(source, functions, constantAddresses);

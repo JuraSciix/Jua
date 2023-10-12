@@ -9,7 +9,7 @@ import jua.runtime.interpreter.InterpreterThread;
 import jua.runtime.interpreter.memory.Address;
 import jua.runtime.ConstantMemory;
 import jua.runtime.Function;
-import jua.runtime.JuaEnvironment;
+import jua.runtime.JuaRuntime;
 import jua.runtime.NativeStdlib;
 
 import java.io.File;
@@ -98,7 +98,7 @@ public class Main {
                 .filter(f -> f.name.equals("<main>"))
                 .findAny().orElseThrow(AssertionError::new);
 
-        JuaEnvironment env = new JuaEnvironment(functions, constants);
+        JuaRuntime env = new JuaRuntime(functions, constants);
         InterpreterThread thread = new InterpreterThread(Thread.currentThread(), env);
         Address response = new Address();
         thread.callAndWait(mainFn, new Address[0], response);

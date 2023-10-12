@@ -5,8 +5,6 @@ import jua.compiler.Tree.FuncDef;
 import jua.runtime.interpreter.memory.Address;
 import jua.runtime.interpreter.memory.AddressUtils;
 import jua.runtime.ConstantMemory;
-import jua.runtime.Function;
-import jua.runtime.VirtualMachine;
 import jua.compiler.utils.JuaList;
 
 import java.util.LinkedHashMap;
@@ -26,7 +24,7 @@ public final class ModuleScope {
         public final JuaList<String> params; // null if tree is null
         public Code code;
 
-        public Executable executable;
+        public Module.Executable executable;
         public int nlocals;
 
         FunctionSymbol(String name, int id, int minArgc, int maxArgc, Object[] defs, JuaList<String> params) {
@@ -206,8 +204,8 @@ public final class ModuleScope {
         return functions.get(name.toString());
     }
 
-    public Executable[] collectExecutables() {
-        Executable[] executables = new Executable[funcnextaddr];
+    public Module.Executable[] collectExecutables() {
+        Module.Executable[] executables = new Module.Executable[funcnextaddr];
         this.functions.values().forEach(symbol -> {
             if (symbol.id < 0) return;
             executables[symbol.id] = symbol.executable;
@@ -229,12 +227,5 @@ public final class ModuleScope {
             AddressUtils.assignObject(constants[sym.id].address, sym.value);
         }
         return constants;
-    }
-
-    /**
-     * Создает объект виртуальной машины из информации, собранной компилятором.
-     */
-    public VirtualMachine createVM() {
-        throw new UnsupportedOperationException("Not yet implemented"); // todo
     }
 }
