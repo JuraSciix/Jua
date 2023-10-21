@@ -1,6 +1,5 @@
 package jua.compiler;
 
-import jua.runtime.utils.Assert;
 
 import static java.lang.Character.digit;
 import static jua.compiler.Tokens.*;

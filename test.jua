@@ -1,7 +1,1 @@
-fn test() {
-    var u = 2;
-}
-
-var x = 1;
-test();
-println(x);
+println("Hello, world!");

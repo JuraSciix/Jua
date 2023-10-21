@@ -1,4 +1,5 @@
-package jua.runtime.utils;
+package jua.compiler;
+
 
 import java.util.function.IntPredicate;
 

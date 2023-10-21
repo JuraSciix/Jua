@@ -8,7 +8,6 @@ import jua.runtime.interpreter.memory.Address;
 import jua.runtime.interpreter.memory.AddressUtils;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.LineNumberTable;
-import jua.runtime.utils.Assert;
 
 import java.util.ArrayList;
 import java.util.List;

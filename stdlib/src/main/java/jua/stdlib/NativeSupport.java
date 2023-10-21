@@ -1,5 +1,7 @@
-package jua.runtime;
+package jua.stdlib;
 
+import jua.runtime.Function;
+import jua.runtime.NativeExecutor;
 import jua.runtime.interpreter.memory.Address;
 import jua.runtime.interpreter.memory.AddressUtils;
 

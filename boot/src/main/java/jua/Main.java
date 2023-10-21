@@ -10,7 +10,7 @@ import jua.runtime.interpreter.InterpreterThread;
 import jua.runtime.interpreter.memory.Address;
 import jua.runtime.ConstantMemory;
 import jua.runtime.Function;
-import jua.runtime.NativeStdlib;
+import jua.stdlib.NativeStdlib;
 
 import java.io.File;
 import java.util.Arrays;

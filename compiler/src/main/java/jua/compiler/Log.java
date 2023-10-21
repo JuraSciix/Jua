@@ -1,7 +1,5 @@
 package jua.compiler;
 
-import jua.runtime.utils.StringUtils;
-
 import java.io.PrintStream;
 import java.io.PrintWriter;
 

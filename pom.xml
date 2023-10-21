@@ -12,6 +12,7 @@
         <module>boot</module>
         <module>compiler</module>
         <module>runtime</module>
+        <module>stdlib</module>
     </modules>
 
     <properties>
