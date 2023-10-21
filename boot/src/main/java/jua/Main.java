@@ -5,11 +5,11 @@ import jua.compiler.JuaCompiler;
 import jua.compiler.Module;
 import jua.compiler.ModuleScope;
 import jua.compiler.ModuleScope.FunctionSymbol;
+import jua.runtime.JuaEnvironment;
 import jua.runtime.interpreter.InterpreterThread;
 import jua.runtime.interpreter.memory.Address;
 import jua.runtime.ConstantMemory;
 import jua.runtime.Function;
-import jua.runtime.JuaRuntime;
 import jua.runtime.NativeStdlib;
 
 import java.io.File;
@@ -98,10 +98,10 @@ public class Main {
                 .filter(f -> f.name.equals("<main>"))
                 .findAny().orElseThrow(AssertionError::new);
 
-        JuaRuntime env = new JuaRuntime(functions, constants);
-        InterpreterThread thread = new InterpreterThread(Thread.currentThread(), env);
-        Address response = new Address();
-        thread.callAndWait(mainFn, new Address[0], response);
-        // Если будет интересно, что вернул код, то можно напечатать response.
+        InterpreterThread thread = new InterpreterThread(Thread.currentThread(),
+                new JuaEnvironment(functions, constants));
+        Address resultReceiver = new Address();
+        thread.callAndWait(mainFn, new Address[0], resultReceiver);
+        // Если будет интересно, что вернул код, то можно напечатать resultReceiver.
     }
 }
