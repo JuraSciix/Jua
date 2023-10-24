@@ -30,25 +30,11 @@ public class Log {
     }
 
     public void error(Source source, int pos, String message) {
-        validateParameters(source, pos, message);
         doError(source, pos, message);
     }
 
     public void error(Source source, int pos, String message, Object... args) {
-        validateParameters(source, pos, message);
         doError(source, pos, String.format(message, args));
-    }
-
-    private static void validateParameters(Source source, int pos, String message) {
-        if (source == null) {
-            throw new IllegalArgumentException("source must not be null");
-        }
-        if (pos < 0) {
-            throw new IllegalArgumentException("pos must not be negative");
-        }
-        if (StringUtils.isBlank(message)) {
-            throw new IllegalArgumentException("message must not be blank");
-        }
     }
 
     protected void doError(Source source, int pos, String msg) {
