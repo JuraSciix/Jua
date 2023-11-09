@@ -45,7 +45,7 @@ public class Check extends Scanner {
     }
 
     @Override
-    public void visitCompilationUnit(CompilationUnit tree) {
+    public void visitCompilationUnit(Document tree) {
         source = tree.source;
         scan(tree.constants);
         scan(tree.functions);

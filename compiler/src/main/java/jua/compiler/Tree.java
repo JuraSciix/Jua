@@ -8,7 +8,7 @@ import jua.compiler.utils.JuaList;
 public abstract class Tree {
 
     public enum Tag {
-        TOP,
+        DOC,
         FUNCDEF,
         CONSTDEF,
         BLOCK,
@@ -78,7 +78,7 @@ public abstract class Tree {
     }
 
     public interface Visitor {
-        void visitCompilationUnit(CompilationUnit tree);
+        void visitCompilationUnit(Document tree);
         void visitConstDef(ConstDef tree);
         void visitFuncDef(FuncDef tree);
         void visitBlock(Block tree);
@@ -111,7 +111,7 @@ public abstract class Tree {
 
     public static abstract class AbstractVisitor implements Visitor {
         @Override
-        public void visitCompilationUnit(CompilationUnit tree) { visitTree(tree); }
+        public void visitCompilationUnit(Document tree) { visitTree(tree); }
 
         @Override
         public void visitConstDef(ConstDef tree) { visitTree(tree); }
@@ -218,7 +218,7 @@ public abstract class Tree {
         }
 
         @Override
-        public void visitCompilationUnit(CompilationUnit tree) {
+        public void visitCompilationUnit(Document tree) {
             scan(tree.constants);
             scan(tree.functions);
             scan(tree.stats);
@@ -410,7 +410,7 @@ public abstract class Tree {
         }
 
         @Override
-        public void visitCompilationUnit(CompilationUnit tree) {
+        public void visitCompilationUnit(Document tree) {
             tree.constants = translate(tree.constants);
             tree.functions = translate(tree.functions);
             tree.stats = translate(tree.stats);
@@ -610,7 +610,7 @@ public abstract class Tree {
 
     public boolean hasTag(Tag tag) { return getTag() == tag; }
 
-    public static class CompilationUnit extends Tree {
+    public static class Document extends Tree {
 
         public final Source source;
 
@@ -619,10 +619,10 @@ public abstract class Tree {
         public JuaList<FuncDef> functions;
 
         public JuaList<ConstDef> constants;
-        public CompilationUnit(int pos, Source source,
-                               JuaList<ConstDef> constants,
-                               JuaList<FuncDef> functions,
-                               JuaList<Statement> stats) {
+        public Document(int pos, Source source,
+                        JuaList<ConstDef> constants,
+                        JuaList<FuncDef> functions,
+                        JuaList<Statement> stats) {
             super(pos);
             this.source = source;
             this.constants = constants;
@@ -631,7 +631,7 @@ public abstract class Tree {
         }
 
         @Override
-        public Tag getTag() { return Tag.TOP; }
+        public Tag getTag() { return Tag.DOC; }
 
         @Override
         public void accept(Visitor visitor) { visitor.visitCompilationUnit(this); }

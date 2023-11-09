@@ -86,7 +86,7 @@ public class Gen extends Scanner {
     }
 
     @Override
-    public void visitCompilationUnit(CompilationUnit tree) {
+    public void visitCompilationUnit(Document tree) {
         // Jua, начиная с версии 3.1 от 10/3/2023 не поддерживает выполняемые инструкции вне функций.
 //        scan(tree.stats);
 

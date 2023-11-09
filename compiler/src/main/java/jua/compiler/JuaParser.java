@@ -40,7 +40,7 @@ public final class JuaParser {
         tokenizer = new Lexer(source, log);
     }
 
-    public CompilationUnit parseCompilationUnit() {
+    public Document parseCompilationUnit() {
         JuaList<Statement> stats = new JuaList<>();
         JuaList<FuncDef> funcDefs = new JuaList<>();
         JuaList<ConstDef> constDefs = new JuaList<>();
@@ -64,7 +64,7 @@ public final class JuaParser {
                 report(e);
             }
         }
-        return new CompilationUnit(0, source, constDefs, funcDefs, stats);
+        return new Document(0, source, constDefs, funcDefs, stats);
     }
 
     private void report(ParseNodeExit e) {

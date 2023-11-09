@@ -20,7 +20,7 @@ public final class Lower extends Translator {
 
 
     @Override
-    public void visitCompilationUnit(CompilationUnit tree) {
+    public void visitCompilationUnit(Document tree) {
         // Jua, начиная с версии 3.1 от 10/3/2023 не поддерживает выполняемые инструкции вне функций.
         // Для временной обратной совместимости, компилятор преобразовывает код вне функций в код функции <main>.
         // Возможно, в будущем времени компилятор полностью перестанет работать с кодом вне функций.
