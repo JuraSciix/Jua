@@ -1,7 +1,12 @@
-var x = 1;
+var x = 3;
 
 switch x {
-    1, 2 -> println("x is one or two");
-    else -> println("x is unknown");
+    1, 2 -> {
+        println("x=1");
+        fallthrough;
+    }
+    else -> {
+        println("popa");
+    }
 }
 

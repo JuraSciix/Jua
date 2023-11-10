@@ -108,10 +108,10 @@ public final class Code {
 
     public int emitNode(InstrNode node) {
         int pc = pc();
-        if (isAlive()) {
+//        if (isAlive()) {
             instructions.add(node);
             adjustStack(node.stackAdjustment());
-        }
+//        }
         return pc;
     }
 

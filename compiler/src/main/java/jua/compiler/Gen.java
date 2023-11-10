@@ -30,8 +30,6 @@ public class Gen extends Scanner {
 
     static class SwitchEnv extends FlowEnv {
 
-        /** Указатель на инструкцию, где находится switch. */
-        int switchStartPC;
         /** Индексы констант из ключей кейзов. Равно null когда isSwitch=false */
         final ArrayList<Integer> caseLabelsConstantIndexes = new ArrayList<>();
         /** Точка входа (IP) для каждого кейза. Равно null когда isSwitch=false */
@@ -186,7 +184,6 @@ public class Gen extends Scanner {
         genExpr(tree.expr).load();
         SwitchEnv env = new SwitchEnv(flow);
         flow = env;
-        env.switchStartPC = code.pc();
         code.putPos(tree.pos);
         int opcode = tree.cases.count() >= 16
                 ? OPCodes.BinarySwitch
@@ -226,7 +223,7 @@ public class Gen extends Scanner {
         SwitchEnv env = (SwitchEnv) flow;
         if (tree.labels == null) {
             // default case
-            env.switchDefaultOffset = code.pc() - 1;
+            env.switchDefaultOffset = code.pc();
         } else {
             for (Expression label : tree.labels) {
                 env.caseLabelsConstantIndexes.add(genExpr(label).constantIndex());
