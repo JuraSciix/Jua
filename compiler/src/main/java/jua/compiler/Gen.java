@@ -307,7 +307,7 @@ public class Gen extends Scanner {
 
     @Override
     public void visitLiteral(Literal tree) {
-        result = items.mkLiteral(tree.value);
+        result = items.mkLiteral(tree.value).t(tree);
     }
 
     @Override
@@ -408,7 +408,7 @@ public class Gen extends Scanner {
     public void visitAssign(Assign tree) {
         Item varItem = genExpr(tree.var);
         genExpr(tree.expr).load();
-        result = items.makeAssignItem(varItem).t(tree);
+        result = items.makeAssignItem(varItem);
     }
 
     @Override
