@@ -188,12 +188,11 @@ public class Gen extends Scanner {
         flow = env;
         env.switchStartPC = code.pc();
         code.putPos(tree.pos);
-        code.emitNode(new InstrNode(OPCodes.LinearSwitch) { // todo: убрать поддельную инструкцию.
-            @Override
-            public void accept(InstrVisitor visitor) {
-                throw new AssertionError();
-            }
-        }); // Резервируем место под инструкцию
+        int opcode = tree.cases.count() >= 16
+                ? OPCodes.BinarySwitch
+                : OPCodes.LinearSwitch;
+        SwitchInstrNode node = new SwitchInstrNode(opcode);
+        code.emitNode(node);
 
         boolean codeAlive = false;
 
@@ -208,12 +207,9 @@ public class Gen extends Scanner {
             env.switchDefaultOffset = code.pc() - 1;
         }
 
-        int[] literals = env.caseLabelsConstantIndexes.stream().mapToInt(a -> a).toArray();
-        int[] destIps = env.switchCaseOffsets.stream().mapToInt(a -> a).toArray();
-        // todo
-//        code.setInstruction(env.switchStartPC, (env.caseLabelsConstantIndexes.size() <= 16)
-//                ? new LinearSwitch(literals, destIps, env.switchDefaultOffset)
-//                : new BinarySwitch(literals, destIps, env.switchDefaultOffset));
+        node.literals = env.caseLabelsConstantIndexes.stream().mapToInt(a -> a).toArray();
+        node.dstIps = env.switchCaseOffsets.stream().mapToInt(a -> a).toArray();
+        node.defCp = env.switchDefaultOffset;
 
         code.resolve(env.exitChain);
 
@@ -236,7 +232,7 @@ public class Gen extends Scanner {
                 env.caseLabelsConstantIndexes.add(genExpr(label).constantIndex());
                 // Это не ошибка. Следующая строчка должна находиться именно в цикле
                 // Потому что инструкция switch ассоциирует значения к переходам в масштабе 1 к 1.
-                env.switchCaseOffsets.add(code.pc() - 1);
+                env.switchCaseOffsets.add(code.pc());
             }
         }
 

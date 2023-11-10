@@ -122,6 +122,19 @@ public class OPCodeTranslator implements InstrVisitor {
         }
     }
 
+    @Override
+    public void visitSwitch(SwitchInstrNode node) {
+        switch (node.opcode) {
+            case OPCodes.LinearSwitch:
+                put(new LinearSwitch(node.literals, node.dstIps, node.defCp));
+                break;
+            case OPCodes.BinarySwitch:
+                put(new BinarySwitch(node.literals, node.dstIps, node.defCp));
+            default:
+                opcodeMismatch(node);
+        }
+    }
+
     private static void opcodeMismatch(InstrNode node) {
         throw new IllegalStateException(node.getClass().getSimpleName()
                 + " with opcode " + getOpcodeName(node.opcode));

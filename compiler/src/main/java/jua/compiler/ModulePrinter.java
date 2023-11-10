@@ -1,6 +1,6 @@
 package jua.compiler;
 
-import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -14,21 +14,20 @@ public class ModulePrinter {
 
     private class Case {
         final int[] operands;
-        final int casePC;
+        final int caseCp;
 
-        Case(int[] operands, int casePC) {
+        Case(int[] operands, int caseCp) {
             this.operands = operands;
-            this.casePC = casePC;
+            this.caseCp = caseCp;
         }
 
-        @Override
-        public String toString() {
-            if (operands == null)
-                return "default -> " + casePC;
-            String agentLiterals = Arrays.stream(operands)
-                    .mapToObj(index -> executable.constantPool.getAddressEntry(index).toBeautifulString())
-                    .collect(Collectors.joining(", "));
-            return String.format("%s -> %d", agentLiterals, casePC);
+        void print() {
+            String agentLiterals = (operands == null)
+                    ? "else"
+                    : Arrays.stream(operands)
+                            .mapToObj(index -> executable.constantPool.getAddressEntry(index).toBeautifulString())
+                            .collect(Collectors.joining(", "));
+            printLine(String.format("%s -> %d", agentLiterals, caseCp));
         }
     }
 
@@ -40,27 +39,28 @@ public class ModulePrinter {
         void doPrint() {
             int line = executable.lineNumberTable.getLineNumber(pc);
             if (curLineNum != line) {
-                k("L%-5d ", line);
+                printAtStart(String.format("L%-5d ", line));
                 curLineNum = line;
             } else {
-                k(" %-5s ", " ");
+                printAtStart(String.format(" %-5s ", " "));
             }
 
-            if (PRINT_STACK_ADJUSTMENT && cases.isEmpty()) {
-                k("%2s %-5d", (tosAdjustment > 0) ? "+" + tosAdjustment : tosAdjustment, tos);
+            if (PRINT_STACK_ADJUSTMENT) {
+                print(String.format("%2s %-5d", (tosAdjustment > 0) ? "+" + tosAdjustment : tosAdjustment, tos));
             }
 
-            k("%5s: %-12s %s ", pc, name, String.join(", ", operands));
+            print(String.format("%5s: %-12s %s ", pc, name, String.join(", ", operands)));
 
             if (!cases.isEmpty()) {
-                k("{ %n");
+                printLine();
+                printLine("{");
                 adjustIndent(3);
-                cases.forEach(c -> f("%s %n", c));
+                cases.forEach(Case::print);
                 adjustIndent(-3);
-                f("} ");
+                print("}");
             }
 
-            f("%n");
+            printLine();
         }
     }
 
@@ -84,8 +84,9 @@ public class ModulePrinter {
     }
 
     public static void printModule(Module module) {
-        ModulePrinter printer = new ModulePrinter(module, System.out);
-        printer.f("Source \"%s\": %n", module.source.fileName);
+        PrintWriter w = new PrintWriter(System.out);
+        ModulePrinter printer = new ModulePrinter(module, w);
+        printer.printLine(String.format("Source \"%s\":", module.source.fileName));
         printer.adjustIndent(2);
         for (Module.Executable executable : module.executables) {
             if (executable == null) {
@@ -95,6 +96,7 @@ public class ModulePrinter {
             printer.printFunction(executable);
         }
         printer.adjustIndent(-2);
+        w.flush();
     }
 
     private class InstrNodePrinter implements InstrVisitor {
@@ -103,6 +105,7 @@ public class ModulePrinter {
         public void visitJump(JumpInstrNode node) {
             printOPCode(node.opcode);
             printCp(node.offset);
+            restoreTosIn(node.offset);
         }
 
         @Override
@@ -132,6 +135,36 @@ public class ModulePrinter {
         public void visitConst(ConstantInstrNode node) {
             printOPCode(node.opcode);
             printLiteral(node.index);
+        }
+
+        @Override
+        public void visitSwitch(SwitchInstrNode node) {
+            printOPCode(node.opcode);
+            int[] labels = node.literals;
+            int[] cps = node.dstIps;
+            int[][] groupedLabels = new int[labels.length][];
+            int[] groupedCps = new int[cps.length];
+            int i = 0;
+
+            assert labels.length == cps.length;
+            // Фактически, мы проходим по массиву один раз.
+            // То есть фактическая сложность O(n)
+            for (int j = 0; j < cps.length; ) {
+                for (int k = j + 1; k <= cps.length; k++) {
+                    if (k >= cps.length || cps[j] != cps[k]) {
+                        groupedLabels[i] = Arrays.copyOfRange(labels, j, k);
+                        groupedCps[i] = cps[j]; // Можно взять произвольную от j до k, они все равны.
+                        i++;
+                        j = k;
+                        break;
+                    }
+                }
+            }
+
+            for (int j = 0; j < i; j++) {
+                printCase(groupedLabels[j], groupedCps[j]);
+            }
+            printCase(null, node.defCp);
         }
     }
 
@@ -168,60 +201,73 @@ public class ModulePrinter {
     }
 
     private final Module module;
-    private final PrintStream stream;
+    private final PrintWriter writer;
 
     private InstructionData instrData;
     private int indent = 0;
     private char[] indentString = new char[0];
+    private boolean newLine = true;
     private TosRestoring tosRestoring;
 
     Module.Executable executable;
     int pc = 0, tos = 0, tosAdjustment;
     int curLineNum = 0;
 
-    private ModulePrinter(Module module, PrintStream stream) {
+    private ModulePrinter(Module module, PrintWriter writer) {
         this.module = module;
-        this.stream = stream;
+        this.writer = writer;
     }
 
     private void adjustIndent(int i) {
         if (i != 0) {
             indent += i;
-            indentString = new char[indent];
-            Arrays.fill(indentString, ' ');
+            if (indent > indentString.length) {
+                indentString = new char[indent];
+                Arrays.fill(indentString, ' ');
+            }
         }
     }
 
     private void beginFunction() {
         String sig = String.join(", ", Arrays.copyOf(executable.varnames, executable.totargs));
-        f("fn %s(%s): %n", executable.name, sig);                      // fn sum(a, b):
-        adjustIndent(2);                                              //   _
-        f("Code: %n");                                               //   Code:
-        adjustIndent(2);                                              //     _
-        f("stack=%d, locals=%d %n", executable.stackSize, executable.regSize); //     stack=2, locals=0
-        adjustIndent(2);                                              //       _
+        printLine(String.format("fn %s(%s):", executable.name, sig));
+        adjustIndent(2);
+        printLine("Code:");
+        adjustIndent(2);
+        printLine(String.format("stack=%d, locals=%d", executable.stackSize, executable.regSize));
+        adjustIndent(2);
     }
 
     private void endFunction() {
         adjustIndent(-2 * 3);
     }
 
-    void t(String str) {
-        stream.print(str);
+    public void printAtStart(String str) {
+        writer.print(str);
+        newLine = false;
     }
 
-    void k(String str, Object... args) {
-        stream.printf(str, args);
+    public void print(String str) {
+        printIndent();
+        writer.print(str);
     }
 
-    void p(String str) {
-        stream.print(indentString);
-        stream.print(str);
+    public void printLine() {
+        writer.println();
+        newLine = true;
     }
 
-    void f(String str, Object... args) {
-        stream.print(indentString);
-        stream.printf(str, args);
+    public void printLine(String str) {
+        printIndent();
+        writer.println(str);
+        newLine = true;
+    }
+
+    private void printIndent() {
+        if (newLine && indent > 0) {
+            writer.write(indentString, 0, indent);
+            newLine = false;
+        }
     }
 
     public void printOPCode(int opcode) {
@@ -233,33 +279,26 @@ public class ModulePrinter {
     }
 
     public void printCp(int offsetJump) {
-        print(String.valueOf(offsetJump));
+        instrData.operands.add(String.valueOf(offsetJump));
     }
 
     public void print(Object operand) {
         instrData.operands.add(String.valueOf(operand));
     }
 
-    public void restoreTosIn(int offset) {
-        if (offset > 0) {
-            tosRestoring = mergeTos(tosRestoring, new TosRestoring(pc + offset, tos, null));
+    public void restoreTosIn(int atCp) {
+        if (atCp > 0) {
+            tosRestoring = mergeTos(tosRestoring, new TosRestoring(atCp, tos, null));
         }
     }
 
-    public void printCase(int[] operands, int offsetJump) {
-        instrData.cases.add(new Case(operands, pc + offsetJump));
+    public void printCase(int[] operands, int caseCp) {
+        instrData.cases.add(new Case(operands, caseCp));
+        restoreTosIn(caseCp);
     }
 
     public void printLiteral(int index) {
         instrData.operands.add(executable.constantPool.getAddressEntry(index).toBeautifulString());
-    }
-
-    public void beginSwitch() {
-
-    }
-
-    public void endSwitch() {
-
     }
 
     public void printFuncRef(int index) {

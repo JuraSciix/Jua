@@ -250,6 +250,7 @@ public class InstructionUtils {
         void visitCall(CallInstrNode node);
         void visitIndexed(IndexedInstrNode node);
         void visitConst(ConstantInstrNode node);
+        void visitSwitch(SwitchInstrNode node);
     }
 
     public abstract static class InstrNode {
@@ -349,6 +350,22 @@ public class InstructionUtils {
         @Override
         public void accept(InstrVisitor visitor) {
             visitor.visitJump(this);
+        }
+    }
+
+    public static class SwitchInstrNode extends InstrNode {
+
+        public int[] literals;
+        public int[] dstIps;
+        public int defCp;
+
+        public SwitchInstrNode(int opcode) {
+            super(opcode);
+        }
+
+        @Override
+        public void accept(InstrVisitor visitor) {
+            visitor.visitSwitch(this);
         }
     }
 
