@@ -1,5 +1,6 @@
 package jua.compiler;
 
+import jua.compiler.Tokens.TokenType;
 import jua.compiler.Tree.*;
 
 public final class TreeInfo {
@@ -177,6 +178,23 @@ public final class TreeInfo {
                 return 18;
             default:
                 throw new AssertionError(tag);
+        }
+    }
+
+    public static Tag getAsgTag(TokenType type) {
+        switch (type) {
+            case AMPEQ: return Tag.ASG_BIT_AND;
+            case BAREQ: return Tag.ASG_BIT_OR;
+            case CARETEQ: return Tag.ASG_BIT_XOR;
+            case GTGTEQ: return Tag.ASG_SL;
+            case LTLTEQ: return Tag.ASG_SR;
+            case MINUSEQ: return Tag.ASG_SUB;
+            case PERCENTEQ: return Tag.ASG_REM;
+            case PLUSEQ: return Tag.ASG_ADD;
+            case QUESQUESEQ: return Tag.ASG_COALESCE;
+            case SLASHEQ: return Tag.ASG_DIV;
+            case STAREQ: return Tag.ASG_MUL;
+            default: throw new IllegalArgumentException(type.name());
         }
     }
 }
