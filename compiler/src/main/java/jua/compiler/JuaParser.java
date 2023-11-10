@@ -479,7 +479,7 @@ public final class JuaParser {
     private Expression parseTernary0(int position, Expression cond) {
         Expression right = parseExpression();
         expectToken(COL);
-        return new TernaryOp(position, cond, right, parseExpression());
+        return new Conditional(position, cond, right, parseExpression());
     }
 
     private Expression parseOr() {

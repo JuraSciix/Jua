@@ -86,7 +86,7 @@ public class Gen extends Scanner {
     }
 
     @Override
-    public void visitCompilationUnit(Document tree) {
+    public void visitDocument(Document tree) {
         // Jua, начиная с версии 3.1 от 10/3/2023 не поддерживает выполняемые инструкции вне функций.
 //        scan(tree.stats);
 
@@ -436,7 +436,7 @@ public class Gen extends Scanner {
     }
 
     @Override
-    public void visitTernaryOp(TernaryOp tree) {
+    public void visitConditional(Conditional tree) {
         CondItem condItem = genExpr(tree.cond).asCond();
         Chain falseJumps = condItem.falseJumps();
         code.resolve(condItem.trueChain);

@@ -78,7 +78,7 @@ public abstract class Tree {
     }
 
     public interface Visitor {
-        void visitCompilationUnit(Document tree);
+        void visitDocument(Document tree);
         void visitConstDef(ConstDef tree);
         void visitFuncDef(FuncDef tree);
         void visitBlock(Block tree);
@@ -104,14 +104,14 @@ public abstract class Tree {
         void visitParens(Parens tree);
         void visitAssign(Assign tree);
         void visitCompoundAssign(CompoundAssign tree);
-        void visitTernaryOp(TernaryOp tree);
+        void visitConditional(Conditional tree);
         void visitBinaryOp(BinaryOp tree);
         void visitUnaryOp(UnaryOp tree);
     }
 
     public static abstract class AbstractVisitor implements Visitor {
         @Override
-        public void visitCompilationUnit(Document tree) { visitTree(tree); }
+        public void visitDocument(Document tree) { visitTree(tree); }
 
         @Override
         public void visitConstDef(ConstDef tree) { visitTree(tree); }
@@ -189,7 +189,7 @@ public abstract class Tree {
         public void visitCompoundAssign(CompoundAssign tree) { visitTree(tree); }
 
         @Override
-        public void visitTernaryOp(TernaryOp tree) { visitTree(tree); }
+        public void visitConditional(Conditional tree) { visitTree(tree); }
 
         @Override
         public void visitBinaryOp(BinaryOp tree) { visitTree(tree); }
@@ -218,7 +218,7 @@ public abstract class Tree {
         }
 
         @Override
-        public void visitCompilationUnit(Document tree) {
+        public void visitDocument(Document tree) {
             scan(tree.constants);
             scan(tree.functions);
             scan(tree.stats);
@@ -364,7 +364,7 @@ public abstract class Tree {
         }
 
         @Override
-        public void visitTernaryOp(TernaryOp tree) {
+        public void visitConditional(Conditional tree) {
             scan(tree.cond);
             scan(tree.ths);
             scan(tree.fhs);
@@ -410,7 +410,7 @@ public abstract class Tree {
         }
 
         @Override
-        public void visitCompilationUnit(Document tree) {
+        public void visitDocument(Document tree) {
             tree.constants = translate(tree.constants);
             tree.functions = translate(tree.functions);
             tree.stats = translate(tree.stats);
@@ -577,7 +577,7 @@ public abstract class Tree {
         }
 
         @Override
-        public void visitTernaryOp(TernaryOp tree) {
+        public void visitConditional(Conditional tree) {
             tree.cond = translate(tree.cond);
             tree.ths = translate(tree.ths);
             tree.fhs = translate(tree.fhs);
@@ -634,7 +634,7 @@ public abstract class Tree {
         public Tag getTag() { return Tag.DOC; }
 
         @Override
-        public void accept(Visitor visitor) { visitor.visitCompilationUnit(this); }
+        public void accept(Visitor visitor) { visitor.visitDocument(this); }
     }
 
     public static abstract class Statement extends Tree {
@@ -1168,11 +1168,11 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitCompoundAssign(this); }
     }
 
-    public static class TernaryOp extends Expression {
+    public static class Conditional extends Expression {
 
         public Expression cond, ths, fhs;
 
-        public TernaryOp(int pos, Expression cond, Expression ths, Expression fhs) {
+        public Conditional(int pos, Expression cond, Expression ths, Expression fhs) {
             super(pos);
             this.cond = cond;
             this.ths = ths;
@@ -1183,7 +1183,7 @@ public abstract class Tree {
         public Tag getTag() { return Tag.TERNARY; }
 
         @Override
-        public void accept(Visitor visitor) { visitor.visitTernaryOp(this); }
+        public void accept(Visitor visitor) { visitor.visitConditional(this); }
     }
 
     public static class BinaryOp extends Expression {

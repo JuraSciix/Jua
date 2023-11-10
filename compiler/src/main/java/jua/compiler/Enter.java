@@ -126,7 +126,7 @@ public class Enter extends Scanner {
     }
 
     @Override
-    public void visitCompilationUnit(Document tree) {
+    public void visitDocument(Document tree) {
         ensureRootScope();
         source = tree.source;
         scan(tree.constants);
