@@ -42,7 +42,7 @@ public final class JuaParser {
         tokenizer = new Lexer(source, log);
     }
 
-    public Document parseCompilationUnit() {
+    public Document parseDocument() {
         JuaList<Statement> stats = new JuaList<>();
         JuaList<FuncDef> funcDefs = new JuaList<>();
         JuaList<ConstDef> constDefs = new JuaList<>();
