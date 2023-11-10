@@ -103,7 +103,7 @@ public abstract class Tree {
         void visitInvocation(Invocation tree);
         void visitParens(Parens tree);
         void visitAssign(Assign tree);
-        void visitCompoundAssign(CompoundAssign tree);
+        void visitEnhancedAssign(EnhancedAssign tree);
         void visitConditional(Conditional tree);
         void visitBinaryOp(BinaryOp tree);
         void visitUnaryOp(UnaryOp tree);
@@ -186,7 +186,7 @@ public abstract class Tree {
         public void visitAssign(Assign tree) { visitTree(tree); }
 
         @Override
-        public void visitCompoundAssign(CompoundAssign tree) { visitTree(tree); }
+        public void visitEnhancedAssign(EnhancedAssign tree) { visitTree(tree); }
 
         @Override
         public void visitConditional(Conditional tree) { visitTree(tree); }
@@ -358,7 +358,7 @@ public abstract class Tree {
         }
 
         @Override
-        public void visitCompoundAssign(CompoundAssign tree) {
+        public void visitEnhancedAssign(EnhancedAssign tree) {
             scan(tree.expr);
             scan(tree.var);
         }
@@ -570,7 +570,7 @@ public abstract class Tree {
         }
 
         @Override
-        public void visitCompoundAssign(CompoundAssign tree) {
+        public void visitEnhancedAssign(EnhancedAssign tree) {
             tree.var = translate(tree.var);
             tree.expr = translate(tree.expr);
             result = tree;
@@ -1148,13 +1148,13 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitAssign(this); }
     }
 
-    public static class CompoundAssign extends Expression {
+    public static class EnhancedAssign extends Expression {
 
         public final Tag tag;
 
         public Expression var, expr;
 
-        public CompoundAssign(int pos, Tag tag, Expression var, Expression expr) {
+        public EnhancedAssign(int pos, Tag tag, Expression var, Expression expr) {
             super(pos);
             this.tag = tag;
             this.var = var;
@@ -1165,7 +1165,7 @@ public abstract class Tree {
         public Tag getTag() { return tag; }
 
         @Override
-        public void accept(Visitor visitor) { visitor.visitCompoundAssign(this); }
+        public void accept(Visitor visitor) { visitor.visitEnhancedAssign(this); }
     }
 
     public static class Conditional extends Expression {

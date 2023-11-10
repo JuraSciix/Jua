@@ -400,7 +400,7 @@ public final class JuaParser {
             case SLASHEQ:
             case STAREQ:
                 nextToken();
-                return new CompoundAssign(position, TreeInfo.getAsgTag(token.type), expr, parseAssignment());
+                return new EnhancedAssign(position, TreeInfo.getAsgTag(token.type), expr, parseAssignment());
 
             default:
                 return expr;

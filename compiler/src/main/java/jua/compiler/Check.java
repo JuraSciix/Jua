@@ -196,7 +196,7 @@ public class Check extends Scanner {
     }
 
     @Override
-    public void visitCompoundAssign(CompoundAssign tree) {
+    public void visitEnhancedAssign(EnhancedAssign tree) {
         if (requireAccessibleTree(tree.var)) {
             scan(tree.var);
         }

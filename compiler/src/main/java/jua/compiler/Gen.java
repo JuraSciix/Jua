@@ -412,7 +412,7 @@ public class Gen extends Scanner {
     }
 
     @Override
-    public void visitCompoundAssign(CompoundAssign tree) {
+    public void visitEnhancedAssign(EnhancedAssign tree) {
         Item varItem = genExpr(tree.var);
         if (tree.hasTag(Tag.ASG_COALESCE)) {
             varItem.duplicate();
