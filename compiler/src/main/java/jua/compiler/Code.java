@@ -4,14 +4,12 @@ import jua.compiler.InstructionUtils.IndexedInstrNode;
 import jua.compiler.InstructionUtils.InstrNode;
 import jua.compiler.InstructionUtils.JumpInstrNode;
 import jua.compiler.InstructionUtils.SingleInstrNode;
-import jua.runtime.interpreter.memory.Address;
-import jua.runtime.interpreter.memory.AddressUtils;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.LineNumberTable;
+import jua.runtime.interpreter.memory.Address;
+import jua.runtime.interpreter.memory.AddressUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.TreeMap;
+import java.util.*;
 
 public final class Code {
 
@@ -40,9 +38,6 @@ public final class Code {
     private final List<InstrNode> instructions = new ArrayList<>();
     private final TreeMap<Short, Integer> lineTable = new TreeMap<>();
 
-
-    private final ConstantPoolWriter constantPoolWriter = new ConstantPoolWriter();
-
     /** Top of stack. */
     private int tos = 0;
 
@@ -61,6 +56,8 @@ public final class Code {
 
     // Set from Gen.visitFuncDef or Gen.visitCompilationUnit
     public ModuleScope.FunctionSymbol sym;
+
+    private final Map<Object, Integer> constantPool = new LinkedHashMap<>();
 
     public Code(ModuleScope programScope, Source source) {
         this.programScope = programScope;
@@ -157,8 +154,12 @@ public final class Code {
         this.alive = alive;
     }
 
-    public ConstantPoolWriter constantPoolWriter() {
-        return constantPoolWriter;
+    public int resolveConstant(Object o) {
+        return constantPool.computeIfAbsent(o, o1 -> constantPool.size());
+    }
+
+    public Object[] getConstantPoolEntries() {
+        return constantPool.keySet().toArray();
     }
 
     public Module.Executable toExecutable() {
@@ -187,7 +188,7 @@ public final class Code {
     }
 
     private ConstantPool buildConstantPool() {
-        Object[] values = constantPoolWriter().toArray();
+        Object[] values = getConstantPoolEntries();
         Address[] addresses = AddressUtils.allocateMemory(values.length, 0);
         for (int i = 0; i < values.length; i++) {
             AddressUtils.assignObject(addresses[i], values[i]);

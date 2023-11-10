@@ -130,7 +130,7 @@ public final class Items {
 
         @Override
         int constantIndex() {
-            return code.constantPoolWriter().write(value);
+            return code.resolveConstant(value);
         }
     }
 
