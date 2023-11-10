@@ -79,10 +79,6 @@ public final class JuaParser {
                 nextToken();
                 return parseBreak(pos);
             }
-            case CASE: {
-                nextToken();
-                pError(pos, "'case' is not allowed outside of switch.");
-            }
             case CONST: {
                 nextToken();
                 pError(pos, "constant declaration is not allowed here");
@@ -90,10 +86,6 @@ public final class JuaParser {
             case CONTINUE: {
                 nextToken();
                 return parseContinue(pos);
-            }
-            case DEFAULT: {
-                nextToken();
-                pError(pos, "'default' is not allowed outside of switch.");
             }
             case DO: {
                 nextToken();
@@ -354,24 +346,17 @@ public final class JuaParser {
         expectToken(LBRACE);
 
         while (!acceptToken(RBRACE)) {
-            int position1 = token.pos;
-
-            if (acceptToken(CASE)) {
-                try {
-                    cases.add(parseCase(position1, false));
-                } catch (ParseNodeExit e) {
-                    report(e);
+            try {
+                int position1 = token.pos;
+                Case c;
+                if (acceptToken(ELSE)) {
+                    c = parseCase(position1, true);
+                } else {
+                    c = parseCase(position1, false);
                 }
-            } else if (acceptToken(DEFAULT)) {
-                try {
-                    cases.add(parseCase(position1, true));
-                } catch (ParseNodeExit e) {
-                    report(e);
-                }
-            } else if (acceptToken(EOF)) {
-                expectToken(RBRACE);
-            } else {
-                unexpected(token, JuaList.of(CASE, DEFAULT, RBRACE));
+                cases.add(c);
+            } catch (ParseNodeExit e) {
+                report(e);
             }
         }
         return new Switch(position, selector, cases);
@@ -383,7 +368,7 @@ public final class JuaParser {
         if (!isDefault) {
             expressions = parseExpressions();
         }
-        expectToken(COL);
+        expectToken(ARROW);
         Statement body = parseStatement();
         return new Case(position, expressions, body);
     }

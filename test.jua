@@ -1,0 +1,7 @@
+var x = 1;
+
+switch x {
+    1, 2 -> println("x is one or two");
+    else -> println("x is unknown");
+}
+
