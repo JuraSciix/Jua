@@ -6,6 +6,7 @@ import jua.compiler.Items.Item;
 import jua.compiler.Items.SafeItem;
 import jua.compiler.ModuleScope.ConstantSymbol;
 import jua.compiler.Tree.*;
+import jua.compiler.utils.IntArrayList;
 import jua.compiler.utils.JuaList;
 
 import java.util.ArrayList;
@@ -31,9 +32,9 @@ public class Gen extends Scanner {
     static class SwitchEnv extends FlowEnv {
 
         /** Индексы констант из ключей кейзов. Равно null когда isSwitch=false */
-        final ArrayList<Integer> caseLabelsConstantIndexes = new ArrayList<>();
+        final IntArrayList caseLabelsConstantIndexes = new IntArrayList();
         /** Точка входа (IP) для каждого кейза. Равно null когда isSwitch=false */
-        final ArrayList<Integer> switchCaseOffsets = new ArrayList<>();
+        final IntArrayList switchCaseOffsets = new IntArrayList();
         /** Указатель на точку входа в default-case */
         int switchDefaultOffset = -1;
 
@@ -204,8 +205,8 @@ public class Gen extends Scanner {
             env.switchDefaultOffset = code.pc() - 1;
         }
 
-        node.literals = env.caseLabelsConstantIndexes.stream().mapToInt(a -> a).toArray();
-        node.dstIps = env.switchCaseOffsets.stream().mapToInt(a -> a).toArray();
+        node.literals = env.caseLabelsConstantIndexes.toArray();
+        node.dstIps = env.switchCaseOffsets.toArray();
         node.defCp = env.switchDefaultOffset;
 
         code.resolve(env.exitChain);

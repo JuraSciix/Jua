@@ -1,5 +1,7 @@
 package jua.compiler;
 
+import jua.compiler.utils.IntArrayList;
+
 import java.util.ArrayList;
 
 public final class LineMap {
@@ -20,7 +22,7 @@ public final class LineMap {
 
     private int[] buildLineMap(SourceReader reader) {
         // todo: Не полагаться на обертки.
-        ArrayList<Integer> lineStartPoints = new ArrayList<>();
+        IntArrayList lineStartPoints = new IntArrayList();
 
         // Первая линия
         lineStartPoints.add(0);
@@ -36,7 +38,7 @@ public final class LineMap {
             reader.next();
         }
 
-        return lineStartPoints.stream().mapToInt(a->a).toArray();
+        return lineStartPoints.toArray();
     }
 
     public int getLineNumber(int pos) {
