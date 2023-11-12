@@ -5,6 +5,8 @@ import jua.compiler.Tree.*;
 import jua.compiler.utils.Flow;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import static jua.compiler.TreeInfo.*;
 
@@ -89,6 +91,27 @@ public class Check extends Scanner {
         scan(tree.cond);
         scanLoopBody(tree.body);
         scan(tree.step);
+    }
+
+    @Override
+    public void visitSwitch(Switch tree) {
+        super.visitSwitch(tree);
+
+        Set<Object> dejaVu = new HashSet<>();
+        Flow.forEach(tree.cases, c -> {
+            if (c.labels == null) {
+                if (!dejaVu.add(null)) {
+                    report(c.pos, "duplicate default-case");
+                }
+            } else {
+                Flow.forEach(c.labels, label -> {
+                    Literal l = (Literal) TreeInfo.stripParens(label);
+                    if (!dejaVu.add(l.value)) {
+                        report(label.pos, "duplicate label");
+                    }
+                });
+            }
+        });
     }
 
     private void scanLoopBody(Statement tree) {
