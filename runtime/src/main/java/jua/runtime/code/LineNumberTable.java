@@ -1,7 +1,5 @@
 package jua.runtime.code;
 
-import jua.runtime.utils.Conversions;
-
 public final class LineNumberTable {
 
     private final short[] codePoints;
@@ -21,7 +19,7 @@ public final class LineNumberTable {
         int current = (top >> 1);
 
         while ((top - bottom) > 1) {
-            int cp = Conversions.unsigned(_codePoints[current]);
+            int cp = _codePoints[current] & 0xffff;
             if (codePoint >= cp) {
                 bottom = current;
             } else {

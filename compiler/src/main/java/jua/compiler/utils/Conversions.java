@@ -1,4 +1,6 @@
-package jua.runtime.utils;
+package jua.compiler.utils;
+
+import jua.runtime.utils.Assert;
 
 public final class Conversions {
 

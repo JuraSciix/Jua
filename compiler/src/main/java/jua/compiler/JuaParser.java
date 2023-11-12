@@ -4,7 +4,7 @@ import jua.compiler.Tokens.Token;
 import jua.compiler.Tokens.TokenType;
 import jua.compiler.Tree.*;
 import jua.compiler.utils.Flow;
-import jua.runtime.utils.Conversions;
+import jua.compiler.utils.Conversions;
 
 import java.util.Arrays;
 import java.util.List;
