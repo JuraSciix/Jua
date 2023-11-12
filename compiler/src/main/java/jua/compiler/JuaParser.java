@@ -3,9 +3,11 @@ package jua.compiler;
 import jua.compiler.Tokens.Token;
 import jua.compiler.Tokens.TokenType;
 import jua.compiler.Tree.*;
+import jua.compiler.utils.Flow;
 import jua.runtime.utils.Conversions;
-import jua.compiler.utils.JuaList;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static jua.compiler.Tokens.TokenType.*;
@@ -43,27 +45,30 @@ public final class JuaParser {
     }
 
     public Document parseDocument() {
-        JuaList<Statement> stats = new JuaList<>();
-        JuaList<FuncDef> funcDefs = new JuaList<>();
-        JuaList<ConstDef> constDefs = new JuaList<>();
+        Flow.Builder<Statement> stats = Flow.builder();
+        Flow.Builder<FuncDef> funcDefs = Flow.builder();
+        Flow.Builder<ConstDef> constDefs = Flow.builder();
         nextToken();
 
         while (!acceptToken(EOF)) {
             try {
                 if (acceptToken(FN)) {
-                    funcDefs.add(parseFunction());
+                    funcDefs.append(parseFunction());
                     continue;
                 }
                 if (acceptToken(CONST)) {
-                    constDefs.add(parseConst());
+                    constDefs.append(parseConst());
                     continue;
                 }
-                stats.add(parseStatement());
+                stats.append(parseStatement());
             } catch (ParseNodeExit e) {
                 report(e);
             }
         }
-        return new Document(0, source, constDefs, funcDefs, stats);
+        return new Document(0, source,
+                constDefs.toFlow(),
+                funcDefs.toFlow(),
+                stats.toFlow());
     }
 
     private void report(ParseNodeExit e) {
@@ -80,7 +85,7 @@ public final class JuaParser {
             }
             case CONST: {
                 nextToken();
-                pError(acceptedPos, "constant declaration is not allowed here");
+                reportError(acceptedPos, "constant declaration is not allowed here");
             }
             case CONTINUE: {
                 nextToken();
@@ -92,11 +97,11 @@ public final class JuaParser {
             }
             case ELSE: {
                 nextToken();
-                pError(acceptedPos, "'else' is not allowed without if-statement.");
+                reportError(acceptedPos, "'else' is not allowed without if-statement.");
             }
             case EOF: {
                 nextToken();
-                pError(acceptedPos, "missing expected statement.");
+                reportError(acceptedPos, "missing expected statement.");
             }
             case FALLTHROUGH: {
                 nextToken();
@@ -104,7 +109,7 @@ public final class JuaParser {
             }
             case FN: {
                 nextToken();
-                pError(acceptedPos, "function declaration is not allowed here");
+                reportError(acceptedPos, "function declaration is not allowed here");
             }
             case FOR: {
                 nextToken();
@@ -124,7 +129,7 @@ public final class JuaParser {
             }
             case SEMI: {
                 nextToken();
-                return new Block(acceptedPos, JuaList.empty());
+                return new Block(acceptedPos, null);
             }
             case SWITCH: {
                 nextToken();
@@ -143,7 +148,7 @@ public final class JuaParser {
     }
 
     private VarDef parseVar() {
-        JuaList<VarDef.Definition> defs = new JuaList<>();
+        Flow.Builder<VarDef.Definition> defs = Flow.builder();
         do {
             Token name = token;
             expectToken(IDENTIFIER);
@@ -151,28 +156,28 @@ public final class JuaParser {
             if (acceptToken(EQ)) {
                 init = parseExpression();
             }
-            defs.add(new VarDef.Definition(name.toName(), init));
+            defs.append(new VarDef.Definition(name.toName(), init));
         } while (acceptToken(COMMA));
         expectToken(SEMI);
-        return new VarDef(acceptedPos, defs);
+        return new VarDef(acceptedPos, defs.toFlow());
     }
 
     private ConstDef parseConst() {
-        JuaList<ConstDef.Definition> definitions = new JuaList<>();
+        Flow.Builder<ConstDef.Definition> definitions = Flow.builder();
 
         do {
             try {
                 Token name = token;
                 expectToken(IDENTIFIER);
                 expectToken(EQ);
-                definitions.add(new ConstDef.Definition(name.toName(), parseExpression()));
+                definitions.append(new ConstDef.Definition(name.toName(), parseExpression()));
             } catch (ParseNodeExit e) {
                 report(e);
             }
         } while (acceptToken(COMMA));
 
         expectToken(SEMI);
-        return new ConstDef(acceptedPos, definitions);
+        return new ConstDef(acceptedPos, definitions.toFlow());
     }
 
     private Statement parseBreak() {
@@ -204,7 +209,7 @@ public final class JuaParser {
         Name funcName = token.toName();
         expectToken(IDENTIFIER);
         expectToken(LPAREN);
-        JuaList<FuncDef.Parameter> params = new JuaList<>();
+        Flow.Builder<FuncDef.Parameter> params = Flow.builder();
         boolean comma = false, optionalState = false;
 
         while (!acceptToken(RPAREN)) {
@@ -220,13 +225,13 @@ public final class JuaParser {
                 optional = parseExpression();
                 optionalState = true;
             } else if (optionalState) {
-                pError(name0.pos, "here must be a optional argument.");
+                reportError(name0.pos, "here must be a optional argument.");
             }
-            params.add(new FuncDef.Parameter(name1, optional));
+            params.append(new FuncDef.Parameter(name1, optional));
             comma = !acceptToken(COMMA);
         }
         Statement body = parseBody();
-        return new FuncDef(pos, funcName, params, body);
+        return new FuncDef(pos, funcName, params.toFlow(), body);
     }
 
     private Statement parseBody() {
@@ -237,30 +242,30 @@ public final class JuaParser {
             expectToken(SEMI);
             return new Discarded(expr.pos, expr);
         }
-        pError(pos, "Illegal function body");
+        reportError(pos, "Illegal function body");
         return null;
     }
 
-    private JuaList<Statement> parseForInit() {
-        JuaList<Statement> init = JuaList.empty();
+    private Flow<Statement> parseForInit() {
+        Flow.Builder<Statement> init = Flow.builder();
         if (acceptToken(VAR)) {
-            init.add(parseVar());
+            init.append(parseVar());
         } else {
             try {
-                init.addAll(parseExpressions().map(expr -> new Discarded(expr.pos, expr)));
+                Flow.forEach(parseExpressions(), expr -> init.append(new Discarded(expr.pos, expr)));
             } catch (ParseNodeExit e) {
                 report(new ParseNodeExit(e.pos, "invalid statement"));
             }
             expectToken(SEMI);
         }
 
-        return init;
+        return init.toFlow();
     }
 
     private Statement parseFor() {
         int position = acceptedPos;
         boolean parens = acceptToken(LPAREN);
-        JuaList<Statement> init = acceptToken(SEMI) ? JuaList.empty() : parseForInit();
+        Flow<Statement> init = acceptToken(SEMI) ? null : parseForInit();
 
         Expression cond = null;
 
@@ -268,7 +273,7 @@ public final class JuaParser {
             cond = parseExpression();
             expectToken(SEMI);
         }
-        JuaList<Expression> step = null;
+        Flow<Expression> step = null;
 
         if (parens) {
             if (!acceptToken(RPAREN)) {
@@ -294,19 +299,19 @@ public final class JuaParser {
 
     private Statement parseBlock() {
         int pos = acceptedPos;
-        JuaList<Statement> statements = new JuaList<>();
+        Flow.Builder<Statement> statements = Flow.builder();
 
         while (!acceptToken(RBRACE)) {
             if (acceptToken(EOF)) {
                 expectToken(RBRACE);
             }
             try {
-                statements.add(parseStatement());
+                statements.append(parseStatement());
             } catch (ParseNodeExit e) {
                 report(e);
             }
         }
-        return new Block(pos, statements);
+        return new Block(pos, statements.toFlow());
     }
 
     private Statement parseReturn() {
@@ -327,7 +332,7 @@ public final class JuaParser {
     private Statement parseSwitch() {
         int position = acceptedPos;
         Expression selector = parseExpression();
-        JuaList<Case> cases = new JuaList<>();
+        Flow.Builder<Case> cases = Flow.builder();
         expectToken(LBRACE);
 
         while (!acceptToken(RBRACE)) {
@@ -339,16 +344,16 @@ public final class JuaParser {
                 } else {
                     c = parseCase(position1, false);
                 }
-                cases.add(c);
+                cases.append(c);
             } catch (ParseNodeExit e) {
                 report(e);
             }
         }
-        return new Switch(position, selector, cases);
+        return new Switch(position, selector, cases.toFlow());
     }
 
     private Case parseCase(int position, boolean isDefault) {
-        JuaList<Expression> expressions = null;
+        Flow<Expression> expressions = null;
 
         if (!isDefault) {
             expressions = parseExpressions();
@@ -369,14 +374,14 @@ public final class JuaParser {
         return parseAssignment();
     }
 
-    private JuaList<Expression> parseExpressions() {
-        JuaList<Expression> expressions = new JuaList<>();
+    private Flow<Expression> parseExpressions() {
+        Flow.Builder<Expression> expressions = Flow.builder();
 
         do {
-            expressions.add(parseExpression());
+            expressions.append(parseExpression());
         } while (acceptToken(COMMA));
 
-        return expressions;
+        return expressions.toFlow();
     }
 
     private Expression parseAssignment() {
@@ -636,7 +641,7 @@ public final class JuaParser {
         Expression expr = parseAccess();
 
         if (acceptToken(LPAREN)) {
-            JuaList<Invocation.Argument> args = parseInvocationArgs();
+            Flow<Invocation.Argument> args = parseInvocationArgs();
             expectToken(RPAREN);
             return new Invocation(pos, expr, args);
         }
@@ -682,7 +687,7 @@ public final class JuaParser {
 
         switch (tok.type) {
             case EOF: {
-                pError(tok.pos, "missing expected expression.");
+                reportError(tok.pos, "missing expected expression.");
             }
             case FALSE: {
                 return new Literal(tok.pos, false);
@@ -715,7 +720,7 @@ public final class JuaParser {
                 return new Literal(tok.pos, true);
             }
             default:
-                unexpected(tok, JuaList.of(
+                unexpected(tok, Arrays.asList(
                         FALSE, FLOATLITERAL, IDENTIFIER,
                         INTLITERAL, LBRACE, LBRACKET,
                         LPAREN, NULL, STRINGLITERAL, TRUE
@@ -727,7 +732,7 @@ public final class JuaParser {
     private Expression parseFloat(Token token) {
         double d = Conversions.parseDouble(token.value(), token.radix());
         if (Double.isInfinite(d)) {
-            pError(token.pos, "number too large.");
+            reportError(token.pos, "number too large.");
         }
         return new Literal(token.pos, d);
     }
@@ -739,8 +744,8 @@ public final class JuaParser {
         return new Var(token.pos, token.toName());
     }
 
-    private JuaList<Invocation.Argument> parseInvocationArgs() {
-        JuaList<Invocation.Argument> args = new JuaList<>();
+    private Flow<Invocation.Argument> parseInvocationArgs() {
+        Flow.Builder<Invocation.Argument> args = Flow.builder();
         boolean comma = false;
 
         while (!matchesToken(RPAREN)) {
@@ -759,15 +764,15 @@ public final class JuaParser {
             } else {
                 expr = parseExpression();
             }
-            args.add(new Invocation.Argument(name, expr));
+            args.append(new Invocation.Argument(name, expr));
             comma = !acceptToken(COMMA);
         }
 
-        return args;
+        return args.toFlow();
     }
 
     private Expression parseInvocation(Token token) {
-        JuaList<Invocation.Argument> args = parseInvocationArgs();
+        Flow<Invocation.Argument> args = parseInvocationArgs();
         expectToken(RPAREN);
         return new Invocation(token.pos,
                 new MemberAccess(token.pos, Tag.MEMACCESS, null, token.toName()),
@@ -779,16 +784,16 @@ public final class JuaParser {
             long value = Conversions.parseLong(token.value(), token.radix());
             return new Literal(token.pos, value);
         } catch (NumberFormatException e) {
-            pError(token.pos, "number too large.");
+            reportError(token.pos, "number too large.");
             return null;
         }
     }
 
     private ListLiteral parseListInit(int pos) {
-        JuaList<Expression> entries = new JuaList<>();
+        Flow.Builder<Expression> entries = Flow.builder();
         if (!acceptToken(RBRACKET)) {
             do {
-                entries.add(parseExpression());
+                entries.append(parseExpression());
                 if (acceptToken(COMMA)) {
                     if (acceptToken(RBRACKET)) {
                         break;
@@ -798,14 +803,15 @@ public final class JuaParser {
                 if (acceptToken(RBRACKET)) {
                     break;
                 }
-                unexpected(token, JuaList.of(COMMA, RBRACKET));
+                unexpected(token, Arrays.asList(COMMA, RBRACKET));
             } while (true);
         }
-        return new ListLiteral(pos, entries);
+        return new ListLiteral(pos, entries.toFlow());
     }
 
     private MapLiteral parseMapInit(int pos) {
-        JuaList<MapLiteral.Entry> entries = new JuaList<>();
+        Flow.Builder<MapLiteral.Entry> entries
+                = Flow.builder();
         if (!acceptToken(RBRACE)) {
             do {
                 int entryPos = token.pos;
@@ -827,7 +833,7 @@ public final class JuaParser {
                             key = new Literal(token.pos, token.name());
                             break;
                         default:
-                            unexpected(token, JuaList.of(FLOATLITERAL, INTLITERAL, IDENTIFIER));
+                            unexpected(token, Arrays.asList(FLOATLITERAL, INTLITERAL, IDENTIFIER));
                             throw new AssertionError(); // UNREACHABLE
                     }
                     nextToken();
@@ -837,7 +843,7 @@ public final class JuaParser {
                 Expression value = parseExpression();
                 MapLiteral.Entry entry = new MapLiteral.Entry(entryPos, key, value);
                 entry.field = field;
-                entries.add(entry);
+                entries.append(entry);
                 if (acceptToken(COMMA)) {
                     if (acceptToken(RBRACE)) {
                         break;
@@ -847,10 +853,10 @@ public final class JuaParser {
                 if (acceptToken(RBRACE)) {
                     break;
                 }
-                unexpected(token, JuaList.of(COMMA, RBRACE));
+                unexpected(token, Arrays.asList(COMMA, RBRACE));
             } while (true);
         }
-        return new MapLiteral(pos, entries);
+        return new MapLiteral(pos, entries.toFlow());
     }
 
     private Expression parseParens() {
@@ -887,21 +893,21 @@ public final class JuaParser {
             String found = token.type == EOF ? null : token2string(token);
 
             if (expected != null && found != null) {
-                pError(token.pos, expected + " expected, " + found + " found.");
+                reportError(token.pos, expected + " expected, " + found + " found.");
                 return;
             }
 
             if (expected != null) {
-                pError(token.pos, expected + " expected.");
+                reportError(token.pos, expected + " expected.");
                 return;
             }
 
             if (found != null) {
-                pError(token.pos, "unexpected " + found + ".");
+                reportError(token.pos, "unexpected " + found + ".");
                 return;
             }
 
-            pError(token.pos, "invalid syntax.");
+            reportError(token.pos, "invalid syntax.");
         } finally {
             nextToken();
         }
@@ -923,19 +929,14 @@ public final class JuaParser {
         }
     }
 
-    private void unexpected(Token token) {
-        pError(token.pos, "unexpected " + token2string(token) + '.');
-    }
-
-    private void unexpected(Token foundToken, JuaList<TokenType> expectedTypes) {
-        String expects = expectedTypes
-                .stream()
+    private void unexpected(Token foundToken, List<TokenType> expectedTypes) {
+        String expected = expectedTypes.stream()
                 .map(JuaParser::type2string)
                 .collect(Collectors.joining(", "));
-        pError(foundToken.pos, "unexpected " + token2string(foundToken) + ", expected instead: " + expects);
+        reportError(foundToken.pos, "unexpected " + token2string(foundToken) + ", expected instead: " + expected);
     }
 
-    private void pError(int position, String message) {
+    private void reportError(int position, String message) {
         // При возникновении ошибок, в AST попадают нулевые значения.
         // Это порождает множество потенциальных ошибок, в том числе NPE
         // для последующих стадий компиляции.

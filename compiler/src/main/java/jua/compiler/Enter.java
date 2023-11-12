@@ -3,7 +3,7 @@ package jua.compiler;
 import jua.compiler.ModuleScope.FunctionSymbol;
 import jua.compiler.ModuleScope.VarSymbol;
 import jua.compiler.Tree.*;
-import jua.compiler.utils.JuaList;
+import jua.compiler.utils.Flow;
 
 import java.util.HashMap;
 
@@ -95,11 +95,11 @@ public class Enter extends Scanner {
         }
     }
 
-    private VarScope scanInnerScope(VarScope parentScope, JuaList<? extends Tree> trees) {
+    private VarScope scanInnerScope(VarScope parentScope, Flow<? extends Tree> flow) {
         VarScope innerScope = new VarScope(parentScope);
-        if (trees.nonEmpty()) {
+        if (flow != null) {
             scope = innerScope;
-            scan(trees);
+            scan(flow);
             ensureScopeChainUnaffected(parentScope);
             scope = parentScope;
         }
@@ -109,20 +109,20 @@ public class Enter extends Scanner {
     private void scanBody(VarScope parentScope, Tree tree) {
         if (tree != null) {
             checkNotVarDef(tree);
-            scanInnerScope(parentScope, JuaList.of(tree));
+            scanInnerScope(parentScope, Flow.of(tree));
         }
     }
 
     @Override
     public void visitConstDef(ConstDef tree) {
-        for (ConstDef.Definition def : tree.defs) {
+        Flow.forEach(tree.defs, def -> {
             if (globalScope.isConstantDefined(def.name)) {
                 report(def.name.pos, "constant redefinition");
                 def.sym = globalScope.lookupConstant(def.name);
-                continue;
+                return;
             }
             def.sym = globalScope.defineUserConstant(def);
-        }
+        });
     }
 
     @Override
@@ -139,16 +139,16 @@ public class Enter extends Scanner {
         ensureRootScope();
         scope = new VarScope(null);
 
-        for (FuncDef.Parameter param : tree.params) {
+        Flow.forEach(tree.params, param -> {
             if (scope.defined(param.name)) {
                 report(param.name.pos, "duplicated function parameter");
                 // Так как это не позитивный случай, избегать двойного поиска (defined + resolve) нет смысла.
                 param.sym = scope.resolve(param.name);
-                continue;
+                return;
             }
             param.sym = scope.define(param.name);
             // Сканировать param.expr не нужно, поскольку это должен быть литерал.
-        }
+        });
 
         if (globalScope.isFunctionDefined(tree.name)) {
             report(tree.name.pos, "function redefinition");
@@ -204,7 +204,7 @@ public class Enter extends Scanner {
     public void visitForLoop(ForLoop tree) {
         VarScope parentScope = scope;
         VarScope initScope = scanInnerScope(parentScope, tree.init);
-        scanInnerScope(initScope, JuaList.of(tree.cond));
+        scanInnerScope(initScope, Flow.of(tree.cond));
         scanBody(initScope, tree.body);
         scanInnerScope(initScope, tree.step);
         ensureScopeChainUnaffected(parentScope);
@@ -219,16 +219,17 @@ public class Enter extends Scanner {
 
     @Override
     public void visitVarDef(VarDef tree) {
-        for (VarDef.Definition def : tree.defs) {
+        Flow.forEach(tree.defs, def -> {
             if (scope.defined(def.name)) {
                 report(def.name.pos, "duplicated variable declaration");
                 // Так как это не позитивный случай, избегать двойного поиска (defined + resolve) нет смысла.
                 def.sym = scope.resolve(def.name);
-                continue;
+                return;
             }
             def.sym = scope.define(def.name);
-            scan(def.init);
-        }
+        });
+
+        super.visitVarDef(tree);
     }
 
     @Override
@@ -246,9 +247,7 @@ public class Enter extends Scanner {
             }
         }
 
-        for (Invocation.Argument a : tree.args) {
-            scan(a.expr);
-        }
+        super.visitInvocation(tree);
     }
 
     @Override

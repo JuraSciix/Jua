@@ -172,7 +172,7 @@ public final class Code {
                 sym.minArgc,
                 sym.maxArgc,
                 sym.defs,
-                sym.params.toArray(String[]::new));
+                sym.params);
     }
 
     private LineNumberTable buildLineNumberTable() {

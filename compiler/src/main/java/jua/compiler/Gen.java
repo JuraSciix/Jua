@@ -6,8 +6,8 @@ import jua.compiler.Items.Item;
 import jua.compiler.Items.SafeItem;
 import jua.compiler.ModuleScope.ConstantSymbol;
 import jua.compiler.Tree.*;
+import jua.compiler.utils.Flow;
 import jua.compiler.utils.IntArrayList;
-import jua.compiler.utils.JuaList;
 
 import java.util.ArrayList;
 
@@ -103,12 +103,12 @@ public class Gen extends Scanner {
         // todo: Повысить качество кода: понизить связность, распределить ответственность.
 
         java.util.List<Object> defaults = new ArrayList<>();
-        for (FuncDef.Parameter param : tree.params) {
+        Flow.forEach(tree.params, param -> {
             if (param.expr != null) {
                 Literal literal = (Literal) stripParens(param.expr);
                 defaults.add(literal.value);
             }
-        }
+        });
 
         assert tree.body != null;
 
@@ -146,12 +146,12 @@ public class Gen extends Scanner {
 
     @Override
     public void visitWhileLoop(WhileLoop tree) {
-        genLoop(tree, JuaList.empty(), tree.cond, JuaList.empty(), tree.body, true);
+        genLoop(tree, Flow.empty(), tree.cond, Flow.empty(), tree.body, true);
     }
 
     @Override
     public void visitDoLoop(DoLoop tree) {
-        genLoop(tree, JuaList.empty(), tree.cond, JuaList.empty(), tree.body, false);
+        genLoop(tree, Flow.empty(), tree.cond, Flow.empty(), tree.body, false);
     }
 
     @Override
@@ -159,7 +159,7 @@ public class Gen extends Scanner {
         genLoop(tree, tree.init, tree.cond, tree.step, tree.body, true);
     }
 
-    private void genLoop(Statement tree, JuaList<Statement> init, Expression cond, JuaList<Expression> step, Statement body, boolean testFirst) {
+    private void genLoop(Statement tree, Flow<Statement> init, Expression cond, Flow<Expression> step, Statement body, boolean testFirst) {
         FlowEnv parentFlow = flow;
         flow = new FlowEnv(parentFlow);
 
@@ -168,7 +168,7 @@ public class Gen extends Scanner {
         Chain skipBodyChain = testFirst ? code.branch(OPCodes.Goto) : null;
         int loopStartPC = code.pc();
         scan(body);
-        step.forEach(s -> genExpr(s).drop());
+        Flow.forEach(step, s -> genExpr(s).drop());
         code.resolve(skipBodyChain);
         code.resolve(flow.contChain);
         CondItem condItem = genExpr(cond).asCond();
@@ -186,19 +186,18 @@ public class Gen extends Scanner {
         SwitchEnv env = new SwitchEnv(flow);
         flow = env;
         code.putPos(tree.pos);
-        int opcode = tree.cases.count() >= 16
+        int opcode = Flow.count(tree.cases) >= 16
                 ? OPCodes.BinarySwitch
                 : OPCodes.LinearSwitch;
         SwitchInstrNode node = new SwitchInstrNode(opcode);
         code.emitNode(node);
 
-        boolean codeAlive = false;
-
-        for (Case c : tree.cases) {
-            codeAlive |= genBlock(c);
+        boolean codeAlive = Flow.reduce(tree.cases, false, (c, state) -> {
+            boolean alive = genBlock(c);
             code.resolve(env.contChain);
             env.contChain = null;
-        }
+            return state | alive;
+        });
 
         if (env.switchDefaultOffset == -1) {
             // Явного default-case не было
@@ -226,12 +225,12 @@ public class Gen extends Scanner {
             // default case
             env.switchDefaultOffset = code.pc();
         } else {
-            for (Expression label : tree.labels) {
+            Flow.forEach(tree.labels, label -> {
                 env.caseLabelsConstantIndexes.add(genExpr(label).constantIndex());
                 // Это не ошибка. Следующая строчка должна находиться именно в цикле
                 // Потому что инструкция switch ассоциирует значения к переходам в масштабе 1 к 1.
                 env.switchCaseOffsets.add(code.pc());
-            }
+            });
         }
 
         // Весь кейз целиком это один из дочерних бранчей switch.
@@ -277,7 +276,7 @@ public class Gen extends Scanner {
     @Override
     public void visitVarDef(VarDef tree) {
         code.putPos(tree.pos);
-        for (VarDef.Definition def : tree.defs) {
+        Flow.forEach(tree.defs, def -> {
             code.putPos(def.name.pos);
             if (def.init == null) {
                 items.mkLiteral(null).load();
@@ -285,7 +284,7 @@ public class Gen extends Scanner {
                 genExpr(def.init).load();
             }
             items.makeAssignItem(items.makeLocal(def.sym.id)).drop();
-        }
+        });
     }
 
     @Override
@@ -313,15 +312,15 @@ public class Gen extends Scanner {
     @Override
     public void visitListLiteral(ListLiteral tree) {
         code.putPos(tree.pos);
-        items.mkLiteral((long) tree.entries.count()).load();
+        items.mkLiteral((long) Flow.count(tree.entries)).load();
         code.emitSingle(OPCodes.NewList);
-        int index = 0;
-        for (Expression entry : tree.entries) {
+        Flow.reduce(tree.entries, 0L, (entry, index) -> {
             items.mkStackItem().duplicate();
-            items.mkLiteral((long) index++).load();
+            items.mkLiteral(index).load();
             genExpr(entry).load();
             items.mkAccessItem().store();
-        }
+            return index + 1;
+        });
         result = items.mkStackItem();
     }
 
@@ -329,13 +328,13 @@ public class Gen extends Scanner {
     public void visitMapLiteral(MapLiteral tree) {
         code.putPos(tree.pos);
         code.emitSingle(OPCodes.NewMap);
-        for (MapLiteral.Entry entry : tree.entries) {
+        Flow.forEach(tree.entries, entry -> {
             items.mkStackItem().duplicate();
             genExpr(entry.key).load();
             genExpr(entry.value).load();
             code.putPos(entry.pos);
             items.mkAccessItem().store();
-        }
+        });
         result = items.mkStackItem();
     }
 
@@ -385,21 +384,21 @@ public class Gen extends Scanner {
 
         switch (callee.toString()) {
             case "length":
-                genExpr(tree.args.first().expr).load();
+                genExpr(tree.args.value.expr).load();
                 code.putPos(tree.pos);
                 code.emitSingle(OPCodes.Length);
                 result = items.mkStackItem();
                 break;
             case "list":
-                genExpr(tree.args.first().expr).load();
+                genExpr(tree.args.value.expr).load();
                 code.putPos(tree.pos);
                 code.emitSingle(OPCodes.NewList);
                 result = items.mkStackItem();
                 break;
             default:
-                tree.args.forEach(a -> genExpr(a.expr).load());
+                Flow.forEach(tree.args, a -> genExpr(a.expr).load());
                 code.putPos(tree.pos);
-                code.emitCall(tree.sym.id, tree.args.count());
+                code.emitCall(tree.sym.id, Flow.count(tree.args));
                 result = items.mkStackItem();
         }
     }

@@ -2,8 +2,9 @@ package jua.compiler;
 
 import jua.compiler.Tokens.Token;
 import jua.compiler.Tokens.TokenType;
-import jua.runtime.ConstantMemory;
+import jua.compiler.utils.Flow;
 import jua.compiler.utils.IOUtils;
+import jua.runtime.ConstantMemory;
 
 import java.io.File;
 import java.io.IOException;
@@ -104,13 +105,12 @@ public final class JuaCompiler {
                 return null;
             }
 
-            compilationUnit.functions.forEach(funcDef -> funcDef.sym.code = new Code(programScope, source));
+            Flow.forEach(compilationUnit.functions, funcDef -> funcDef.sym.code = new Code(programScope, source));
 
-            compilationUnit.functions
-                    .forEach(funcDef -> {
-                        funcDef.accept(funcDef.sym.code.gen);
-                        programScope.lookupFunction(funcDef.name).executable = funcDef.sym.executable;
-                    });
+            Flow.forEach(compilationUnit.functions, funcDef -> {
+                funcDef.accept(funcDef.sym.code.gen);
+                programScope.lookupFunction(funcDef.name).executable = funcDef.sym.executable;
+            });
 
             Module.Executable[] functions = programScope.collectExecutables();
             ConstantMemory[] constantAddresses = programScope.collectConstants();

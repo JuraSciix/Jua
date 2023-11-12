@@ -2,12 +2,14 @@ package jua.compiler;
 
 import jua.compiler.Tree.ConstDef;
 import jua.compiler.Tree.FuncDef;
+import jua.compiler.utils.Flow;
+import jua.runtime.ConstantMemory;
 import jua.runtime.interpreter.memory.Address;
 import jua.runtime.interpreter.memory.AddressUtils;
-import jua.runtime.ConstantMemory;
-import jua.compiler.utils.JuaList;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public final class ModuleScope {
@@ -21,13 +23,13 @@ public final class ModuleScope {
         public final int id;
         public final int minArgc, maxArgc;
         public Object[] defs;
-        public final JuaList<String> params; // null if tree is null
+        public final String[] params; // null if tree is null
         public Code code;
 
         public Module.Executable executable;
         public int nlocals;
 
-        FunctionSymbol(String name, int id, int minArgc, int maxArgc, Object[] defs, JuaList<String> params) {
+        FunctionSymbol(String name, int id, int minArgc, int maxArgc, Object[] defs, String[] params) {
             this.name = name;
             this.id = id;
             this.minArgc = minArgc;
@@ -78,7 +80,7 @@ public final class ModuleScope {
                 1,
                 1,
                 new Object[0],
-                JuaList.of("value")
+                new String[]{"value"}
         ));
         functions.put("list", new FunctionSymbol(
                 "list",
@@ -86,7 +88,7 @@ public final class ModuleScope {
                 1,
                 1,
                 new Object[0],
-                JuaList.of("size")
+                new String[]{"size"}
         ));
     }
 
@@ -125,7 +127,7 @@ public final class ModuleScope {
                 minArgc,
                 maxArgc,
                 defs,
-                JuaList.of(params)
+                params
         );
         functions.put(name, sym);
         return sym;
@@ -149,22 +151,28 @@ public final class ModuleScope {
         String name = tree.name.toString();
         int nextId = funcnextaddr++;
         // The legacy code is present below
-        int minargs = tree.params.count();
-        int maxargs = 0;
-        JuaList<String> params = new JuaList<>();
-        for (FuncDef.Parameter param : tree.params) {
-            params.add(param.name.toString());
-            if (param.expr != null && minargs > maxargs) {
-                minargs = maxargs;
-            }
-            maxargs++;
+        List<String> params = new ArrayList<>();
+
+        class ArgCountData {
+            int min = Flow.count(tree.params);
+            int max = 0;
         }
+
+        ArgCountData a = Flow.reduce(tree.params, new ArgCountData(), (param, data) -> {
+            params.add(param.name.toString());
+            if (param.expr != null && data.min > data.max) {
+                data.min = data.max;
+            }
+            data.max++;
+            return data;
+        });
         FunctionSymbol sym = new FunctionSymbol(
                 name,
                 nextId,
-                minargs,
-                maxargs,
-                null, params
+                a.min,
+                a.max,
+                null,
+                params.toArray(new String[0])
         );
         sym.nlocals = nlocals;
         functions.put(name, sym);

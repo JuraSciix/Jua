@@ -2,6 +2,9 @@ package jua.compiler;
 
 import jua.compiler.ModuleScope.FunctionSymbol;
 import jua.compiler.Tree.*;
+import jua.compiler.utils.Flow;
+
+import java.util.Arrays;
 
 import static jua.compiler.TreeInfo.*;
 
@@ -54,18 +57,16 @@ public class Check extends Scanner {
 
     @Override
     public void visitConstDef(ConstDef tree) {
-        for (ConstDef.Definition def : tree.defs) {
-            requireLiteralTree(def.expr);
-        }
+        Flow.forEach(tree.defs, def -> requireLiteralTree(def.expr));
     }
 
     @Override
     public void visitFuncDef(FuncDef tree) {
-        for (FuncDef.Parameter param : tree.params) {
+        Flow.forEach(tree.params, param -> {
             if (param.expr != null) {
                 requireLiteralTree(param.expr);
             }
-        }
+        });
 
         scan(tree.body);
     }
@@ -106,11 +107,11 @@ public class Check extends Scanner {
     @Override
     public void visitCase(Case tree) {
         if (tree.labels != null) { // default-case?
-            for (Expression label : tree.labels) {
+            Flow.forEach(tree.labels, label -> {
                 if (!isLiteral(label)) {
                     report(stripParens(label).pos, "only literals are allowed as the case label expression");
                 }
-            }
+            });
         }
         scanCaseBody(tree.body);
     }
@@ -164,27 +165,28 @@ public class Check extends Scanner {
         //
         Assert.checkNonNull(calleeSym);
 
-        if (tree.args.count() > calleeSym.maxArgc) {
-            report(tree.pos, "cannot call function %s: too many arguments: %d total, %d passed", calleeSym.name, calleeSym.maxArgc, tree.args.count());
+        int count = Flow.count(tree.args);
+        if (count > calleeSym.maxArgc) {
+            report(tree.pos, "cannot call function %s: too many arguments: %d total, %d passed", calleeSym.name, calleeSym.maxArgc, count);
             return;
         }
 
-        if (tree.args.count() < calleeSym.minArgc) {
-            report(tree.pos, "cannot call function %s: too few arguments: %d required, %d passed", calleeSym.name, calleeSym.minArgc, tree.args.count());
+        if (count < calleeSym.minArgc) {
+            report(tree.pos, "cannot call function %s: too few arguments: %d required, %d passed", calleeSym.name, calleeSym.minArgc, count);
             return;
         }
 
-        for (Invocation.Argument a : tree.args) {
+        Flow.forEach(tree.args, a -> {
             if (a.name != null) {
-                if (calleeSym.params != null && !calleeSym.params.contains(a.name.toString())) {
+                if (calleeSym.params != null && !Arrays.asList(calleeSym.params).contains(a.name.toString())) {
                     report(a.name.pos, "cannot call function %s: unrecognized function parameter name", calleeSym.name);
-                    continue;
+                    return;
                 }
                 report(a.name.pos, "named arguments not yet supported");
-                continue;
+                return;
             }
             scan(a.expr);
-        }
+        });
     }
 
     @Override

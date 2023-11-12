@@ -2,6 +2,7 @@ package jua.compiler;
 
 import jua.compiler.Tokens.TokenType;
 import jua.compiler.Tree.*;
+import jua.compiler.utils.Flow;
 
 public final class TreeInfo {
 
@@ -60,20 +61,10 @@ public final class TreeInfo {
                 return true;
             case LISTLIT:
                 ListLiteral listTree = (ListLiteral) innerTree;
-                for (Expression entry : listTree.entries) {
-                    if (!isLiteral(entry)) {
-                        return false;
-                    }
-                }
-                return true;
+                return Flow.allMatch(listTree.entries, TreeInfo::isLiteral);
             case MAPLIT:
                 MapLiteral mapTree = (MapLiteral) innerTree;
-                for (MapLiteral.Entry entry : mapTree.entries) {
-                    if (!isLiteral(entry.key) || !isLiteral(entry.value)) {
-                        return false;
-                    }
-                }
-                return true;
+                return Flow.allMatch(mapTree.entries, e -> isLiteral(e.key) && isLiteral(e.value));
             default:
                 return false;
         }
@@ -126,7 +117,7 @@ public final class TreeInfo {
         }
         if (innerTree.hasTag(Tag.MAPLIT)) {
             MapLiteral arrayTree = (MapLiteral) innerTree;
-            return arrayTree.entries.isEmpty();
+            return arrayTree.entries == null;
         }
         return false;
     }

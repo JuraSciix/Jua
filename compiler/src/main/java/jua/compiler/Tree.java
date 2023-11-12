@@ -3,7 +3,7 @@ package jua.compiler;
 import jua.compiler.ModuleScope.ConstantSymbol;
 import jua.compiler.ModuleScope.FunctionSymbol;
 import jua.compiler.ModuleScope.VarSymbol;
-import jua.compiler.utils.JuaList;
+import jua.compiler.utils.Flow;
 
 public abstract class Tree {
 
@@ -203,18 +203,11 @@ public abstract class Tree {
     public static abstract class Scanner extends AbstractVisitor {
 
         public void scan(Tree tree) {
-            if (tree != null) {
-                tree.accept(this);
-            }
+            tree.accept(this);
         }
 
-        public void scan(JuaList<? extends Tree> trees) {
-            if (trees != null && trees.nonEmpty()) {
-                for (Tree tree : trees) {
-                    // В списке не должно быть null-значений.
-                    scan(tree);
-                }
-            }
+        public void scan(Flow<? extends Tree> flow) {
+            Flow.forEach(flow, this::scan);
         }
 
         @Override
@@ -226,16 +219,16 @@ public abstract class Tree {
 
         @Override
         public void visitConstDef(ConstDef tree) {
-            for (ConstDef.Definition def : tree.defs) {
-                scan(def.expr);
-            }
+            Flow.forEach(tree.defs, def -> scan(def.expr));
         }
 
         @Override
         public void visitFuncDef(FuncDef tree) {
-            for (FuncDef.Parameter param : tree.params) {
-                scan(param.expr);
-            }
+            Flow.forEach(tree.params, param -> {
+                if (param.expr != null) {
+                    scan(param.expr);
+                }
+            });
             scan(tree.body);
         }
 
@@ -294,9 +287,11 @@ public abstract class Tree {
 
         @Override
         public void visitVarDef(VarDef tree) {
-            for (VarDef.Definition def : tree.defs) {
-                scan(def.init);
-            }
+            Flow.forEach(tree.defs, def -> {
+                if (def.init != null) {
+                    scan(def.init);
+                }
+            });
         }
 
         @Override
@@ -319,10 +314,12 @@ public abstract class Tree {
 
         @Override
         public void visitMapLiteral(MapLiteral tree) {
-            for (MapLiteral.Entry entry : tree.entries) {
-                scan(entry.key);
+            Flow.forEach(tree.entries, entry -> {
+                if (entry.key != null) {
+                    scan(entry.key);
+                }
                 scan(entry.value);
-            }
+            });
         }
 
         @Override
@@ -341,9 +338,7 @@ public abstract class Tree {
 
         @Override
         public void visitInvocation(Invocation tree) {
-            for (Invocation.Argument arg : tree.args) {
-                scan(arg.expr);
-            }
+            Flow.forEach(tree.args, a -> scan(a.expr));
         }
 
         @Override
@@ -397,16 +392,11 @@ public abstract class Tree {
             return null;
         }
 
-        @SuppressWarnings("unchecked")
-        public <T extends Tree> JuaList<T> translate(JuaList<T> trees) {
-            if (trees != null && trees.nonEmpty()) {
-                for (JuaList.Node<T> node = trees.head(); node != null; node = node.next()) {
-                    node.value.accept(this);
-                    node.value = (T) result;
-                    result = null;
-                }
+        public <T extends Tree> Flow<T> translate(Flow<T> flow) {
+            if (flow != null) {
+                Flow.translate(flow, this::translate);
             }
-            return trees;
+            return flow;
         }
 
         @Override
@@ -419,17 +409,17 @@ public abstract class Tree {
 
         @Override
         public void visitConstDef(ConstDef tree) {
-            for (ConstDef.Definition def : tree.defs) {
-                def.expr = translate(def.expr);
-            }
+            Flow.forEach(tree.defs, def -> def.expr = translate(def.expr));
             result = tree;
         }
 
         @Override
         public void visitFuncDef(FuncDef tree) {
-            for (FuncDef.Parameter param : tree.params) {
-                param.expr = translate(param.expr);
-            }
+            Flow.forEach(tree.params, param -> {
+                if (param.expr != null) {
+                    param.expr = translate(param.expr);
+                }
+            });
             tree.body = translate(tree.body);
             result = tree;
         }
@@ -496,9 +486,11 @@ public abstract class Tree {
 
         @Override
         public void visitVarDef(VarDef tree) {
-            for (VarDef.Definition def : tree.defs) {
-                def.init = translate(def.init);
-            }
+            Flow.forEach(tree.defs, def -> {
+                if (def.init != null) {
+                    def.init = translate(def.init);
+                }
+            });
             result = tree;
         }
 
@@ -525,10 +517,12 @@ public abstract class Tree {
 
         @Override
         public void visitMapLiteral(MapLiteral tree) {
-            for (MapLiteral.Entry entry : tree.entries) {
-                entry.key = translate(entry.key);
+            Flow.forEach(tree.entries, entry -> {
+                if (entry.key != null) {
+                    entry.key = translate(entry.key);
+                }
                 entry.value = translate(entry.value);
-            }
+            });
             result = tree;
         }
 
@@ -550,9 +544,7 @@ public abstract class Tree {
 
         @Override
         public void visitInvocation(Invocation tree) {
-            for (Invocation.Argument arg : tree.args) {
-                arg.expr = translate(arg.expr);
-            }
+            Flow.forEach(tree.args, a -> a.expr = translate(a.expr));
             result = tree;
         }
 
@@ -614,15 +606,16 @@ public abstract class Tree {
 
         public final Source source;
 
-        public JuaList<Statement> stats;
+        @Deprecated
+        public Flow<Statement> stats;
 
-        public JuaList<FuncDef> functions;
+        public Flow<FuncDef> functions;
 
-        public JuaList<ConstDef> constants;
+        public Flow<ConstDef> constants;
         public Document(int pos, Source source,
-                        JuaList<ConstDef> constants,
-                        JuaList<FuncDef> functions,
-                        JuaList<Statement> stats) {
+                        Flow<ConstDef> constants,
+                        Flow<FuncDef> functions,
+                        Flow<Statement> stats) {
             super(pos);
             this.source = source;
             this.constants = constants;
@@ -660,9 +653,9 @@ public abstract class Tree {
             }
         }
 
-        public JuaList<Definition> defs;
+        public Flow<Definition> defs;
 
-        public ConstDef(int pos, JuaList<Definition> defs) {
+        public ConstDef(int pos, Flow<Definition> defs) {
             super(pos);
             this.defs = defs;
         }
@@ -692,13 +685,13 @@ public abstract class Tree {
         
         public final Name name;
 
-        public JuaList<Parameter> params;
+        public Flow<Parameter> params;
 
         public Statement body;
 
         public FunctionSymbol sym;
 
-        public FuncDef(int pos, Name name, JuaList<Parameter> params, Statement body) {
+        public FuncDef(int pos, Name name, Flow<Parameter> params, Statement body) {
             super(pos);
             this.name = name;
             this.params = params;
@@ -714,9 +707,9 @@ public abstract class Tree {
 
     public static class Block extends Statement {
 
-        public JuaList<Statement> stats;
+        public Flow<Statement> stats;
 
-        public Block(int pos, JuaList<Statement> stats) {
+        public Block(int pos, Flow<Statement> stats) {
             super(pos);
             this.stats = stats;
         }
@@ -790,15 +783,15 @@ public abstract class Tree {
 
     public static class ForLoop extends Statement {
 
-        public JuaList<Statement> init;
+        public Flow<Statement> init;
 
         public Expression cond;
 
-        public JuaList<Expression> step;
+        public Flow<Expression> step;
 
         public Statement body;
 
-        public ForLoop(int pos, JuaList<Statement> init, Expression cond, JuaList<Expression> step, Statement body) {
+        public ForLoop(int pos, Flow<Statement> init, Expression cond, Flow<Expression> step, Statement body) {
             super(pos);
             this.init = init;
             this.cond = cond;
@@ -817,9 +810,9 @@ public abstract class Tree {
 
         public Expression expr;
 
-        public JuaList<Case> cases;
+        public Flow<Case> cases;
 
-        public Switch(int pos, Expression expr, JuaList<Case> cases) {
+        public Switch(int pos, Expression expr, Flow<Case> cases) {
             super(pos);
             this.expr = expr;
             this.cases = cases;
@@ -834,11 +827,11 @@ public abstract class Tree {
 
     public static class Case extends Statement {
 
-        public JuaList<Expression> labels;
+        public Flow<Expression> labels;
 
         public Statement body;
 
-        public Case(int pos, JuaList<Expression> labels, Statement body) {
+        public Case(int pos, Flow<Expression> labels, Statement body) {
             super(pos);
             this.labels = labels;
             this.body = body;
@@ -906,9 +899,9 @@ public abstract class Tree {
             }
         }
 
-        public JuaList<Definition> defs;
+        public Flow<Definition> defs;
 
-        public VarDef(int pos, JuaList<Definition> defs) {
+        public VarDef(int pos, Flow<Definition> defs) {
             super(pos);
             this.defs = defs;
         }
@@ -977,9 +970,9 @@ public abstract class Tree {
 
     public static class ListLiteral extends Expression {
 
-        public JuaList<Expression> entries;
+        public Flow<Expression> entries;
 
-        public ListLiteral(int pos, JuaList<Expression> entries) {
+        public ListLiteral(int pos, Flow<Expression> entries) {
             super(pos);
             this.entries = entries;
         }
@@ -1008,9 +1001,9 @@ public abstract class Tree {
             }
         }
         
-        public JuaList<Entry> entries;
+        public Flow<Entry> entries;
 
-        public MapLiteral(int pos, JuaList<Entry> entries) {
+        public MapLiteral(int pos, Flow<Entry> entries) {
             super(pos);
             this.entries = entries;
         }
@@ -1098,11 +1091,11 @@ public abstract class Tree {
         
         public final Expression target;
 
-        public JuaList<Argument> args;
+        public Flow<Argument> args;
 
         public FunctionSymbol sym;
 
-        public Invocation(int pos, Expression target, JuaList<Argument> args) {
+        public Invocation(int pos, Expression target, Flow<Argument> args) {
             super(pos);
             this.target = target;
             this.args = args;

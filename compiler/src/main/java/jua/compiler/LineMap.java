@@ -2,8 +2,6 @@ package jua.compiler;
 
 import jua.compiler.utils.IntArrayList;
 
-import java.util.ArrayList;
-
 public final class LineMap {
 
     private final int[] lineStartPoints;

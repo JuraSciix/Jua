@@ -3,7 +3,7 @@ package jua.compiler;
 import jua.compiler.ModuleScope.ConstantSymbol;
 import jua.compiler.SemanticInfo.BooleanEquivalent;
 import jua.compiler.Tree.*;
-import jua.compiler.utils.JuaList;
+import jua.compiler.utils.Flow;
 
 import java.util.Objects;
 
@@ -27,11 +27,13 @@ public final class Lower extends Translator {
 
         // Заметка: в tree.stats не могут находиться операторы Tag.FUNCDEF и Tag.CONSTDEF.
         int pos = tree.pos;
-        tree.functions.add(new FuncDef(pos,
-                new Name(pos, "<main>"),
-                JuaList.empty(),
-                new Block(pos, tree.stats)));
-        tree.stats = JuaList.empty();
+        tree.functions = Flow.builder(tree.functions)
+                        .append(new FuncDef(pos,
+                                new Name(pos, "<main>"),
+                                null,
+                                new Block(pos, tree.stats)))
+                                .toFlow();
+        tree.stats = null;
         result = tree;
     }
 
