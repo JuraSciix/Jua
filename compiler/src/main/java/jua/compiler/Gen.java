@@ -380,27 +380,16 @@ public class Gen extends Scanner {
     @Override
     public void visitInvocation(Invocation tree) {
         Assert.check(tree.target instanceof MemberAccess);
-        Name callee = ((MemberAccess) tree.target).member;
-
-        switch (callee.toString()) {
-            case "length":
-                genExpr(tree.args.value.expr).load();
-                code.putPos(tree.pos);
-                code.emitSingle(OPCodes.Length);
-                result = items.mkStackItem();
-                break;
-            case "list":
-                genExpr(tree.args.value.expr).load();
-                code.putPos(tree.pos);
-                code.emitSingle(OPCodes.NewList);
-                result = items.mkStackItem();
-                break;
-            default:
-                Flow.forEach(tree.args, a -> genExpr(a.expr).load());
-                code.putPos(tree.pos);
-                code.emitCall(tree.sym.id, Flow.count(tree.args));
-                result = items.mkStackItem();
+        Flow.forEach(tree.args, a -> genExpr(a.expr).load());
+        code.putPos(tree.pos);
+        if (tree.sym.opcode == 0) {
+            // Обычный вызов функции
+            code.emitCall(tree.sym.id, Flow.count(tree.args));
+        } else {
+            // Языковая конструкция
+            code.emitSingle(tree.sym.opcode);
         }
+        result = items.mkStackItem();
     }
 
     @Override

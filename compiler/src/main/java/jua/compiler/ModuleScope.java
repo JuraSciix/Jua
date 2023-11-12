@@ -28,6 +28,7 @@ public final class ModuleScope {
 
         public Module.Executable executable;
         public int nlocals;
+        public int opcode;
 
         FunctionSymbol(String name, int id, int minArgc, int maxArgc, Object[] defs, String[] params) {
             this.name = name;
@@ -74,22 +75,24 @@ public final class ModuleScope {
     }
 
     private void registerOperators() {
-        functions.put("length", new FunctionSymbol(
-                "length",
-                -1,
-                1,
-                1,
-                new Object[0],
-                new String[]{"value"}
-        ));
-        functions.put("list", new FunctionSymbol(
-                "list",
-                -1,
-                1,
-                1,
-                new Object[0],
-                new String[]{"size"}
-        ));
+        registerOperator("length", new Signature(1, "value"), InstructionUtils.OPCodes.Length);
+        registerOperator("list", new Signature(1, "size"), InstructionUtils.OPCodes.NewList);
+    }
+
+    private static class Signature {
+        final int argc;
+        final String[] names;
+
+        Signature(int argc, String... names) {
+            this.argc = argc;
+            this.names = names;
+        }
+    }
+
+    private void registerOperator(String name, Signature signature, int opcode) {
+        FunctionSymbol symbol = new FunctionSymbol(name, -1, signature.argc, signature.argc, new Object[0], signature.names);
+        symbol.opcode = opcode;
+        functions.put(name, symbol);
     }
 
     public boolean isConstantDefined(Name name) {
