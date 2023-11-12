@@ -164,7 +164,7 @@ public class InstructionUtils {
         opData(OPCodes.ConstInt2, "const_i2", 1);
         opData(OPCodes.ConstIntM1, "const_im1", 1);
         opData(OPCodes.Push, "push", 1);
-        opData(OPCodes.NewList, "newlist", 1);
+        opData(OPCodes.NewList, "newlist", 0);
         opData(OPCodes.NewMap, "newmap", 1);
         opData(OPCodes.Dup, "dup", 1);
         opData(OPCodes.DupX1, "dup_x1", 1);
