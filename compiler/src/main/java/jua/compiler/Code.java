@@ -7,6 +7,7 @@ import jua.compiler.InstructionUtils.SingleInstrNode;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.LineNumberTable;
 import jua.runtime.interpreter.memory.Address;
+import jua.runtime.interpreter.memory.AddressSupport;
 import jua.runtime.interpreter.memory.AddressUtils;
 
 import java.util.*;
@@ -191,7 +192,7 @@ public final class Code {
         Object[] values = getConstantPoolEntries();
         Address[] addresses = AddressUtils.allocateMemory(values.length, 0);
         for (int i = 0; i < values.length; i++) {
-            AddressUtils.assignObject(addresses[i], values[i]);
+            AddressSupport.assignObject(addresses[i], values[i]);
         }
         return new ConstantPool(addresses);
     }

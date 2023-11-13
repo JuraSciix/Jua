@@ -5,7 +5,7 @@ import jua.compiler.Tree.FuncDef;
 import jua.compiler.utils.Flow;
 import jua.runtime.ConstantMemory;
 import jua.runtime.interpreter.memory.Address;
-import jua.runtime.interpreter.memory.AddressUtils;
+import jua.runtime.interpreter.memory.AddressSupport;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -235,7 +235,7 @@ public final class ModuleScope {
         ConstantMemory[] constants = new ConstantMemory[this.constants.size()];
         for (ConstantSymbol sym : this.constants.values()) {
             constants[sym.id] = new ConstantMemory(sym.name, new Address());
-            AddressUtils.assignObject(constants[sym.id].address, sym.value);
+            AddressSupport.assignObject(constants[sym.id].address, sym.value);
         }
         return constants;
     }

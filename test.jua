@@ -1,3 +1,8 @@
-var a = list(10);
+for var i = 0; i < 100; i++ {
+    var q1 = time();
+    for var j = 0; j < 1_000_000; j++ {
 
-println(length(a));
+    }
+    var q2 = time();
+    println(q2 - q1);
+}

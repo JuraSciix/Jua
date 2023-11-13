@@ -3,6 +3,7 @@ package jua.stdlib;
 import jua.runtime.Function;
 import jua.runtime.NativeExecutor;
 import jua.runtime.interpreter.memory.Address;
+import jua.runtime.interpreter.memory.AddressSupport;
 import jua.runtime.interpreter.memory.AddressUtils;
 
 import java.util.ArrayList;
@@ -61,7 +62,7 @@ public interface NativeSupport {
 
         public ParamsData optional(String name, Object value) {
             Address defaultVal = new Address();
-            AddressUtils.assignObject(defaultVal, value);
+            AddressSupport.assignObject(defaultVal, value);
             params.add(new Param(name, defaultVal));
             return this;
         }

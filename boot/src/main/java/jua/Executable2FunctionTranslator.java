@@ -4,7 +4,7 @@ import jua.compiler.InstructionUtils;
 import jua.compiler.Module;
 import jua.runtime.interpreter.instruction.Instruction;
 import jua.runtime.interpreter.memory.Address;
-import jua.runtime.interpreter.memory.AddressUtils;
+import jua.runtime.interpreter.memory.AddressSupport;
 import jua.runtime.Function;
 import jua.runtime.code.CodeData;
 
@@ -26,7 +26,7 @@ public class Executable2FunctionTranslator {
                 Arrays.copyOfRange(executable.varnames, 0, executable.totargs),
                 Arrays.stream(executable.defs).map(o -> {
                     Address a = new Address();
-                    AddressUtils.assignObject(a, o);
+                    AddressSupport.assignObject(a, o);
                     return a;
                 }).toArray(Address[]::new),
                 0L,

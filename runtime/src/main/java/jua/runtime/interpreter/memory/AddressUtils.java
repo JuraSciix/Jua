@@ -1,7 +1,5 @@
 package jua.runtime.interpreter.memory;
 
-import jua.runtime.heap.StringHeap;
-
 /**
  * Утилитарный класс для работы с {@link Address регистрами}.
  */
@@ -64,22 +62,15 @@ public class AddressUtils {
         }
     }
 
-    public static void assignObject(Address address, Object o) {
-        if (o == null) {
-            address.setNull();
-        } else if (o.getClass() == Boolean.class) {
-            address.set((boolean) o);
-        } else if (o.getClass() == Long.class) {
-            address.set((long) o);
-        } else if (o.getClass() == Double.class) {
-            address.set((double) o);
-        } else if (o.getClass() == String.class) {
-            address.set(new StringHeap((String) o));
-        } else if (o.getClass() == Address.class) {
-            address.set((Address) o);
-        } else {
-            throw new IllegalArgumentException(o.getClass().getName());
+    public static Address[] reallocateWithNewLength(Address[] src, int newLength) {
+        Address[] memory = new Address[newLength];
+        System.arraycopy(src, 0, memory, 0, newLength);
+
+        for (int i = src.length; i < newLength; i++) {
+            memory[i] = new Address();
         }
+
+        return memory;
     }
 
     public static boolean valid(Address a) {
