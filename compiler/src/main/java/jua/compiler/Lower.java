@@ -28,12 +28,13 @@ public final class Lower extends Translator {
         // Заметка: в tree.stats не могут находиться операторы Tag.FUNCDEF и Tag.CONSTDEF.
         int pos = tree.pos;
         tree.functions = Flow.builder(tree.functions)
-                        .append(new FuncDef(pos,
+                .append(
+                        new FuncDef(pos,
                                 new Name(pos, "<main>"),
-                                null,
+                                Flow.empty(),
                                 new Block(pos, tree.stats)))
-                                .toFlow();
-        tree.stats = null;
+                .toFlow();
+        tree.stats = Flow.empty();
         result = tree;
     }
 
