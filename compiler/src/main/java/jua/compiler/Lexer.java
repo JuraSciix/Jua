@@ -1,6 +1,8 @@
 package jua.compiler;
 
 
+import jua.compiler.utils.Assert;
+
 import static java.lang.Character.digit;
 import static jua.compiler.Tokens.*;
 import static jua.compiler.Tokens.TokenType.*;

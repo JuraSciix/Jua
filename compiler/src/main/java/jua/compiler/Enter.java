@@ -3,6 +3,7 @@ package jua.compiler;
 import jua.compiler.ModuleScope.FunctionSymbol;
 import jua.compiler.ModuleScope.VarSymbol;
 import jua.compiler.Tree.*;
+import jua.compiler.utils.Assert;
 import jua.compiler.utils.Flow;
 
 import java.util.HashMap;

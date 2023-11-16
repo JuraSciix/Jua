@@ -4,6 +4,7 @@ import jua.compiler.InstructionUtils.IndexedInstrNode;
 import jua.compiler.InstructionUtils.InstrNode;
 import jua.compiler.InstructionUtils.JumpInstrNode;
 import jua.compiler.InstructionUtils.SingleInstrNode;
+import jua.compiler.utils.Assert;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.LineNumberTable;
 import jua.runtime.interpreter.memory.Address;

@@ -6,6 +6,7 @@ import jua.compiler.Items.Item;
 import jua.compiler.Items.SafeItem;
 import jua.compiler.ModuleScope.ConstantSymbol;
 import jua.compiler.Tree.*;
+import jua.compiler.utils.Assert;
 import jua.compiler.utils.Flow;
 import jua.compiler.utils.IntArrayList;
 

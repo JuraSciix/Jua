@@ -1,4 +1,4 @@
-package jua.compiler;
+package jua.compiler.utils;
 
 import java.util.function.Supplier;
 
