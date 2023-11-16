@@ -275,7 +275,9 @@ public class ModulePrinter {
     }
 
     public void printLocal(int index) {
-        instrData.operands.add(executable.varnames[index]);
+        // todo: new LocalNameTable
+//        instrData.operands.add(executable.varnames[index]);
+        instrData.operands.add(Integer.toString(index));
     }
 
     public void printCp(int offsetJump) {
