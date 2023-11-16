@@ -203,7 +203,9 @@ public abstract class Tree {
     public static abstract class Scanner extends AbstractVisitor {
 
         public void scan(Tree tree) {
-            tree.accept(this);
+            if (tree != null) {
+                tree.accept(this);
+            }
         }
 
         public void scan(Flow<? extends Tree> flow) {
