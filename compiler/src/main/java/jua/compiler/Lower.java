@@ -30,7 +30,8 @@ public final class Lower extends Translator {
         tree.functions = Flow.builder(tree.functions)
                 .append(
                         new FuncDef(pos,
-                                new Name(pos, "<main>"),
+                                pos,
+                                "<main>",
                                 Flow.empty(),
                                 new Block(pos, tree.stats)))
                 .toFlow();

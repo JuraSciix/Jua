@@ -182,7 +182,7 @@ public class Check extends Scanner {
             return;
         }
 
-        Name calleeName = ((MemberAccess) callee).member;
+        String calleeName = ((MemberAccess) callee).member;
         FunctionSymbol calleeSym = programScope.lookupFunction(calleeName);
 
         //
@@ -201,11 +201,11 @@ public class Check extends Scanner {
 
         Flow.forEach(tree.args, a -> {
             if (a.name != null) {
-                if (calleeSym.params != null && !Arrays.asList(calleeSym.params).contains(a.name.toString())) {
-                    report(a.name.pos, "cannot call function %s: unrecognized function parameter name", calleeSym.name);
+                if (calleeSym.params != null && !Arrays.asList(calleeSym.params).contains(a.name)) {
+                    report(a.pos, "cannot call function %s: unrecognized function parameter name", calleeSym.name);
                     return;
                 }
-                report(a.name.pos, "named arguments not yet supported");
+                report(a.pos, "named arguments not yet supported");
                 return;
             }
             scan(a.expr);

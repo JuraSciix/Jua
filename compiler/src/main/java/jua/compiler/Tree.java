@@ -643,13 +643,16 @@ public abstract class Tree {
 
         public static class Definition {
 
-            public final Name name;
+            public final int pos;
+
+            public final String name;
 
             public Expression expr;
 
             public ConstantSymbol sym;
 
-            public Definition(Name name, Expression expr) {
+            public Definition(int pos, String name, Expression expr) {
+                this.pos = pos;
                 this.name = name;
                 this.expr = expr;
             }
@@ -673,19 +676,23 @@ public abstract class Tree {
 
         public static class Parameter {
 
-            public final Name name;
+            public final int pos;
+            public final String name;
 
             public Expression expr;
 
             public VarSymbol sym;
 
-            public Parameter(Name name, Expression expr) {
+            public Parameter(int pos, String name, Expression expr) {
+                this.pos = pos;
                 this.name = name;
                 this.expr = expr;
             }
         }
-        
-        public final Name name;
+
+        public final int namePos;
+
+        public final String name;
 
         public Flow<Parameter> params;
 
@@ -693,8 +700,9 @@ public abstract class Tree {
 
         public FunctionSymbol sym;
 
-        public FuncDef(int pos, Name name, Flow<Parameter> params, Statement body) {
+        public FuncDef(int pos, int namePos, String name, Flow<Parameter> params, Statement body) {
             super(pos);
+            this.namePos = namePos;
             this.name = name;
             this.params = params;
             this.body = body;
@@ -889,13 +897,16 @@ public abstract class Tree {
 
         public static class Definition {
 
-            public final Name name;
+            public final int pos;
+
+            public final String name;
 
             public Expression init;
 
             public VarSymbol sym;
 
-            public Definition(Name name, Expression init) {
+            public Definition(int pos, String name, Expression init) {
+                this.pos = pos;
                 this.name = name;
                 this.init = init;
             }
@@ -1019,11 +1030,11 @@ public abstract class Tree {
 
     public static class Var extends Expression {
 
-        public final Name name;
+        public final String name;
 
         public VarSymbol sym;
 
-        public Var(int pos, Name name) {
+        public Var(int pos, String name) {
             super(pos);
             this.name = name;
         }
@@ -1041,12 +1052,15 @@ public abstract class Tree {
 
         public Expression expr;
 
-        public Name member;
+        public int memberPos;
 
-        public MemberAccess(int pos, Tag tag, Expression expr, Name member) {
+        public String member;
+
+        public MemberAccess(int pos, Tag tag, Expression expr, int memberPos, String member) {
             super(pos);
             this.tag = tag;
             this.expr = expr;
+            this.memberPos = memberPos;
             this.member = member;
         }
 
@@ -1081,11 +1095,14 @@ public abstract class Tree {
 
         public static class Argument {
 
-            public final Name name;
+            public final int pos;
+
+            public final String name;
 
             public Expression expr;
 
-            public Argument(Name name, Expression expr) {
+            public Argument(int pos, String name, Expression expr) {
+                this.pos = pos;
                 this.name = name;
                 this.expr = expr;
             }

@@ -135,8 +135,6 @@ public final class Tokens {
             this.pos = pos;
         }
 
-        public Name toName() { throw unsupportedOperationException(); }
-
         public String name() { throw unsupportedOperationException(); }
 
         public String value() { throw unsupportedOperationException(); }
@@ -156,9 +154,6 @@ public final class Tokens {
             super(type, pos);
             this.name = name;
         }
-
-        @Override
-        public Name toName() { return new Name(pos, name); }
 
         @Override
         public String name() { return name; }

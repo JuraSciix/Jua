@@ -156,7 +156,7 @@ public final class JuaParser {
             if (acceptToken(EQ)) {
                 init = parseExpression();
             }
-            defs.append(new VarDef.Definition(name.toName(), init));
+            defs.append(new VarDef.Definition(name.pos, name.name(), init));
         } while (acceptToken(COMMA));
         expectToken(SEMI);
         return new VarDef(acceptedPos, defs.toFlow());
@@ -170,7 +170,7 @@ public final class JuaParser {
                 Token name = token;
                 expectToken(IDENTIFIER);
                 expectToken(EQ);
-                definitions.append(new ConstDef.Definition(name.toName(), parseExpression()));
+                definitions.append(new ConstDef.Definition(name.pos, name.name(), parseExpression()));
             } catch (ParseNodeExit e) {
                 report(e);
             }
@@ -206,7 +206,7 @@ public final class JuaParser {
 
     private FuncDef parseFunction() {
         int pos = acceptedPos;
-        Name funcName = token.toName();
+        Token funcName = token;
         expectToken(IDENTIFIER);
         expectToken(LPAREN);
         Flow.Builder<FuncDef.Parameter> params = Flow.builder();
@@ -216,22 +216,21 @@ public final class JuaParser {
             if (acceptToken(EOF) || comma && !acceptToken(COMMA)) {
                 expectToken(RPAREN);
             }
-            Token name0 = token;
+            Token p = token;
             expectToken(IDENTIFIER);
-            Name name1 = name0.toName();
             Expression optional = null;
 
             if (acceptToken(EQ)) {
                 optional = parseExpression();
                 optionalState = true;
             } else if (optionalState) {
-                reportError(name0.pos, "here must be a optional argument.");
+                reportError(p.pos, "here must be a optional argument.");
             }
-            params.append(new FuncDef.Parameter(name1, optional));
+            params.append(new FuncDef.Parameter(p.pos, p.name(), optional));
             comma = !acceptToken(COMMA);
         }
         Statement body = parseBody();
-        return new FuncDef(pos, funcName, params.toFlow(), body);
+        return new FuncDef(pos, funcName.pos, funcName.name(), params.toFlow(), body);
     }
 
     private Statement parseBody() {
@@ -662,7 +661,7 @@ public final class JuaParser {
                     expectToken(IDENTIFIER);
                     expr = new MemberAccess(op.pos,
                             (op.type == DOT) ? Tag.MEMACCESS : Tag.MEMACCSF,
-                            expr, member.toName());
+                            expr, member.pos, member.name());
                     break;
 
                 case LBRACKET:
@@ -741,7 +740,7 @@ public final class JuaParser {
         if (acceptToken(LPAREN)) {
             return parseInvocation(token);
         }
-        return new Var(token.pos, token.toName());
+        return new Var(token.pos, token.name());
     }
 
     private Flow<Invocation.Argument> parseInvocationArgs() {
@@ -752,19 +751,19 @@ public final class JuaParser {
             if (acceptToken(EOF) || comma && !acceptToken(COMMA)) {
                 expectToken(RPAREN);
             }
-            Name name = null;
+            Token name = new Tokens.NamedToken(null, 0, null);
             Expression expr;
             if (matchesToken(IDENTIFIER)) {
                 Token t = token;
                 expr = parseExpression();
                 if (expr.hasTag(Tag.VAR) && acceptToken(COL)) {
-                    name = t.toName();
+                    name = t;
                     expr = parseExpression();
                 }
             } else {
                 expr = parseExpression();
             }
-            args.append(new Invocation.Argument(name, expr));
+            args.append(new Invocation.Argument(name.pos, name.name(), expr));
             comma = !acceptToken(COMMA);
         }
 
@@ -775,7 +774,7 @@ public final class JuaParser {
         Flow<Invocation.Argument> args = parseInvocationArgs();
         expectToken(RPAREN);
         return new Invocation(token.pos,
-                new MemberAccess(token.pos, Tag.MEMACCESS, null, token.toName()),
+                new MemberAccess(token.pos, Tag.MEMACCESS, null, token.pos, token.name()),
                 args);
     }
 

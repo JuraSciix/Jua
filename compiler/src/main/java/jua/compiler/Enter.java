@@ -25,17 +25,16 @@ public class Enter extends Scanner {
             }
         }
 
-        boolean defined(Name name) {
-            String key = name.toString();
+        boolean defined(String name) {
             for (VarScope scope = this; scope != null; scope = scope.parent) {
-                if (scope.containsKey(key)) {
+                if (scope.containsKey(name)) {
                     return true;
                 }
             }
             return false;
         }
 
-        VarSymbol define(Name name) {
+        VarSymbol define(String name) {
             int id = nextId++;
             if (nextId > maxId) {
                 // nextId и maxId у текущей области всегда >= чем у parent.
@@ -45,16 +44,15 @@ public class Enter extends Scanner {
                 }
             }
             VarSymbol sym = new VarSymbol(id);
-            put(name.toString(), sym);
+            put(name, sym);
             return sym;
         }
 
-        VarSymbol resolve(Name name) {
-            String key = name.toString();
+        VarSymbol resolve(String name) {
             for (VarScope scope = this; scope != null; scope = scope.parent) {
                 // Халтурно избегаем двойного поиска (containsKey + get),
                 // оставляя для ясности .getOrDefault(x, null)
-                VarSymbol sym = scope.getOrDefault(key, null);
+                VarSymbol sym = scope.getOrDefault(name, null);
                 if (sym != null) {
                     return sym;
                 }
@@ -117,7 +115,7 @@ public class Enter extends Scanner {
     public void visitConstDef(ConstDef tree) {
         Flow.forEach(tree.defs, def -> {
             if (globalScope.isConstantDefined(def.name)) {
-                report(def.name.pos, "constant redefinition");
+                report(def.pos, "constant redefinition");
                 def.sym = globalScope.lookupConstant(def.name);
                 return;
             }
@@ -141,7 +139,7 @@ public class Enter extends Scanner {
 
         Flow.forEach(tree.params, param -> {
             if (scope.defined(param.name)) {
-                report(param.name.pos, "duplicated function parameter");
+                report(param.pos, "duplicated function parameter");
                 // Так как это не позитивный случай, избегать двойного поиска (defined + resolve) нет смысла.
                 param.sym = scope.resolve(param.name);
                 return;
@@ -151,7 +149,7 @@ public class Enter extends Scanner {
         });
 
         if (globalScope.isFunctionDefined(tree.name)) {
-            report(tree.name.pos, "function redefinition");
+            report(tree.namePos, "function redefinition");
             tree.sym = globalScope.lookupFunction(tree.name);
         } else {
             tree.sym = globalScope.defineUserFunction(tree, 0);
@@ -221,7 +219,7 @@ public class Enter extends Scanner {
     public void visitVarDef(VarDef tree) {
         Flow.forEach(tree.defs, def -> {
             if (scope.defined(def.name)) {
-                report(def.name.pos, "duplicated variable declaration");
+                report(def.pos, "duplicated variable declaration");
                 // Так как это не позитивный случай, избегать двойного поиска (defined + resolve) нет смысла.
                 def.sym = scope.resolve(def.name);
                 return;

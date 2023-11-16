@@ -277,7 +277,7 @@ public class Gen extends Scanner {
     public void visitVarDef(VarDef tree) {
         code.putPos(tree.pos);
         Flow.forEach(tree.defs, def -> {
-            code.putPos(def.name.pos);
+            code.putPos(def.pos);
             if (def.init == null) {
                 items.mkLiteral(null).load();
             } else {
@@ -351,7 +351,7 @@ public class Gen extends Scanner {
 
     @Override
     public void visitMemberAccess(MemberAccess tree) {
-        genAccess(tree, tree.expr, new Literal(tree.member.pos, tree.member.toString()), Tag.MEMACCSF);
+        genAccess(tree, tree.expr, new Literal(tree.memberPos, tree.member), Tag.MEMACCSF);
     }
 
     @Override

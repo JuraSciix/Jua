@@ -95,12 +95,12 @@ public final class ModuleScope {
         functions.put(name, symbol);
     }
 
-    public boolean isConstantDefined(Name name) {
-        return constants.containsKey(name.toString());
+    public boolean isConstantDefined(String name) {
+        return constants.containsKey(name);
     }
 
-    public boolean isFunctionDefined(Name name) {
-        return functions.containsKey(name.toString());
+    public boolean isFunctionDefined(String name) {
+        return functions.containsKey(name);
     }
 
     public ConstantSymbol defineNativeConstant(String name, Object value) {
@@ -182,37 +182,35 @@ public final class ModuleScope {
         return sym;
     }
 
-    public ConstantSymbol defineStubConstant(Name name) {
-        String nameString = name.toString();
+    public ConstantSymbol defineStubConstant(String name) {
         ConstantSymbol sym = new ConstantSymbol(
-                nameString,
+                name,
                 -1,
                 null,
                 null
         );
-        constants.put(nameString, sym);
+        constants.put(name, sym);
         return sym;
     }
 
-    public FunctionSymbol defineStubFunction(Name name) {
-        String nameString = name.toString();
+    public FunctionSymbol defineStubFunction(String name) {
         FunctionSymbol sym = new FunctionSymbol(
-                nameString,
+                name,
                 -1,
                 0,
                 255,
                 new Object[0], null
         );
-        functions.put(nameString, sym);
+        functions.put(name, sym);
         return sym;
     }
 
-    public ConstantSymbol lookupConstant(Name name) {
-        return constants.get(name.toString());
+    public ConstantSymbol lookupConstant(String name) {
+        return constants.get(name);
     }
 
-    public FunctionSymbol lookupFunction(Name name) {
-        return functions.get(name.toString());
+    public FunctionSymbol lookupFunction(String name) {
+        return functions.get(name);
     }
 
     public Module.Executable[] collectExecutables() {
