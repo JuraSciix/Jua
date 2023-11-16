@@ -168,9 +168,9 @@ public class Gen extends Scanner {
         Chain skipBodyChain = testFirst ? code.branch(OPCodes.Goto) : null;
         int loopStartPC = code.pc();
         scan(body);
+        code.resolve(flow.contChain);
         Flow.forEach(step, s -> genExpr(s).drop());
         code.resolve(skipBodyChain);
-        code.resolve(flow.contChain);
         CondItem condItem = genExpr(cond).asCond();
         code.resolve(condItem.trueJumps(), loopStartPC);
         code.resolve(condItem.falseChain);
