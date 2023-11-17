@@ -38,7 +38,7 @@ public class AMemory implements Memory {
         if (offset < i) {
             throw new IndexOutOfBoundsException("Address pointer exceeds offset: " + offset + ", pointer: " + i);
         }
-        return memory[offset - i];
+        return memory[offset + i];
     }
 
     AMemory a;
