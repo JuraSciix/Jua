@@ -105,7 +105,7 @@ public class ModulePrinter {
         public void visitJump(JumpInstrNode node) {
             printOPCode(node.opcode);
             printCp(node.offset);
-            restoreTosIn(node.offset);
+            restoreTosIn(node.offset, node);
         }
 
         @Override
@@ -162,9 +162,11 @@ public class ModulePrinter {
             }
 
             for (int j = 0; j < i; j++) {
-                printCase(groupedLabels[j], groupedCps[j]);
+                instrData.cases.add(new Case(groupedLabels[j], groupedCps[j]));
+                restoreTosIn(groupedCps[j], node);
             }
-            printCase(null, node.defCp);
+            instrData.cases.add(new Case(null, node.defCp));
+            restoreTosIn(node.defCp, node);
         }
     }
 
@@ -288,15 +290,11 @@ public class ModulePrinter {
         instrData.operands.add(String.valueOf(operand));
     }
 
-    public void restoreTosIn(int atCp) {
+    public void restoreTosIn(int atCp, InstrNode instr) {
         if (atCp > 0) {
-            tosRestoring = mergeTos(tosRestoring, new TosRestoring(atCp, tos, null));
+            tosRestoring = mergeTos(tosRestoring,
+                    new TosRestoring(atCp, tos + instr.stackAdjustment(), null));
         }
-    }
-
-    public void printCase(int[] operands, int caseCp) {
-        instrData.cases.add(new Case(operands, caseCp));
-        restoreTosIn(caseCp);
     }
 
     public void printLiteral(int index) {
