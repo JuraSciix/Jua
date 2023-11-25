@@ -403,8 +403,9 @@ public final class JuaParser {
             case QUESQUESEQ:
             case SLASHEQ:
             case STAREQ:
+                TokenType type = token.type;
                 nextToken();
-                return new EnhancedAssign(position, TreeInfo.getAsgTag(token.type), expr, parseAssignment());
+                return new EnhancedAssign(position, TreeInfo.getAsgTag(type), expr, parseAssignment());
 
             default:
                 return expr;
