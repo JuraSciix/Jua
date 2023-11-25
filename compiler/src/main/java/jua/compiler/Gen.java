@@ -403,8 +403,8 @@ public class Gen extends Scanner {
     @Override
     public void visitEnhancedAssign(EnhancedAssign tree) {
         Item varItem = genExpr(tree.var);
+        varItem.duplicate();
         if (tree.hasTag(Tag.ASG_COALESCE)) {
-            varItem.duplicate();
             CondItem presentCond = varItem.asPresentCond();
             Chain skipCoalesceChain = presentCond.trueJumps();
             code.resolve(presentCond.falseChain);
