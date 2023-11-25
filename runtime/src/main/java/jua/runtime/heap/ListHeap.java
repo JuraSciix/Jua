@@ -9,31 +9,21 @@ import java.util.StringJoiner;
 
 public final class ListHeap extends Heap implements Iterable<Address> {
 
-    private static final Address[] EMPTY_DATA = new Address[0];
-
     private final Address[] data;
 
     public ListHeap(int size) {
         if (size < 0) {
             throw new IllegalArgumentException("size must not be negative");
         }
-        if (size == 0) {
-            data = EMPTY_DATA;
-        } else {
-            data = new Address[size]; // Optimization: lazy init
-        }
+        data = AddressUtils.allocateMemoryNulls(size, 0);
     }
 
     public ListHeap(Address[] source) {
         if (source == null) {
             throw new IllegalArgumentException("source must not be null");
         }
-        if (source.length == 0) {
-            data = EMPTY_DATA;
-        } else {
-            data = new Address[source.length];
-            AddressUtils.arraycopy(source, 0, data, 0, source.length);
-        }
+        data = new Address[source.length];
+        AddressUtils.arraycopy(source, 0, data, 0, source.length);
     }
 
     public int length() {
@@ -41,23 +31,14 @@ public final class ListHeap extends Heap implements Iterable<Address> {
     }
 
     public Address get(int index) {
-        initIndex(index);
         return data[index];
     }
 
     public void set(int index, Address value, Address oldValueReceptor) {
-        initIndex(index);
         if (oldValueReceptor != null) {
             oldValueReceptor.set(data[index]);
         }
         data[index].set(value);
-    }
-
-    private void initIndex(int index) {
-        if (data[index] == null) {
-            data[index] = new Address();
-            data[index].setNull();
-        }
     }
 
     public void clear() {

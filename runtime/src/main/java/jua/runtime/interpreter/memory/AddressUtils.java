@@ -31,6 +31,20 @@ public class AddressUtils {
         return memory;
     }
 
+    public static Address[] allocateMemoryNulls(int count, int start) {
+        if (!(count >= start && start >= 0)) {
+            throw new IllegalArgumentException("count: " + count + ", start: " + start);
+        }
+
+        Address[] memory = new Address[count];
+
+        for (int i = start; i < count; i++) {
+            (memory[i] = new Address()).setNull();
+        }
+
+        return memory;
+    }
+
     /**
      * Копирует данные из исходного участка в памяти в целевой.
      *
