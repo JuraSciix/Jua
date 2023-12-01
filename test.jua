@@ -1,8 +1,0 @@
-for var i = 0; i < 100; i++ {
-    var q1 = time();
-    for var j = 0; j < 1_000_000; j++ {
-
-    }
-    var q2 = time();
-    println(q2 - q1);
-}
