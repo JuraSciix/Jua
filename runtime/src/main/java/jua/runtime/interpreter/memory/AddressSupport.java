@@ -1,7 +1,6 @@
 package jua.runtime.interpreter.memory;
 
 import jua.runtime.heap.ListHeap;
-import jua.runtime.heap.MapHeap;
 import jua.runtime.heap.StringHeap;
 
 public class AddressSupport {
@@ -33,8 +32,6 @@ public class AddressSupport {
             address.set(sh);
         } else if (o instanceof ListHeap) {
             address.set((ListHeap) o);
-        } else if (o instanceof MapHeap) {
-            address.set((MapHeap) o);
         } else if (o instanceof Address) {
             address.set((Address) o);
         } else {

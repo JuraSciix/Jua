@@ -1,6 +1,5 @@
 package jua.compiler;
 
-import jua.compiler.ModuleScope.ConstantSymbol;
 import jua.compiler.ModuleScope.FunctionSymbol;
 import jua.compiler.ModuleScope.VarSymbol;
 import jua.compiler.utils.Flow;
@@ -10,7 +9,6 @@ public abstract class Tree {
     public enum Tag {
         DOC,
         FUNCDEF,
-        CONSTDEF,
         BLOCK,
         IF,
         WHILELOOP,
@@ -26,7 +24,6 @@ public abstract class Tree {
         DISCARDED,
         LITERAL,
         LISTLIT,
-        MAPLIT,
         VAR,
         MEMACCESS,
         MEMACCSF,
@@ -79,7 +76,6 @@ public abstract class Tree {
 
     public interface Visitor {
         void visitDocument(Document tree);
-        void visitConstDef(ConstDef tree);
         void visitFuncDef(FuncDef tree);
         void visitBlock(Block tree);
         void visitIf(If tree);
@@ -96,7 +92,6 @@ public abstract class Tree {
         void visitDiscarded(Discarded tree);
         void visitLiteral(Literal tree);
         void visitListLiteral(ListLiteral tree);
-        void visitMapLiteral(MapLiteral tree);
         void visitVariable(Var tree);
         void visitMemberAccess(MemberAccess tree);
         void visitArrayAccess(ArrayAccess tree);
@@ -112,9 +107,6 @@ public abstract class Tree {
     public static abstract class AbstractVisitor implements Visitor {
         @Override
         public void visitDocument(Document tree) { visitTree(tree); }
-
-        @Override
-        public void visitConstDef(ConstDef tree) { visitTree(tree); }
 
         @Override
         public void visitFuncDef(FuncDef tree) { visitTree(tree); }
@@ -165,9 +157,6 @@ public abstract class Tree {
         public void visitListLiteral(ListLiteral tree) { visitTree(tree); }
 
         @Override
-        public void visitMapLiteral(MapLiteral tree) { visitTree(tree); }
-
-        @Override
         public void visitVariable(Var tree) { visitTree(tree); }
 
         @Override
@@ -214,14 +203,8 @@ public abstract class Tree {
 
         @Override
         public void visitDocument(Document tree) {
-            scan(tree.constants);
             scan(tree.functions);
             scan(tree.stats);
-        }
-
-        @Override
-        public void visitConstDef(ConstDef tree) {
-            Flow.forEach(tree.defs, def -> scan(def.expr));
         }
 
         @Override
@@ -315,16 +298,6 @@ public abstract class Tree {
         }
 
         @Override
-        public void visitMapLiteral(MapLiteral tree) {
-            Flow.forEach(tree.entries, entry -> {
-                if (entry.key != null) {
-                    scan(entry.key);
-                }
-                scan(entry.value);
-            });
-        }
-
-        @Override
         public void visitVariable(Var tree) {  }
 
         @Override
@@ -403,15 +376,8 @@ public abstract class Tree {
 
         @Override
         public void visitDocument(Document tree) {
-            tree.constants = translate(tree.constants);
             tree.functions = translate(tree.functions);
             tree.stats = translate(tree.stats);
-            result = tree;
-        }
-
-        @Override
-        public void visitConstDef(ConstDef tree) {
-            Flow.forEach(tree.defs, def -> def.expr = translate(def.expr));
             result = tree;
         }
 
@@ -518,17 +484,6 @@ public abstract class Tree {
         }
 
         @Override
-        public void visitMapLiteral(MapLiteral tree) {
-            Flow.forEach(tree.entries, entry -> {
-                if (entry.key != null) {
-                    entry.key = translate(entry.key);
-                }
-                entry.value = translate(entry.value);
-            });
-            result = tree;
-        }
-
-        @Override
         public void visitVariable(Var tree) { result = tree; }
 
         @Override
@@ -613,14 +568,11 @@ public abstract class Tree {
 
         public Flow<FuncDef> functions;
 
-        public Flow<ConstDef> constants;
         public Document(int pos, Source source,
-                        Flow<ConstDef> constants,
                         Flow<FuncDef> functions,
                         Flow<Statement> stats) {
             super(pos);
             this.source = source;
-            this.constants = constants;
             this.functions = functions;
             this.stats = stats;
         }
@@ -637,39 +589,6 @@ public abstract class Tree {
         protected Statement(int pos) {
             super(pos);
         }
-    }
-
-    public static class ConstDef extends Tree {
-
-        public static class Definition {
-
-            public final int pos;
-
-            public final String name;
-
-            public Expression expr;
-
-            public ConstantSymbol sym;
-
-            public Definition(int pos, String name, Expression expr) {
-                this.pos = pos;
-                this.name = name;
-                this.expr = expr;
-            }
-        }
-
-        public Flow<Definition> defs;
-
-        public ConstDef(int pos, Flow<Definition> defs) {
-            super(pos);
-            this.defs = defs;
-        }
-
-        @Override
-        public Tag getTag() { return Tag.CONSTDEF; }
-
-        @Override
-        public void accept(Visitor visitor) { visitor.visitConstDef(this); }
     }
 
     public static class FuncDef extends Tree {
@@ -995,37 +914,6 @@ public abstract class Tree {
 
         @Override
         public void accept(Visitor visitor) { visitor.visitListLiteral(this); }
-    }
-
-    public static class MapLiteral extends Expression {
-
-        public static class Entry {
-
-            public final int pos;
-
-            public Expression key, value;
-
-            public boolean field; // todo: Костыль
-
-            public Entry(int pos, Expression key, Expression value) {
-                this.pos = pos;
-                this.key = key;
-                this.value = value;
-            }
-        }
-        
-        public Flow<Entry> entries;
-
-        public MapLiteral(int pos, Flow<Entry> entries) {
-            super(pos);
-            this.entries = entries;
-        }
-
-        @Override
-        public Tag getTag() { return Tag.MAPLIT; }
-
-        @Override
-        public void accept(Visitor visitor) { visitor.visitMapLiteral(this); }
     }
 
     public static class Var extends Expression {

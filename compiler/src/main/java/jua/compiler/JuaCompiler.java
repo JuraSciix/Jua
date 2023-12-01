@@ -4,7 +4,6 @@ import jua.compiler.Tokens.Token;
 import jua.compiler.Tokens.TokenType;
 import jua.compiler.utils.Flow;
 import jua.compiler.utils.IOUtils;
-import jua.runtime.ConstantMemory;
 
 import java.io.File;
 import java.io.IOException;
@@ -113,9 +112,8 @@ public final class JuaCompiler {
             });
 
             Module.Executable[] functions = programScope.collectExecutables();
-            ConstantMemory[] constantAddresses = programScope.collectConstants();
 
-            Module m = new Module(source, functions, constantAddresses);
+            Module m = new Module(source, functions);
             m.functionNames = moduleScope.functionNames();
             return m;
         } catch (RuntimeException e) {

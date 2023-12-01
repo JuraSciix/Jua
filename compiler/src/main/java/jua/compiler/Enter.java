@@ -113,22 +113,9 @@ public class Enter extends Scanner {
     }
 
     @Override
-    public void visitConstDef(ConstDef tree) {
-        Flow.forEach(tree.defs, def -> {
-            if (globalScope.isConstantDefined(def.name)) {
-                report(def.pos, "constant redefinition");
-                def.sym = globalScope.lookupConstant(def.name);
-                return;
-            }
-            def.sym = globalScope.defineUserConstant(def);
-        });
-    }
-
-    @Override
     public void visitDocument(Document tree) {
         ensureRootScope();
         source = tree.source;
-        scan(tree.constants);
         scan(tree.functions);
         scanInnerScope(null, tree.stats);
     }
@@ -255,12 +242,6 @@ public class Enter extends Scanner {
         VarSymbol varSym = scope.resolve(tree.name);
         if (varSym != null) {
             tree.sym = varSym;
-            return;
-        }
-        // Халтурно избегаем двойного поиска (isConstantDefined + lookupConstant)
-        ModuleScope.ConstantSymbol constSym = globalScope.lookupConstant(tree.name);
-        if (constSym != null) {
-            tree.sym = constSym;
             return;
         }
         report(tree.pos, "undeclared variable");

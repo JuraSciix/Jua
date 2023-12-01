@@ -100,9 +100,6 @@ public class OPCodeTranslator implements InstrVisitor {
             case OPCodes.Dec:
                 put(new Dec(node.index));
                 break;
-            case OPCodes.GetConst:
-                put(new GetConst(node.index));
-                break;
             default:
                 opcodeMismatch(node);
         }

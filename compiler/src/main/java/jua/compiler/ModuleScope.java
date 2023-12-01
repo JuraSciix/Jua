@@ -1,11 +1,7 @@
 package jua.compiler;
 
-import jua.compiler.Tree.ConstDef;
 import jua.compiler.Tree.FuncDef;
 import jua.compiler.utils.Flow;
-import jua.runtime.ConstantMemory;
-import jua.runtime.interpreter.memory.Address;
-import jua.runtime.interpreter.memory.AddressSupport;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -40,22 +36,6 @@ public final class ModuleScope {
         }
     }
 
-    public static class ConstantSymbol extends VarSymbol {
-
-        final String name;
-        final int id;
-        final Object value;
-        final ConstDef.Definition tree;
-
-        ConstantSymbol(String name, int id, Object value, ConstDef.Definition tree) {
-            super(id);
-            this.name = name;
-            this.id = id;
-            this.value = value;
-            this.tree = tree;
-        }
-    }
-
     public static class VarSymbol {
 
         public final int id;
@@ -67,8 +47,6 @@ public final class ModuleScope {
 
     private final LinkedHashMap<String, FunctionSymbol> functions = new LinkedHashMap<>();
     private int funcnextaddr = 0;
-    private final LinkedHashMap<String, ConstantSymbol> constants = new LinkedHashMap<>();
-    private int constnextaddr = 0;
 
     public ModuleScope() {
         registerOperators();
@@ -95,27 +73,9 @@ public final class ModuleScope {
         functions.put(name, symbol);
     }
 
-    public boolean isConstantDefined(String name) {
-        return constants.containsKey(name);
-    }
 
     public boolean isFunctionDefined(String name) {
         return functions.containsKey(name);
-    }
-
-    public ConstantSymbol defineNativeConstant(String name, Object value) {
-        if (constants.containsKey(name)) {
-            throw new IllegalArgumentException("Duplicate constant: " + name);
-        }
-        int nextId = constnextaddr++;
-        ConstantSymbol sym = new ConstantSymbol(
-                name,
-                nextId,
-                value,
-                null
-        );
-        constants.put(name, sym);
-        return sym;
     }
 
     public FunctionSymbol defineNativeFunction(String name, int minArgc, int maxArgc, Object[] defs, String[] params) {
@@ -136,22 +96,8 @@ public final class ModuleScope {
         return sym;
     }
 
-    public ConstantSymbol defineUserConstant(ConstDef.Definition def) {
-        String name = def.name.toString();
-        int nextId = constnextaddr++;
-        Object type = TreeInfo.literalType(def.expr);
-        ConstantSymbol sym = new ConstantSymbol(
-                name,
-                nextId,
-                type,
-                def
-        );
-        constants.put(name, sym);
-        return sym;
-    }
-
     public FunctionSymbol defineUserFunction(FuncDef tree, int nlocals) {
-        String name = tree.name.toString();
+        String name = tree.name;
         int nextId = funcnextaddr++;
         // The legacy code is present below
         List<String> params = new ArrayList<>();
@@ -162,7 +108,7 @@ public final class ModuleScope {
         }
 
         ArgCountData a = Flow.reduce(tree.params, new ArgCountData(), (param, data) -> {
-            params.add(param.name.toString());
+            params.add(param.name);
             if (param.expr != null && data.min > data.max) {
                 data.min = data.max;
             }
@@ -182,17 +128,6 @@ public final class ModuleScope {
         return sym;
     }
 
-    public ConstantSymbol defineStubConstant(String name) {
-        ConstantSymbol sym = new ConstantSymbol(
-                name,
-                -1,
-                null,
-                null
-        );
-        constants.put(name, sym);
-        return sym;
-    }
-
     public FunctionSymbol defineStubFunction(String name) {
         FunctionSymbol sym = new FunctionSymbol(
                 name,
@@ -203,10 +138,6 @@ public final class ModuleScope {
         );
         functions.put(name, sym);
         return sym;
-    }
-
-    public ConstantSymbol lookupConstant(String name) {
-        return constants.get(name);
     }
 
     public FunctionSymbol lookupFunction(String name) {
@@ -227,14 +158,5 @@ public final class ModuleScope {
                 .filter(e -> e.getValue().id >= 0)
                 .map(Map.Entry::getKey)
                 .toArray(String[]::new);
-    }
-
-    public ConstantMemory[] collectConstants() {
-        ConstantMemory[] constants = new ConstantMemory[this.constants.size()];
-        for (ConstantSymbol sym : this.constants.values()) {
-            constants[sym.id] = new ConstantMemory(sym.name, new Address());
-            AddressSupport.assignObject(constants[sym.id].address, sym.value);
-        }
-        return constants;
     }
 }

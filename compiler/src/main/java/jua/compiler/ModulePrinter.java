@@ -123,12 +123,7 @@ public class ModulePrinter {
         @Override
         public void visitIndexed(IndexedInstrNode node) {
             printOPCode(node.opcode);
-            if (node.opcode == OPCodes.GetConst) {
-                // todo: remove getconst
-                printConstRef(node.index);
-            } else {
-                printLocal(node.index);
-            }
+            printLocal(node.index);
         }
 
         @Override
@@ -303,9 +298,5 @@ public class ModulePrinter {
 
     public void printFuncRef(int index) {
         instrData.operands.add('"' + module.functionNames[index] + '"');
-    }
-
-    public void printConstRef(int index) {
-        instrData.operands.add('"' + module.constants[index].name + '"');
     }
 }

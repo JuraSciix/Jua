@@ -1,6 +1,5 @@
 package jua.compiler;
 
-import jua.compiler.ModuleScope.ConstantSymbol;
 import jua.compiler.SemanticInfo.BooleanEquivalent;
 import jua.compiler.Tree.*;
 import jua.compiler.utils.Flow;
@@ -49,18 +48,6 @@ public final class Lower extends Translator {
         } else {
             result = tree;
         }
-    }
-
-    @Override
-    public void visitVariable(Var tree) {
-        if (scope.isConstantDefined(tree.name)) {
-            ConstantSymbol cd = scope.lookupConstant(tree.name);
-            if (cd.value != null) {
-                result = new Literal(tree.pos, cd.value);
-                return;
-            }
-        }
-        result = tree;
     }
 
     @Override

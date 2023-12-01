@@ -37,7 +37,6 @@ public class InstructionFactory {
     private static final DupX2 dup_x2 = new DupX2();
     private static final Dup2X1 dup2_x1 = new Dup2X1();
     private static final Dup2X2 dup2_x2 = new Dup2X2();
-    private static final NewMap newmap = new NewMap();
     private static final NewList newlist = new NewList();
     private static final Pop pop = new Pop();
     private static final Pop2 pop2 = new Pop2();
@@ -85,7 +84,6 @@ public class InstructionFactory {
         MAPPING[InstructionUtils.OPCodes.DupX2] =  dup_x2;
         MAPPING[InstructionUtils.OPCodes.Dup2X1] =  dup2_x1;
         MAPPING[InstructionUtils.OPCodes.Dup2X2] =  dup2_x2;
-        MAPPING[InstructionUtils.OPCodes.NewMap] =  newmap;
         MAPPING[InstructionUtils.OPCodes.NewList] =  newlist;
         MAPPING[InstructionUtils.OPCodes.Pop] =  pop;
         MAPPING[InstructionUtils.OPCodes.Pop2] =  pop2;

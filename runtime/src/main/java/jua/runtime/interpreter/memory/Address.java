@@ -4,7 +4,6 @@ import jua.runtime.Operations;
 import jua.runtime.Types;
 import jua.runtime.heap.Heap;
 import jua.runtime.heap.ListHeap;
-import jua.runtime.heap.MapHeap;
 import jua.runtime.heap.StringHeap;
 
 import static jua.runtime.Operations.toResultCode;
@@ -44,8 +43,6 @@ public final class Address implements Comparable<Address> {
     public Heap getHeap() { return a; }
 
     public StringHeap getStringHeap() { return (StringHeap) getHeap(); }
-
-    public MapHeap getMapHeap() { return (MapHeap) getHeap(); }
 
     public ListHeap getListHeap() { return (ListHeap) getHeap(); }
 
@@ -112,8 +109,6 @@ public final class Address implements Comparable<Address> {
                 return d2b(getDouble());
             case T_STRING:
                 return s2b(getStringHeap());
-            case T_MAP:
-                return m2b(getMapHeap());
             case T_LIST:
                 return e2b(getListHeap());
             default:
@@ -154,15 +149,6 @@ public final class Address implements Comparable<Address> {
                 badTypeConversion(T_STRING);
                 return false;
         }
-    }
-
-    public boolean mapValue(Address dst) {
-        if (type == T_MAP) {
-            dst.set(getMapHeap());
-            return true;
-        }
-        badTypeConversion(T_MAP);
-        return false;
     }
 
     public boolean testType(byte type) {
@@ -209,11 +195,6 @@ public final class Address implements Comparable<Address> {
         a = s;
     }
 
-    public void set(MapHeap m) {
-        type = T_MAP;
-        a = m;
-    }
-
     public void set(ListHeap l) {
         type = T_LIST;
         a = l;
@@ -244,9 +225,6 @@ public final class Address implements Comparable<Address> {
             case T_STRING:
                 set(source.getStringHeap().refCopy());
                 break;
-            case T_MAP:
-                set(source.getMapHeap().refCopy());
-                break;
             case T_LIST:
                 set(source.getListHeap().refCopy());
                 break;
@@ -268,9 +246,6 @@ public final class Address implements Comparable<Address> {
                 break;
             case T_STRING:
                 receiver.set(getStringHeap().deepCopy());
-                break;
-            case T_MAP:
-                receiver.set(getMapHeap().deepCopy());
                 break;
             case T_LIST:
                 receiver.set(getListHeap().deepCopy());
@@ -629,14 +604,6 @@ public final class Address implements Comparable<Address> {
             }
             return false;
         }
-        if (type == T_MAP) {
-            if (validateKey(key, true)) {
-                Address element = getMapHeap().get(key);
-                oldValueReceptor.set(element);
-                return element.inc();
-            }
-            return false;
-        }
         threadError("trying to increment array-element of %s", getTypeName());
         return false;
     }
@@ -646,14 +613,6 @@ public final class Address implements Comparable<Address> {
             int index = validateIndex(key, true);
             if (index >= 0) {
                 Address element = getListHeap().get(index);
-                oldValueReceptor.set(element);
-                return element.dec();
-            }
-            return false;
-        }
-        if (type == T_MAP) {
-            if (validateKey(key, true)) {
-                Address element = getMapHeap().get(key);
                 oldValueReceptor.set(element);
                 return element.dec();
             }
@@ -678,13 +637,6 @@ public final class Address implements Comparable<Address> {
             }
             return false;
         }
-        if (type == T_MAP) {
-            if (validateKey(key, false)) {
-                getMapHeap().put(key, value);
-                return true;
-            }
-            return false;
-        }
         threadError("trying to store array-element to %s", getTypeName());
         return false;
     }
@@ -698,13 +650,6 @@ public final class Address implements Comparable<Address> {
             }
             return false;
         }
-        if (type == T_MAP) {
-            if (validateKey(key, true)) {
-                getMapHeap().getTo(key, receptor);
-                return true;
-            }
-            return false;
-        }
         threadError("trying to load array-element from %s", getTypeName());
         return false;
     }
@@ -714,12 +659,6 @@ public final class Address implements Comparable<Address> {
             int index = validateIndex(key, false);
             if (index >= 0) {
                 return toResultCode(getListHeap().contains(key));
-            }
-            return Operations.RESULT_FAILURE;
-        }
-        if (type == T_MAP) {
-            if (validateKey(key, false)) {
-                return toResultCode(getMapHeap().containsKey(key));
             }
             return Operations.RESULT_FAILURE;
         }
@@ -741,26 +680,9 @@ public final class Address implements Comparable<Address> {
         return -1;
     }
 
-    private boolean validateKey(Address keyAddress, boolean checkContaining) {
-        if (keyAddress.isScalar()) {
-            if (!checkContaining || getMapHeap().containsKey(keyAddress)) {
-                return true;
-            }
-            threadError("undefined map key: %s", keyAddress.toString());
-        } else {
-            threadError("trying to access a map with non-scalar key of type %s", keyAddress.getTypeName());
-        }
-        return false;
-    }
-
     public boolean length(Address receptor) {
         if (type == T_STRING) {
             receptor.set(getStringHeap().size());
-            return true;
-        }
-
-        if (type == T_MAP) {
-            receptor.set(getMapHeap().size());
             return true;
         }
 
@@ -773,6 +695,7 @@ public final class Address implements Comparable<Address> {
         return false;
     }
 
+    @Deprecated
     public boolean canBeComparedWith(Address rhs) {
         // Два значения одного типа всегда можно сравнивать.
         if (getType() == rhs.getType()) return true;
@@ -850,10 +773,6 @@ public final class Address implements Comparable<Address> {
             return getStringHeap().fastCompareWith(a.getStringHeap());
         }
 
-        if (getTypeUnion(T_MAP, T_MAP) == union) {
-            return getMapHeap().fastCompareWith(a.getMapHeap(), unexpected);
-        }
-
         if (getTypeUnion(T_LIST, T_LIST) == union) {
             return getListHeap().fastCompare(a.getListHeap(), unexpected);
         }
@@ -873,7 +792,6 @@ public final class Address implements Comparable<Address> {
             case T_FLOAT:   return hashOfDouble(getDouble());
             case T_BOOLEAN: return hashOfBoolean(getBoolean());
             case T_STRING:  return hashOfString(getStringHeap());
-            case T_MAP:     return hashOfMap(getMapHeap());
             case T_LIST:    return hashOfList(getListHeap());
             default: throw new AssertionError(type);
         }
@@ -893,7 +811,6 @@ public final class Address implements Comparable<Address> {
             case T_FLOAT:     return Double.toString(getDouble());
             case T_BOOLEAN:   return Boolean.toString(getBoolean());
             case T_STRING:    return '"' + getStringHeap().toString() + '"';
-            case T_MAP:       return getMapHeap().toString();
             case T_LIST:      return  getListHeap().toString();
             case T_UNDEFINED: // fallthrough
             default: throw new AssertionError(type);
@@ -907,7 +824,6 @@ public final class Address implements Comparable<Address> {
             case T_FLOAT:     return d;
             case T_BOOLEAN:   return Types.l2b(l);
             case T_STRING:    return getStringHeap();
-            case T_MAP:       return getMapHeap();
             case T_LIST:      return getListHeap();
             case T_UNDEFINED: // fallthrough
             default: throw new AssertionError(type);
@@ -931,7 +847,6 @@ public final class Address implements Comparable<Address> {
             case T_FLOAT:     return "D" + getDouble();
             case T_BOOLEAN:   return "B" + getBoolean();
             case T_STRING:    return "S" + getStringHeap();
-            case T_MAP:       return "M" + getMapHeap();
             case T_LIST:      return "E" + getListHeap();
             default: throw new AssertionError(type);
         }

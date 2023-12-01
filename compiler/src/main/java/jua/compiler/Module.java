@@ -1,6 +1,5 @@
 package jua.compiler;
 
-import jua.runtime.ConstantMemory;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.LineNumberTable;
 
@@ -10,14 +9,11 @@ public final class Module {
 
     public final Executable[] executables;
 
-    public final ConstantMemory[] constants;
-
     public String[] functionNames;
 
-    public Module(Source source, Executable[] executables, ConstantMemory[] constants) {
+    public Module(Source source, Executable[] executables) {
         this.source = source;
         this.executables = executables;
-        this.constants = constants;
     }
 
     public static class Executable {

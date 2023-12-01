@@ -3,7 +3,6 @@ package jua.runtime.interpreter;
 import jua.runtime.Types;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.heap.ListHeap;
-import jua.runtime.heap.MapHeap;
 import jua.runtime.interpreter.memory.Address;
 import jua.runtime.interpreter.memory.Memory;
 
@@ -328,11 +327,6 @@ public final class ExecutionContext {
         value.set(new ListHeap((int) a));
     }
 
-    public void doNewMap() {
-        getState().getStackAddress(0).set(new MapHeap());
-        getState().addTos(1);
-    }
-
     public void doJumpIfEq(int nextCp) {
         Address lhs = getState().getStackAddress(-2);
         Address rhs = getState().getStackAddress(-1);
@@ -501,11 +495,6 @@ public final class ExecutionContext {
         Memory argMemory = s.getStack().subRegion(s.getTos() - argCount, Math.max(argCount, 1));
         getThread().prepareCall(calleeId, argCount, argMemory);
         s.addTos(-argCount + 1);
-    }
-
-    @Deprecated
-    public void doGetConst(int constantId) {
-        getState().storeStackFrom(getThread().getEnvironment().getConstant(constantId));
     }
 
     public void doReturn() {

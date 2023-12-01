@@ -266,11 +266,6 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doNewList(); }
     }
 
-    class NewMap implements Instruction {
-        @Override
-        public void execute(ExecutionContext context) { context.doNewMap(); }
-    }
-
     abstract class JumpInstruction implements Instruction {
         private final int nextCp;
 
@@ -465,18 +460,6 @@ public interface InstructionImpls {
 
         @Override
         public void execute(ExecutionContext context) { context.doCall(calleeId, argCount); }
-    }
-
-    @Deprecated
-    class GetConst implements Instruction {
-        private final int constantId;
-
-        public GetConst(int constantId) {
-            this.constantId = constantId;
-        }
-
-        @Override
-        public void execute(ExecutionContext context) { context.doGetConst(constantId); }
     }
 
     class Return implements Instruction {

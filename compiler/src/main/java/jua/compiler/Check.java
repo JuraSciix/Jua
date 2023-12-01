@@ -53,14 +53,8 @@ public class Check extends Scanner {
     @Override
     public void visitDocument(Document tree) {
         source = tree.source;
-        scan(tree.constants);
         scan(tree.functions);
         scan(tree.stats);
-    }
-
-    @Override
-    public void visitConstDef(ConstDef tree) {
-        Flow.forEach(tree.defs, def -> requireLiteralTree(def.expr));
     }
 
     @Override

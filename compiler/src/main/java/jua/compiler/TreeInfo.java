@@ -62,9 +62,6 @@ public final class TreeInfo {
             case LISTLIT:
                 ListLiteral listTree = (ListLiteral) innerTree;
                 return Flow.allMatch(listTree.entries, TreeInfo::isLiteral);
-            case MAPLIT:
-                MapLiteral mapTree = (MapLiteral) innerTree;
-                return Flow.allMatch(mapTree.entries, e -> isLiteral(e.key) && isLiteral(e.value));
             default:
                 return false;
         }
@@ -114,10 +111,6 @@ public final class TreeInfo {
         if (innerTree.hasTag(Tag.LITERAL)) {
             Literal literalTree = (Literal) innerTree;
             return literalTree.value == null;
-        }
-        if (innerTree.hasTag(Tag.MAPLIT)) {
-            MapLiteral arrayTree = (MapLiteral) innerTree;
-            return arrayTree.entries == null;
         }
         return false;
     }

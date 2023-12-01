@@ -1,15 +1,11 @@
 package jua.runtime;
 
-import jua.runtime.interpreter.memory.Address;
-
 public class JuaEnvironment {
 
     final Function[] functions;
-    final ConstantMemory[] constants;
 
-    public JuaEnvironment(Function[] functions, ConstantMemory[] constants) {
+    public JuaEnvironment(Function[] functions) {
         this.functions = functions;
-        this.constants = constants;
     }
 
     public Function findFunc(String name) {
@@ -23,9 +19,5 @@ public class JuaEnvironment {
 
     public Function getFunction(int id) {
         return functions[id];
-    }
-
-    public Address getConstant(int id) {
-        return constants[id].address;
     }
 }

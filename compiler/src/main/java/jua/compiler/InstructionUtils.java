@@ -130,7 +130,6 @@ public class InstructionUtils {
                 IfAbsent = 59,
                 LinearSwitch = 60,
                 BinarySwitch = 61,
-                GetConst = 62,
                 Call = 63,
                 Return = 64,
                 Leave = 65,
@@ -215,7 +214,6 @@ public class InstructionUtils {
         opData(OPCodes.Pos, "pos", 0);
         opData(OPCodes.Neg, "neg", 0);
         opData(OPCodes.Not, "not", 0);
-        opData(OPCodes.GetConst, "getconst", 1);
         opData(OPCodes.Call, "call", 0); // todo
         opData(OPCodes.LinearSwitch, "linearswitch", -1);
         opData(OPCodes.BinarySwitch, "binaryswitch", -1);

@@ -47,7 +47,6 @@ public final class JuaParser {
     public Document parseDocument() {
         Flow.Builder<Statement> stats = Flow.builder();
         Flow.Builder<FuncDef> funcDefs = Flow.builder();
-        Flow.Builder<ConstDef> constDefs = Flow.builder();
         nextToken();
 
         while (!acceptToken(EOF)) {
@@ -56,17 +55,12 @@ public final class JuaParser {
                     funcDefs.append(parseFunction());
                     continue;
                 }
-                if (acceptToken(CONST)) {
-                    constDefs.append(parseConst());
-                    continue;
-                }
                 stats.append(parseStatement());
             } catch (ParseNodeExit e) {
                 report(e);
             }
         }
         return new Document(0, source,
-                constDefs.toFlow(),
                 funcDefs.toFlow(),
                 stats.toFlow());
     }
@@ -160,24 +154,6 @@ public final class JuaParser {
         } while (acceptToken(COMMA));
         expectToken(SEMI);
         return new VarDef(acceptedPos, defs.toFlow());
-    }
-
-    private ConstDef parseConst() {
-        Flow.Builder<ConstDef.Definition> definitions = Flow.builder();
-
-        do {
-            try {
-                Token name = token;
-                expectToken(IDENTIFIER);
-                expectToken(EQ);
-                definitions.append(new ConstDef.Definition(name.pos, name.name(), parseExpression()));
-            } catch (ParseNodeExit e) {
-                report(e);
-            }
-        } while (acceptToken(COMMA));
-
-        expectToken(SEMI);
-        return new ConstDef(acceptedPos, definitions.toFlow());
     }
 
     private Statement parseBreak() {
@@ -701,9 +677,6 @@ public final class JuaParser {
             case INTLITERAL: {
                 return parseInt(tok);
             }
-            case LBRACE: {
-                return parseMapInit(tok.pos);
-            }
             case LBRACKET: {
                 return parseListInit(tok.pos);
             }
@@ -807,56 +780,6 @@ public final class JuaParser {
             } while (true);
         }
         return new ListLiteral(pos, entries.toFlow());
-    }
-
-    private MapLiteral parseMapInit(int pos) {
-        Flow.Builder<MapLiteral.Entry> entries
-                = Flow.builder();
-        if (!acceptToken(RBRACE)) {
-            do {
-                int entryPos = token.pos;
-                Expression key;
-                boolean field;
-                if (acceptToken(LBRACKET)) {
-                    key = parseExpression();
-                    expectToken(RBRACKET);
-                    field = false;
-                } else {
-                    switch (token.type) {
-                        case FLOATLITERAL:
-                            key = parseFloat(token);
-                            break;
-                        case INTLITERAL:
-                            key = parseInt(token);
-                            break;
-                        case IDENTIFIER:
-                            key = new Literal(token.pos, token.name());
-                            break;
-                        default:
-                            unexpected(token, Arrays.asList(FLOATLITERAL, INTLITERAL, IDENTIFIER));
-                            throw new AssertionError(); // UNREACHABLE
-                    }
-                    nextToken();
-                    field = true;
-                }
-                expectToken(COL);
-                Expression value = parseExpression();
-                MapLiteral.Entry entry = new MapLiteral.Entry(entryPos, key, value);
-                entry.field = field;
-                entries.append(entry);
-                if (acceptToken(COMMA)) {
-                    if (acceptToken(RBRACE)) {
-                        break;
-                    }
-                    continue;
-                }
-                if (acceptToken(RBRACE)) {
-                    break;
-                }
-                unexpected(token, Arrays.asList(COMMA, RBRACE));
-            } while (true);
-        }
-        return new MapLiteral(pos, entries.toFlow());
     }
 
     private Expression parseParens() {

@@ -1,15 +1,14 @@
 package jua;
 
-import jua.compiler.ModulePrinter;
 import jua.compiler.JuaCompiler;
 import jua.compiler.Module;
+import jua.compiler.ModulePrinter;
 import jua.compiler.ModuleScope;
 import jua.compiler.ModuleScope.FunctionSymbol;
+import jua.runtime.Function;
 import jua.runtime.JuaEnvironment;
 import jua.runtime.interpreter.InterpreterThread;
 import jua.runtime.interpreter.memory.Address;
-import jua.runtime.ConstantMemory;
-import jua.runtime.Function;
 import jua.stdlib.NativeStdlib;
 
 import java.io.File;
@@ -60,10 +59,6 @@ public class Main {
 
         // Регистрируем нативные члены.
         ModuleScope ms = c.getModuleScope();
-        for (Map.Entry<String, Address> cm : NativeStdlib.getNativeConstants().entrySet()) {
-            // Все константы будут встроены в код.
-            ms.defineNativeConstant(cm.getKey(), cm.getValue().toObject());
-        }
         for (Function f : NativeStdlib.getNativeFunctions()) {
             FunctionSymbol sym = ms.defineNativeFunction(f.name, f.minArgc, f.maxArgc,
                     Arrays.stream(f.defaults).map(Address::toObject).toArray(), f.params);
@@ -83,7 +78,6 @@ public class Main {
     }
 
     private static void interpret() {
-        ConstantMemory[] constants = module.constants;
         Function[] functions = Arrays.stream(module.executables)
                 .map(Executable2FunctionTranslator::translate)
                 .toArray(Function[]::new);
@@ -99,7 +93,7 @@ public class Main {
                 .findAny().orElseThrow(AssertionError::new);
 
         InterpreterThread thread = new InterpreterThread(Thread.currentThread(),
-                new JuaEnvironment(functions, constants));
+                new JuaEnvironment(functions));
         Address resultReceiver = new Address();
         thread.callAndWait(mainFn, new Address[0], resultReceiver);
         // Если будет интересно, что вернул код, то можно напечатать resultReceiver.

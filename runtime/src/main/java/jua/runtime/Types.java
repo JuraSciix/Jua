@@ -1,7 +1,6 @@
 package jua.runtime;
 
 import jua.runtime.heap.ListHeap;
-import jua.runtime.heap.MapHeap;
 import jua.runtime.heap.StringHeap;
 
 /**
@@ -17,7 +16,6 @@ public class Types {
     public static final byte T_FLOAT = 3;
     public static final byte T_BOOLEAN = 4;
     public static final byte T_STRING = 5;
-    public static final byte T_MAP = 6; // todo: Переименовать этот тип в object.
     public static final byte T_LIST = 7;
 
     /** Возвращает имя типа. */
@@ -28,7 +26,6 @@ public class Types {
             case T_FLOAT:   return "float";
             case T_BOOLEAN: return "boolean";
             case T_STRING:  return "string";
-            case T_MAP:     return "map";
             case T_LIST:    return "list";
             default:        return "UNDEFINED";
         }
@@ -83,10 +80,6 @@ public class Types {
         return s.nonEmpty();
     }
 
-    public static boolean m2b(MapHeap m) {
-        return m.nonEmpty();
-    }
-
     public static boolean e2b(ListHeap li) {
         return li.nonEmpty();
     }
@@ -105,10 +98,6 @@ public class Types {
 
     public static int hashOfString(StringHeap s) {
         return s.hashCode();
-    }
-
-    public static int hashOfMap(MapHeap m) {
-        return m.hashCode();
     }
 
     public static int hashOfList(ListHeap l) {

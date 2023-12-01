@@ -4,7 +4,6 @@ import jua.compiler.Code.Chain;
 import jua.compiler.Items.CondItem;
 import jua.compiler.Items.Item;
 import jua.compiler.Items.SafeItem;
-import jua.compiler.ModuleScope.ConstantSymbol;
 import jua.compiler.Tree.*;
 import jua.compiler.utils.Assert;
 import jua.compiler.utils.Flow;
@@ -326,28 +325,8 @@ public class Gen extends Scanner {
     }
 
     @Override
-    public void visitMapLiteral(MapLiteral tree) {
-        code.putPos(tree.pos);
-        code.emitSingle(OPCodes.NewMap);
-        Flow.forEach(tree.entries, entry -> {
-            items.mkStackItem().duplicate();
-            genExpr(entry.key).load();
-            genExpr(entry.value).load();
-            code.putPos(entry.pos);
-            items.mkAccessItem().store();
-        });
-        result = items.mkStackItem();
-    }
-
-    @Override
     public void visitVariable(Var tree) {
-        if (tree.sym instanceof ConstantSymbol) {
-            code.putPos(tree.pos);
-            code.emitIndexed(OPCodes.GetConst, tree.sym.id);
-            result = items.mkStackItem();
-        } else {
-            result = items.makeLocal(tree.sym.id).t(tree);
-        }
+        result = items.makeLocal(tree.sym.id).t(tree);
     }
 
     @Override

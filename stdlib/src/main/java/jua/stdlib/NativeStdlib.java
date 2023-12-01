@@ -319,10 +319,6 @@ public class NativeStdlib {
         }
     }
 
-    public static Map<String, Address> getNativeConstants() {
-        return Collections.emptyMap();
-    }
-
     public static List<Function> getNativeFunctions() {
         return nfp.stream().map(NativeFunctionPresent::build).collect(Collectors.toList());
     }
