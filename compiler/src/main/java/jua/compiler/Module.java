@@ -1,8 +1,5 @@
 package jua.compiler;
 
-import jua.runtime.code.ConstantPool;
-import jua.runtime.code.LineNumberTable;
-
 public final class Module {
 
     public final Source source;
@@ -23,13 +20,15 @@ public final class Module {
         public final InstructionUtils.InstrNode[] code;
         public final int regSize;
         public final int stackSize;
-        public final ConstantPool constantPool; // todo: replace with compiler object
-        public final LineNumberTable lineNumberTable;
+        public final Object[] constantPool; // todo: replace with compiler object
+        public final LNT lineNumberTable;
         public final int reqargs, totargs;
         public final Object[] defs;
         public final String[] varnames;
 
-        public Executable(String name, String fileName, InstructionUtils.InstrNode[] code, int regSize, int stackSize, ConstantPool constantPool, LineNumberTable lineNumberTable, int reqargs, int totargs, Object[] defs, String[] varnames) {
+        public Executable(String name, String fileName, InstructionUtils.InstrNode[] code,
+                          int regSize, int stackSize, Object[] constantPool,
+                          LNT lineNumberTable, int reqargs, int totargs, Object[] defs, String[] varnames) {
             this.name = name;
             this.fileName = fileName;
             this.code = code;

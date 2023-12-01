@@ -25,7 +25,7 @@ public class ModulePrinter {
             String agentLiterals = (operands == null)
                     ? "else"
                     : Arrays.stream(operands)
-                            .mapToObj(index -> executable.constantPool.getAddressEntry(index).toBeautifulString())
+                            .mapToObj(index -> String.valueOf(executable.constantPool[index]))
                             .collect(Collectors.joining(", "));
             printLine(String.format("%s -> %d", agentLiterals, caseCp));
         }
@@ -293,7 +293,7 @@ public class ModulePrinter {
     }
 
     public void printLiteral(int index) {
-        instrData.operands.add(executable.constantPool.getAddressEntry(index).toBeautifulString());
+        instrData.operands.add(String.valueOf(executable.constantPool[index]));
     }
 
     public void printFuncRef(int index) {

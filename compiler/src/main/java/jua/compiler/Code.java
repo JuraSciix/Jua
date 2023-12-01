@@ -5,15 +5,12 @@ import jua.compiler.InstructionUtils.InstrNode;
 import jua.compiler.InstructionUtils.JumpInstrNode;
 import jua.compiler.InstructionUtils.SingleInstrNode;
 import jua.compiler.utils.Assert;
-import jua.runtime.code.ConstantPool;
-import jua.runtime.code.LineNumberTable;
-import jua.runtime.interpreter.memory.Address;
-import jua.runtime.interpreter.memory.AddressSupport;
-import jua.runtime.interpreter.memory.AddressUtils;
 
 import java.util.*;
 
 public final class Code {
+
+    public static final int MAX_CONSTANT_POOL_SIZE = 65535;
 
     public static class Chain {
         final int pc, tos;
@@ -38,7 +35,7 @@ public final class Code {
     }
 
     private final List<InstrNode> instructions = new ArrayList<>();
-    private final TreeMap<Short, Integer> lineTable = new TreeMap<>();
+    private final TreeMap<Short, Integer> cpLineMap = new TreeMap<>();
 
     /** Top of stack. */
     private int tos = 0;
@@ -126,7 +123,7 @@ public final class Code {
 
         // todo: line always have int type
         if (line > 0 && line < (1<<16) && line != this.cLineNum) {
-            this.lineTable.put((short) pc(), line);
+            this.cpLineMap.put((short) pc(), line);
             this.cLineNum = line;
         }
     }
@@ -157,7 +154,13 @@ public final class Code {
     }
 
     public int resolveConstant(Object o) {
-        return constantPool.computeIfAbsent(o, o1 -> constantPool.size());
+        return constantPool.computeIfAbsent(o, o1 -> {
+            int d = constantPool.size();
+            if (d >= MAX_CONSTANT_POOL_SIZE) {
+                throw new JuaCompiler.CompileException("Constant pool overflow");
+            }
+            return d;
+        });
     }
 
     public Object[] getConstantPoolEntries() {
@@ -169,7 +172,7 @@ public final class Code {
                 instructions.toArray(new InstrNode[0]),
                 sym.nlocals,
                 limTos,
-                buildConstantPool(),
+                getConstantPoolEntries(),
                 buildLineNumberTable(),
                 sym.minArgc,
                 sym.maxArgc,
@@ -177,25 +180,19 @@ public final class Code {
                 sym.params);
     }
 
-    private LineNumberTable buildLineNumberTable() {
-        int[] intCodePoints = lineTable.keySet().stream().mapToInt(a -> a).toArray();
-        short[] shortCodePoints = new short[intCodePoints.length];
-        for (int i = 0; i < intCodePoints.length; i++) {
-            shortCodePoints[i] = (short) intCodePoints[i];
-        }
-        return new LineNumberTable(
-                shortCodePoints,
-                lineTable.values().stream().mapToInt(a->a).toArray()
-        );
-    }
+    private LNT buildLineNumberTable() {
+        int size = cpLineMap.size();
+        short[] shortCodePoints = new short[size];
+        int[] lineNumbers = new int[size];
 
-    private ConstantPool buildConstantPool() {
-        Object[] values = getConstantPoolEntries();
-        Address[] addresses = AddressUtils.allocateMemory(values.length, 0);
-        for (int i = 0; i < values.length; i++) {
-            AddressSupport.assignObject(addresses[i], values[i]);
+        int i = 0;
+        for (Map.Entry<Short, Integer> entry : cpLineMap.entrySet()) {
+            shortCodePoints[i] = entry.getKey();
+            lineNumbers[i] = entry.getValue();
+            i++;
         }
-        return new ConstantPool(addresses);
+
+        return new LNT(shortCodePoints, lineNumbers);
     }
 
     public void resolve(Chain chain) {

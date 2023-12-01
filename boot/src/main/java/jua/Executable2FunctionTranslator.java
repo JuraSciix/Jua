@@ -1,12 +1,16 @@
 package jua;
 
 import jua.compiler.InstructionUtils;
+import jua.compiler.LNT;
 import jua.compiler.Module;
+import jua.runtime.Function;
+import jua.runtime.code.CodeData;
+import jua.runtime.code.ConstantPool;
+import jua.runtime.code.LineNumberTable;
 import jua.runtime.interpreter.instruction.Instruction;
 import jua.runtime.interpreter.memory.Address;
 import jua.runtime.interpreter.memory.AddressSupport;
-import jua.runtime.Function;
-import jua.runtime.code.CodeData;
+import jua.runtime.interpreter.memory.AddressUtils;
 
 import java.util.Arrays;
 
@@ -35,11 +39,23 @@ public class Executable2FunctionTranslator {
                         executable.regSize,
                         executable.varnames,
                         translateCode(executable.code), // todo
-                        executable.constantPool,
-                        executable.lineNumberTable
+                        getConstantPool(executable.constantPool),
+                        toLineNumTable(executable.lineNumberTable)
                 ),
                 null
         );
+    }
+
+    private static ConstantPool getConstantPool(Object[] values) {
+        Address[] addresses = AddressUtils.allocateMemory(values.length, 0);
+        for (int i = 0; i < values.length; i++) {
+            AddressSupport.assignObject(addresses[i], values[i]);
+        }
+        return new ConstantPool(addresses);
+    }
+
+    private static LineNumberTable toLineNumTable(LNT lnt) {
+        return new LineNumberTable(lnt.codePoints, lnt.lineNumbers);
     }
 
     private static Instruction[] translateCode(InstructionUtils.InstrNode[] a) {

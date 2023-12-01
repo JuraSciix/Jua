@@ -1,7 +1,5 @@
 package jua.compiler.utils;
 
-import jua.runtime.utils.Assert;
-
 public final class Conversions {
 
     public static long parseLong(String str, int radix) {
