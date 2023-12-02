@@ -2,17 +2,15 @@ package jua.stdlib;
 
 import jua.runtime.Function;
 import jua.runtime.Types;
-import jua.runtime.interpreter.memory.Address;
-import jua.runtime.interpreter.InterpreterThread;
-import jua.stdlib.NativeSupport.NativeFunctionPresent;
-import jua.stdlib.NativeSupport.ParamsData;
 import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.StringHeap;
+import jua.runtime.interpreter.InterpreterThread;
+import jua.runtime.interpreter.memory.Address;
+import jua.stdlib.NativeSupport.NativeFunctionPresent;
+import jua.stdlib.NativeSupport.ParamsData;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class NativeStdlib {
@@ -22,6 +20,7 @@ public class NativeStdlib {
 
     static {
         nfp.add(new PrintFunction());
+        nfp.add(new PrintfFunction());
         nfp.add(new PrintlnFunction());
         nfp.add(new TypeofFunction());
         nfp.add(new TimeFunction());
@@ -37,6 +36,7 @@ public class NativeStdlib {
         nfp.add(new MAbsFunction());
         nfp.add(new StrCharArrayFunction());
         nfp.add(new StrCmpFunction());
+        nfp.add(new HashFunction());
     }
 
     static class PrintFunction extends NativeFunctionPresent {
@@ -72,6 +72,35 @@ public class NativeStdlib {
                 str = buffer.getStringHeap().toString();
             }
             System.out.println(str);
+            returnAddress.setNull();
+            return true;
+        }
+    }
+
+    static class PrintfFunction extends NativeFunctionPresent {
+
+        PrintfFunction() {
+            super("printf", ParamsData.create().add("fmt").optional("args", ""));
+        }
+
+        @Override
+        public boolean execute(Address[] args, int argc, Address returnAddress) {
+            // todo: %<separator>l conversion for lists
+            Object[] javaArgs;
+            if (argc == 2) {
+                if (args[1].hasType(Types.T_LIST)) {
+                    javaArgs = new Object[args[1].getListHeap().length()];
+                    for (int i = 0; i < javaArgs.length; i++) {
+                        javaArgs[i] = args[1].getListHeap().get(i).toObject();
+                    }
+                } else {
+                    javaArgs = new Object[]{args[1].toObject()};
+                }
+            } else {
+                // argc == 1
+                javaArgs = new Object[0];
+            }
+            System.out.printf(args[0].stringVal().toString(), javaArgs);
             returnAddress.setNull();
             return true;
         }
@@ -315,6 +344,19 @@ public class NativeStdlib {
                 return false;
             }
             returnAddress.set(lhs.getStringHeap().compareTo(rhs.getStringHeap()));
+            return true;
+        }
+    }
+
+    static class HashFunction extends NativeFunctionPresent {
+
+        HashFunction() {
+            super("hash", ParamsData.create().add("obj"));
+        }
+
+        @Override
+        public boolean execute(Address[] args, int argc, Address returnAddress) {
+            returnAddress.set(args[0].hashCode());
             return true;
         }
     }
