@@ -331,30 +331,18 @@ public class Gen extends Scanner {
 
     @Override
     public void visitMemberAccess(MemberAccess tree) {
-        genAccess(tree, tree.expr, new Literal(tree.memberPos, tree.member), Tag.MEMACCSF);
+        genAccess(tree, tree.expr, new Literal(tree.memberPos, tree.member));
     }
 
     @Override
-    public void visitArrayAccess(ArrayAccess tree) {
-        genAccess(tree, tree.expr, tree.index, Tag.ARRACCSF);
+    public void visitArrayAccess(Access tree) {
+        genAccess(tree, tree.expr, tree.index);
     }
 
-    private void genAccess(Expression tree, Expression expr, Expression key, Tag safeTag) {
-        if (tree.hasTag(safeTag)) {
-            SafeItem exprSafeItem = genExpr(expr).asSafe(null, null);
-            Item childItem = exprSafeItem.child.load();
-            childItem.duplicate();
-            CondItem nonNullCond = childItem.asNonNullCond();
-            Chain ifNullJumps = nonNullCond.falseJumps();
-            code.resolve(nonNullCond.trueChain);
-            genExpr(key).load();
-            result = items.mkAccessItem().asSafe(items.mkLiteral(null),
-                    mergeChains(exprSafeItem.coalesceChain, ifNullJumps)).t(tree);
-        } else {
-            genExpr(expr).load();
-            genExpr(key).load();
-            result = items.mkAccessItem().t(tree);
-        }
+    private void genAccess(Expression tree, Expression expr, Expression key) {
+        genExpr(expr).load();
+        genExpr(key).load();
+        result = items.mkAccessItem().load();
     }
 
     @Override
@@ -477,6 +465,10 @@ public class Gen extends Scanner {
 
             case NULLCHK:
                 result = genExpr(tree.expr).asNonNullCond().t(tree);
+                break;
+
+            case EVACUATE:
+                result = genExpr(tree.expr).wrapEvacuate();
                 break;
 
             default:

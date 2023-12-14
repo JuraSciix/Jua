@@ -1,13 +1,23 @@
 fn queue_create(size)
-    = {
-        elements: list(size),
-        head: 0
-        tail: 0
-    };
+    = [
+        list(size),
+        0,
+        0
+    ];
 
-fn queue_capacity(queue) = length(queue.elements);
+fn _queue_elements(queue) = queue[0];
+fn _queue_head(queue) = queue[1];
+fn _queue_set_head(queue, head) { queue[1] = head; }
+fn _queue_tail(queue) = queue[2];
+fn _queue_set_tail(queue, tail) { queue[2] = tail; }
+fn _queue_tail_inc(queue) { queue[2]++; }
+fn _queue_tail_dec(queue) { queue[2]--; }
+fn _queue_head_inc(queue) { queue[1]++; }
+fn _queue_head_dec(queue) { queue[1]--; }
 
-fn queue_count(queue) = (queue.tail - queue.head);
+fn queue_capacity(queue) = length(_queue_elements(queue));
+
+fn queue_count(queue) = (_queue_tail(queue) - _queue_head(queue));
 
 /*
  * Elements: [X, _, _, _] | [Y, X, _, _]
@@ -15,11 +25,11 @@ fn queue_count(queue) = (queue.tail - queue.head);
  * Tail:            ^     |        ^
  */
 fn queue_add_first(queue, element) {
-    var e = queue.elements;
-    var h = queue.head;
+    var e = _queue_elements(queue);
+    var h = _queue_head(queue);
     if h > 0 {
         h--;
-        queue.head--;
+        _queue_head_dec(queue);
     } else {
         for var i = queue.tail; i > h; i-- {
             e[i + 1] = e[i];
@@ -34,7 +44,8 @@ fn queue_add_first(queue, element) {
  * Tail:         ^        |        ^
  */
 fn queue_add_last(queue, element) {
-    queue.elements[queue.tail++] = element;
+    _queue_elements(queue)[_queue_tail(queue)] = element;
+    _queue_tail_inc(queue);
 }
 
 /*
@@ -43,9 +54,10 @@ fn queue_add_last(queue, element) {
  * Tail:            ^     |        ^
  */
 fn queue_remove_first(queue) {
-    var h = queue.head++;
-    var e = queue.elements[h];
-    queue.elements[h] = null;
+    var h = _queue_head(queue);
+    _queue_head_inc(queue);
+    var e = _queue_elements(queue)[h];
+    _queue_elements(queue)[h] = null;
     return e;
 }
 
@@ -55,12 +67,13 @@ fn queue_remove_first(queue) {
  * Tail:            ^     |     ^
  */
 fn queue_remove_last(queue) {
-    var t = --queue.tail;
-    var e = queue.elements[t];
-    queue.elements[t] = null;
+    _queue_tail_dec(queue);
+    var t = _queue_tail(queue);
+    var e = _queue_elements(queue)[t];
+    _queue_elements(queue)[t] = null;
     return e;
 }
 
-fn queue_peek_first(queue) = queue.elements[queue.head] ?? null;
+fn queue_peek_first(queue) = _queue_elements(queue)[_queue_head(queue)];
 
-fn queue_peek_last(queue) = queue.elements[queue.tail - 1] ?? null;
+fn queue_peek_last(queue) = _queue_elements(queue)[_queue_tail(queue) - 1];

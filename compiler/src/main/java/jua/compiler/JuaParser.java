@@ -625,35 +625,17 @@ public final class JuaParser {
         return expr;
     }
 
-    private Expression parseAccess() {
+    Expression parseAccess() {
         Expression expr = parsePrimary();
 
-        while (true) {
-            Token op = token;
-            switch (op.type) {
-                case DOT:
-                case QUESDOT:
-                    nextToken();
-                    Token member = token;
-                    expectToken(IDENTIFIER);
-                    expr = new MemberAccess(op.pos,
-                            (op.type == DOT) ? Tag.MEMACCESS : Tag.MEMACCSF,
-                            expr, member.pos, member.name());
-                    break;
-
-                case LBRACKET:
-                case QUESLBRACKET:
-                    nextToken();
-                    Expression index = parseExpression();
-                    expectToken(RBRACKET);
-                    expr = new ArrayAccess(op.pos,
-                            (op.type == LBRACKET) ? Tag.ARRACC : Tag.ARRACCSF,
-                            expr, index);
-                    break;
-
-                default: return expr;
-            }
+        while (acceptToken(LBRACKET)) {
+            int pos = acceptedPos;
+            Expression index = parseExpression();
+            expectToken(RBRACKET);
+            expr = new Access(pos, expr, index);
         }
+
+        return expr;
     }
 
     private Expression parsePrimary() {

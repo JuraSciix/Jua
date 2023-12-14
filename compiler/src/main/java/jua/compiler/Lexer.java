@@ -173,14 +173,6 @@ public class Lexer {
                 case '?':
                     reader.next();
                     switch (reader.peek()) {
-                        case '.':
-                            reader.next();
-                            type = QUESDOT;
-                            break loop;
-                        case '[':
-                            reader.next();
-                            type = QUESLBRACKET;
-                            break loop;
                         case '?':
                             reader.next();
                             if (reader.peek() == '=') {

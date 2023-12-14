@@ -11,14 +11,22 @@
 
 /** Создаёт связный список. */
 fn linked_list_create()
-    = {
-        head: null,
-        tail: null,
-        size: 0
-    };
+    = [
+        null,
+        null,
+        0
+    ];
+
+fn _linked_list_head(list) = list[0];
+fn _linked_list_set_head(list, head) { list[0] = head; }
+fn _linked_list_tail(list) = list[1];
+fn _linked_list_set_tail(list, tail) { list[1] = tail; }
+fn _linked_list_set_size(list, size) { list[2] = size; }
+fn _linked_list_inc_size(list) { list[2]++; }
+fn _linked_list_dec_size(list) { list[2]--; }
 
 /** Возвращает количество значений, хранящихся в списке. */
-fn linked_list_size(list) = list.size;
+fn linked_list_size(list) = list[2];
 
 /** Возвращает true, если список пуст, и false в противном случае. */
 fn linked_list_empty(list) = (linked_list_size(list) == 0);
@@ -26,245 +34,20 @@ fn linked_list_empty(list) = (linked_list_size(list) == 0);
 /** Возвращает false, если список пуст, и true в противном случае. */
 fn linked_list_not_empty(list) = !linked_list_empty(list);
 
-/** Добавляет значение в начало списка. */
-fn linked_list_add_first(list, value) {
-    var head = list.head;
-    var node = _node_create(value);
-
-    if head == null {
-        list.tail = node;
-    } else {
-        _node_insert_before(head, node);
-    }
-
-    list.head = node;
-    list.size++;
-}
-
-fn linked_list_add_last(list, value) {
-    var tail = list.tail;
-    var node = _node_create(value);
-
-    if tail == null {
-        list.head = node;
-    } else {
-        _node_insert_after(tail, node);
-    }
-
-    list.tail = node;
-    list.size++;
-}
-
-fn linked_list_add_all(list, added_list) {
-    for var node = added_list.head; node != null; node = node.next {
-        linked_list_add_last(list, node.value);
-    }
-}
-
-/** Если список пуст, возвращает null, в противном случае удаляет из списка первое значение, возвращая его. */
-fn linked_list_remove_first(list) {
-    var head = list.head;
-
-    if head == null {
-        return null;
-    }
-
-    list.head = head.next;
-    _node_detach(head);
-    if --list.size == 0 {
-        list.tail = null;
-    }
-    return head.value;
-}
-
-/**  Если список пуст, возвращает null, в противном случае удаляет из списка последнее значение, возвращая его. */
-fn linked_list_remove_last(list) {
-    var tail = list.tail;
-
-    if tail == null {
-        return null;
-    }
-
-    list.tail = tail.prev;
-    _node_detach(tail);
-    if --list.size == 0 {
-        list.head = null;
-    }
-    return tail.value;
-}
-
-fn linked_list_remove(list, value) {
-    var node = list.head;
-
-    while node != null {
-        if node.value == value {
-            _linked_list_detach_node(list, node);
-            return true;
-        }
-        node = node.next;
-    }
-
-    return false;
-}
-
-/** Удаляет из списка все значения, идентичные данному (value). */
-fn linked_list_remove_all(list, value) {
-    var node = list.head;
-    var modified = false;
-
-    while node != null {
-        if node.value == value {
-            _linked_list_detach_node(list, node);
-            modified = true;
-        }
-        node = node.next;
-    }
-
-    return modified;
-}
-
-fn linked_list_first(list) = list.head?.value;
-
-fn linked_list_last(list) = list.tail?.value;
-
-fn linked_list_get(list, index) {
-    var node = _linked_list_node_at(list, index);
-    // Ниже можно использовать null-safe обращение, но это нерентабельно,
-    // поскольку node может быть равен null только когда index выходит за пределы списка,
-    // что приводит к ошибке.
-    return node.value;
-}
-
-fn linked_list_set(list, index, value) {
-    var node = _linked_list_node_at(list, index);
-    var old_value = node.value;
-    node.value = value;
-    return old_value;
-}
-
-fn linked_list_clear(list) {
-    list.head = list.tail = null;
-    list.size = 0;
-}
-
-fn linked_list_contains(list, value) {
-    return linked_list_index_of(list, value) >= 0;
-}
-
-fn linked_list_index_of(list, value, start = 0) {
-    // todo: Оптимизировать
-    var node = _linked_list_node_at(list, start);
-    var i = 0;
-    while node {
-        if node.value == value {
-            return i;
-        }
-        node = node.next;
-        i++;
-    }
-    return -1;
-}
-
-fn linked_list_last_index_of(list, value, start = null) {
-    // todo: Оптимизировать
-    start ??= linked_list_size(list) - 1;
-    var node = _linked_list_node_at(list, start);
-    var i = start;
-    while node {
-        if node.value == value {
-            return i;
-        }
-        node = node.prev;
-        i--;
-    }
-    return -1;
-}
-
-fn _linked_list_detach_node(list, node) {
-    var prev = node.prev;
-    var next = node.next;
-    if prev == null {
-        list.head = next;
-    }
-    if next == null {
-        list.tail = prev;
-    }
-    list.size--;
-}
-
-fn _linked_list_node_at(list, index) {
-    var size = list.size;
-    if index < 0 || index >= size {
-        panic("index (" + index + ") out of bounds: [0; " + size + ")");
-    }
-    var node;
-    if (index * 2) <= size {
-        node = list.head;
-        for var i = 0; i < index; i++ {
-            node = node.next;
-        }
-    } else {
-        node = list.tail;
-        for var i = size - 1; i > index; i-- {
-            node = node.prev;
-        }
-    }
-    return node;
-}
-
 /** Создаёт объект узла цепи. */
 fn _node_create(value)
-    = {
-        prev: null,
-        next: null,
-        value: value
-    };
+    = [
+        null,
+        null,
+        value
+    ];
 
-/** Удаляет узел из его цепи. */
-fn _node_detach(node) {
-    var prev = node.prev;
-    var next = node.next;
-    if prev != null {
-        prev.next = next;
-        node.prev = null;
-    }
-    if next != null {
-        next.prev = prev;
-        node.next = null;
-    }
-}
-
-/** Помещает цепь левого узла (left_node) перед базовым узлом (base_node) */
-fn _node_insert_before(base_node, left_node) {
-    var left_head = _node_head(left_node);
-    var left_tail = _node_tail(left_node);
-
-    var prev = base_node.prev;
-
-    if prev != null {
-        prev.next = left_head;
-        left_head.prev = prev;
-    }
-
-    base_node.prev = left_tail;
-    left_tail.next = base_node;
-}
-
-/** Помещает цепь правого узла (right_node) после базового узла (base_node) */
-fn _node_insert_after(base_node, right_node) {
-    var right_head = _node_head(right_node);
-    var right_tail = _node_tail(right_node);
-
-    var next = base_node.next;
-
-    if next != null {
-        next.prev = right_tail;
-        right_tail.next = next;
-    }
-
-    base_node.next = right_head;
-    right_head.prev = base_node;
-}
+fn _node_prev(node)=node?[0];
+fn _node_set_prev(node, prev) { node[0] = prev; }
+fn _node_next(node) = node?[1];
+fn _node_set_next(node, next) { node[1] = next; }
+fn _node_value(node) = node?[2];
+fn _node_set_value(node, value) { node[2] = value; }
 
 /** Возвращает первый узел из последовательности данного узла. */
 fn _node_head(node) {
@@ -273,7 +56,7 @@ fn _node_head(node) {
     }
     var head = node;
     var head_tmp;
-    while (head_tmp = head.prev) != null {
+    while (head_tmp = _node_prev(head)) != null {
         head = head_tmp;
     }
     return head;
@@ -286,9 +69,243 @@ fn _node_tail(node) {
     }
     var tail = node;
     var tail_tmp;
-    while (tail_tmp = tail.next) != null {
+    while (tail_tmp = _node_next(tail)) != null {
         tail = tail_tmp;
     }
     return tail;
 }
 
+/** Помещает цепь левого узла (left_node) перед базовым узлом (base_node) */
+fn _node_insert_before(base_node, left_node) {
+    var left_head = _node_head(left_node);
+    var left_tail = _node_tail(left_node);
+
+    var prev = _node_prev(base_node);
+
+    if prev != null {
+        _node_set_next(prev, left_head);
+        _node_set_prev(left_head, prev);
+    }
+
+    _node_set_prev(base_node, left_tail);
+    _node_set_next(left_tail, base_node);
+}
+
+/** Добавляет значение в начало списка. */
+fn linked_list_add_first(list, value) {
+    var head = _linked_list_head(list);
+    var node = _node_create(value);
+
+    if head == null {
+        _linked_list_set_tail(list, node);
+    } else {
+        _node_insert_before(head, node);
+    }
+
+    _linked_list_set_head(list, node);
+    _linked_list_inc_size(list);
+}
+
+/** Помещает цепь правого узла (right_node) после базового узла (base_node) */
+fn _node_insert_after(base_node, right_node) {
+    var right_head = _node_head(right_node);
+    var right_tail = _node_tail(right_node);
+
+    var next = _node_next(base_node);
+
+    if next != null {
+        _node_set_prev(next, right_tail);
+        _node_set_next(right_tail, next);
+    }
+
+    _node_set_next(base_node, right_head);
+    _node_set_prev(right_head, base_node);
+}
+
+fn linked_list_add_last(list, value) {
+    var tail = _linked_list_tail(list);
+    var node = _node_create(value);
+
+    if tail == null {
+        _linked_list_set_head(list, node);
+    } else {
+        _node_insert_after(tail, node);
+    }
+
+    _linked_list_set_tail(list, node);
+    _linked_list_inc_size(list);
+}
+
+fn linked_list_add_all(list, added_list) {
+    for var node = _linked_list_head(added_list); node != null; node = _node_next(node) {
+        linked_list_add_last(list, _node_value(node));
+    }
+}
+
+/** Удаляет узел из его цепи. */
+fn _node_detach(node) {
+    var prev = _node_prev(node);
+    var next = _node_next(node);
+    if prev != null {
+        _node_set_next(prev, next);
+        _node_set_prev(node, null);
+    }
+    if next != null {
+        _node_set_prev(next, prev);
+        _node_set_next(node, null);
+    }
+}
+
+/** Если список пуст, возвращает null, в противном случае удаляет из списка первое значение, возвращая его. */
+fn linked_list_remove_first(list) {
+    var head = _linked_list_head(list);
+
+    if head == null {
+        return null;
+    }
+
+    _linked_list_set_head(list, _node_next(head));
+    _node_detach(head);
+    _linked_list_dec_size(list);
+    if linked_list_empty(list) {
+        _linked_list_set_tail(list, null);
+    }
+    return _node_value(head);
+}
+
+/**  Если список пуст, возвращает null, в противном случае удаляет из списка последнее значение, возвращая его. */
+fn linked_list_remove_last(list) {
+    var tail = _linked_list_tail(list);
+
+    if tail == null {
+        return null;
+    }
+
+    _linked_list_set_tail(list, _node_prev(tail));
+    _node_detach(tail);
+    _linked_list_dec_size(list);
+    if linked_list_empty(list) {
+        _linked_list_set_head(list, null);
+    }
+    return _node_value(tail);
+}
+
+fn _linked_list_detach_node(list, node) {
+    var prev = _node_prev(node);
+    var next = _node_next(node);
+    if prev == null {
+        _linked_list_set_head(list, next);
+    }
+    if next == null {
+        _linked_list_set_tail(list, prev);
+    }
+    _linked_list_dec_size(list);
+}
+
+fn linked_list_remove(list, value) {
+    var node = _linked_list_head(list);
+
+    while node != null {
+        if _node_value(node) == value {
+            _linked_list_detach_node(list, node);
+            return true;
+        }
+        node = _node_next(node);
+    }
+
+    return false;
+}
+
+/** Удаляет из списка все значения, идентичные данному (value). */
+fn linked_list_remove_all(list, value) {
+    var node = _linked_list_head(list);
+    var modified = false;
+
+    while node != null {
+        if _node_value(node) == value {
+            _linked_list_detach_node(list, node);
+            modified = true;
+        }
+        node = _node_next(node);
+    }
+
+    return modified;
+}
+
+fn linked_list_first(list) = _node_value(_linked_list_head(list));
+
+fn linked_list_last(list) = _node_value(_linked_list_tail(list));
+
+fn _linked_list_node_at(list, index) {
+    var size = linked_list_size(list);
+    if index < 0 || index >= size {
+        panic("index (" + index + ") out of bounds: [0; " + size + ")");
+    }
+    var node;
+    if (index * 2) <= size {
+        node = _linked_list_head(list);
+        for var i = 0; i < index; i++ {
+            node = _node_next(node);
+        }
+    } else {
+        node = _linked_list_tail(list);
+        for var i = size - 1; i > index; i-- {
+            node = _node_prev(node);
+        }
+    }
+    return node;
+}
+
+fn linked_list_get(list, index) {
+    var node = _linked_list_node_at(list, index);
+    // Ниже можно использовать null-safe обращение, но это нерентабельно,
+    // поскольку node может быть равен null только когда index выходит за пределы списка,
+    // что приводит к ошибке.
+    return _node_value(node);
+}
+
+fn linked_list_set(list, index, value) {
+    var node = _linked_list_node_at(list, index);
+    var old_value = _node_value(node);
+    _node_set_value(node, value);
+    return old_value;
+}
+
+fn linked_list_clear(list) {
+    _linked_list_set_head(list, null);
+    _linked_list_set_tail(list, null);
+    _linked_list_set_size(list, 0);
+}
+
+fn linked_list_index_of(list, value, start = 0) {
+    // todo: Оптимизировать
+    var node = _linked_list_node_at(list, start);
+    var i = 0;
+    while node {
+        if _node_value(node) == value {
+            return i;
+        }
+        node = _node_next(node);
+        i++;
+    }
+    return -1;
+}
+
+fn linked_list_contains(list, value) {
+    return linked_list_index_of(list, value) >= 0;
+}
+
+fn linked_list_last_index_of(list, value, start = null) {
+    // todo: Оптимизировать
+    start ??= linked_list_size(list) - 1;
+    var node = _linked_list_node_at(list, start);
+    var i = start;
+    while node {
+        if _node_value(node) == value {
+            return i;
+        }
+        node = _node_prev(node);
+        i--;
+    }
+    return -1;
+}

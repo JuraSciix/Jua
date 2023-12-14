@@ -65,8 +65,8 @@ public final class Items {
             return asNonNullCond();
         }
 
-        SafeItem asSafe(Item coalesce, Chain chain) {
-            return new SafeItem(this, coalesce, chain);
+        SafeItem wrapEvacuate() {
+            return new SafeItem(this);
         }
 
         Item increase(Tag increaseTag) {
@@ -320,37 +320,35 @@ public final class Items {
     }
 
     class SafeItem extends Item {
-        final Item child;
-        final Item coalesce;
+        final Item target;
 
         /**
          * Цепь условных переходов из конструкции в точку её обнуления.
          * Когда справа налево встречается первый нулевой элемент цепи обращений,
          * из любого места будет выполнен переход к обнулению всей конструкции.
          */
-        Chain coalesceChain;
+        Chain evacuation = null;
 
-        SafeItem(Item child, Item coalesce, Chain coalesceChain) {
-            this.child = child;
-            this.coalesce = coalesce;
-            this.coalesceChain = coalesceChain;
+        SafeItem(Item target) {
+            this.target = target;
         }
 
         @Override
         Item load() {
-            Item load = child.load();
-            Chain skipCoalesceLoadChain = code.branch(OPCodes.Goto);
-            code.resolve(coalesceChain);
-            load.drop();
-            coalesce.load();
-            code.resolve(skipCoalesceLoadChain);
-            return mkStackItem();
+            return target.load();
         }
 
         @Override
-        SafeItem asSafe(Item coalesce, Chain chain) {
-            return new SafeItem(child, coalesce, mergeChains(coalesceChain, chain));
+        CondItem asCond() {
+            return target.asCond();
         }
+
+        @Override
+        SafeItem wrapEvacuate() {
+            return this;
+        }
+
+
     }
 
     /**
@@ -463,5 +461,9 @@ public final class Items {
 
     CondItem makeCondItem(int opcode, Chain trueJumps, Chain falseJumps) {
         return new CondItem(opcode, trueJumps, falseJumps);
+    }
+
+    SafeItem mkSafe(Item target) {
+        return new SafeItem(target);
     }
 }

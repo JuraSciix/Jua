@@ -61,8 +61,6 @@ public final class Tokens {
         PLUSEQ("+="),
         PLUSPLUS("++"),
         QUES("?"),
-        QUESDOT("?."),
-        QUESLBRACKET("?["),
         QUESQUES("??"),
         QUESQUESEQ("??="),
         RBRACE("}"),

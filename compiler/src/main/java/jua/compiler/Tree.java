@@ -7,6 +7,7 @@ import jua.compiler.utils.Flow;
 public abstract class Tree {
 
     public enum Tag {
+        EVACUATE,
         DOC,
         FUNCDEF,
         BLOCK,
@@ -26,9 +27,7 @@ public abstract class Tree {
         LISTLIT,
         VAR,
         MEMACCESS,
-        MEMACCSF,
         ARRACC,
-        ARRACCSF,
         INVOCATION,
         PARENS,
         ASSIGN,
@@ -94,7 +93,7 @@ public abstract class Tree {
         void visitListLiteral(ListLiteral tree);
         void visitVariable(Var tree);
         void visitMemberAccess(MemberAccess tree);
-        void visitArrayAccess(ArrayAccess tree);
+        void visitArrayAccess(Access tree);
         void visitInvocation(Invocation tree);
         void visitParens(Parens tree);
         void visitAssign(Assign tree);
@@ -163,7 +162,7 @@ public abstract class Tree {
         public void visitMemberAccess(MemberAccess tree) { visitTree(tree); }
 
         @Override
-        public void visitArrayAccess(ArrayAccess tree) { visitTree(tree); }
+        public void visitArrayAccess(Access tree) { visitTree(tree); }
 
         @Override
         public void visitInvocation(Invocation tree) { visitTree(tree); }
@@ -306,7 +305,7 @@ public abstract class Tree {
         }
 
         @Override
-        public void visitArrayAccess(ArrayAccess tree) {
+        public void visitArrayAccess(Access tree) {
             scan(tree.expr);
             scan(tree.index);
         }
@@ -493,7 +492,7 @@ public abstract class Tree {
         }
 
         @Override
-        public void visitArrayAccess(ArrayAccess tree) {
+        public void visitArrayAccess(Access tree) {
             tree.expr = translate(tree.expr);
             tree.index = translate(tree.index);
             result = tree;
@@ -934,6 +933,7 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitVariable(this); }
     }
 
+    @Deprecated
     public static class MemberAccess extends Expression {
 
         public final Tag tag;
@@ -959,21 +959,18 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitMemberAccess(this); }
     }
 
-    public static class ArrayAccess extends Expression {
-
-        public final Tag tag;
+    public static class Access extends Expression {
 
         public Expression expr, index;
 
-        public ArrayAccess(int pos, Tag tag, Expression expr, Expression index) {
+        public Access(int pos, Expression expr, Expression index) {
             super(pos);
-            this.tag = tag;
             this.expr = expr;
             this.index = index;
         }
 
         @Override
-        public Tag getTag() { return tag; }
+        public Tag getTag() { return Tag.ARRACC; }
 
         @Override
         public void accept(Visitor visitor) { visitor.visitArrayAccess(this); }
