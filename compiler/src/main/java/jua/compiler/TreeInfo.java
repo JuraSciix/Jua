@@ -7,12 +7,12 @@ import jua.compiler.utils.Flow;
 public final class TreeInfo {
 
     public static Expr stripParens(Expr tree) {
-        Expr resultTree = tree;
-        while (resultTree.hasTag(Tag.PARENS)) {
-            Parens parensTree = (Parens) resultTree;
-            resultTree = parensTree.expr;
+        Expr e = tree;
+        while (e.hasTag(Tag.PARENS)) {
+            Parens p = (Parens) e;
+            e = p.expr;
         }
-        return resultTree;
+        return e;
     }
 
     public static Tag stripAsgTag(Tag tag) {
@@ -27,18 +27,6 @@ public final class TreeInfo {
             case ASG_BIT_AND: return Tag.BIT_AND;
             case ASG_BIT_OR:  return Tag.BIT_OR;
             case ASG_BIT_XOR: return Tag.BIT_XOR;
-            default: throw new AssertionError(tag);
-        }
-    }
-
-    public static Tag negateCmpTag(Tag tag) {
-        switch (tag) {
-            case EQ: return Tag.NE;
-            case NE: return Tag.EQ;
-            case GT: return Tag.LE;
-            case GE: return Tag.LT;
-            case LT: return Tag.GE;
-            case LE: return Tag.GT;
             default: throw new AssertionError(tag);
         }
     }
@@ -115,58 +103,8 @@ public final class TreeInfo {
         return false;
     }
 
-    /**
-     * Возвращает приоритет оператора.
-     */
-    public static int getOperatorPrecedence(Tag tag) {
-        switch (tag) {
-            case ASSIGN: case ASG_ADD: case ASG_SUB:
-            case ASG_MUL: case ASG_DIV: case ASG_REM:
-            case ASG_SL: case ASG_SR: case ASG_BIT_AND:
-            case ASG_BIT_OR: case ASG_BIT_XOR:
-                return 1;
-            case COALESCE:
-                return 2;
-            case TERNARY:
-                return 3;
-            case OR:
-                return 4;
-            case AND:
-                return 5;
-            case BIT_OR:
-                return 6;
-            case BIT_XOR:
-                return 7;
-            case BIT_AND:
-                return 8;
-            case EQ: case NE:
-                return 9;
-            case GT: case GE: case LT: case LE:
-                return 10;
-            case SL: case SR:
-                return 11;
-            case ADD: case SUB:
-                return 12;
-            case MUL: case DIV: case REM:
-                return 13;
-            case POS: case NEG: case NOT:
-            case BIT_INV: case PREINC: case PREDEC:
-                return 14;
-            case POSTINC: case POSTDEC:
-                return 15;
-            case INVOCATION:
-                return 16;
-            case MEMACCESS: case ARRACC:
-                return 17;
-            case VAR:
-                return 18;
-            default:
-                throw new AssertionError(tag);
-        }
-    }
-
-    public static Tag getAsgTag(TokenType type) {
-        switch (type) {
+    public static Tag getAsgTag(TokenType tokenType) {
+        switch (tokenType) {
             case AMPEQ: return Tag.ASG_BIT_AND;
             case BAREQ: return Tag.ASG_BIT_OR;
             case CARETEQ: return Tag.ASG_BIT_XOR;
@@ -178,7 +116,62 @@ public final class TreeInfo {
             case QUESQUESEQ: return Tag.ASG_COALESCE;
             case SLASHEQ: return Tag.ASG_DIV;
             case STAREQ: return Tag.ASG_MUL;
-            default: throw new IllegalArgumentException(type.name());
+            default: throw new AssertionError(tokenType);
+        }
+    }
+
+    public static Tag getBinOpTag(TokenType tokenType) {
+        switch (tokenType) {
+            case BARBAR: return Tag.OR;
+            case AMPAMP: return Tag.AND;
+            case BAR: return Tag.BIT_OR;
+            case CARET: return Tag.BIT_XOR;
+            case AMP: return Tag.BIT_AND;
+            case EQ: return Tag.ASSIGN;
+            case EQEQ: return Tag.EQ;
+            case BANGEQ: return Tag.NE;
+            case GT: return Tag.GT;
+            case GTEQ: return Tag.GE;
+            case LT: return Tag.LT;
+            case LTEQ: return Tag.LE;
+            case GTGT: return Tag.SL;
+            case LTLT: return Tag.SR;
+            case MINUS: return Tag.SUB;
+            case PLUS: return Tag.ADD;
+            case PERCENT: return Tag.REM;
+            case SLASH: return Tag.DIV;
+            case STAR: return Tag.MUL;
+            case QUESQUES: return Tag.COALESCE;
+            default: throw new AssertionError(tokenType);
+        }
+    }
+
+    public static Tag getUnaryOpTag(TokenType tokenType) {
+        switch (tokenType) {
+            case BANG: return Tag.NOT;
+            case MINUS: return Tag.NEG;
+            case PLUS: return Tag.POS;
+            case TILDE: return Tag.BIT_INV;
+            case PLUSPLUS: return Tag.PREINC;
+            case MINUSMINUS: return Tag.PREDEC;
+            default: throw new AssertionError(tokenType);
+        }
+    }
+
+    public static int getBinOpPrecedence(Tag operatorTag) {
+        switch (operatorTag) {
+            case BIT_OR: return 10;
+            case BIT_AND: return 20;
+            case OR: return 110;
+            case BIT_XOR: return 120;
+            case AND: return 130;
+            case EQ: case NE: return 200;
+            case GT: case GE: case LT: case LE: return 300;
+            case SL: case SR: return 500;
+            case SUB: case ADD: return 700;
+            case REM: case DIV: case MUL: return 800;
+            case COALESCE: return 1000;
+            default: throw new AssertionError(operatorTag);
         }
     }
 }

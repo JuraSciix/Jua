@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static jua.compiler.Tokens.TokenType.*;
+import static jua.compiler.TreeInfo.getBinOpPrecedence;
+import static jua.compiler.TreeInfo.getUnaryOpTag;
 
 public final class JuaParser {
 
@@ -88,10 +90,6 @@ public final class JuaParser {
             case DO: {
                 nextToken();
                 return parseDo();
-            }
-            case ELSE: {
-                nextToken();
-                reportError(acceptedPos, "'else' is not allowed without if-statement.");
             }
             case EOF: {
                 nextToken();
@@ -359,37 +357,29 @@ public final class JuaParser {
         return expressions.toFlow();
     }
 
-    private Expr parseAssignment() {
+    Expr parseAssignment() {
         Expr expr = parseConditional();
-        int position = token.pos;
+        int pos = token.pos;
 
-        switch (token.type) {
-            case EQ:
-                nextToken();
-                return new Assign(position, expr, parseAssignment());
+        if (acceptToken(EQ))
+            return new Assign(pos, expr, parseAssignment());
 
-            case AMPEQ:
-            case BAREQ:
-            case CARETEQ:
-            case GTGTEQ:
-            case LTLTEQ:
-            case MINUSEQ:
-            case PERCENTEQ:
-            case PLUSEQ:
-            case QUESQUESEQ:
-            case SLASHEQ:
-            case STAREQ:
-                TokenType type = token.type;
-                nextToken();
-                return new EnhancedAssign(position, TreeInfo.getAsgTag(type), expr, parseAssignment());
-
-            default:
-                return expr;
+        if (matchesEnhancedAsgOp()) {
+            Tag tag = TreeInfo.getAsgTag(token.type);
+            nextToken();
+            return new EnhancedAssign(pos, tag, expr, parseAssignment());
         }
+
+        return expr;
     }
 
-    private Expr parseConditional() {
-        Expr expr = parseOr();
+    private boolean matchesEnhancedAsgOp() {
+        TokenType type = token.type;
+        return type.compareTo(AMPEQ) >= 0 && 0 >= type.compareTo(STAREQ);
+    }
+
+    Expr parseConditional() {
+        Expr expr = parseBinary();
 
         while (true) {
             int position = token.pos;
@@ -408,195 +398,52 @@ public final class JuaParser {
         return new Conditional(position, cond, right, parseExpression());
     }
 
-    private Expr parseOr() {
-        Expr expr = parseAnd();
-        int position = token.pos;
+    Expr parseBinary() {
+        Expr lhs = parseUnary();
+        BinaryOp prev = null;
 
-        while (acceptToken(BARBAR)) {
-            expr = new BinaryOp(position, Tag.OR, expr, parseAnd());
-            position = token.pos;
-        }
-        return expr;
-    }
+        while (matchesBinOp()) {
+            int pos = acceptedPos;
+            Tag tag = TreeInfo.getBinOpTag(token.type);
+            nextToken();
+            Expr rhs = parseUnary();
 
-    private Expr parseAnd() {
-        Expr expr = parseBitOr();
-
-        while (true) {
-            int position = token.pos;
-
-            if (acceptToken(AMPAMP)) {
-                expr = new BinaryOp(position, Tag.AND, expr, parseEquality());
+            // [x + y] * z ===> x + [y * z]
+            if (prev != null && getBinOpPrecedence(prev.tag) < getBinOpPrecedence(tag)) {
+                // Модифицируем дерево без лишних аллокаций.
+                prev.rhs = new BinaryOp(pos, tag, prev.rhs, rhs);
             } else {
-                return expr;
+                lhs = prev = new BinaryOp(pos, tag, lhs, rhs);
             }
         }
+
+        return lhs;
     }
 
-
-    private Expr parseBitOr() {
-        Expr expr = parseBitXor();
-
-        while (true) {
-            int position = token.pos;
-
-            if (acceptToken(BAR)) {
-                expr = new BinaryOp(position, Tag.BIT_OR, expr, parseBitXor());
-            } else {
-                return expr;
-            }
-        }
+    private boolean matchesBinOp() {
+        TokenType type = token.type;
+        return type.compareTo(AMP) >= 0 && 0 >= type.compareTo(PLUS);
     }
 
-    private Expr parseBitXor() {
-        Expr expr = parseBitAnd();
-
-        while (true) {
-            int position = token.pos;
-
-            if (acceptToken(CARET)) {
-                expr = new BinaryOp(position, Tag.BIT_XOR, expr, parseBitAnd());
-            } else {
-                return expr;
-            }
-        }
-    }
-
-    private Expr parseBitAnd() {
-        Expr expr = parseEquality();
-
-        while (true) {
-            int position = token.pos;
-
-            if (acceptToken(AMP)) {
-                expr = new BinaryOp(position, Tag.BIT_AND, expr, parseEquality());
-            } else {
-                return expr;
-            }
-        }
-    }
-
-    private Expr parseEquality() {
-        Expr expr = parseComparison();
-
-        while (true) {
-            int position = token.pos;
-
-            if (acceptToken(EQEQ)) {
-                expr = new BinaryOp(position, Tag.EQ, expr, parseComparison());
-            } else if (acceptToken(BANGEQ)) {
-                expr = new BinaryOp(position, Tag.NE, expr, parseComparison());
-            } else {
-                return expr;
-            }
-        }
-    }
-
-    private Expr parseComparison() {
-        Expr expr = parseShift();
-
-        while (true) {
-            int position = token.pos;
-
-            if (acceptToken(GT)) {
-                expr = new BinaryOp(position, Tag.GT, expr, parseShift());
-            } else if (acceptToken(GTEQ)) {
-                expr = new BinaryOp(position, Tag.GE, expr, parseShift());
-            } else if (acceptToken(LT)) {
-                expr = new BinaryOp(position, Tag.LT, expr, parseShift());
-            } else if (acceptToken(LTEQ)) {
-                expr = new BinaryOp(position, Tag.LE, expr, parseShift());
-            } else {
-                return expr;
-            }
-        }
-    }
-
-    private Expr parseShift() {
-        Expr expr = parseAdditive();
-
-        while (true) {
-            int position = token.pos;
-
-            if (acceptToken(GTGT)) {
-                expr = new BinaryOp(position, Tag.SR, expr, parseAdditive());
-            } else if (acceptToken(LTLT)) {
-                expr = new BinaryOp(position, Tag.SL, expr, parseAdditive());
-            } else {
-                return expr;
-            }
-        }
-    }
-
-    private Expr parseAdditive() {
-        Expr expr = parseMultiplicative();
-
-        while (true) {
-            int position = token.pos;
-
-            if (acceptToken(MINUS)) {
-                expr = new BinaryOp(position, Tag.SUB, expr, parseMultiplicative());
-            } else if (acceptToken(PLUS)) {
-                expr = new BinaryOp(position, Tag.ADD, expr, parseMultiplicative());
-            } else {
-                return expr;
-            }
-        }
-    }
-
-    private Expr parseMultiplicative() {
-        Expr expr = parseCoalesce();
-
-        while (true) {
-            int position = token.pos;
-
-            if (acceptToken(PERCENT)) {
-                expr = new BinaryOp(position, Tag.REM, expr, parseCoalesce());
-            } else if (acceptToken(SLASH)) {
-                expr = new BinaryOp(position, Tag.DIV, expr, parseCoalesce());
-            } else if (acceptToken(STAR)) {
-                expr = new BinaryOp(position, Tag.MUL, expr, parseCoalesce());
-            } else {
-                return expr;
-            }
-        }
-    }
-
-    private Expr parseCoalesce() {
-        Expr expr = parseUnary();
+    Expr parseUnary() {
         int pos = token.pos;
 
-        if (acceptToken(QUESQUES)) {
-            expr = new BinaryOp(pos, Tag.COALESCE, expr, parseCoalesce());
+        if (matchesUnaryOp()) {
+            Tag tag = getUnaryOpTag(token.type);
+            nextToken();
+            return new UnaryOp(pos, tag, parseUnary());
         }
-        return expr;
-    }
 
-    private Expr parseUnary() {
-        int position = token.pos;
-
-        if (acceptToken(BANG)) {
-            return new UnaryOp(position, Tag.NOT, parseUnary());
-        }
-        if (acceptToken(MINUS)) {
-            return new UnaryOp(position, Tag.NEG, parseUnary());
-        }
-        if (acceptToken(MINUSMINUS)) {
-            return new UnaryOp(position, Tag.PREDEC, parseUnary());
-        }
-        if (acceptToken(PLUS)) {
-            return new UnaryOp(position, Tag.POS, parseUnary());
-        }
-        if (acceptToken(PLUSPLUS)) {
-            return new UnaryOp(position, Tag.PREINC, parseUnary());
-        }
-        if (acceptToken(TILDE)) {
-            return new UnaryOp(position, Tag.BIT_INV, parseUnary());
-        }
         return parsePost();
     }
 
-    private Expr parsePost() {
+    private boolean matchesUnaryOp() {
+        TokenType type = token.type;
+        return type.compareTo(BANG) >= 0 && 0 >= type.compareTo(AT) ||
+                type == PLUS || type == MINUS;
+    }
+
+    Expr parsePost() {
         Expr expr = parseCall();
 
         while (true) {
@@ -612,7 +459,7 @@ public final class JuaParser {
         }
     }
 
-    private Expr parseCall() {
+    Expr parseCall() {
         int pos = token.pos;
         Expr expr = parseAccess();
 
@@ -638,7 +485,7 @@ public final class JuaParser {
         return expr;
     }
 
-    private Expr parsePrimary() {
+    Expr parsePrimary() {
         acceptedPos = token.pos;
         Token tok = token;
         nextToken();
