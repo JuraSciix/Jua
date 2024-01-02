@@ -563,13 +563,13 @@ public abstract class Tree {
         public final Source source;
 
         @Deprecated
-        public Flow<Statement> stats;
+        public Flow<Stmt> stats;
 
         public Flow<FuncDef> functions;
 
         public Document(int pos, Source source,
                         Flow<FuncDef> functions,
-                        Flow<Statement> stats) {
+                        Flow<Stmt> stats) {
             super(pos);
             this.source = source;
             this.functions = functions;
@@ -583,9 +583,9 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitDocument(this); }
     }
 
-    public static abstract class Statement extends Tree {
+    public static abstract class Stmt extends Tree {
         
-        protected Statement(int pos) {
+        protected Stmt(int pos) {
             super(pos);
         }
     }
@@ -597,11 +597,11 @@ public abstract class Tree {
             public final int pos;
             public final String name;
 
-            public Expression expr;
+            public Expr expr;
 
             public VarSymbol sym;
 
-            public Parameter(int pos, String name, Expression expr) {
+            public Parameter(int pos, String name, Expr expr) {
                 this.pos = pos;
                 this.name = name;
                 this.expr = expr;
@@ -614,11 +614,11 @@ public abstract class Tree {
 
         public Flow<Parameter> params;
 
-        public Statement body;
+        public Stmt body;
 
         public FunctionSymbol sym;
 
-        public FuncDef(int pos, int namePos, String name, Flow<Parameter> params, Statement body) {
+        public FuncDef(int pos, int namePos, String name, Flow<Parameter> params, Stmt body) {
             super(pos);
             this.namePos = namePos;
             this.name = name;
@@ -633,11 +633,11 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitFuncDef(this); }
     }
 
-    public static class Block extends Statement {
+    public static class Block extends Stmt {
 
-        public Flow<Statement> stats;
+        public Flow<Stmt> stats;
 
-        public Block(int pos, Flow<Statement> stats) {
+        public Block(int pos, Flow<Stmt> stats) {
             super(pos);
             this.stats = stats;
         }
@@ -649,15 +649,15 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitBlock(this); }
     }
 
-    public static class If extends Statement {
+    public static class If extends Stmt {
 
-        public Expression cond;
+        public Expr cond;
 
-        public Statement thenbody;
+        public Stmt thenbody;
 
-        public Statement elsebody;
+        public Stmt elsebody;
 
-        public If(int pos, Expression cond, Statement thenbody, Statement elsebody) {
+        public If(int pos, Expr cond, Stmt thenbody, Stmt elsebody) {
             super(pos);
             this.cond = cond;
             this.thenbody = thenbody;
@@ -671,13 +671,13 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitIf(this); }
     }
 
-    public static class WhileLoop extends Statement {
+    public static class WhileLoop extends Stmt {
 
-        public Expression cond;
+        public Expr cond;
 
-        public Statement body;
+        public Stmt body;
 
-        public WhileLoop(int pos, Expression cond, Statement body) {
+        public WhileLoop(int pos, Expr cond, Stmt body) {
             super(pos);
             this.cond = cond;
             this.body = body;
@@ -690,13 +690,13 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitWhileLoop(this); }
     }
 
-    public static class DoLoop extends Statement {
+    public static class DoLoop extends Stmt {
 
-        public Statement body;
+        public Stmt body;
 
-        public Expression cond;
+        public Expr cond;
 
-        public DoLoop(int pos, Statement body, Expression cond) {
+        public DoLoop(int pos, Stmt body, Expr cond) {
             super(pos);
             this.body = body;
             this.cond = cond;
@@ -709,17 +709,17 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitDoLoop(this); }
     }
 
-    public static class ForLoop extends Statement {
+    public static class ForLoop extends Stmt {
 
-        public Flow<Statement> init;
+        public Flow<Stmt> init;
 
-        public Expression cond;
+        public Expr cond;
 
-        public Flow<Expression> step;
+        public Flow<Expr> step;
 
-        public Statement body;
+        public Stmt body;
 
-        public ForLoop(int pos, Flow<Statement> init, Expression cond, Flow<Expression> step, Statement body) {
+        public ForLoop(int pos, Flow<Stmt> init, Expr cond, Flow<Expr> step, Stmt body) {
             super(pos);
             this.init = init;
             this.cond = cond;
@@ -734,13 +734,13 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitForLoop(this); }
     }
 
-    public static class Switch extends Statement {
+    public static class Switch extends Stmt {
 
-        public Expression expr;
+        public Expr expr;
 
         public Flow<Case> cases;
 
-        public Switch(int pos, Expression expr, Flow<Case> cases) {
+        public Switch(int pos, Expr expr, Flow<Case> cases) {
             super(pos);
             this.expr = expr;
             this.cases = cases;
@@ -753,13 +753,13 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitSwitch(this); }
     }
 
-    public static class Case extends Statement {
+    public static class Case extends Stmt {
 
-        public Flow<Expression> labels;
+        public Flow<Expr> labels;
 
-        public Statement body;
+        public Stmt body;
 
-        public Case(int pos, Flow<Expression> labels, Statement body) {
+        public Case(int pos, Flow<Expr> labels, Stmt body) {
             super(pos);
             this.labels = labels;
             this.body = body;
@@ -772,7 +772,7 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitCase(this); }
     }
 
-    public static class Break extends Statement {
+    public static class Break extends Stmt {
 
         public Break(int pos) {
             super(pos);
@@ -785,7 +785,7 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitBreak(this); }
     }
 
-    public static class Continue extends Statement {
+    public static class Continue extends Stmt {
 
         public Continue(int pos) {
             super(pos);
@@ -798,7 +798,7 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitContinue(this); }
     }
 
-    public static class Fallthrough extends Statement {
+    public static class Fallthrough extends Stmt {
 
         public Fallthrough(int pos) {
             super(pos);
@@ -811,7 +811,7 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitFallthrough(this); }
     }
 
-    public static class VarDef extends Statement {
+    public static class VarDef extends Stmt {
 
         public static class Definition {
 
@@ -819,11 +819,11 @@ public abstract class Tree {
 
             public final String name;
 
-            public Expression init;
+            public Expr init;
 
             public VarSymbol sym;
 
-            public Definition(int pos, String name, Expression init) {
+            public Definition(int pos, String name, Expr init) {
                 this.pos = pos;
                 this.name = name;
                 this.init = init;
@@ -844,11 +844,11 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitVarDef(this); }
     }
 
-    public static class Return extends Statement {
+    public static class Return extends Stmt {
 
-        public Expression expr;
+        public Expr expr;
 
-        public Return(int pos, Expression expr) {
+        public Return(int pos, Expr expr) {
             super(pos);
             this.expr = expr;
         }
@@ -860,11 +860,11 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitReturn(this); }
     }
 
-    public static class Discarded extends Statement {
+    public static class Discarded extends Stmt {
 
-        public Expression expr;
+        public Expr expr;
 
-        public Discarded(int pos, Expression expr) {
+        public Discarded(int pos, Expr expr) {
             super(pos);
             this.expr = expr;
         }
@@ -876,14 +876,14 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitDiscarded(this); }
     }
 
-    public static abstract class Expression extends Tree {
+    public static abstract class Expr extends Tree {
 
-        protected Expression(int pos) {
+        protected Expr(int pos) {
             super(pos);
         }
     }
 
-    public static class Literal extends Expression {
+    public static class Literal extends Expr {
 
         public final Object value;
 
@@ -899,11 +899,11 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitLiteral(this); }
     }
 
-    public static class ListLiteral extends Expression {
+    public static class ListLiteral extends Expr {
 
-        public Flow<Expression> entries;
+        public Flow<Expr> entries;
 
-        public ListLiteral(int pos, Flow<Expression> entries) {
+        public ListLiteral(int pos, Flow<Expr> entries) {
             super(pos);
             this.entries = entries;
         }
@@ -915,7 +915,7 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitListLiteral(this); }
     }
 
-    public static class Var extends Expression {
+    public static class Var extends Expr {
 
         public final String name;
 
@@ -934,17 +934,17 @@ public abstract class Tree {
     }
 
     @Deprecated
-    public static class MemberAccess extends Expression {
+    public static class MemberAccess extends Expr {
 
         public final Tag tag;
 
-        public Expression expr;
+        public Expr expr;
 
         public int memberPos;
 
         public String member;
 
-        public MemberAccess(int pos, Tag tag, Expression expr, int memberPos, String member) {
+        public MemberAccess(int pos, Tag tag, Expr expr, int memberPos, String member) {
             super(pos);
             this.tag = tag;
             this.expr = expr;
@@ -959,11 +959,11 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitMemberAccess(this); }
     }
 
-    public static class Access extends Expression {
+    public static class Access extends Expr {
 
-        public Expression expr, index;
+        public Expr expr, index;
 
-        public Access(int pos, Expression expr, Expression index) {
+        public Access(int pos, Expr expr, Expr index) {
             super(pos);
             this.expr = expr;
             this.index = index;
@@ -976,7 +976,7 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitArrayAccess(this); }
     }
 
-    public static class Invocation extends Expression {
+    public static class Invocation extends Expr {
 
         public static class Argument {
 
@@ -984,22 +984,22 @@ public abstract class Tree {
 
             public final String name;
 
-            public Expression expr;
+            public Expr expr;
 
-            public Argument(int pos, String name, Expression expr) {
+            public Argument(int pos, String name, Expr expr) {
                 this.pos = pos;
                 this.name = name;
                 this.expr = expr;
             }
         }
         
-        public final Expression target;
+        public final Expr target;
 
         public Flow<Argument> args;
 
         public FunctionSymbol sym;
 
-        public Invocation(int pos, Expression target, Flow<Argument> args) {
+        public Invocation(int pos, Expr target, Flow<Argument> args) {
             super(pos);
             this.target = target;
             this.args = args;
@@ -1012,11 +1012,11 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitInvocation(this); }
     }
 
-    public static class Parens extends Expression {
+    public static class Parens extends Expr {
 
-        public Expression expr;
+        public Expr expr;
 
-        public Parens(int pos, Expression expr) {
+        public Parens(int pos, Expr expr) {
             super(pos);
             this.expr = expr;
         }
@@ -1028,11 +1028,11 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitParens(this); }
     }
 
-    public static class Assign extends Expression {
+    public static class Assign extends Expr {
 
-        public Expression var, expr;
+        public Expr var, expr;
 
-        public Assign(int pos, Expression var, Expression expr) {
+        public Assign(int pos, Expr var, Expr expr) {
             super(pos);
             this.var = var;
             this.expr = expr;
@@ -1045,13 +1045,13 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitAssign(this); }
     }
 
-    public static class EnhancedAssign extends Expression {
+    public static class EnhancedAssign extends Expr {
 
         public final Tag tag;
 
-        public Expression var, expr;
+        public Expr var, expr;
 
-        public EnhancedAssign(int pos, Tag tag, Expression var, Expression expr) {
+        public EnhancedAssign(int pos, Tag tag, Expr var, Expr expr) {
             super(pos);
             this.tag = tag;
             this.var = var;
@@ -1065,11 +1065,11 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitEnhancedAssign(this); }
     }
 
-    public static class Conditional extends Expression {
+    public static class Conditional extends Expr {
 
-        public Expression cond, ths, fhs;
+        public Expr cond, ths, fhs;
 
-        public Conditional(int pos, Expression cond, Expression ths, Expression fhs) {
+        public Conditional(int pos, Expr cond, Expr ths, Expr fhs) {
             super(pos);
             this.cond = cond;
             this.ths = ths;
@@ -1083,13 +1083,13 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitConditional(this); }
     }
 
-    public static class BinaryOp extends Expression {
+    public static class BinaryOp extends Expr {
 
         public final Tag tag;
 
-        public Expression lhs, rhs;
+        public Expr lhs, rhs;
 
-        public BinaryOp(int pos, Tag tag, Expression lhs, Expression rhs) {
+        public BinaryOp(int pos, Tag tag, Expr lhs, Expr rhs) {
             super(pos);
             this.tag = tag;
             this.lhs = lhs;
@@ -1103,13 +1103,13 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitBinaryOp(this); }
     }
 
-    public static class UnaryOp extends Expression {
+    public static class UnaryOp extends Expr {
 
         public final Tag tag;
 
-        public Expression expr;
+        public Expr expr;
 
-        public UnaryOp(int pos, Tag tag, Expression expr) {
+        public UnaryOp(int pos, Tag tag, Expr expr) {
             super(pos);
             this.tag = tag;
             this.expr = expr;

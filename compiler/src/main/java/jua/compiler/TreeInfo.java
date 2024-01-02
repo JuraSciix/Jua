@@ -6,8 +6,8 @@ import jua.compiler.utils.Flow;
 
 public final class TreeInfo {
 
-    public static Expression stripParens(Expression tree) {
-        Expression resultTree = tree;
+    public static Expr stripParens(Expr tree) {
+        Expr resultTree = tree;
         while (resultTree.hasTag(Tag.PARENS)) {
             Parens parensTree = (Parens) resultTree;
             resultTree = parensTree.expr;
@@ -43,7 +43,7 @@ public final class TreeInfo {
         }
     }
 
-    public static boolean isAccessible(Expression tree) {
+    public static boolean isAccessible(Expr tree) {
         switch (stripParens(tree).getTag()) {
             case VAR:
             case ARRACC:
@@ -54,8 +54,8 @@ public final class TreeInfo {
         }
     }
 
-    public static boolean isLiteral(Expression tree) {
-        Expression innerTree = stripParens(tree);
+    public static boolean isLiteral(Expr tree) {
+        Expr innerTree = stripParens(tree);
         switch (innerTree.getTag()) {
             case LITERAL:
                 return true;
@@ -67,8 +67,8 @@ public final class TreeInfo {
         }
     }
 
-    public static Object literalType(Expression tree) {
-        Expression innerTree = stripParens(tree);
+    public static Object literalType(Expr tree) {
+        Expr innerTree = stripParens(tree);
         if (innerTree.hasTag(Tag.LITERAL)) {
             Literal literalTree = (Literal) innerTree;
             return literalTree.value;
@@ -76,8 +76,8 @@ public final class TreeInfo {
         throw new AssertionError(innerTree.getTag());
     }
 
-    public static boolean isNull(Expression tree) {
-        Expression innerTree = stripParens(tree);
+    public static boolean isNull(Expr tree) {
+        Expr innerTree = stripParens(tree);
         if (innerTree.hasTag(Tag.LITERAL)) {
             Literal literalTree = (Literal) innerTree;
             return literalTree.value == null;
@@ -85,8 +85,8 @@ public final class TreeInfo {
         return false;
     }
 
-    public static boolean isLiteralShort(Expression tree) {
-        Expression innerTree = stripParens(tree);
+    public static boolean isLiteralShort(Expr tree) {
+        Expr innerTree = stripParens(tree);
         if (innerTree.hasTag(Tag.LITERAL)) {
             Literal literalTree = (Literal) innerTree;
             if (literalTree.value instanceof Long) {
@@ -97,8 +97,8 @@ public final class TreeInfo {
         return false;
     }
 
-    public static boolean isLiteralTrue(Expression tree) {
-        Expression innerTree = stripParens(tree);
+    public static boolean isLiteralTrue(Expr tree) {
+        Expr innerTree = stripParens(tree);
         if (innerTree.hasTag(Tag.LITERAL)) {
             Literal literalTree = (Literal) innerTree;
             return SemanticInfo.ofBoolean(literalTree.value).isTrue();
@@ -106,8 +106,8 @@ public final class TreeInfo {
         return false;
     }
 
-    public static boolean isLiteralFalse(Expression tree) {
-        Expression innerTree = stripParens(tree);
+    public static boolean isLiteralFalse(Expr tree) {
+        Expr innerTree = stripParens(tree);
         if (innerTree.hasTag(Tag.LITERAL)) {
             Literal literalTree = (Literal) innerTree;
             return literalTree.value == null;

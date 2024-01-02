@@ -45,7 +45,7 @@ public final class JuaParser {
     }
 
     public Document parseDocument() {
-        Flow.Builder<Statement> stats = Flow.builder();
+        Flow.Builder<Stmt> stats = Flow.builder();
         Flow.Builder<FuncDef> funcDefs = Flow.builder();
         nextToken();
 
@@ -69,7 +69,7 @@ public final class JuaParser {
         log.error(source, e.pos, e.msg);
     }
 
-    public Statement parseStatement() {
+    public Stmt parseStatement() {
         acceptedPos = token.pos;
 
         switch (token.type) {
@@ -146,7 +146,7 @@ public final class JuaParser {
         do {
             Token name = token;
             expectToken(IDENTIFIER);
-            Expression init = null;
+            Expr init = null;
             if (acceptToken(EQ)) {
                 init = parseExpression();
             }
@@ -156,26 +156,26 @@ public final class JuaParser {
         return new VarDef(acceptedPos, defs.toFlow());
     }
 
-    private Statement parseBreak() {
+    private Stmt parseBreak() {
         expectToken(SEMI);
         return new Break(acceptedPos);
     }
 
-    private Statement parseContinue() {
+    private Stmt parseContinue() {
         expectToken(SEMI);
         return new Continue(acceptedPos);
     }
 
-    private Statement parseDo() {
+    private Stmt parseDo() {
         int position = acceptedPos;
-        Statement body = parseStatement();
+        Stmt body = parseStatement();
         expectToken(WHILE);
-        Expression cond = parseExpression();
+        Expr cond = parseExpression();
         expectToken(SEMI);
         return new DoLoop(position, body, cond);
     }
 
-    private Statement parseFallthrough() {
+    private Stmt parseFallthrough() {
         expectToken(SEMI);
         return new Fallthrough(acceptedPos);
     }
@@ -194,7 +194,7 @@ public final class JuaParser {
             }
             Token p = token;
             expectToken(IDENTIFIER);
-            Expression optional = null;
+            Expr optional = null;
 
             if (acceptToken(EQ)) {
                 optional = parseExpression();
@@ -205,15 +205,15 @@ public final class JuaParser {
             params.append(new FuncDef.Parameter(p.pos, p.name(), optional));
             comma = !acceptToken(COMMA);
         }
-        Statement body = parseBody();
+        Stmt body = parseBody();
         return new FuncDef(pos, funcName.pos, funcName.name(), params.toFlow(), body);
     }
 
-    private Statement parseBody() {
+    private Stmt parseBody() {
         int pos = token.pos;
         if (acceptToken(LBRACE)) return parseBlock();
         if (acceptToken(EQ)) {
-            Expression expr = parseExpression();
+            Expr expr = parseExpression();
             expectToken(SEMI);
             return new Discarded(expr.pos, expr);
         }
@@ -221,8 +221,8 @@ public final class JuaParser {
         return null;
     }
 
-    private Flow<Statement> parseForInit() {
-        Flow.Builder<Statement> init = Flow.builder();
+    private Flow<Stmt> parseForInit() {
+        Flow.Builder<Stmt> init = Flow.builder();
         if (acceptToken(VAR)) {
             init.append(parseVar());
         } else {
@@ -237,18 +237,18 @@ public final class JuaParser {
         return init.toFlow();
     }
 
-    private Statement parseFor() {
+    private Stmt parseFor() {
         int position = acceptedPos;
         boolean parens = acceptToken(LPAREN);
-        Flow<Statement> init = acceptToken(SEMI) ? null : parseForInit();
+        Flow<Stmt> init = acceptToken(SEMI) ? null : parseForInit();
 
-        Expression cond = null;
+        Expr cond = null;
 
         if (!acceptToken(SEMI)) {
             cond = parseExpression();
             expectToken(SEMI);
         }
-        Flow<Expression> step = null;
+        Flow<Expr> step = null;
 
         if (parens) {
             if (!acceptToken(RPAREN)) {
@@ -261,10 +261,10 @@ public final class JuaParser {
         return new ForLoop(position, init, cond, step, parseStatement());
     }
 
-    private Statement parseIf() {
+    private Stmt parseIf() {
         int position = acceptedPos;
-        Expression cond = parseExpression();
-        Statement body = parseStatement();
+        Expr cond = parseExpression();
+        Stmt body = parseStatement();
 
         if (!acceptToken(ELSE)) {
             return new If(position, cond, body, null);
@@ -272,9 +272,9 @@ public final class JuaParser {
         return new If(position, cond, body, parseStatement());
     }
 
-    private Statement parseBlock() {
+    private Stmt parseBlock() {
         int pos = acceptedPos;
-        Flow.Builder<Statement> statements = Flow.builder();
+        Flow.Builder<Stmt> statements = Flow.builder();
 
         while (!acceptToken(RBRACE)) {
             if (acceptToken(EOF)) {
@@ -289,12 +289,12 @@ public final class JuaParser {
         return new Block(pos, statements.toFlow());
     }
 
-    private Statement parseReturn() {
+    private Stmt parseReturn() {
         if (acceptToken(SEMI)) {
             return new Return(acceptedPos, null);
         }
         int pos = acceptedPos;
-        Expression expr = null;
+        Expr expr = null;
         try {
             expr = parseExpression();
         } catch (ParseNodeExit e) {
@@ -304,9 +304,9 @@ public final class JuaParser {
         return new Return(pos, expr);
     }
 
-    private Statement parseSwitch() {
+    private Stmt parseSwitch() {
         int position = acceptedPos;
-        Expression selector = parseExpression();
+        Expr selector = parseExpression();
         Flow.Builder<Case> cases = Flow.builder();
         expectToken(LBRACE);
 
@@ -328,29 +328,29 @@ public final class JuaParser {
     }
 
     private Case parseCase(int position, boolean isDefault) {
-        Flow<Expression> expressions = null;
+        Flow<Expr> expressions = null;
 
         if (!isDefault) {
             expressions = parseExpressions();
         }
         expectToken(ARROW);
-        Statement body = parseStatement();
+        Stmt body = parseStatement();
         return new Case(position, expressions, body);
     }
 
-    private Statement parseUnusedExpression() {
+    private Stmt parseUnusedExpression() {
         int position = acceptedPos;
-        Expression expr = parseExpression();
+        Expr expr = parseExpression();
         expectToken(SEMI);
         return new Discarded(position, expr);
     }
 
-    public Expression parseExpression() {
+    public Expr parseExpression() {
         return parseAssignment();
     }
 
-    private Flow<Expression> parseExpressions() {
-        Flow.Builder<Expression> expressions = Flow.builder();
+    private Flow<Expr> parseExpressions() {
+        Flow.Builder<Expr> expressions = Flow.builder();
 
         do {
             expressions.append(parseExpression());
@@ -359,8 +359,8 @@ public final class JuaParser {
         return expressions.toFlow();
     }
 
-    private Expression parseAssignment() {
-        Expression expr = parseConditional();
+    private Expr parseAssignment() {
+        Expr expr = parseConditional();
         int position = token.pos;
 
         switch (token.type) {
@@ -388,8 +388,8 @@ public final class JuaParser {
         }
     }
 
-    private Expression parseConditional() {
-        Expression expr = parseOr();
+    private Expr parseConditional() {
+        Expr expr = parseOr();
 
         while (true) {
             int position = token.pos;
@@ -402,14 +402,14 @@ public final class JuaParser {
         }
     }
 
-    private Expression parseConditional0(int position, Expression cond) {
-        Expression right = parseExpression();
+    private Expr parseConditional0(int position, Expr cond) {
+        Expr right = parseExpression();
         expectToken(COL);
         return new Conditional(position, cond, right, parseExpression());
     }
 
-    private Expression parseOr() {
-        Expression expr = parseAnd();
+    private Expr parseOr() {
+        Expr expr = parseAnd();
         int position = token.pos;
 
         while (acceptToken(BARBAR)) {
@@ -419,8 +419,8 @@ public final class JuaParser {
         return expr;
     }
 
-    private Expression parseAnd() {
-        Expression expr = parseBitOr();
+    private Expr parseAnd() {
+        Expr expr = parseBitOr();
 
         while (true) {
             int position = token.pos;
@@ -434,8 +434,8 @@ public final class JuaParser {
     }
 
 
-    private Expression parseBitOr() {
-        Expression expr = parseBitXor();
+    private Expr parseBitOr() {
+        Expr expr = parseBitXor();
 
         while (true) {
             int position = token.pos;
@@ -448,8 +448,8 @@ public final class JuaParser {
         }
     }
 
-    private Expression parseBitXor() {
-        Expression expr = parseBitAnd();
+    private Expr parseBitXor() {
+        Expr expr = parseBitAnd();
 
         while (true) {
             int position = token.pos;
@@ -462,8 +462,8 @@ public final class JuaParser {
         }
     }
 
-    private Expression parseBitAnd() {
-        Expression expr = parseEquality();
+    private Expr parseBitAnd() {
+        Expr expr = parseEquality();
 
         while (true) {
             int position = token.pos;
@@ -476,8 +476,8 @@ public final class JuaParser {
         }
     }
 
-    private Expression parseEquality() {
-        Expression expr = parseComparison();
+    private Expr parseEquality() {
+        Expr expr = parseComparison();
 
         while (true) {
             int position = token.pos;
@@ -492,8 +492,8 @@ public final class JuaParser {
         }
     }
 
-    private Expression parseComparison() {
-        Expression expr = parseShift();
+    private Expr parseComparison() {
+        Expr expr = parseShift();
 
         while (true) {
             int position = token.pos;
@@ -512,8 +512,8 @@ public final class JuaParser {
         }
     }
 
-    private Expression parseShift() {
-        Expression expr = parseAdditive();
+    private Expr parseShift() {
+        Expr expr = parseAdditive();
 
         while (true) {
             int position = token.pos;
@@ -528,8 +528,8 @@ public final class JuaParser {
         }
     }
 
-    private Expression parseAdditive() {
-        Expression expr = parseMultiplicative();
+    private Expr parseAdditive() {
+        Expr expr = parseMultiplicative();
 
         while (true) {
             int position = token.pos;
@@ -544,8 +544,8 @@ public final class JuaParser {
         }
     }
 
-    private Expression parseMultiplicative() {
-        Expression expr = parseCoalesce();
+    private Expr parseMultiplicative() {
+        Expr expr = parseCoalesce();
 
         while (true) {
             int position = token.pos;
@@ -562,8 +562,8 @@ public final class JuaParser {
         }
     }
 
-    private Expression parseCoalesce() {
-        Expression expr = parseUnary();
+    private Expr parseCoalesce() {
+        Expr expr = parseUnary();
         int pos = token.pos;
 
         if (acceptToken(QUESQUES)) {
@@ -572,7 +572,7 @@ public final class JuaParser {
         return expr;
     }
 
-    private Expression parseUnary() {
+    private Expr parseUnary() {
         int position = token.pos;
 
         if (acceptToken(BANG)) {
@@ -596,8 +596,8 @@ public final class JuaParser {
         return parsePost();
     }
 
-    private Expression parsePost() {
-        Expression expr = parseCall();
+    private Expr parsePost() {
+        Expr expr = parseCall();
 
         while (true) {
             int position = token.pos;
@@ -612,9 +612,9 @@ public final class JuaParser {
         }
     }
 
-    private Expression parseCall() {
+    private Expr parseCall() {
         int pos = token.pos;
-        Expression expr = parseAccess();
+        Expr expr = parseAccess();
 
         if (acceptToken(LPAREN)) {
             Flow<Invocation.Argument> args = parseInvocationArgs();
@@ -625,12 +625,12 @@ public final class JuaParser {
         return expr;
     }
 
-    Expression parseAccess() {
-        Expression expr = parsePrimary();
+    Expr parseAccess() {
+        Expr expr = parsePrimary();
 
         while (acceptToken(LBRACKET)) {
             int pos = acceptedPos;
-            Expression index = parseExpression();
+            Expr index = parseExpression();
             expectToken(RBRACKET);
             expr = new Access(pos, expr, index);
         }
@@ -638,7 +638,7 @@ public final class JuaParser {
         return expr;
     }
 
-    private Expression parsePrimary() {
+    private Expr parsePrimary() {
         acceptedPos = token.pos;
         Token tok = token;
         nextToken();
@@ -684,7 +684,7 @@ public final class JuaParser {
         }
     }
 
-    private Expression parseFloat(Token token) {
+    private Expr parseFloat(Token token) {
         double d = Conversions.parseDouble(token.value(), token.radix());
         if (Double.isInfinite(d)) {
             reportError(token.pos, "number too large.");
@@ -692,7 +692,7 @@ public final class JuaParser {
         return new Literal(token.pos, d);
     }
 
-    private Expression parseIdentifier(Token token) {
+    private Expr parseIdentifier(Token token) {
         if (acceptToken(LPAREN)) {
             return parseInvocation(token);
         }
@@ -708,7 +708,7 @@ public final class JuaParser {
                 expectToken(RPAREN);
             }
             Token name = new Tokens.NamedToken(null, 0, null);
-            Expression expr;
+            Expr expr;
             if (matchesToken(IDENTIFIER)) {
                 Token t = token;
                 expr = parseExpression();
@@ -726,7 +726,7 @@ public final class JuaParser {
         return args.toFlow();
     }
 
-    private Expression parseInvocation(Token token) {
+    private Expr parseInvocation(Token token) {
         Flow<Invocation.Argument> args = parseInvocationArgs();
         expectToken(RPAREN);
         return new Invocation(token.pos,
@@ -734,7 +734,7 @@ public final class JuaParser {
                 args);
     }
 
-    private Expression parseInt(Token token) {
+    private Expr parseInt(Token token) {
         try {
             long value = Conversions.parseLong(token.value(), token.radix());
             return new Literal(token.pos, value);
@@ -745,7 +745,7 @@ public final class JuaParser {
     }
 
     private ListLiteral parseListInit(int pos) {
-        Flow.Builder<Expression> entries = Flow.builder();
+        Flow.Builder<Expr> entries = Flow.builder();
         if (!acceptToken(RBRACKET)) {
             do {
                 entries.append(parseExpression());
@@ -764,9 +764,9 @@ public final class JuaParser {
         return new ListLiteral(pos, entries.toFlow());
     }
 
-    private Expression parseParens() {
+    private Expr parseParens() {
         int pos = acceptedPos;
-        Expression expr = parseExpression();
+        Expr expr = parseExpression();
         expectToken(RPAREN);
         return new Parens(pos, expr);
     }

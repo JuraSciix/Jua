@@ -3,7 +3,6 @@ package jua.compiler;
 import jua.compiler.Code.Chain;
 import jua.compiler.Items.CondItem;
 import jua.compiler.Items.Item;
-import jua.compiler.Items.SafeItem;
 import jua.compiler.Tree.*;
 import jua.compiler.utils.Assert;
 import jua.compiler.utils.Flow;
@@ -56,7 +55,7 @@ public class Gen extends Scanner {
     // Set from JuaCompiler.compile
     public boolean genJvmLoops;
 
-    private Item genExpr(Expression tree) {
+    private Item genExpr(Expr tree) {
         Item prevItem = result;
         try {
             tree.accept(this);
@@ -71,7 +70,7 @@ public class Gen extends Scanner {
      *
      * @return {@code true}, если изолированный блок жив, {@code false}, если нет.
      */
-    private boolean genBlock(Statement statement) {
+    private boolean genBlock(Stmt statement) {
         boolean alive = code.isAlive();
         int tos = code.tos();
 
@@ -159,7 +158,7 @@ public class Gen extends Scanner {
         genLoop(tree, tree.init, tree.cond, tree.step, tree.body, true);
     }
 
-    private void genLoop(Statement tree, Flow<Statement> init, Expression cond, Flow<Expression> step, Statement body, boolean testFirst) {
+    private void genLoop(Stmt tree, Flow<Stmt> init, Expr cond, Flow<Expr> step, Stmt body, boolean testFirst) {
         FlowEnv parentFlow = flow;
         flow = new FlowEnv(parentFlow);
 
@@ -339,7 +338,7 @@ public class Gen extends Scanner {
         genAccess(tree, tree.expr, tree.index);
     }
 
-    private void genAccess(Expression tree, Expression expr, Expression key) {
+    private void genAccess(Expr tree, Expr expr, Expr key) {
         genExpr(expr).load();
         genExpr(key).load();
         result = items.mkAccessItem().load();

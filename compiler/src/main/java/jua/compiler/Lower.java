@@ -55,7 +55,7 @@ public final class Lower extends Translator {
         tree.cond = translate(tree.cond);
         // Не будем забегать вперед с редукцией потенциально лишних участков кода.
 
-        Expression condTree = stripParens(tree.cond);
+        Expr condTree = stripParens(tree.cond);
         if (condTree.hasTag(Tag.LITERAL)) {
             Literal condLit = (Literal) condTree;
             BooleanEquivalent booleanEquivalent = ofBoolean(condLit.value);
@@ -111,8 +111,8 @@ public final class Lower extends Translator {
                     break;
                 }
             default:
-                Expression lhsTree = stripParens(tree.lhs);
-                Expression rhsTree = stripParens(tree.rhs);
+                Expr lhsTree = stripParens(tree.lhs);
+                Expr rhsTree = stripParens(tree.rhs);
                 if (lhsTree.hasTag(Tag.LITERAL) && rhsTree.hasTag(Tag.LITERAL)) {
                     Literal lhsLit = (Literal) lhsTree;
                     Literal rhsLit = (Literal) rhsTree;
@@ -127,7 +127,7 @@ public final class Lower extends Translator {
     public void visitUnaryOp(UnaryOp tree) {
         tree.expr = translate(tree.expr);
 
-        Expression exprTree = stripParens(tree.expr);
+        Expr exprTree = stripParens(tree.expr);
         if (exprTree.hasTag(Tag.LITERAL)) {
             // Пост-унарными операциями считаются только POSTINC и POSTDEC,
             // которые:

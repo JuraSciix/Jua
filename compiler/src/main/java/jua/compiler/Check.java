@@ -34,7 +34,7 @@ public class Check extends Scanner {
         log.error(source, pos, message, args);
     }
 
-    private boolean requireLiteralTree(Expression tree) {
+    private boolean requireLiteralTree(Expr tree) {
         if (isLiteral(tree)) {
             return true;
         }
@@ -42,7 +42,7 @@ public class Check extends Scanner {
         return false;
     }
 
-    private boolean requireAccessibleTree(Expression tree) {
+    private boolean requireAccessibleTree(Expr tree) {
         if (isAccessible(tree)) {
             return true;
         }
@@ -109,7 +109,7 @@ public class Check extends Scanner {
         });
     }
 
-    private void scanLoopBody(Statement tree) {
+    private void scanLoopBody(Stmt tree) {
         boolean prevAllowsBreak = allowsBreak;
         boolean prevAllowsContinue = allowsContinue;
         allowsBreak = true;
@@ -134,7 +134,7 @@ public class Check extends Scanner {
         scanCaseBody(tree.body);
     }
 
-    private void scanCaseBody(Statement tree) {
+    private void scanCaseBody(Stmt tree) {
         boolean prevAllowsBreak = allowsBreak;
         boolean prevAllowsFallthrough = allowsFallthrough;
         allowsBreak = true;
@@ -171,7 +171,7 @@ public class Check extends Scanner {
     @Override
     public void visitInvocation(Invocation tree) {
         // Заметка: Я не вызываю ниже stripParens потому что так надо
-        Expression callee = tree.target;
+        Expr callee = tree.target;
         if (!callee.hasTag(Tag.MEMACCESS) || ((MemberAccess) callee).expr != null) {
             report(stripParens(callee).pos, "only function calls are allowed");
             return;
