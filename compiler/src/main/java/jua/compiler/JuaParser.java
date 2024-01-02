@@ -174,8 +174,17 @@ public final class JuaParser {
     }
 
     private Stmt parseFallthrough() {
-        expectToken(SEMI);
-        return new Fallthrough(acceptedPos);
+        int pos = acceptedPos;
+        Expr target = null;
+        boolean hasTarget = false;
+        if (!acceptToken(SEMI)) {
+            if (!acceptToken(ELSE)) {
+                target = parseExpression();
+            }
+            expectToken(SEMI);
+            hasTarget = true;
+        }
+        return new Fallthrough(pos, target, hasTarget);
     }
 
     private FuncDef parseFunction() {

@@ -166,6 +166,9 @@ public class Check extends Scanner {
         if (!allowsFallthrough) {
             report(tree.pos, "fallthrough-statement is allowed only inside switch-case");
         }
+        if (tree.target != null) {
+            requireLiteralTree(tree.target);
+        }
     }
 
     @Override

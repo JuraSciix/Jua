@@ -9,6 +9,8 @@ import jua.compiler.utils.Flow;
 import jua.compiler.utils.IntArrayList;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import static jua.compiler.Code.mergeChains;
 import static jua.compiler.InstructionUtils.*;
@@ -36,6 +38,10 @@ public class Gen extends Scanner {
         final IntArrayList switchCaseOffsets = new IntArrayList();
         /** Указатель на точку входа в default-case */
         int switchDefaultOffset = -1;
+
+        /** label constant index => chain */
+        final Map<Integer, Chain> caseChains = new HashMap<>();
+        Chain elseCaseChain;
 
         SwitchEnv(FlowEnv parent) {
             super(parent);
@@ -203,6 +209,22 @@ public class Gen extends Scanner {
             env.switchDefaultOffset = code.pc() - 1;
         }
 
+        // resolving fallthrough
+        for (Map.Entry<Integer, Chain> entry : env.caseChains.entrySet()) {
+            int labelIndex = entry.getKey();
+            Chain chain = entry.getValue();
+            int index = env.caseLabelsConstantIndexes.indexOf(labelIndex);
+            if (index >= 0) {
+                int offset = env.switchCaseOffsets.get(index);
+                code.resolve(chain, offset);
+            } else {
+                code.resolve(chain);
+            }
+        }
+        if (env.elseCaseChain != null && env.switchDefaultOffset >= 0) {
+            code.resolve(env.elseCaseChain, env.switchDefaultOffset);
+        }
+
         node.literals = env.caseLabelsConstantIndexes.toArray();
         node.dstIps = env.switchCaseOffsets.toArray();
         node.defCp = env.switchDefaultOffset;
@@ -225,7 +247,8 @@ public class Gen extends Scanner {
             env.switchDefaultOffset = code.pc();
         } else {
             Flow.forEach(tree.labels, label -> {
-                env.caseLabelsConstantIndexes.add(genExpr(label).constantIndex());
+                int labelIndex = genExpr(label).constantIndex();
+                env.caseLabelsConstantIndexes.add(labelIndex);
                 // Это не ошибка. Следующая строчка должна находиться именно в цикле
                 // Потому что инструкция switch ассоциирует значения к переходам в масштабе 1 к 1.
                 env.switchCaseOffsets.add(code.pc());
@@ -258,10 +281,22 @@ public class Gen extends Scanner {
 
     @Override
     public void visitFallthrough(Fallthrough tree) {
-        FlowEnv env = searchEnv(true);
+        SwitchEnv env = (SwitchEnv) searchEnv(true);
         Assert.checkNonNull(env);
         code.putPos(tree.pos);
-        env.contChain = mergeChains(env.contChain, code.branch(OPCodes.Goto));
+        Chain branch = code.branch(OPCodes.Goto);
+        if (tree.hasTarget) {
+            if (tree.target == null) {
+                // fallthrough else;
+                env.elseCaseChain = mergeChains(env.elseCaseChain, branch);
+            } else {
+                int labelIndex = genExpr(tree.target).constantIndex();
+                env.caseChains.put(labelIndex,
+                        mergeChains(env.caseChains.get(labelIndex), branch));
+            }
+        } else {
+            env.contChain = mergeChains(env.contChain, branch);
+        }
         code.setAlive(false);
     }
 

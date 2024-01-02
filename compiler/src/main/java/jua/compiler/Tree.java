@@ -267,7 +267,9 @@ public abstract class Tree {
         public void visitContinue(Continue tree) { }
 
         @Override
-        public void visitFallthrough(Fallthrough tree) {}
+        public void visitFallthrough(Fallthrough tree) {
+            scan(tree.target);
+        }
 
         @Override
         public void visitVarDef(VarDef tree) {
@@ -449,7 +451,10 @@ public abstract class Tree {
         public void visitContinue(Continue tree) { result = tree; }
 
         @Override
-        public void visitFallthrough(Fallthrough tree) { result = tree; }
+        public void visitFallthrough(Fallthrough tree) {
+            tree.target = translate(tree.target);
+            result = tree;
+        }
 
         @Override
         public void visitVarDef(VarDef tree) {
@@ -800,8 +805,13 @@ public abstract class Tree {
 
     public static class Fallthrough extends Stmt {
 
-        public Fallthrough(int pos) {
+        public Expr target;
+        public boolean hasTarget;
+
+        public Fallthrough(int pos, Expr target, boolean hasTarget) {
             super(pos);
+            this.target = target;
+            this.hasTarget = hasTarget;
         }
 
         @Override
