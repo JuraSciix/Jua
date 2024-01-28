@@ -19,14 +19,14 @@ public final class Module {
         public final int regSize;
         public final int stackSize;
         public final Object[] constantPool; // todo: replace with compiler object
-        public final LNT lineNumberTable;
+        public final LineNumberTable lineNumberTable;
         public final int reqargs, totargs;
         public final Object[] defs;
         public final String[] varnames;
 
         public Executable(String name, String fileName, InstructionUtils.InstrNode[] code,
                           int regSize, int stackSize, Object[] constantPool,
-                          LNT lineNumberTable, int reqargs, int totargs, Object[] defs, String[] varnames) {
+                          LineNumberTable lineNumberTable, int reqargs, int totargs, Object[] defs, String[] varnames) {
             this.name = name;
             this.fileName = fileName;
             this.code = code;

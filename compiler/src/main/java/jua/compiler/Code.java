@@ -205,7 +205,7 @@ public final class Code {
                 sym.params);
     }
 
-    private LNT buildLineNumberTable() {
+    private LineNumberTable buildLineNumberTable() {
         int size = cpLineMap.size();
         short[] shortCodePoints = new short[size];
         int[] lineNumbers = new int[size];
@@ -217,7 +217,7 @@ public final class Code {
             i++;
         }
 
-        return new LNT(shortCodePoints, lineNumbers);
+        return new LineNumberTable(shortCodePoints, lineNumbers);
     }
 
     public void resolve(Chain chain) {

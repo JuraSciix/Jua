@@ -1,11 +1,11 @@
 package jua.compiler;
 
-public class LNT {
+public class LineNumberTable {
 
     public final short[] codePoints;
     public final int[] lineNumbers;
 
-    public LNT(short[] codePoints, int[] lineNumbers) {
+    public LineNumberTable(short[] codePoints, int[] lineNumbers) {
         this.codePoints = codePoints;
         this.lineNumbers = lineNumbers;
     }

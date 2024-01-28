@@ -2,17 +2,15 @@ package jua;
 
 import jua.compiler.Code;
 import jua.compiler.InstructionUtils;
-import jua.compiler.LNT;
+import jua.compiler.LineNumberTable;
 import jua.compiler.Module;
 import jua.runtime.Function;
 import jua.runtime.code.CodeData;
 import jua.runtime.code.ConstantPool;
-import jua.runtime.code.LineNumberTable;
 import jua.runtime.code.ResolvableCallee;
 import jua.runtime.interpreter.instruction.Instruction;
 import jua.runtime.interpreter.memory.Address;
 import jua.runtime.interpreter.memory.AddressSupport;
-import jua.runtime.interpreter.memory.AddressUtils;
 
 import java.util.Arrays;
 
@@ -58,8 +56,8 @@ public class Executable2FunctionTranslator {
         return new ConstantPool(runtimeElements);
     }
 
-    private static LineNumberTable toLineNumTable(LNT lnt) {
-        return new LineNumberTable(lnt.codePoints, lnt.lineNumbers);
+    private static jua.runtime.code.LineNumberTable toLineNumTable(LineNumberTable lnt) {
+        return new jua.runtime.code.LineNumberTable(lnt.codePoints, lnt.lineNumbers);
     }
 
     private static Instruction[] translateCode(InstructionUtils.InstrNode[] a) {
