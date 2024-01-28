@@ -71,7 +71,6 @@ public final class Tokens {
         LBRACE("{"),
         LBRACKET("["),
         LPAREN("("),
-        LTGT("<>"),
         NULL("null"),
         QUES("?"),
         RBRACE("}"),
