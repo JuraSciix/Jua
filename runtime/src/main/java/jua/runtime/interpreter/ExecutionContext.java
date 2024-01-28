@@ -445,9 +445,12 @@ public final class ExecutionContext {
             return;
         }
 
+        int selectorHash = selector.hashCode();
+
         for (int i = 0; i < labels.length; i++) {
             Address k = getConstantPool().getAddressEntry(labels[i]);
-            if (selector.fastCompareWith(k, 1) == 0) {
+            int kHash = k.hashCode();
+            if (selectorHash == kHash && selector.fastCompareWith(k, 1) == 0) {
                 setNextCp(cps[i]);
                 return;
             }
