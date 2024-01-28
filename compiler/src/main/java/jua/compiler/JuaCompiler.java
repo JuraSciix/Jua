@@ -79,7 +79,7 @@ public final class JuaCompiler {
             System.exit(1);
             return null;
         }
-        Log log = new Log(stderr, logLimit);
+        Log log = new SimpleLog(stderr, logLimit);
         Source source = new Source(file, filecontents);
 
         if (lintMode) {
