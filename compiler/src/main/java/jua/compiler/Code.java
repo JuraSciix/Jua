@@ -153,6 +153,31 @@ public final class Code {
         this.alive = alive;
     }
 
+    public static class Callee {
+        public int utf8Hash;
+        public int utf8;
+
+        public Callee(String utf8, int utf8Index) {
+            this.utf8Hash = utf8.hashCode();
+            this.utf8 = utf8Index;
+        }
+
+        @Override
+        public int hashCode() {
+            return utf8Hash;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            // o == this почти всегда false.
+            return (o instanceof Callee) && ((Callee) o).utf8 == utf8;
+        }
+    }
+
+    public int resolveCallee(String name) {
+        return resolveConstant(new Callee(name, resolveConstant(name)));
+    }
+
     public int resolveConstant(Object o) {
         return constantPool.computeIfAbsent(o, o1 -> {
             int d = constantPool.size();
@@ -174,8 +199,8 @@ public final class Code {
                 limTos,
                 getConstantPoolEntries(),
                 buildLineNumberTable(),
-                sym.minArgc,
-                sym.maxArgc,
+                sym.loargc,
+                sym.hiargc,
                 sym.defs,
                 sym.params);
     }

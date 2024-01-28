@@ -297,6 +297,6 @@ public class ModulePrinter {
     }
 
     public void printFuncRef(int index) {
-        instrData.operands.add('"' + module.functionNames[index] + '"');
+        printLiteral(index);
     }
 }

@@ -12,14 +12,13 @@ import jua.runtime.interpreter.memory.Address;
 import jua.stdlib.NativeStdlib;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Main {
 
     private static Module module;
-    private static final Map<Integer, Function> nativeFunctions = new HashMap<>();
+    private static Function[] nativeFunctions;
 
 
     public static void main(String[] args) {
@@ -59,10 +58,12 @@ public class Main {
 
         // Регистрируем нативные члены.
         ModuleScope ms = c.getModuleScope();
-        for (Function f : NativeStdlib.getNativeFunctions()) {
-            FunctionSymbol sym = ms.defineNativeFunction(f.name, f.minArgc, f.maxArgc,
-                    Arrays.stream(f.defaults).map(Address::toObject).toArray(), f.params);
-            nativeFunctions.put(sym.id, f);
+
+        nativeFunctions = NativeStdlib.getNativeFunctions().toArray(new Function[0]);
+        for (int i = 0; i < nativeFunctions.length; i++) {
+            Function f = nativeFunctions[i];
+            ms.defineNativeFunction(f.name, f.minArgc, f.maxArgc,
+                    Arrays.stream(f.defaults).map(Address::toObject).toArray(), f.params, i);
         }
 
         module = c.compile();
@@ -78,22 +79,18 @@ public class Main {
     }
 
     private static void interpret() {
-        Function[] functions = Arrays.stream(module.executables)
+        List<Function> functions = Arrays.stream(module.executables)
                 .map(Executable2FunctionTranslator::translate)
-                .toArray(Function[]::new);
+                .collect(Collectors.toList());
 
-        // Привязываем нативные функции к их дескрипторам.
-        for (Map.Entry<Integer, Function> nativeFn : nativeFunctions.entrySet()) {
-            assert functions[nativeFn.getKey()] == null;
-            functions[nativeFn.getKey()] = nativeFn.getValue();
-        }
+        Collections.addAll(functions, nativeFunctions);
 
-        Function mainFn = Arrays.stream(functions)
+        Function mainFn = functions.stream()
                 .filter(f -> f.name.equals("<main>"))
                 .findAny().orElseThrow(AssertionError::new);
 
         InterpreterThread thread = new InterpreterThread(Thread.currentThread(),
-                new JuaEnvironment(functions));
+                new JuaEnvironment(functions.toArray(new Function[0])));
         Address resultReceiver = new Address();
         thread.callAndWait(mainFn, new Address[0], resultReceiver);
         // Если будет интересно, что вернул код, то можно напечатать resultReceiver.

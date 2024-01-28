@@ -386,7 +386,8 @@ public class Gen extends Scanner {
         code.putPos(tree.pos);
         if (tree.sym.opcode == 0) {
             // Обычный вызов функции
-            code.emitCall(tree.sym.id, Flow.count(tree.args));
+            int calleeId = code.resolveCallee(tree.sym.name);
+            code.emitCall(calleeId, Flow.count(tree.args));
         } else {
             // Языковая конструкция
             code.emitSingle(tree.sym.opcode);

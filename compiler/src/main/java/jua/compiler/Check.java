@@ -187,13 +187,13 @@ public class Check extends Scanner {
         Assert.checkNonNull(calleeSym);
 
         int count = Flow.count(tree.args);
-        if (count > calleeSym.maxArgc) {
-            report(tree.pos, "cannot call function %s: too many arguments: %d total, %d passed", calleeSym.name, calleeSym.maxArgc, count);
+        if (count > calleeSym.hiargc) {
+            report(tree.pos, "cannot call function %s: too many arguments: %d total, %d passed", calleeSym.name, calleeSym.hiargc, count);
             return;
         }
 
-        if (count < calleeSym.minArgc) {
-            report(tree.pos, "cannot call function %s: too few arguments: %d required, %d passed", calleeSym.name, calleeSym.minArgc, count);
+        if (count < calleeSym.loargc) {
+            report(tree.pos, "cannot call function %s: too few arguments: %d required, %d passed", calleeSym.name, calleeSym.loargc, count);
             return;
         }
 

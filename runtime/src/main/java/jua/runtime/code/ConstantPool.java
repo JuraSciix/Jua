@@ -20,8 +20,8 @@ public final class ConstantPool {
         this.entries = entries;
     }
 
-    public Function getCallee(int index) {
-        return (Function) entries[index];
+    public ResolvableCallee getCallee(int index) {
+        return (ResolvableCallee) entries[index];
     }
 
     public Address getAddressEntry(int index) {

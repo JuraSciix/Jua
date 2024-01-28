@@ -3,41 +3,37 @@ package jua.compiler;
 import jua.compiler.Tree.FuncDef;
 import jua.compiler.utils.Flow;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public final class ModuleScope {
 
     // todo: Переместить все классы *Symbol в отдельный файл Symbols.java
-    // todo: Убрать числовые идентификаторы у функций. Они должны определяться во время выполнения.
 
     public static class FunctionSymbol {
 
         public final String name;
-        public final int id;
-        public final int minArgc, maxArgc;
-        public Object[] defs;
-        public final String[] params; // null if tree is null
+        public final int loargc, hiargc;
+        public final String[] params;
+
+        public Object[] defs; // У пользовательских функций изначально всегда null, потом в Gen устанавливается
         public Code code;
 
         public Module.Executable executable;
         public int nlocals;
-        public int opcode;
+        public int opcode = 0; // Не равно нулю, если языковая конструкция
+        public int nativeHandle = -1; // Неотрицательно, если это заглушка для нативной функции.
 
-        FunctionSymbol(String name, int id, int minArgc, int maxArgc, Object[] defs, String[] params) {
+        FunctionSymbol(String name, int loargc, int hiargc, String[] params, Object[] defs) {
             this.name = name;
-            this.id = id;
-            this.minArgc = minArgc;
-            this.maxArgc = maxArgc;
-            this.defs = defs;
+            this.loargc = loargc;
+            this.hiargc = hiargc;
             this.params = params;
+            this.defs = defs;
         }
     }
 
     public static class VarSymbol {
-
         public final int id;
 
         VarSymbol(int id) {
@@ -45,8 +41,7 @@ public final class ModuleScope {
         }
     }
 
-    private final LinkedHashMap<String, FunctionSymbol> functions = new LinkedHashMap<>();
-    private int funcnextaddr = 0;
+    private final Map<String, FunctionSymbol> functions = new HashMap<>();
 
     public ModuleScope() {
         registerOperators();
@@ -68,37 +63,29 @@ public final class ModuleScope {
     }
 
     private void registerOperator(String name, Signature signature, int opcode) {
-        FunctionSymbol symbol = new FunctionSymbol(name, -1, signature.argc, signature.argc, new Object[0], signature.names);
+        FunctionSymbol symbol = new FunctionSymbol(name, signature.argc, signature.argc, signature.names, new Object[0]);
         symbol.opcode = opcode;
         functions.put(name, symbol);
     }
-
 
     public boolean isFunctionDefined(String name) {
         return functions.containsKey(name);
     }
 
-    public FunctionSymbol defineNativeFunction(String name, int minArgc, int maxArgc, Object[] defs, String[] params) {
+    public FunctionSymbol defineNativeFunction(String name, int minArgc, int maxArgc, Object[] defs, String[] params,
+                                               int nativeHandle) {
         // todo: Именованные аргументы у нативных функций
         if (functions.containsKey(name)) {
             throw new IllegalArgumentException("Duplicate function: " + name);
         }
-        int nextId = funcnextaddr++;
-        FunctionSymbol sym = new FunctionSymbol(
-                name,
-                nextId,
-                minArgc,
-                maxArgc,
-                defs,
-                params
-        );
+        FunctionSymbol sym = new FunctionSymbol(name, minArgc, maxArgc, params, defs);
+        sym.nativeHandle = nativeHandle;
         functions.put(name, sym);
         return sym;
     }
 
     public FunctionSymbol defineUserFunction(FuncDef tree, int nlocals) {
         String name = tree.name;
-        int nextId = funcnextaddr++;
         // The legacy code is present below
         List<String> params = new ArrayList<>();
 
@@ -117,11 +104,10 @@ public final class ModuleScope {
         });
         FunctionSymbol sym = new FunctionSymbol(
                 name,
-                nextId,
                 a.min,
                 a.max,
-                null,
-                params.toArray(new String[0])
+                params.toArray(new String[0]),
+                null // Потом будет установлено
         );
         sym.nlocals = nlocals;
         functions.put(name, sym);
@@ -131,10 +117,10 @@ public final class ModuleScope {
     public FunctionSymbol defineStubFunction(String name) {
         FunctionSymbol sym = new FunctionSymbol(
                 name,
-                -1,
                 0,
                 255,
-                new Object[0], null
+                null,
+                new Object[0]
         );
         functions.put(name, sym);
         return sym;
@@ -144,19 +130,9 @@ public final class ModuleScope {
         return functions.get(name);
     }
 
-    public Module.Executable[] collectExecutables() {
-        Module.Executable[] executables = new Module.Executable[funcnextaddr];
-        this.functions.values().forEach(symbol -> {
-            if (symbol.id < 0) return;
-            executables[symbol.id] = symbol.executable;
-        });
-        return executables;
-    }
-
-    public String[] functionNames() {
-        return functions.entrySet().stream()
-                .filter(e -> e.getValue().id >= 0)
-                .map(Map.Entry::getKey)
-                .toArray(String[]::new);
+    public Collection<FunctionSymbol> getUserFunctions() {
+        return functions.values().stream()
+                .filter(s -> s.nativeHandle < 0 && s.opcode == 0)
+                .collect(Collectors.toList());
     }
 }

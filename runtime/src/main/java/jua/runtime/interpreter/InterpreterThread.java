@@ -136,8 +136,8 @@ public final class InterpreterThread {
         this.msg = msg;
     }
 
-    public void prepareCall(int calleeId, int argCount, Memory argMemory) {
-        callee = getEnvironment().getFunction(calleeId);
+    public void prepareCall(Function calleeFn, int argCount, Memory argMemory) {
+        callee = calleeFn;
         numArgs = argCount;
         returnAddress = argMemory.getAddress(0);
         this.argMemory = argMemory;

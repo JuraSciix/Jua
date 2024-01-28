@@ -6,8 +6,6 @@ public final class Module {
 
     public final Executable[] executables;
 
-    public String[] functionNames;
-
     public Module(Source source, Executable[] executables) {
         this.source = source;
         this.executables = executables;

@@ -1,7 +1,9 @@
 package jua.runtime.interpreter;
 
+import jua.runtime.Function;
 import jua.runtime.Types;
 import jua.runtime.code.ConstantPool;
+import jua.runtime.code.ResolvableCallee;
 import jua.runtime.heap.ListHeap;
 import jua.runtime.interpreter.memory.Address;
 import jua.runtime.interpreter.memory.Memory;
@@ -491,9 +493,19 @@ public final class ExecutionContext {
     }
 
     public void doCall(int calleeId, int argCount) {
+        ResolvableCallee callee = getConstantPool().getCallee(calleeId);
+        Function fn;
+        if (callee.isResolved()) {
+            fn = callee.getResolved();
+        } else {
+            String name = getConstantPool().getAddressEntry(callee.getUtf8()).stringVal().toString();
+            System.out.println("Resolving: " + name);
+            fn = getThread().getEnvironment().findFunc(name);
+            callee.setResolved(fn);
+        }
         InterpreterState s = getState();
         Memory argMemory = s.getStack().subRegion(s.getTos() - argCount, Math.max(argCount, 1));
-        getThread().prepareCall(calleeId, argCount, argMemory);
+        getThread().prepareCall(fn, argCount, argMemory);
         s.addTos(-argCount + 1);
     }
 

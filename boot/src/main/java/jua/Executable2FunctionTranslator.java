@@ -1,5 +1,6 @@
 package jua;
 
+import jua.compiler.Code;
 import jua.compiler.InstructionUtils;
 import jua.compiler.LNT;
 import jua.compiler.Module;
@@ -7,6 +8,7 @@ import jua.runtime.Function;
 import jua.runtime.code.CodeData;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.LineNumberTable;
+import jua.runtime.code.ResolvableCallee;
 import jua.runtime.interpreter.instruction.Instruction;
 import jua.runtime.interpreter.memory.Address;
 import jua.runtime.interpreter.memory.AddressSupport;
@@ -17,10 +19,6 @@ import java.util.Arrays;
 public class Executable2FunctionTranslator {
 
     public static Function translate(Module.Executable executable) {
-        if (executable == null) {
-            // Native
-            return null;
-        }
         return new Function(
                 executable.name,
                 executable.fileName,
@@ -47,11 +45,17 @@ public class Executable2FunctionTranslator {
     }
 
     private static ConstantPool getConstantPool(Object[] values) {
-        Address[] addresses = AddressUtils.allocateMemory(values.length, 0);
+        Object[] runtimeElements = new Object[values.length];
         for (int i = 0; i < values.length; i++) {
-            AddressSupport.assignObject(addresses[i], values[i]);
+            if (values[i] instanceof Code.Callee) {
+                runtimeElements[i] = new ResolvableCallee(((Code.Callee) values[i]).utf8);
+            } else {
+                Address address = new Address();
+                AddressSupport.assignObject(address, values[i]);
+                runtimeElements[i] = address;
+            }
         }
-        return new ConstantPool(addresses);
+        return new ConstantPool(runtimeElements);
     }
 
     private static LineNumberTable toLineNumTable(LNT lnt) {

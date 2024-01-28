@@ -111,11 +111,11 @@ public final class JuaCompiler {
                 programScope.lookupFunction(funcDef.name).executable = funcDef.sym.executable;
             });
 
-            Module.Executable[] functions = programScope.collectExecutables();
+            Module.Executable[] functions = programScope.getUserFunctions().stream()
+                    .map(s -> s.code.toExecutable())
+                    .toArray(Module.Executable[]::new);
 
-            Module m = new Module(source, functions);
-            m.functionNames = moduleScope.functionNames();
-            return m;
+            return new Module(source, functions);
         } catch (RuntimeException e) {
             System.err.println("Compiler error occurred");
             e.printStackTrace();
