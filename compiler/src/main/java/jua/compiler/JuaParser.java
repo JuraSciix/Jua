@@ -79,10 +79,6 @@ public final class JuaParser {
                 nextToken();
                 return parseBreak();
             }
-            case CONST: {
-                nextToken();
-                reportError(acceptedPos, "constant declaration is not allowed here");
-            }
             case CONTINUE: {
                 nextToken();
                 return parseContinue();
@@ -370,21 +366,17 @@ public final class JuaParser {
         Expr expr = parseConditional();
         int pos = token.pos;
 
-        if (acceptToken(EQ))
+        if (acceptToken(EQ)) {
             return new Assign(pos, expr, parseAssignment());
+        }
 
-        if (matchesEnhancedAsgOp()) {
+        if (TokenType.isEnhancedAsgOperator(token.type)) {
             Tag tag = TreeInfo.getAsgTag(token.type);
             nextToken();
             return new EnhancedAssign(pos, tag, expr, parseAssignment());
         }
 
         return expr;
-    }
-
-    private boolean matchesEnhancedAsgOp() {
-        TokenType type = token.type;
-        return type.compareTo(AMPEQ) >= 0 && 0 >= type.compareTo(STAREQ);
     }
 
     Expr parseConditional() {
@@ -411,7 +403,7 @@ public final class JuaParser {
         Expr lhs = parseUnary();
         BinaryOp prev = null;
 
-        while (matchesBinOp()) {
+        while (TokenType.isBinaryOperator(token.type)) {
             int pos = acceptedPos;
             Tag tag = TreeInfo.getBinOpTag(token.type);
             nextToken();
@@ -429,27 +421,16 @@ public final class JuaParser {
         return lhs;
     }
 
-    private boolean matchesBinOp() {
-        TokenType type = token.type;
-        return type.compareTo(AMP) >= 0 && 0 >= type.compareTo(PLUS);
-    }
-
     Expr parseUnary() {
         int pos = token.pos;
 
-        if (matchesUnaryOp()) {
+        if (TokenType.isUnaryOperator(token.type)) {
             Tag tag = getUnaryOpTag(token.type);
             nextToken();
             return new UnaryOp(pos, tag, parseUnary());
         }
 
         return parsePost();
-    }
-
-    private boolean matchesUnaryOp() {
-        TokenType type = token.type;
-        return type.compareTo(BANG) >= 0 && 0 >= type.compareTo(AT) ||
-                type == PLUS || type == MINUS;
     }
 
     Expr parsePost() {

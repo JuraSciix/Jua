@@ -7,25 +7,25 @@ public final class Tokens {
 
     public enum TokenType {
         // BINARY OPERATORS
+        PLUS("+"),
+        MINUS("-"),
+        STAR("*"),
+        SLASH("/"),
+        PERCENT("%"),
         AMP("&"),
-        AMPAMP("&&"),
-        CARET("^"),
-        BANGEQ("!="),
         BAR("|"),
-        BARBAR("||"),
-        EQEQ("=="),
+        CARET("^"),
+        GTGT(">>"),
+        LTLT("<<"),
         GT(">"),
         GTEQ(">="),
-        GTGT(">>"),
         LT("<"),
-        LTLT("<<"),
-        PERCENT("%"),
-        QUESQUES("??"),
-        SLASH("/"),
-        STAR("*"),
         LTEQ("<="),
-        MINUS("-"),
-        PLUS("+"),
+        EQEQ("=="),
+        BANGEQ("!="),
+        AMPAMP("&&"),
+        BARBAR("||"),
+        QUESQUES("??"),
 
         // UNARY OPERATORS,
         BANG("!"),
@@ -36,54 +36,58 @@ public final class Tokens {
 
         EQ("="),
         // ENHANCED ASG OPERATORS,
+        PLUSEQ("+="),
+        MINUSEQ("-="),
+        STAREQ("*="),
+        SLASHEQ("/="),
+        PERCENTEQ("%="),
         AMPEQ("&="),
+        BAREQ("|="),
+        CARETEQ("^="),
         GTGTEQ(">>="),
         LTLTEQ("<<="),
-        CARETEQ("^="),
-        PERCENTEQ("%="),
-        PLUSEQ("+="),
         QUESQUESEQ("??="),
-        SLASHEQ("/="),
-        MINUSEQ("-="),
-        BAREQ("|="),
-        STAREQ("*="),
 
-        ARROW("->"),
+        // STATEMENT KEYWORDS
         BREAK("break"),
-        COL(":"),
-        COMMA(","),
         CONST("const"),
         CONTINUE("continue"),
-        CUSTOM,
         DO("do"),
-        DOT("."),
         ELSE("else"),
-        EOF,
         FALLTHROUGH("fallthrough"),
         FALSE("false"),
-        FLOATLITERAL(TokenKind.NUMERIC),
         FN("fn"),
         FOR("for"),
-        IDENTIFIER(TokenKind.NAMED),
         IF("if"),
-        INTLITERAL(TokenKind.NUMERIC),
-        INVALID,
-        LBRACE("{"),
-        LBRACKET("["),
-        LPAREN("("),
-        NULL("null"),
-        QUES("?"),
-        RBRACE("}"),
-        RBRACKET("]"),
         RETURN("return"),
-        RPAREN(")"),
-        SEMI(";"),
-        STRINGLITERAL(TokenKind.STRING),
         SWITCH("switch"),
         TRUE("true"),
         VAR("var"),
         WHILE("while"),
-        YIELD("yield");
+        YIELD("yield"),
+
+        // EXPRESSION KEYWORDS
+        NULL("null"),
+
+        ARROW("->"),
+        COL(":"),
+        COMMA(","),
+        CUSTOM,
+        DOT("."),
+        EOF,
+        STRINGLITERAL(TokenKind.STRING),
+        FLOATLITERAL(TokenKind.NUMERIC),
+        IDENTIFIER(TokenKind.NAMED),
+        INTLITERAL(TokenKind.NUMERIC),
+        LBRACE("{"),
+        LBRACKET("["),
+        LPAREN("("),
+        QUES("?"),
+        RBRACE("}"),
+        RBRACKET("]"),
+        RPAREN(")"),
+        SEMI(";"),
+        INVALID;
 
         private static final Map<String, TokenType> LOOKUP = new HashMap<>(16, 1f);
 
@@ -97,6 +101,23 @@ public final class Tokens {
 
         public static TokenType lookup(String value) {
             return LOOKUP.get(value);
+        }
+
+        private static boolean checkRange(TokenType target, TokenType lo, TokenType hi) {
+            int o = target.ordinal();
+            return lo.ordinal() <= o && o <= hi.ordinal();
+        }
+
+        public static boolean isBinaryOperator(TokenType t) {
+            return checkRange(t, PLUS, QUESQUES);
+        }
+
+        public static boolean isUnaryOperator(TokenType t) {
+            return checkRange(t, BANG, AT) || t == PLUS || t == MINUS;
+        }
+
+        public static boolean isEnhancedAsgOperator(TokenType t) {
+            return checkRange(t, PLUSEQ, QUESQUESEQ);
         }
 
         public final String value;
