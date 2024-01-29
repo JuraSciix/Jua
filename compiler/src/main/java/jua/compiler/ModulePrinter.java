@@ -11,6 +11,7 @@ import static jua.compiler.InstructionUtils.*;
 public class ModulePrinter {
 
     private static final boolean PRINT_STACK_ADJUSTMENT = true;
+    private static final boolean COLORIZE = true;
 
     private class Case {
         final int[] operands;
@@ -46,7 +47,15 @@ public class ModulePrinter {
             }
 
             if (PRINT_STACK_ADJUSTMENT) {
-                print(String.format("%2s %-5d", (tosAdjustment > 0) ? "+" + tosAdjustment : tosAdjustment, tos));
+                if (COLORIZE){
+                    print(String.format("%2s\u001b[0m %-5d", (tosAdjustment > 0)
+                            ? "\u001b[32m+" + tosAdjustment
+                            : (tosAdjustment == 0 ? "  " : "\u001b[31m" + tosAdjustment), tos));
+                } else {
+                    print(String.format("%2s %-5d", (tosAdjustment > 0)
+                            ? "32m+" + tosAdjustment
+                            : (tosAdjustment == 0 ? "  " : tosAdjustment), tos));
+                }
             }
 
             print(String.format("%5s: %-12s %s ", pc, name, String.join(", ", operands)));
@@ -297,6 +306,7 @@ public class ModulePrinter {
     }
 
     public void printFuncRef(int index) {
-        printLiteral(index);
+        Code.Callee o = (Code.Callee) executable.constantPool[index];
+        printLiteral(o.utf8);
     }
 }
