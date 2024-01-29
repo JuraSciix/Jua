@@ -502,7 +502,6 @@ public final class ExecutionContext {
             fn = callee.getResolved();
         } else {
             String name = getConstantPool().getAddressEntry(callee.getUtf8()).stringVal().toString();
-            System.out.println("Resolving: " + name);
             fn = getThread().getEnvironment().findFunc(name);
             callee.setResolved(fn);
         }
