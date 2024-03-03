@@ -47,6 +47,42 @@ public final class Function {
         this.nativeBody = nativeBody;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public String getModule() {
+        return module;
+    }
+
+    public int getMinArgc() {
+        return minArgc;
+    }
+
+    public int getMaxArgc() {
+        return maxArgc;
+    }
+
+    public String[] getParams() {
+        return params;
+    }
+
+    public Address[] getDefaults() {
+        return defaults;
+    }
+
+    public long getFlags() {
+        return flags;
+    }
+
+    public CodeData getCode() {
+        return code;
+    }
+
+    public NativeExecutor getNativeBody() {
+        return nativeBody;
+    }
+
     public boolean isUserDefined() {
         return (flags & FLAG_NATIVE) == 0;
     }

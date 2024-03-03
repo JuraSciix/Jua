@@ -1,23 +1,34 @@
 package jua.runtime;
 
-public class JuaEnvironment {
+import java.util.HashMap;
+import java.util.Map;
 
-    final Function[] functions;
+public final class JuaEnvironment {
 
-    public JuaEnvironment(Function[] functions) {
-        this.functions = functions;
+    private final Map<String, Function> fntab = new HashMap<>();
+
+    public void addFunction(Function function) {
+        if (function == null) {
+            throw new NullPointerException("Function");
+        }
+
+        String name = function.getName();
+        synchronized (fntab) {
+            if (fntab.containsKey(name)) {
+                throw new RuntimeErrorException("Unable to override function \"" + name + "\"");
+            }
+            fntab.put(name, function);
+        }
     }
 
-    public Function findFunc(String name) {
-        for (Function function : functions) {
-            if (function.name.equals(name)) {
-                return function;
+    public Function lookupFunction(String name) {
+        if (!fntab.containsKey(name)) {
+            synchronized (fntab) {
+                if (!fntab.containsKey(name)) {
+                    throw new RuntimeErrorException("Function \"" + name + "\" doesnt exist");
+                }
             }
         }
-        return null;
-    }
-
-    public Function getFunction(int id) {
-        return functions[id];
+        return fntab.get(name);
     }
 }

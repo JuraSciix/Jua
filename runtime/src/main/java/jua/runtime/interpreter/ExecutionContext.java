@@ -496,7 +496,7 @@ public final class ExecutionContext {
             fn = callee.getResolved();
         } else {
             String name = getConstantPool().getAddressEntry(callee.getUtf8()).stringVal().toString();
-            fn = getThread().getEnvironment().findFunc(name);
+            fn = getThread().getEnvironment().lookupFunction(name);
             callee.setResolved(fn);
         }
         getThread().prepareCall(fn, argCount);
