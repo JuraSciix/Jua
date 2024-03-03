@@ -190,17 +190,17 @@ public final class InterpreterThread {
     public boolean callAndWait(Function function, Address[] args, Address returnAddress) {
         set_msg(MSG_CALLING_FRAME);
         callee = function;
-        if (args.length > 0) {
-            // Подло подменяем адрес.. Пока что это вынужденная мера
-            returnAddress.set(args[0]);
-            args[0] = returnAddress;
-        }
         for (Address arg : args) {
             stack().push(arg);
         }
         numArgs = args.length;
         run();
-        return !isCrashed();
+        if (isCrashed()) {
+            return false;
+        } else {
+            returnAddress.set(stack().popGet());
+            return true;
+        }
     }
 
     public StackTraceElement[] getStackTrace() {
