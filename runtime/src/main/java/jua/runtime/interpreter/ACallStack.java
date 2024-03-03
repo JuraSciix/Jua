@@ -29,7 +29,7 @@ public class ACallStack implements CallStack {
     }
 
     @Override
-    public void push(Function function, int stackBase) {
+    public void push(Function function) {
         InterpreterFrame caller = current();
         SingleInterpreterFrame frame = frames[top];
         frame.setFunction(function);
@@ -41,7 +41,6 @@ public class ACallStack implements CallStack {
             state.setSlots(frameSlotsMemMgr.allocate(cd.locals));
             frame.setState(state);
         }
-        frame.setStackBase(stackBase);
         frame.setCaller(caller);
         top++;
     }

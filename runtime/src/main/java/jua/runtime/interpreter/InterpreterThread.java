@@ -94,14 +94,14 @@ public final class InterpreterThread {
     private void enterFrame() {
         Assert.checkNonNull(callee, "callee is not set");
 
-        callStack.push(callee, stack().tos() - numArgs);
+        callStack.push(callee);
         if ((callee.flags & Function.FLAG_NATIVE) != 0) {
             set_msg(MSG_RUNNING_FRAME);
             Address[] args = AddressUtils.allocateMemory(numArgs, 0);
             for (int i = 0; i < numArgs; i++) {
-                args[numArgs - i - 1].set(stack().pop());
+                args[numArgs - i - 1].set(stack().popGet());
             }
-            boolean success = callee.nativeExecutor().execute(args, numArgs, stack().push());
+            boolean success = callee.nativeExecutor().execute(args, numArgs, stack().pushGet());
             if (success) {
                 set_msg(MSG_POPPING_FRAME);
                 callStack.pop();
@@ -112,7 +112,7 @@ public final class InterpreterThread {
         } else {
             InterpreterState state = callStack.current().getState();
             for (int i = 0; i < numArgs; i++) {
-                state.getSlots().getAddress(numArgs - i - 1).set(stack().pop());
+                state.getSlots().getAddress(numArgs - i - 1).set(stack().popGet());
             }
             for (int i = numArgs; i < callee.maxArgc; i++) {
                 state.getSlots().getAddress(i).set(callee.defaults[i - callee.minArgc]);
@@ -122,7 +122,7 @@ public final class InterpreterThread {
     }
 
     private void leaveFrame() {
-        stack.clear(callStack.current().stackBase() + 1); // except retuning value
+        stack.cleanup();
         callStack.pop();
         if (callStack.current() == null) {
             interrupt(); // Выполнять более нечего
@@ -146,7 +146,7 @@ public final class InterpreterThread {
     }
 
     public void leave() {
-        stack().push().setNull();
+        stack().pushGet().setNull();
         doReturn();
     }
 
@@ -266,7 +266,7 @@ public final class InterpreterThread {
                 details = "<NATIVE>";
             } else {
                 details = "CP=" + currentFrame().getState().getCp() +
-                        ", SP=" + (stack().tos() - currentFrame().stackBase());
+                        ", SP=" + (stack().tos());
             }
             printStackTrace();
             t.printStackTrace();
@@ -318,12 +318,19 @@ public final class InterpreterThread {
             context.setConstantPool(currentFrame().getFunction().userCode().constantPool());
 
             while (isRunning()) {
+                stack().validate();
                 int cp = context.getNextCp();
+                int tos = stack().tos();
                 context.setNextCp(cp + 1);
                 code[cp].execute(context);
 
                 if (DEBUG) {
                     stack.debugUpdate(code[cp].getClass().getSimpleName().toLowerCase()+"{"+cp+"}");
+                }
+                if (msg() == MSG_CRASHED) {
+                    context.setNextCp(cp);
+                    stack().tos(tos);
+                    break;
                 }
             }
         }

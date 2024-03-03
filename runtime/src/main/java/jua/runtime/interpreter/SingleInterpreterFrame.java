@@ -10,7 +10,7 @@ public class SingleInterpreterFrame implements InterpreterFrame {
     private InterpreterState state;
 
     private InterpreterFrame caller;
-    private int stackBase;
+
 
     public void setFunction(Function function) {
         this.function = function;
@@ -20,13 +20,8 @@ public class SingleInterpreterFrame implements InterpreterFrame {
         this.state = state;
     }
 
-
     public void setCaller(InterpreterFrame caller) {
         this.caller = caller;
-    }
-
-    public void setStackBase(int stackBase) {
-        this.stackBase = stackBase;
     }
 
     @Override
@@ -45,7 +40,7 @@ public class SingleInterpreterFrame implements InterpreterFrame {
     }
 
     @Override
-    public int stackBase() {
-        return stackBase;
+    public int regBase() {
+        return 0;
     }
 }

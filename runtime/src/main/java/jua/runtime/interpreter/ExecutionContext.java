@@ -58,128 +58,62 @@ public final class ExecutionContext {
      */
 
     public void doConstInt(long value) {
-        stack().push().set(value);
+        stack().pushGet().set(value);
     }
 
     public void doConstFalse() {
-        stack().push().set(false);
+        stack().pushGet().set(false);
     }
 
     public void doConstTrue() {
-        stack().push().set(true);
+        stack().pushGet().set(true);
     }
 
     public void doConstNull() {
-        stack().push().setNull();
+        stack().pushGet().setNull();
     }
 
     public void doPush(int cpi) { // Constant Pool Index
-        stack().push().set(getConstantPool().getAddressEntry(cpi));
+        stack().pushGet().set(getConstantPool().getAddressEntry(cpi));
     }
 
     public void doDup() {
-        Address a1 = stack().getStackAddress(-1);
-        Address a2 = stack().getStackAddress(0);
-        a2.set(a1);
-        a2.set(a1);
-        stack().addTos(1);
+        stack().dup();
     }
 
     public void doDup2() {
-        Address a1 = stack().getStackAddress(-2);
-        Address a2 = stack().getStackAddress(-1);
-        Address a3 = stack().getStackAddress(0);
-        Address a4 = stack().getStackAddress(1);
-        a3.set(a1);
-        a4.set(a2);
-        stack().addTos(2);
+        stack().dup2();
     }
 
     public void doDupX1() {
-        // Нужно переместить 2 элемента на 1 позицию вправо
-        // Затем последний элемент скопировать в элемент на 2 позиции левее.
-        Address a1 = stack().getStackAddress(-2);
-        Address a2 = stack().getStackAddress(-1);
-        Address a3 = stack().getStackAddress(0);
-        a3.set(a2);
-        a2.set(a1);
-        a1.set(a3);
-        stack().addTos(1);
+        stack().dupX1();
     }
 
     public void doDupX2() {
-        // Нужно переместить 3 элемента на 2 позиции вправо
-        // Затем последний элемент скопировать в элемент на 3 позиции левее.
-        Address a1 = stack().getStackAddress(-3);
-        Address a2 = stack().getStackAddress(-2);
-        Address a3 = stack().getStackAddress(-1);
-        Address a4 = stack().getStackAddress(0);
-        a4.set(a3);
-        a3.set(a2);
-        a2.set(a1);
-        a1.set(a4);
-        stack().addTos(1);
+        stack().dupX2();
     }
 
     public void doDup2x1() {
-        // Нужно переместить 3 элемента на 2 позиции вправо
-        // Затем 2 последних элементах скопировать в элементы на 3 позиции левее.
-
-        // -3 -2 -1  0  1
-        //  H  A  B  _  _
-        //  _  _  H  A  B
-        //  A  B  H  A  B
-        Address m3 = stack().getStackAddress(-3);
-        Address m2 = stack().getStackAddress(-2);
-        Address m1 = stack().getStackAddress(-1);
-        Address p0 = stack().getStackAddress(0);
-        Address p1 = stack().getStackAddress(1);
-        p1.set(m1);
-        p0.set(m2);
-        m1.set(m3);
-        m2.set(p1);
-        m3.set(p0);
-        stack().addTos(2);
+        stack().dup2X1();
     }
 
     public void doDup2x2() {
-        // Нужно переместить 4 элемента на 2 позиции вправо
-        // Затем 2 последних элементах скопировать в элементы на 4 позиции левее.
-
-        // -4 -3 -2 -1  0  1
-        //  G  H  A  B  _  _
-        //  G  H  G  H  A  B
-        //  A  B  G  H  A  B
-        Address m4 = stack().getStackAddress(-4);
-        Address m3 = stack().getStackAddress(-3);
-        Address m2 = stack().getStackAddress(-2);
-        Address m1 = stack().getStackAddress(-1);
-        Address p0 = stack().getStackAddress(0);
-        Address p1 = stack().getStackAddress(1);
-        p1.set(m1);
-        p0.set(m2);
-        m1.set(m3);
-        m2.set(m4);
-        m3.set(p1);
-        m4.set(p0);
-        stack().addTos(2);
+        stack().dup2X2();
     }
 
     public void doPop() {
-        // Ячейка стека будет очищена при попытке выделить много памяти
-        // или возврате из метода.
-        stack().addTos(-1);
+        stack().pop();
     }
 
     public void doPop2() {
-        stack().addTos(-2);
+        stack().pop2();
     }
 
     public void doAdd() {
-        Address lhs = stack().getStackAddress(-2);
-        Address rhs = stack().getStackAddress(-1);
+        Address rhs = stack().popGet();
+        Address lhs = stack().popGet();
         lhs.add(rhs, lhs);
-        stack().addTos(-1);
+        stack().push(lhs);
     }
 
     public void doSub() {
@@ -410,9 +344,8 @@ public final class ExecutionContext {
     }
 
     public void doJumpIfPresent(int nextCp) {
-        Address arr = stack().getStackAddress(-2);
-        Address key = stack().getStackAddress(-1);
-        stack().addTos(-2);
+        Address key = stack().popGet();
+        Address arr = stack().popGet();
         int responseCode = arr.contains(key);
         if (isResultTrue(responseCode)) {
             setNextCp(nextCp);
@@ -420,9 +353,8 @@ public final class ExecutionContext {
     }
 
     public void doJumpIfAbsent(int nextCp) {
-        Address arr = stack().getStackAddress(-2);
-        Address key = stack().getStackAddress(-1);
-        stack().addTos(-2);
+        Address key = stack().popGet();
+        Address arr = stack().popGet();
         int responseCode = arr.contains(key);
         if (isResultFalse(responseCode)) {
             setNextCp(nextCp);
@@ -430,8 +362,7 @@ public final class ExecutionContext {
     }
 
     public void doLinearSwitch(int[] labels, int[] cps, int defaultCp) {
-        Address selector = stack().getStackAddress(-1);
-        stack().addTos(-1);
+        Address selector = stack().popGet();
 
         // Не скалярные значения семантически запрещены
         if (!selector.isScalar()) {
@@ -453,8 +384,7 @@ public final class ExecutionContext {
     }
 
     public void doBinarySwitch(int[] labels, int[] cps, int defaultCp) {
-        Address selector = stack().getStackAddress(-1);
-        stack().addTos(-1);
+        Address selector = stack().popGet();
 
         // Не скалярные значения семантически запрещены
         if (!selector.isScalar()) {
@@ -500,7 +430,6 @@ public final class ExecutionContext {
             callee.setResolved(fn);
         }
         getThread().prepareCall(fn, argCount);
-//        state.addTos(-argCount + 1);
     }
 
     public void doReturn() {

@@ -4,7 +4,7 @@ import jua.runtime.Function;
 
 public interface CallStack {
 
-    void push(Function calleeFn, int stackBase);
+    void push(Function calleeFn);
 
     void pop();
 

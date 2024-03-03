@@ -17,20 +17,31 @@ public final class ThreadStack {
         data = AddressUtils.allocateMemory(16, 0);
     }
 
+    public void validate() {
+        if (tos < 0) {
+            throw new InterpreterException("tos < 0");
+        }
+        // tos может быть равен data.length какое-то время.
+    }
+
     public int tos() {
         return tos;
+    }
+
+    public void tos(int tos) {
+        this.tos = tos;
     }
 
     /**
      * @deprecated Use {@link #peek(int)}
      */
     public Address getStackAddress(int offset) {
-        checkAndGrow(offset);
+        ensureCapacity(offset);
         return peek(offset);
     }
 
     /**
-     * @deprecated Use {@link #push(Address)} and {@link #pop()}
+     * @deprecated Use {@link #push(Address)} and {@link #popGet()}
      */
     public void addTos(int tos) {
         this.tos += tos;
@@ -42,39 +53,55 @@ public final class ThreadStack {
     /**
      * Очищает все адреса по адресам >= заданного значения.
      */
-    public void clear(int base) {
-        for (int i = base; i < data.length; i++) {
+    public void cleanup() {
+        for (int i = tos; i < data.length; i++) {
             data[i].reset();
         }
     }
 
+    /**
+     * Этот метод НЕ будет провоцировать расширение памяти.
+     * Чтобы расширить память, надо использовать {@link #push(Address)}.
+     *
+     * @throws ArrayIndexOutOfBoundsException Если offset выходит за пределы выделенной памяти
+     */
     public Address peek(int offset) {
         return data[tos + offset];
     }
 
-    public Address pop() {
+    public Address popGet() {
         tos--;
         checkAndShrink();
         return data[tos];
     }
 
+    public void pop() {
+        // Ячейка стека будет очищена при попытке выделить много памяти
+        // или возврате из метода.
+        tos--;
+    }
+
+    public void pop2() {
+        tos -= 2;
+    }
+
     public void pushInt(long value) {
-        push().set(value);
+        pushGet().set(value);
     }
 
     public void pushFloat(float value) {
-        push().set(value);
+        pushGet().set(value);
     }
 
-    public Address push() {
-        checkAndGrow(0);
+    public Address pushGet() {
+        ensureCapacity(0);
         Address a = data[tos];
         tos++;
         return a;
     }
 
     public void push(Address address) {
-        push().set(address);
+        pushGet().set(address);
     }
 
     private void checkAndShrink() {
@@ -84,11 +111,83 @@ public final class ThreadStack {
         //  потребоваться расширение...
     }
 
-    private void checkAndGrow(int cap) {
+    private void ensureCapacity(int cap) {
         // Если вызывать этот метод заранее, то получится ленивое расширение. +100 к оптимизации
         if (data.length - tos <= cap) {
             data = AddressUtils.reallocateWithNewLength(data, (tos + cap) * 2);
         }
+    }
+
+    public void dup() {
+        ensureCapacity(1);
+        // -1  0
+        //  A
+        //  A  A
+        peek(0).set(peek(-1));
+        tos += 1;
+    }
+
+    public void dupX1() {
+        ensureCapacity(1);
+        // Нужно переместить 2 элемента на 1 позицию вправо
+        // Затем последний элемент скопировать в элемент на 2 позиции левее.
+
+        // -2 -1  0
+        //  A  B
+        //  B  A  B
+        AddressUtils.arraycopy(data, tos - 2, data, tos - 1, 2);
+        peek(-2).set(peek(0));
+        tos += 1;
+    }
+
+    public void dupX2() {
+        ensureCapacity(1);
+        // Нужно переместить 3 элемента на 2 позиции вправо
+        // Затем последний элемент скопировать в элемент на 3 позиции левее.
+
+        // -3 -2 -1  0
+        //  C  B  A
+        //  A  C  B  A
+        AddressUtils.arraycopy(data, tos - 3, data, tos - 2, 3);
+        peek(-3).set(peek(0));
+        tos += 1;
+    }
+
+    public void dup2() {
+        ensureCapacity(2);
+        peek(0).set(peek(-2));
+        peek(1).set(peek(-1));
+        tos += 2;
+    }
+
+    public void dup2X1() {
+        ensureCapacity(2);
+        // Нужно переместить 3 элемента на 2 позиции вправо
+        // Затем 2 последних элементах скопировать в элементы на 3 позиции левее.
+
+        // -3 -2 -1  0  1
+        //  H  A  B  _  _
+        //  _  _  H  A  B
+        //  A  B  H  A  B
+        AddressUtils.arraycopy(data, tos - 3, data, tos - 1, 3);
+        peek(-2).set(peek(1));
+        peek(-3).set(peek(0));
+        tos += 2;
+    }
+
+    public void dup2X2() {
+        ensureCapacity(2);
+        // Нужно переместить 4 элемента на 2 позиции вправо
+        // Затем 2 последних элементах скопировать в элементы на 4 позиции левее.
+
+        // -4 -3 -2 -1  0  1
+        //  G  H  A  B  _  _
+        //  G  H  G  H  A  B
+        //  A  B  G  H  A  B
+        AddressUtils.arraycopy(data, tos - 4, data, tos - 2, 4);
+        peek(-3).set(peek(1));
+        peek(-4).set(peek(10));
+        tos += 2;
     }
 
     private int prevTos = 0;

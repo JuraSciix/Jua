@@ -10,5 +10,5 @@ public interface InterpreterFrame {
 
     InterpreterFrame getCaller();
 
-    int stackBase();
+    int regBase();
 }
