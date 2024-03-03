@@ -47,7 +47,7 @@ public final class InterpreterThread {
     private final JuaEnvironment environment;
 
     public InterpreterFrame currentFrame() {
-        return callStack.current();
+        return  current;
     }
 
     private Function callee;
@@ -58,12 +58,17 @@ public final class InterpreterThread {
 
     private int msg = MSG_UNSTARTED;
 
-    private CallStack callStack;
-
     private final ThreadStack stack = new ThreadStack();
+    private final ThreadMemory memory = new ThreadMemory();
+    private final FrameFactory frameFactory = new FrameFactory();
+    private InterpreterFrame current = null;
 
     ThreadStack stack() {
         return stack;
+    }
+
+    ThreadMemory memory() {
+        return memory;
     }
 
     public InterpreterThread(Thread jvmThread, JuaEnvironment environment) {
@@ -72,8 +77,6 @@ public final class InterpreterThread {
         bind();
         this.jvmThread = jvmThread;
         this.environment = environment;
-        callStack = new ACallStack(1024,
-                new AMemoryStack(300));
     }
 
     private void bind() {
@@ -91,11 +94,31 @@ public final class InterpreterThread {
         return environment;
     }
 
+    private void pushFrame() {
+        InterpreterFrame frame = frameFactory.allocate();
+        frame.setCaller(currentFrame());
+        frame.setFunction(callee);
+        frame.setCP(0);
+        current = frame;
+    }
+
+    private void popFrame() {
+        current = current.getCaller();
+    }
+
     private void enterFrame() {
         Assert.checkNonNull(callee, "callee is not set");
-
-        callStack.push(callee);
-        if ((callee.flags & Function.FLAG_NATIVE) != 0) {
+        pushFrame();
+        if (callee.isUserDefined()) {
+            memory.acquire(callee.getCode().locals());
+            for (int i = 0; i < numArgs; i++) {
+                memory.get(numArgs - i - 1).set(stack().popGet());
+            }
+            for (int i = numArgs; i < callee.maxArgc; i++) {
+                memory.get(i).set(callee.defaults[i - callee.minArgc]);
+            }
+            set_msg(MSG_RUNNING_FRAME);
+        } else {
             set_msg(MSG_RUNNING_FRAME);
             Address[] args = AddressUtils.allocateMemory(numArgs, 0);
             for (int i = 0; i < numArgs; i++) {
@@ -104,27 +127,19 @@ public final class InterpreterThread {
             boolean success = callee.nativeExecutor().execute(args, numArgs, stack().pushGet());
             if (success) {
                 set_msg(MSG_POPPING_FRAME);
-                callStack.pop();
+                popFrame();
                 set_msg(MSG_RUNNING_FRAME);
             } else {
                 Assert.check(isCrashed());
             }
-        } else {
-            InterpreterState state = callStack.current().getState();
-            for (int i = 0; i < numArgs; i++) {
-                state.getSlots().getAddress(numArgs - i - 1).set(stack().popGet());
-            }
-            for (int i = numArgs; i < callee.maxArgc; i++) {
-                state.getSlots().getAddress(i).set(callee.defaults[i - callee.minArgc]);
-            }
-            set_msg(MSG_RUNNING_FRAME);
         }
     }
 
     private void leaveFrame() {
         stack.cleanup();
-        callStack.pop();
-        if (callStack.current() == null) {
+        memory.release(currentFrame().getFunction().getCode().locals());
+        popFrame();
+        if (current == null) {
             interrupt(); // Выполнять более нечего
             return;
         }
@@ -216,7 +231,7 @@ public final class InterpreterThread {
     /** Возвращает номер строки, которая сейчас выполняется. */
     int executingLineNumber(InterpreterFrame frame) {
         if (!frame.getFunction().isUserDefined()) return -1; // native function
-        int cp = frame.getState().getCp() - 1;
+        int cp = frame.getCP() - 1;
         return frame.getFunction().userCode().lineNumTable.getLineNumber(cp);
     }
 
@@ -265,7 +280,7 @@ public final class InterpreterThread {
             } else if ((currentFrame().getFunction().flags & Function.FLAG_NATIVE) != 0) {
                 details = "<NATIVE>";
             } else {
-                details = "CP=" + currentFrame().getState().getCp() +
+                details = "CP=" + currentFrame().getCP() +
                         ", SP=" + (stack().tos());
             }
             printStackTrace();
@@ -314,8 +329,7 @@ public final class InterpreterThread {
             CodeData codeData = currentFrame().getFunction().userCode();
             Instruction[] code = codeData.code;
             ExecutionContext context = executionContext;
-            context.setState(currentFrame().getState());
-            context.setConstantPool(currentFrame().getFunction().userCode().constantPool());
+            context.setFrame(currentFrame());
 
             while (isRunning()) {
                 stack().validate();

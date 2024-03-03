@@ -31,6 +31,26 @@ public final class CodeData {
         this.lineNumTable = lineNumTable;
     }
 
+    public int stack() {
+        return stack;
+    }
+
+    public int locals() {
+        return locals;
+    }
+
+    public String[] localNames() {
+        return localNames;
+    }
+
+    public Instruction[] code() {
+        return code;
+    }
+
+    public LineNumberTable linenumtab() {
+        return lineNumTable;
+    }
+
     public ConstantPool constantPool() {
         return constantPool;
     }

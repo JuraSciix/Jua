@@ -14,7 +14,7 @@ public final class ExecutionContext {
 
     private final InterpreterThread thread;
 
-    private InterpreterState state;
+    private InterpreterFrame frame;
 
     private ConstantPool constantPool;
 
@@ -22,32 +22,33 @@ public final class ExecutionContext {
         this.thread = thread;
     }
 
-    public InterpreterThread getThread() {
+    public InterpreterThread thread() {
         return thread;
     }
 
     public ThreadStack stack() {
-        return thread.stack();
+        return thread().stack();
     }
 
-    public void setState(InterpreterState state) {
-        this.state = state;
+    public ThreadMemory memory() {
+        return thread().memory();
     }
 
-    public ConstantPool getConstantPool() {
+    public void setFrame(InterpreterFrame frame) {
+        this.frame = frame;
+        constantPool = frame.getFunction().getCode().constantPool();
+    }
+
+    public ConstantPool constantPool() {
         return constantPool;
     }
 
-    public void setConstantPool(ConstantPool constantPool) {
-        this.constantPool = constantPool;
-    }
-
     public int getNextCp() {
-        return state.getCp();
+        return frame.getCP();
     }
 
     public void setNextCp(int nextCp) {
-        state.setCp(nextCp);
+        frame.setCP(nextCp);
     }
 
     /*
@@ -74,7 +75,7 @@ public final class ExecutionContext {
     }
 
     public void doPush(int cpi) { // Constant Pool Index
-        stack().pushGet().set(getConstantPool().getAddressEntry(cpi));
+        stack().pushGet().set(constantPool().getAddressEntry(cpi));
     }
 
     public void doDup() {
@@ -200,20 +201,20 @@ public final class ExecutionContext {
     }
 
     public void doLoad(int i) {
-        stack().push(state.getSlot(i));
+        stack().push(memory().get(i));
     }
 
     public void doStore(int i) {
-        state.storeSlotFrom(i, stack().getStackAddress(-1));
+        memory().get(i).set(stack().getStackAddress(-1));
         stack().addTos(-1);
     }
 
     public void doInc(int i) {
-        state.getSlot(i).inc();
+        memory().get(i).inc();
     }
 
     public void doDec(int i) {
-        state.getSlot(i).dec();
+        memory().get(i).dec();
     }
 
     public void doArrayLoad() {
@@ -251,7 +252,7 @@ public final class ExecutionContext {
         if (!value.hasType(Types.T_INT) ||
                 (a = value.getLong()) < 0 ||
                 Integer.MAX_VALUE < a) {
-            getThread().error("List size must be an unsigned 32-bit integer");
+            thread().error("List size must be an unsigned 32-bit integer");
             return;
         }
         value.set(new ListHeap((int) a));
@@ -373,7 +374,7 @@ public final class ExecutionContext {
         int selectorHash = selector.hashCode();
 
         for (int i = 0; i < labels.length; i++) {
-            Address k = getConstantPool().getAddressEntry(labels[i]);
+            Address k = constantPool().getAddressEntry(labels[i]);
             int kHash = k.hashCode();
             if (selectorHash == kHash && selector.fastCompareWith(k, 1) == 0) {
                 setNextCp(cps[i]);
@@ -397,7 +398,7 @@ public final class ExecutionContext {
 
         while (l <= h) {
             int x = (l + h) >> 1;
-            Address k = getConstantPool().getAddressEntry(labels[x]);
+            Address k = constantPool().getAddressEntry(labels[x]);
             int d = selector.compareTo(k);
 
             if (d > 0) {
@@ -420,23 +421,23 @@ public final class ExecutionContext {
     }
 
     public void doCall(int calleeId, int argCount) {
-        ResolvableCallee callee = getConstantPool().getCallee(calleeId);
+        ResolvableCallee callee = constantPool().getCallee(calleeId);
         Function fn;
         if (callee.isResolved()) {
             fn = callee.getResolved();
         } else {
-            String name = getConstantPool().getAddressEntry(callee.getUtf8()).stringVal().toString();
-            fn = getThread().getEnvironment().lookupFunction(name);
+            String name = constantPool().getAddressEntry(callee.getUtf8()).stringVal().toString();
+            fn = thread().getEnvironment().lookupFunction(name);
             callee.setResolved(fn);
         }
-        getThread().prepareCall(fn, argCount);
+        thread().prepareCall(fn, argCount);
     }
 
     public void doReturn() {
-        getThread().doReturn();
+        thread().doReturn();
     }
 
     public void doLeave() {
-        getThread().leave();
+        thread().leave();
     }
 }

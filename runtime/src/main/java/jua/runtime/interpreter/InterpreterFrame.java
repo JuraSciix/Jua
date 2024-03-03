@@ -2,13 +2,33 @@ package jua.runtime.interpreter;
 
 import jua.runtime.Function;
 
-public interface InterpreterFrame {
+public final class InterpreterFrame {
 
-    Function getFunction();
+    private InterpreterFrame caller;
+    private Function function;
+    private int cp;
 
-    InterpreterState getState();
+    public void setCaller(InterpreterFrame caller) {
+        this.caller = caller;
+    }
 
-    InterpreterFrame getCaller();
+    public void setFunction(Function function) {
+        this.function = function;
+    }
 
-    int regBase();
+    public void setCP(int cp) {
+        this.cp = cp;
+    }
+
+    public InterpreterFrame getCaller() {
+        return caller;
+    }
+
+    public Function getFunction() {
+        return function;
+    }
+
+    public int getCP() {
+        return cp;
+    }
 }
