@@ -14,3 +14,11 @@ fn bubble_sort(a) {
         }
     }
 }
+
+var a = [2, 11, 7, -3, 5, 9, 0, 19];
+bubble_sort(a);
+for var i = 0; i < length(a); i++ {
+    print(a[i]);
+    print(' ');
+}
+println();
