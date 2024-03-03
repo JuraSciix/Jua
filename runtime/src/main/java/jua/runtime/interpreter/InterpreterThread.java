@@ -15,6 +15,8 @@ import java.util.Objects;
 
 public final class InterpreterThread {
 
+    private static final boolean DEBUG = false; // Информация об инструкции и стеке меж каждой инструкции
+
     private static final int MSG_UNSTARTED         = 0; /* Поток создан, но не запущен */
     private static final int MSG_RUNNING_FRAME     = 1; /* Поток выполняет фрейм */
     private static final int MSG_CALLING_FRAME     = 2; /* Поток вызывает фрейм */
@@ -52,15 +54,17 @@ public final class InterpreterThread {
 
     private int numArgs;
 
-    private Memory argMemory;
-
     private String error_msg;
 
     private int msg = MSG_UNSTARTED;
 
-    private Address returnAddress;
-
     private CallStack callStack;
+
+    private final ThreadStack stack = new ThreadStack();
+
+    ThreadStack stack() {
+        return stack;
+    }
 
     public InterpreterThread(Thread jvmThread, JuaEnvironment environment) {
         Objects.requireNonNull(jvmThread, "JVM thread");
@@ -68,8 +72,7 @@ public final class InterpreterThread {
         bind();
         this.jvmThread = jvmThread;
         this.environment = environment;
-        callStack = new ACallStack(120,
-                new AMemoryStack(300),
+        callStack = new ACallStack(1024,
                 new AMemoryStack(300));
     }
 
@@ -91,14 +94,14 @@ public final class InterpreterThread {
     private void enterFrame() {
         Assert.checkNonNull(callee, "callee is not set");
 
+        callStack.push(callee, stack().tos() - numArgs);
         if ((callee.flags & Function.FLAG_NATIVE) != 0) {
-            callStack.push(callee, returnAddress);
             set_msg(MSG_RUNNING_FRAME);
-            Address[] args = AddressUtils.allocateMemory(argMemory.size(), 0);
+            Address[] args = AddressUtils.allocateMemory(numArgs, 0);
             for (int i = 0; i < numArgs; i++) {
-                args[i].set(argMemory.getAddress(i));
+                args[numArgs - i - 1].set(stack().pop());
             }
-            boolean success = callee.nativeExecutor().execute(args, numArgs, returnAddress);
+            boolean success = callee.nativeExecutor().execute(args, numArgs, stack().push());
             if (success) {
                 set_msg(MSG_POPPING_FRAME);
                 callStack.pop();
@@ -107,10 +110,9 @@ public final class InterpreterThread {
                 Assert.check(isCrashed());
             }
         } else {
-            callStack.push(callee, returnAddress);
             InterpreterState state = callStack.current().getState();
             for (int i = 0; i < numArgs; i++) {
-                state.getSlots().getAddress(i).set(argMemory.getAddress(i));
+                state.getSlots().getAddress(numArgs - i - 1).set(stack().pop());
             }
             for (int i = numArgs; i < callee.maxArgc; i++) {
                 state.getSlots().getAddress(i).set(callee.defaults[i - callee.minArgc]);
@@ -120,6 +122,7 @@ public final class InterpreterThread {
     }
 
     private void leaveFrame() {
+        stack.clear(callStack.current().stackBase() + 1); // except retuning value
         callStack.pop();
         if (callStack.current() == null) {
             interrupt(); // Выполнять более нечего
@@ -136,32 +139,25 @@ public final class InterpreterThread {
         this.msg = msg;
     }
 
-    public void prepareCall(Function calleeFn, int argCount, Memory argMemory) {
+    public void prepareCall(Function calleeFn, int argCount) {
         callee = calleeFn;
         numArgs = argCount;
-        returnAddress = argMemory.getAddress(0);
-        this.argMemory = argMemory;
         set_msg(MSG_CALLING_FRAME);
     }
 
-    public void doReturn(Address result) {
-        callStack.current()
-                .getReturnAddress()
-                .set(result);
-        set_msg(MSG_POPPING_FRAME);
+    public void leave() {
+        stack().push().setNull();
+        doReturn();
     }
 
-    public void leave() {
-        callStack.current()
-                .getReturnAddress()
-                .setNull();
+    public void doReturn() {
+        // Результат уже на стеке
         set_msg(MSG_POPPING_FRAME);
     }
 
     public void interrupt() {
         jvmThread.interrupt();
         msg = MSG_HALTED;
-
     }
 
     public boolean isActive() {
@@ -179,9 +175,15 @@ public final class InterpreterThread {
     public boolean callAndWait(Function function, Address[] args, Address returnAddress) {
         set_msg(MSG_CALLING_FRAME);
         callee = function;
-        this.argMemory = new SimpleMemory(args);
+        if (args.length > 0) {
+            // Подло подменяем адрес.. Пока что это вынужденная мера
+            returnAddress.set(args[0]);
+            args[0] = returnAddress;
+        }
+        for (Address arg : args) {
+            stack().push(arg);
+        }
         numArgs = args.length;
-        this.returnAddress = returnAddress;
         run();
         return !isCrashed();
     }
@@ -264,7 +266,7 @@ public final class InterpreterThread {
                 details = "<NATIVE>";
             } else {
                 details = "CP=" + currentFrame().getState().getCp() +
-                        ", SP=" + currentFrame().getState().getTos();
+                        ", SP=" + (stack().tos() - currentFrame().stackBase());
             }
             printStackTrace();
             t.printStackTrace();
@@ -278,6 +280,9 @@ public final class InterpreterThread {
 
     private void runInternal() {
         while (true) {
+            if (DEBUG) {
+                stack.debugUpdate(null);
+            }
             switch (msg) {
                 case MSG_CRASHED: {
 //                    printStackTrace();
@@ -311,10 +316,15 @@ public final class InterpreterThread {
             ExecutionContext context = executionContext;
             context.setState(currentFrame().getState());
             context.setConstantPool(currentFrame().getFunction().userCode().constantPool());
+
             while (isRunning()) {
                 int cp = context.getNextCp();
                 context.setNextCp(cp + 1);
                 code[cp].execute(context);
+
+                if (DEBUG) {
+                    stack.debugUpdate(code[cp].getClass().getSimpleName().toLowerCase()+"{"+cp+"}");
+                }
             }
         }
     }

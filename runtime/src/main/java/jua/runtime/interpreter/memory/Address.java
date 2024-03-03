@@ -6,6 +6,8 @@ import jua.runtime.heap.Heap;
 import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.StringHeap;
 
+import java.util.Objects;
+
 import static jua.runtime.Operations.toResultCode;
 import static jua.runtime.interpreter.InterpreterThread.threadError;
 import static jua.runtime.Types.*;
@@ -784,6 +786,26 @@ public final class Address implements Comparable<Address> {
         return unexpected;
     }
 
+    /**
+     * Возвращает debug-идентификатор, длина которого не больше 5 символов.
+     */
+    public String id() {
+        char c;
+        switch (type) {
+            case T_UNDEFINED: return "~";
+            case T_NULL:      return "nil";
+            case T_INT:       c = 'N'; break;
+            case T_FLOAT:     c = 'F'; break;
+            case T_BOOLEAN:   c = 'Z'; break;
+            case T_STRING:    c = 'S'; break;
+            case T_LIST:      c = 'L'; break;
+            default: throw new AssertionError(type);
+        }
+        int h = hashCode();
+        h = (h ^ (h >> 16)) & 0xffff;
+        return c + Integer.toHexString(h);
+    }
+
     @Override
     public int hashCode() {
         switch (type) {
@@ -795,6 +817,17 @@ public final class Address implements Comparable<Address> {
             case T_LIST:    return hashOfList(getListHeap());
             default: throw new AssertionError(type);
         }
+    }
+
+    /**
+     * Сравнивает адреса по ссылкам. Для undefined и скалярных типов возвращает {@code false}.
+     * Возвращает {@code true} если оба адреса - ссылочные, и ссылаются на один объект.
+     */
+    public boolean isEqualRefs(Address other) {
+        if (type != other.type) return false; // Разные типы = разные ссылки
+        if (isTypeScalar(type)) return false; // Скалярный тип это не ссылка...
+        if (hasType(T_UNDEFINED)) return false; // Неопределенность это тоже не ссылка...
+        return this.a == other.a;
     }
 
     @Override

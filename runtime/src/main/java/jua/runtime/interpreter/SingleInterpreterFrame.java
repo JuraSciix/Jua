@@ -9,9 +9,8 @@ public class SingleInterpreterFrame implements InterpreterFrame {
 
     private InterpreterState state;
 
-    private Address returnAddress;
-
     private InterpreterFrame caller;
+    private int stackBase;
 
     public void setFunction(Function function) {
         this.function = function;
@@ -21,12 +20,13 @@ public class SingleInterpreterFrame implements InterpreterFrame {
         this.state = state;
     }
 
-    public void setReturnAddress(Address returnAddress) {
-        this.returnAddress = returnAddress;
-    }
 
     public void setCaller(InterpreterFrame caller) {
         this.caller = caller;
+    }
+
+    public void setStackBase(int stackBase) {
+        this.stackBase = stackBase;
     }
 
     @Override
@@ -40,12 +40,12 @@ public class SingleInterpreterFrame implements InterpreterFrame {
     }
 
     @Override
-    public Address getReturnAddress() {
-        return returnAddress;
+    public InterpreterFrame getCaller() {
+        return caller;
     }
 
     @Override
-    public InterpreterFrame getCaller() {
-        return caller;
+    public int stackBase() {
+        return stackBase;
     }
 }

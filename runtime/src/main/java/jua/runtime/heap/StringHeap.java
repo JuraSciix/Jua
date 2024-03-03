@@ -168,7 +168,6 @@ public final class StringHeap extends Heap implements CharSequence, Comparable<S
     public int hashCode() {
         int h = hashCode;
         if (!hashCodeCalculated) {
-            assert h == 0;
             for (int i = 0, l = buffer.length(); i < l; i++)
                 h = (h << 5) - h + buffer.charAt(i);
             hashCode = h;

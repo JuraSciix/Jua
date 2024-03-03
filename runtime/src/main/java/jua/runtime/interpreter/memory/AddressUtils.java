@@ -78,7 +78,7 @@ public class AddressUtils {
 
     public static Address[] reallocateWithNewLength(Address[] src, int newLength) {
         Address[] memory = new Address[newLength];
-        System.arraycopy(src, 0, memory, 0, newLength);
+        System.arraycopy(src, 0, memory, 0, Math.min(src.length, newLength));
 
         for (int i = src.length; i < newLength; i++) {
             memory[i] = new Address();
