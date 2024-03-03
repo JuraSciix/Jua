@@ -134,8 +134,8 @@ public final class TreeInfo {
             case GTEQ: return Tag.GE;
             case LT: return Tag.LT;
             case LTEQ: return Tag.LE;
-            case GTGT: return Tag.SL;
-            case LTLT: return Tag.SR;
+            case GTGT: return Tag.SR;
+            case LTLT: return Tag.SL;
             case MINUS: return Tag.SUB;
             case PLUS: return Tag.ADD;
             case PERCENT: return Tag.REM;
