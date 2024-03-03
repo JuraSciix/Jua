@@ -267,13 +267,11 @@ public final class ExecutionContext {
         }
     }
 
-    public void doJumpIfntEq(int nextCp) {
-        Address lhs = stack().getStackAddress(-2);
-        Address rhs = stack().getStackAddress(-1);
-        stack().addTos(-2);
-        if (lhs.fastCompareWith(rhs, 0) != 0) {
-            setNextCp(nextCp);
-        }
+    public void doJumpIfntEq(int thenCp) {
+        Address rhs = stack().popGet();
+        Address lhs = stack().popGet();
+        if (lhs.fastCompareWith(rhs, 1) != 0)
+            setNextCp(thenCp);
     }
 
     public void doJumpIfGt(int nextCp) {
