@@ -36,7 +36,7 @@ public final class ThreadStack {
      * @deprecated Use {@link #peek(int)}
      */
     public Address getStackAddress(int offset) {
-        ensureCapacity(offset);
+        ensureCapacity(offset + 1);
         return peek(offset);
     }
 
@@ -113,7 +113,7 @@ public final class ThreadStack {
 
     private void ensureCapacity(int cap) {
         // Если вызывать этот метод заранее, то получится ленивое расширение. +100 к оптимизации
-        if (data.length - tos <= cap) {
+        if (data.length - tos < cap) {
             data = AddressUtils.reallocateWithNewLength(data, (tos + cap) * 2);
         }
     }
@@ -135,7 +135,8 @@ public final class ThreadStack {
         // -2 -1  0
         //  A  B
         //  B  A  B
-        AddressUtils.arraycopy(data, tos - 2, data, tos - 1, 2);
+        peek(0).set(peek(-1));
+        peek(-1).set(peek(-2));
         peek(-2).set(peek(0));
         tos += 1;
     }
@@ -148,7 +149,9 @@ public final class ThreadStack {
         // -3 -2 -1  0
         //  C  B  A
         //  A  C  B  A
-        AddressUtils.arraycopy(data, tos - 3, data, tos - 2, 3);
+        peek(0).set(peek(-1));
+        peek(-1).set(peek(-2));
+        peek(-2).set(peek(-3));
         peek(-3).set(peek(0));
         tos += 1;
     }
@@ -169,7 +172,9 @@ public final class ThreadStack {
         //  H  A  B  _  _
         //  _  _  H  A  B
         //  A  B  H  A  B
-        AddressUtils.arraycopy(data, tos - 3, data, tos - 1, 3);
+        peek(1).set(peek(-1));
+        peek(0).set(peek(-2));
+        peek(-1).set(peek(-3));
         peek(-2).set(peek(1));
         peek(-3).set(peek(0));
         tos += 2;
@@ -184,7 +189,10 @@ public final class ThreadStack {
         //  G  H  A  B  _  _
         //  G  H  G  H  A  B
         //  A  B  G  H  A  B
-        AddressUtils.arraycopy(data, tos - 4, data, tos - 2, 4);
+
+        peek(1).set(peek(-1));
+        peek(0).set(peek(-2));
+        peek(-1).set(peek(-3));
         peek(-3).set(peek(1));
         peek(-4).set(peek(10));
         tos += 2;
@@ -220,6 +228,6 @@ public final class ThreadStack {
             String s = dup >= 0 ? "@" + dup : data[i].id();
             buf.append(c).append(String.format("%-5s", s)).append("\033[0m");
         }
-        System.out.printf("%-13s tos=%02d%2s { %s } %n", insnName + ": ", this.tos-t, t >= 0 ? "+" + t : "-" + (-t), buf);
+        System.out.printf("%-16s tos=%02d%2s { %s } %n", insnName + ": ", this.tos-t, t >= 0 ? "+" + t : "-" + (-t), buf);
     }
 }
