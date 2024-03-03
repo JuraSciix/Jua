@@ -376,7 +376,7 @@ public class Gen extends Scanner {
     private void genAccess(Expr tree, Expr expr, Expr key) {
         genExpr(expr).load();
         genExpr(key).load();
-        result = items.mkAccessItem().load();
+        result = items.mkAccessItem().t(tree);
     }
 
     @Override

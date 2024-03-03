@@ -172,7 +172,7 @@ public class InstructionUtils {
         opData(OPCodes.Dup2X1, "dup2_x1", 2);
         opData(OPCodes.Dup2X2, "dup2_x2", 2);
         opData(OPCodes.Pop, "pop", -1);
-        opData(OPCodes.Pop2, "pop2", -1);
+        opData(OPCodes.Pop2, "pop2", -2);
         opData(OPCodes.Add, "add", -1);
         opData(OPCodes.Sub, "sub", -1);
         opData(OPCodes.Mul, "mul", -1);
