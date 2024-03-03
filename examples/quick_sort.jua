@@ -16,3 +16,11 @@ fn quick_sort(a, lo = null, hi = null) {
     if (j > lo) quick_sort(a, lo, j);
     if (i < hi) quick_sort(a, i, hi);
 }
+
+var a = [2, 11, 7, -3, 5, 9, 0, 19];
+quick_sort(a);
+for var i = 0; i < length(a); i++ {
+    print(a[i]);
+    print(' ');
+}
+println();
