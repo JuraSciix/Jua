@@ -5,7 +5,7 @@ import jua.runtime.Types;
 import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.StringHeap;
 import jua.runtime.interpreter.InterpreterThread;
-import jua.runtime.interpreter.memory.Address;
+import jua.runtime.interpreter.Address;
 import jua.stdlib.NativeSupport.NativeFunctionPresent;
 import jua.stdlib.NativeSupport.ParamsData;
 

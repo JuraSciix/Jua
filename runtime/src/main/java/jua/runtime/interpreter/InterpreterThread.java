@@ -6,7 +6,6 @@ import jua.runtime.JuaEnvironment;
 import jua.runtime.RuntimeErrorException;
 import jua.runtime.StackTraceElement;
 import jua.runtime.code.CodeData;
-import jua.runtime.interpreter.memory.*;
 import jua.runtime.utils.Assert;
 
 import java.io.PrintStream;

@@ -2,9 +2,9 @@ package jua.stdlib;
 
 import jua.runtime.Function;
 import jua.runtime.NativeExecutor;
-import jua.runtime.interpreter.memory.Address;
-import jua.runtime.interpreter.memory.AddressSupport;
-import jua.runtime.interpreter.memory.AddressUtils;
+import jua.runtime.interpreter.Address;
+import jua.runtime.interpreter.AddressSupport;
+import jua.runtime.interpreter.AddressUtils;
 
 import java.util.ArrayList;
 

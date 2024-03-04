@@ -4,11 +4,10 @@ import jua.compiler.JuaCompiler;
 import jua.compiler.Module;
 import jua.compiler.ModulePrinter;
 import jua.compiler.ModuleScope;
-import jua.compiler.ModuleScope.FunctionSymbol;
 import jua.runtime.Function;
 import jua.runtime.JuaEnvironment;
 import jua.runtime.interpreter.InterpreterThread;
-import jua.runtime.interpreter.memory.Address;
+import jua.runtime.interpreter.Address;
 import jua.stdlib.NativeStdlib;
 
 import java.io.File;

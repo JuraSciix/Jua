@@ -1,4 +1,4 @@
-package jua.runtime.interpreter.memory;
+package jua.runtime.interpreter;
 
 import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.StringHeap;

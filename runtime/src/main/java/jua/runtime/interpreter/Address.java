@@ -1,12 +1,10 @@
-package jua.runtime.interpreter.memory;
+package jua.runtime.interpreter;
 
 import jua.runtime.Operations;
 import jua.runtime.Types;
 import jua.runtime.heap.Heap;
 import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.StringHeap;
-
-import java.util.Objects;
 
 import static jua.runtime.Operations.toResultCode;
 import static jua.runtime.interpreter.InterpreterThread.threadError;

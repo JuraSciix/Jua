@@ -1,8 +1,6 @@
 package jua.runtime.interpreter;
 
 import jua.runtime.Types;
-import jua.runtime.interpreter.memory.Address;
-import jua.runtime.interpreter.memory.AddressUtils;
 
 public final class ThreadStack {
 

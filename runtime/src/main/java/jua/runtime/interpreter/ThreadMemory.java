@@ -1,8 +1,5 @@
 package jua.runtime.interpreter;
 
-import jua.runtime.interpreter.memory.Address;
-import jua.runtime.interpreter.memory.AddressUtils;
-
 public final class ThreadMemory {
 
     private Address[] data;

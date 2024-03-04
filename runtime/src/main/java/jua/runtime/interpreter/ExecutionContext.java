@@ -5,7 +5,6 @@ import jua.runtime.Types;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.ResolvableCallee;
 import jua.runtime.heap.ListHeap;
-import jua.runtime.interpreter.memory.Address;
 
 import static jua.runtime.Operations.isResultFalse;
 import static jua.runtime.Operations.isResultTrue;
