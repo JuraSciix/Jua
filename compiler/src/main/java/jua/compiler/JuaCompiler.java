@@ -131,7 +131,7 @@ public final class JuaCompiler {
             stdout.printf("[%d:%d] ",
                     source.getLineMap().getLineNumber(token.pos),
                     source.getLineMap().getColumnNumber(token.pos));
-            switch (token.type.kind) {
+            switch (token.type.kind()) {
                 case DEFAULT:
                     stdout.println(token.type.name());
                     break;

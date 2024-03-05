@@ -231,7 +231,7 @@ public class Lexer {
         }
 
         Token token;
-        switch (type.kind) {
+        switch (type.kind()) {
             case DEFAULT: token = new Token(type, pos);                                  break;
             case STRING:  token = new StringToken(type, pos, buffer.toString());         break;
             case NUMERIC: token = new NumericToken(type, pos, buffer.toString(), radix); break;

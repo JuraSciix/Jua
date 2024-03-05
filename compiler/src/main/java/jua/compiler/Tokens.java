@@ -74,11 +74,6 @@ public final class Tokens {
         COMMA(","),
         CUSTOM,
         DOT("."),
-        EOF,
-        STRINGLITERAL(TokenKind.STRING),
-        FLOATLITERAL(TokenKind.NUMERIC),
-        IDENTIFIER(TokenKind.NAMED),
-        INTLITERAL(TokenKind.NUMERIC),
         LBRACE("{"),
         LBRACKET("["),
         LPAREN("("),
@@ -87,7 +82,14 @@ public final class Tokens {
         RBRACKET("]"),
         RPAREN(")"),
         SEMI(";"),
-        INVALID;
+        INVALID,
+
+        STRINGLITERAL(),
+        FLOATLITERAL(),
+        IDENTIFIER(),
+        INTLITERAL(),
+
+        EOF;
 
         private static final Map<String, TokenType> LOOKUP = new HashMap<>(16, 1f);
 
@@ -104,23 +106,25 @@ public final class Tokens {
         }
 
         public final String value;
-        public final TokenKind kind;
 
         TokenType() {
-            this(null, TokenKind.DEFAULT);
-        }
-
-        TokenType(TokenKind kind) {
-            this(null, kind);
+            this(null);
         }
 
         TokenType(String value) {
-            this(value, TokenKind.DEFAULT);
+            this.value = value;
         }
 
-        TokenType(String value, TokenKind kind) {
-            this.value = value;
-            this.kind = kind;
+        TokenKind kind() {
+            if (PLUS.ordinal() <= ordinal() && ordinal() <= INVALID.ordinal())
+                return TokenKind.DEFAULT;
+            if (this == STRINGLITERAL)
+                return TokenKind.STRING;
+            if (this == INTLITERAL || this == FLOATLITERAL)
+                return TokenKind.NUMERIC;
+            if (this == IDENTIFIER)
+                return TokenKind.NAMED;
+            throw new AssertionError(this);
         }
     }
 
