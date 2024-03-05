@@ -176,7 +176,9 @@ public class Gen extends Scanner {
         code.resolve(flow.contChain);
         Flow.forEach(step, s -> genExpr(s).drop());
         code.resolve(skipBodyChain);
-        CondItem condItem = genExpr(cond).asCond();
+        CondItem condItem = cond == null
+                ? items.mkLiteral(true).asCond()
+                : genExpr(cond).asCond();
         code.resolve(condItem.trueJumps(), loopStartPC);
         code.resolve(condItem.falseChain);
         code.resolve(flow.exitChain);
