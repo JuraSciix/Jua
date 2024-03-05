@@ -21,13 +21,14 @@ public class Types {
     /** Возвращает имя типа. */
     public static String getTypeName(byte type) {
         switch (type) {
+            case T_UNDEFINED: return "<undefined>";
             case T_NULL:    return "null";
             case T_INT:     return "int";
             case T_FLOAT:   return "float";
             case T_BOOLEAN: return "boolean";
             case T_STRING:  return "string";
             case T_LIST:    return "list";
-            default:        return "UNDEFINED";
+            default:        return "<" + Integer.toHexString(type) + ">";
         }
     }
 
