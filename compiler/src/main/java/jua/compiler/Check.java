@@ -183,8 +183,12 @@ public class Check extends Scanner {
         String calleeName = ((Member) callee).member;
         FunctionSymbol calleeSym = programScope.lookupFunction(calleeName);
 
-        //
-        Assert.checkNonNull(calleeSym);
+        if (calleeSym == null) {
+            tree.sym = programScope.defineStubFunction(calleeName);
+            report(stripParens(tree).pos, "calling an undeclared function");
+            return;
+        }
+        tree.sym = calleeSym;
 
         int count = Flow.count(tree.args);
         if (count > calleeSym.hiargc) {

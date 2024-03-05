@@ -219,24 +219,6 @@ public class Enter extends Scanner {
     }
 
     @Override
-    public void visitInvocation(Invocation tree) {
-        if (tree.target.hasTag(Tag.MEMACCESS)) {
-            Member targetTree = (Member) tree.target;
-            if (targetTree.expr == null) {
-                FunctionSymbol targetSym = globalScope.lookupFunction(targetTree.member);
-                if (targetSym == null) {
-                    tree.sym = globalScope.defineStubFunction(targetTree.member);
-                    report(tree.pos, "calling an undeclared function");
-                    return;
-                }
-                tree.sym = targetSym;
-            }
-        }
-
-        super.visitInvocation(tree);
-    }
-
-    @Override
     public void visitVariable(Var tree) {
         // Халтурно избегаем двойного поиска (defined + resolve)
         VarSymbol varSym = scope.resolve(tree.name);
