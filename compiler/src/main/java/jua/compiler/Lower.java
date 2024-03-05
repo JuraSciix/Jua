@@ -7,7 +7,7 @@ import jua.compiler.utils.Flow;
 import java.util.Objects;
 
 import static jua.compiler.SemanticInfo.ofBoolean;
-import static jua.compiler.TreeInfo.*;
+import static jua.compiler.CompHelper.*;
 
 public final class Lower extends Translator {
     private final ModuleScope scope;

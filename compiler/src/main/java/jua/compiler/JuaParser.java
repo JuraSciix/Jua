@@ -3,16 +3,15 @@ package jua.compiler;
 import jua.compiler.Tokens.Token;
 import jua.compiler.Tokens.TokenType;
 import jua.compiler.Tree.*;
-import jua.compiler.utils.Flow;
 import jua.compiler.utils.Conversions;
+import jua.compiler.utils.Flow;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static jua.compiler.CompHelper.*;
 import static jua.compiler.Tokens.TokenType.*;
-import static jua.compiler.TreeInfo.getBinOpPrecedence;
-import static jua.compiler.TreeInfo.getUnaryOpTag;
 
 public final class JuaParser {
 
@@ -370,8 +369,8 @@ public final class JuaParser {
             return new Assign(pos, expr, parseAssignment());
         }
 
-        if (TokenType.isEnhancedAsgOperator(token.type)) {
-            Tag tag = TreeInfo.getAsgTag(token.type);
+        if (isEnhancedAsgOperator(token.type)) {
+            Tag tag = getAsgTag(token.type);
             nextToken();
             return new EnhancedAssign(pos, tag, expr, parseAssignment());
         }
@@ -403,9 +402,9 @@ public final class JuaParser {
         Expr lhs = parseUnary();
         BinaryOp prev = null;
 
-        while (TokenType.isBinaryOperator(token.type)) {
+        while (isBinaryOperator(token.type)) {
             int pos = acceptedPos;
-            Tag tag = TreeInfo.getBinOpTag(token.type);
+            Tag tag = getBinOpTag(token.type);
             nextToken();
             Expr rhs = parseUnary();
 
@@ -424,7 +423,7 @@ public final class JuaParser {
     Expr parseUnary() {
         int pos = token.pos;
 
-        if (TokenType.isUnaryOperator(token.type)) {
+        if (isUnaryOperator(token.type)) {
             Tag tag = getUnaryOpTag(token.type);
             nextToken();
             return new UnaryOp(pos, tag, parseUnary());

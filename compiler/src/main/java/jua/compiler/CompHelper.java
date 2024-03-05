@@ -4,7 +4,30 @@ import jua.compiler.Tokens.TokenType;
 import jua.compiler.Tree.*;
 import jua.compiler.utils.Flow;
 
-public final class TreeInfo {
+import static jua.compiler.Tokens.TokenType.*;
+
+/**
+ * Compiler Helper
+ */
+public class CompHelper {
+
+    private static boolean checkRange(TokenType target, TokenType lo, TokenType hi) {
+        int o = target.ordinal();
+        return lo.ordinal() <= o && o <= hi.ordinal();
+    }
+
+    public static boolean isBinaryOperator(TokenType t) {
+        return checkRange(t, PLUS, QUESQUES);
+    }
+
+    public static boolean isUnaryOperator(TokenType t) {
+        return checkRange(t, BANG, AT) || t == PLUS || t == MINUS;
+    }
+
+    public static boolean isEnhancedAsgOperator(TokenType t) {
+        return checkRange(t, PLUSEQ, QUESQUESEQ);
+    }
+
 
     public static Expr stripParens(Expr tree) {
         Expr e = tree;
@@ -49,7 +72,7 @@ public final class TreeInfo {
                 return true;
             case LISTLIT:
                 ListLiteral listTree = (ListLiteral) innerTree;
-                return Flow.allMatch(listTree.entries, TreeInfo::isLiteral);
+                return Flow.allMatch(listTree.entries, CompHelper::isLiteral);
             default:
                 return false;
         }

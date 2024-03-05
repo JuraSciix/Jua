@@ -2,14 +2,13 @@ package jua.compiler;
 
 import jua.compiler.ModuleScope.FunctionSymbol;
 import jua.compiler.Tree.*;
-import jua.compiler.utils.Assert;
 import jua.compiler.utils.Flow;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import static jua.compiler.TreeInfo.*;
+import static jua.compiler.CompHelper.*;
 
 public class Check extends Scanner {
 
@@ -100,7 +99,7 @@ public class Check extends Scanner {
                 }
             } else {
                 Flow.forEach(c.labels, label -> {
-                    Literal l = (Literal) TreeInfo.stripParens(label);
+                    Literal l = (Literal) stripParens(label);
                     if (!dejaVu.add(l.value)) {
                         report(label.pos, "duplicate label");
                     }

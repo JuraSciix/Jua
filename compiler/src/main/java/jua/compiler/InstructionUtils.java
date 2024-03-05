@@ -2,6 +2,8 @@ package jua.compiler;
 
 import jua.compiler.Tree.Tag;
 
+import static jua.compiler.CompHelper.stripAsgTag;
+
 public class InstructionUtils {
 
     public static int fromBinaryOpTag(Tag tag) {
@@ -49,7 +51,7 @@ public class InstructionUtils {
     }
 
     public static int fromBinaryAsgOpTag(Tag tag) {
-        return fromBinaryOpTag(TreeInfo.stripAsgTag(tag));
+        return fromBinaryOpTag(stripAsgTag(tag));
     }
 
     public static int fromComparisonOpTag(Tag tag) {

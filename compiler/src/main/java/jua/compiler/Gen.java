@@ -14,8 +14,8 @@ import java.util.Map;
 
 import static jua.compiler.Code.mergeChains;
 import static jua.compiler.InstructionUtils.*;
-import static jua.compiler.TreeInfo.isNull;
-import static jua.compiler.TreeInfo.stripParens;
+import static jua.compiler.CompHelper.isNull;
+import static jua.compiler.CompHelper.stripParens;
 
 public class Gen extends Scanner {
 

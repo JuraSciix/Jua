@@ -103,23 +103,6 @@ public final class Tokens {
             return LOOKUP.get(value);
         }
 
-        private static boolean checkRange(TokenType target, TokenType lo, TokenType hi) {
-            int o = target.ordinal();
-            return lo.ordinal() <= o && o <= hi.ordinal();
-        }
-
-        public static boolean isBinaryOperator(TokenType t) {
-            return checkRange(t, PLUS, QUESQUES);
-        }
-
-        public static boolean isUnaryOperator(TokenType t) {
-            return checkRange(t, BANG, AT) || t == PLUS || t == MINUS;
-        }
-
-        public static boolean isEnhancedAsgOperator(TokenType t) {
-            return checkRange(t, PLUSEQ, QUESQUESEQ);
-        }
-
         public final String value;
         public final TokenKind kind;
 
