@@ -364,12 +364,12 @@ public class Gen extends Scanner {
     }
 
     @Override
-    public void visitMemberAccess(MemberAccess tree) {
+    public void visitMember(Member tree) {
         genAccess(tree, tree.expr, new Literal(tree.memberPos, tree.member));
     }
 
     @Override
-    public void visitArrayAccess(Access tree) {
+    public void visitIndex(Index tree) {
         genAccess(tree, tree.expr, tree.index);
     }
 
@@ -381,7 +381,7 @@ public class Gen extends Scanner {
 
     @Override
     public void visitInvocation(Invocation tree) {
-        Assert.check(tree.target instanceof MemberAccess);
+        Assert.check(tree.target instanceof Member);
         Flow.forEach(tree.args, a -> genExpr(a.expr).load());
         code.putPos(tree.pos);
         if (tree.sym.opcode == 0) {

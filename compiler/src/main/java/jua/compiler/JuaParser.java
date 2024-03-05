@@ -469,7 +469,7 @@ public final class JuaParser {
             int pos = acceptedPos;
             Expr index = parseExpression();
             expectToken(RBRACKET);
-            expr = new Access(pos, expr, index);
+            expr = new Index(pos, expr, index);
         }
 
         return expr;
@@ -567,7 +567,7 @@ public final class JuaParser {
         Flow<Invocation.Argument> args = parseInvocationArgs();
         expectToken(RPAREN);
         return new Invocation(token.pos,
-                new MemberAccess(token.pos, Tag.MEMACCESS, null, token.pos, token.name()),
+                new Member(token.pos, Tag.MEMACCESS, null, token.pos, token.name()),
                 args);
     }
 

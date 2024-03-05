@@ -221,7 +221,7 @@ public class Enter extends Scanner {
     @Override
     public void visitInvocation(Invocation tree) {
         if (tree.target.hasTag(Tag.MEMACCESS)) {
-            MemberAccess targetTree = (MemberAccess) tree.target;
+            Member targetTree = (Member) tree.target;
             if (targetTree.expr == null) {
                 FunctionSymbol targetSym = globalScope.lookupFunction(targetTree.member);
                 if (targetSym == null) {

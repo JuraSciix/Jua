@@ -92,8 +92,8 @@ public abstract class Tree {
         void visitLiteral(Literal tree);
         void visitListLiteral(ListLiteral tree);
         void visitVariable(Var tree);
-        void visitMemberAccess(MemberAccess tree);
-        void visitArrayAccess(Access tree);
+        void visitMember(Member tree);
+        void visitIndex(Index tree);
         void visitInvocation(Invocation tree);
         void visitParens(Parens tree);
         void visitAssign(Assign tree);
@@ -159,10 +159,10 @@ public abstract class Tree {
         public void visitVariable(Var tree) { visitTree(tree); }
 
         @Override
-        public void visitMemberAccess(MemberAccess tree) { visitTree(tree); }
+        public void visitMember(Member tree) { visitTree(tree); }
 
         @Override
-        public void visitArrayAccess(Access tree) { visitTree(tree); }
+        public void visitIndex(Index tree) { visitTree(tree); }
 
         @Override
         public void visitInvocation(Invocation tree) { visitTree(tree); }
@@ -302,12 +302,12 @@ public abstract class Tree {
         public void visitVariable(Var tree) {  }
 
         @Override
-        public void visitMemberAccess(MemberAccess tree) {
+        public void visitMember(Member tree) {
             scan(tree.expr);
         }
 
         @Override
-        public void visitArrayAccess(Access tree) {
+        public void visitIndex(Index tree) {
             scan(tree.expr);
             scan(tree.index);
         }
@@ -491,13 +491,13 @@ public abstract class Tree {
         public void visitVariable(Var tree) { result = tree; }
 
         @Override
-        public void visitMemberAccess(MemberAccess tree) {
+        public void visitMember(Member tree) {
             tree.expr = translate(tree.expr);
             result = tree;
         }
 
         @Override
-        public void visitArrayAccess(Access tree) {
+        public void visitIndex(Index tree) {
             tree.expr = translate(tree.expr);
             tree.index = translate(tree.index);
             result = tree;
@@ -944,7 +944,7 @@ public abstract class Tree {
     }
 
     @Deprecated
-    public static class MemberAccess extends Expr {
+    public static class Member extends Expr {
 
         public final Tag tag;
 
@@ -954,7 +954,7 @@ public abstract class Tree {
 
         public String member;
 
-        public MemberAccess(int pos, Tag tag, Expr expr, int memberPos, String member) {
+        public Member(int pos, Tag tag, Expr expr, int memberPos, String member) {
             super(pos);
             this.tag = tag;
             this.expr = expr;
@@ -966,14 +966,14 @@ public abstract class Tree {
         public Tag getTag() { return tag; }
 
         @Override
-        public void accept(Visitor visitor) { visitor.visitMemberAccess(this); }
+        public void accept(Visitor visitor) { visitor.visitMember(this); }
     }
 
-    public static class Access extends Expr {
+    public static class Index extends Expr {
 
         public Expr expr, index;
 
-        public Access(int pos, Expr expr, Expr index) {
+        public Index(int pos, Expr expr, Expr index) {
             super(pos);
             this.expr = expr;
             this.index = index;
@@ -983,7 +983,7 @@ public abstract class Tree {
         public Tag getTag() { return Tag.ARRACC; }
 
         @Override
-        public void accept(Visitor visitor) { visitor.visitArrayAccess(this); }
+        public void accept(Visitor visitor) { visitor.visitIndex(this); }
     }
 
     public static class Invocation extends Expr {

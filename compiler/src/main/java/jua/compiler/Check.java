@@ -175,12 +175,12 @@ public class Check extends Scanner {
     public void visitInvocation(Invocation tree) {
         // Заметка: Я не вызываю ниже stripParens потому что так надо
         Expr callee = tree.target;
-        if (!callee.hasTag(Tag.MEMACCESS) || ((MemberAccess) callee).expr != null) {
+        if (!callee.hasTag(Tag.MEMACCESS) || ((Member) callee).expr != null) {
             report(stripParens(callee).pos, "only function calls are allowed");
             return;
         }
 
-        String calleeName = ((MemberAccess) callee).member;
+        String calleeName = ((Member) callee).member;
         FunctionSymbol calleeSym = programScope.lookupFunction(calleeName);
 
         //
