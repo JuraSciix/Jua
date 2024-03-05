@@ -19,17 +19,19 @@ public final class Items {
     private final Code code;
     private final StackItem stackItem = new StackItem();
 
+    private Tree tree;
+
     public Items(Code code) {
         this.code = Objects.requireNonNull(code);
     }
 
-    abstract class Item {
-        Tree tree;
+    public Items t(Tree tree) {
+        this.tree = tree;
+        return this;
+    }
 
-        Item t(Tree tree) {
-            this.tree = tree;
-            return this;
-        }
+    abstract class Item {
+        Tree tree = Items.this.tree;
 
         Item load() {
             throw new UnsupportedOperationException(getClass().getName());
@@ -393,12 +395,6 @@ public final class Items {
         }
 
         @Override
-        CondItem t(Tree tree) {
-            super.t(tree);
-            return this;
-        }
-
-        @Override
         public Item load() {
             Chain falseJumps = falseJumps();
             code.resolve(trueChain);
@@ -421,7 +417,7 @@ public final class Items {
         }
 
         public CondItem negated() {
-            return new CondItem(InstructionUtils.negate(opcode), falseChain, trueChain).t(tree);
+            return new CondItem(InstructionUtils.negate(opcode), falseChain, trueChain);
         }
 
         public Chain trueJumps() {
@@ -436,6 +432,7 @@ public final class Items {
     }
 
     StackItem mkStackItem() {
+        stackItem.tree = tree;
         return stackItem;
     }
 

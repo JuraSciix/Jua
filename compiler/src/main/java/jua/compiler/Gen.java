@@ -342,7 +342,7 @@ public class Gen extends Scanner {
 
     @Override
     public void visitLiteral(Literal tree) {
-        result = items.mkLiteral(tree.value).t(tree);
+        result = items.t(tree).mkLiteral(tree.value);
     }
 
     @Override
@@ -362,7 +362,7 @@ public class Gen extends Scanner {
 
     @Override
     public void visitVariable(Var tree) {
-        result = items.makeLocal(tree.sym.id).t(tree);
+        result = items.t(tree).makeLocal(tree.sym.id);
     }
 
     @Override
@@ -378,7 +378,7 @@ public class Gen extends Scanner {
     private void genAccess(Expr tree, Expr expr, Expr key) {
         genExpr(expr).load();
         genExpr(key).load();
-        result = items.mkAccessItem().t(tree);
+        result = items.t(tree).mkAccessItem();
     }
 
     @Override
@@ -413,12 +413,13 @@ public class Gen extends Scanner {
             Chain skipCoalesceChain = presentCond.trueJumps();
             code.resolve(presentCond.falseChain);
             genExpr(tree.expr).load();
-            result = varItem.coalesceAsg(skipCoalesceChain).t(tree);
+            items.t(tree);
+            result = varItem.coalesceAsg(skipCoalesceChain);
         } else {
             varItem.load();
             genExpr(tree.expr).load();
             code.emitSingle(fromBinaryAsgOpTag(tree.tag));
-            result = items.makeAssignItem(varItem).t(tree);
+            result = items.t(tree).makeAssignItem(varItem);
         }
     }
 
@@ -444,7 +445,7 @@ public class Gen extends Scanner {
                 code.resolve(lhsCond.trueChain);
                 CondItem rhsCond = genExpr(tree.rhs).asCond();
                 Chain skipOtherConditionsChain = mergeChains(falseJumps, rhsCond.falseChain);
-                result = items.makeCondItem(rhsCond.opcode, rhsCond.trueChain, skipOtherConditionsChain).t(tree);
+                result = items.t(tree).makeCondItem(rhsCond.opcode, rhsCond.trueChain, skipOtherConditionsChain);
                 break;
             }
 
@@ -454,7 +455,7 @@ public class Gen extends Scanner {
                 code.resolve(lhsCond.falseChain);
                 CondItem rhsCond = genExpr(tree.rhs).asCond();
                 Chain skipOtherConditionsChain = mergeChains(trueJumps, rhsCond.trueChain);
-                result = items.makeCondItem(rhsCond.opcode, skipOtherConditionsChain, rhsCond.falseChain).t(tree);
+                result = items.t(tree).makeCondItem(rhsCond.opcode, skipOtherConditionsChain, rhsCond.falseChain);
                 break;
             }
 
@@ -463,7 +464,7 @@ public class Gen extends Scanner {
             case LT: case LE:
                 genExpr(tree.lhs).load();
                 genExpr(tree.rhs).load();
-                result = items.makeCondItem(fromComparisonOpTag(tree.tag)).t(tree);
+                result = items.t(tree).makeCondItem(fromComparisonOpTag(tree.tag));
                 break;
                 
             case COALESCE: {
@@ -490,26 +491,28 @@ public class Gen extends Scanner {
 
     @Override
     public void visitUnaryOp(UnaryOp tree) {
+        Item item = genExpr(tree.expr);
+        items.t(tree);
         switch (tree.tag) {
             case POSTINC: case POSTDEC:
             case PREINC: case PREDEC:
-                result = genExpr(tree.expr).increase(tree.tag).t(tree);
+                result = item.increase(tree.tag);
                 break;
 
             case NOT:
-                result = genExpr(tree.expr).asCond().negated().t(tree);
+                result = item.asCond().negated();
                 break;
 
             case NULLCHK:
-                result = genExpr(tree.expr).asNonNullCond().t(tree);
+                result = item.asNonNullCond();
                 break;
 
             case EVACUATE:
-                result = genExpr(tree.expr).wrapEvacuate();
+                result = item.wrapEvacuate();
                 break;
 
             default:
-                genExpr(tree.expr).load();
+                item.load();
                 code.markTreePos(tree);
                 code.emitSingle(fromUnaryOpTag(tree.tag));
                 result = items.mkStackItem();
