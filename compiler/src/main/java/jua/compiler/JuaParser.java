@@ -134,6 +134,15 @@ public final class JuaParser {
         }
     }
 
+    private void expectSemi() {
+        // todo: В будущем планируется сделать точку с запятой не обязательной,
+        //  но есть проблема: становится сложнее определить конечный вид дерева.
+        //  Например: if true { return } return while (true){}. Надо разделить токены на две группы:
+        //   токены операторов и токены выражений.
+        //  Или можно внеднить новый токен NEWLINE, но надо подумать.
+        expectToken(SEMI);
+    }
+
     private VarDef parseVar() {
         Flow.Builder<VarDef.Definition> defs = Flow.builder();
         do {
@@ -145,17 +154,17 @@ public final class JuaParser {
             }
             defs.append(new VarDef.Definition(name.pos, name.name(), init));
         } while (acceptToken(COMMA));
-        expectToken(SEMI);
+        expectSemi();
         return new VarDef(acceptedPos, defs.toFlow());
     }
 
     private Stmt parseBreak() {
-        expectToken(SEMI);
+        expectSemi();
         return new Break(acceptedPos);
     }
 
     private Stmt parseContinue() {
-        expectToken(SEMI);
+        expectSemi();
         return new Continue(acceptedPos);
     }
 
@@ -164,7 +173,7 @@ public final class JuaParser {
         Stmt body = parseStatement();
         expectToken(WHILE);
         Expr cond = parseExpression();
-        expectToken(SEMI);
+        expectSemi();
         return new DoLoop(position, body, cond);
     }
 
@@ -176,7 +185,7 @@ public final class JuaParser {
             if (!acceptToken(ELSE)) {
                 target = parseExpression();
             }
-            expectToken(SEMI);
+            expectSemi();
             hasTarget = true;
         }
         return new Fallthrough(pos, target, hasTarget);
@@ -216,7 +225,7 @@ public final class JuaParser {
         if (acceptToken(LBRACE)) return parseBlock();
         if (acceptToken(EQ)) {
             Expr expr = parseExpression();
-            expectToken(SEMI);
+            expectSemi();
             return new Discarded(expr.pos, expr);
         }
         reportError(pos, "Illegal function body");
@@ -302,7 +311,7 @@ public final class JuaParser {
         } catch (ParseNodeExit e) {
             report(e);
         }
-        expectToken(SEMI);
+        expectSemi();
         return new Return(pos, expr);
     }
 
@@ -343,7 +352,7 @@ public final class JuaParser {
     private Stmt parseUnusedExpression() {
         int position = acceptedPos;
         Expr expr = parseExpression();
-        expectToken(SEMI);
+        expectSemi();
         return new Discarded(position, expr);
     }
 
