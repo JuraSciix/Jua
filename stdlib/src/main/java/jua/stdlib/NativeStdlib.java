@@ -4,8 +4,8 @@ import jua.runtime.Function;
 import jua.runtime.Types;
 import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.StringHeap;
-import jua.runtime.interpreter.InterpreterThread;
 import jua.runtime.interpreter.Address;
+import jua.runtime.interpreter.InterpreterThread;
 import jua.stdlib.NativeSupport.NativeFunctionPresent;
 import jua.stdlib.NativeSupport.ParamsData;
 
@@ -37,6 +37,12 @@ public class NativeStdlib {
         nfp.add(new StrCharArrayFunction());
         nfp.add(new StrCmpFunction());
         nfp.add(new HashFunction());
+        nfp.add(new ChrFunction());
+        nfp.add(new OrdFunction());
+        nfp.add(new StrCharAt());
+        nfp.add(new StrSub());
+        nfp.add(new Str());
+        nfp.add(new Int());
     }
 
     static class PrintFunction extends NativeFunctionPresent {
@@ -360,6 +366,108 @@ public class NativeStdlib {
             return true;
         }
     }
+
+    static class ChrFunction extends NativeFunctionPresent {
+        ChrFunction() {
+            super("chr", ParamsData.create().add("codepoint"));
+        }
+
+        @Override
+        public boolean execute(Address[] args, int argc, Address returnAddress) {
+            if (args[0].hasType(Types.T_INT)) {
+                StringBuilder sb = new StringBuilder();
+                sb.appendCodePoint((int)args[0].getLong());
+                returnAddress.set(new StringHeap(sb.toString()));
+                return true;
+            }
+            return false;
+        }
+    }
+
+    static class OrdFunction extends NativeFunctionPresent {
+        OrdFunction() {
+            super("ord", ParamsData.create().add("chr"));
+        }
+
+        @Override
+        public boolean execute(Address[] args, int argc, Address returnAddress) {
+            if (args[0].hasType(Types.T_STRING) && !args[0].stringVal().isEmpty()) {
+                returnAddress.set(args[0].stringVal().codePointAt(0));
+                return true;
+            }
+            return false;
+        }
+    }
+
+    static class StrCharAt extends NativeFunctionPresent {
+        StrCharAt() {
+            super("str_char_at", ParamsData.create().add("str").add("pos"));
+        }
+
+        @Override
+        public boolean execute(Address[] args, int argc, Address returnAddress) {
+            if (args[0].hasType(Types.T_STRING) && args[1].longVal(returnAddress)) {
+                int cp = args[0].stringVal().codePointAt((int)returnAddress.getLong());
+                StringBuilder sb = new StringBuilder();
+                sb.appendCodePoint(cp);
+                returnAddress.set(new StringHeap(sb.toString()));
+                return true;
+            }
+            return false;
+        }
+    }
+
+    static class StrSub extends NativeFunctionPresent {
+        StrSub() {
+            super("str_sub", ParamsData.create().add("str").add("offset").optional("count", -1));
+        }
+
+        @Override
+        public boolean execute(Address[] args, int argc, Address returnAddress) {
+            StringHeap str = args[0].stringVal();
+            int offset;
+            int count;
+            if (!args[1].longVal(returnAddress))
+                return false;
+            offset = (int) returnAddress.getLong();
+            if (argc == 3) {
+                if (!args[2].longVal(returnAddress))
+                    return false;
+                count = (int) returnAddress.getLong();
+            } else {
+                count = str.length() - offset;
+            }
+
+            returnAddress.set(new StringHeap(str, offset, count));
+            return true;
+        }
+    }
+
+    static class Str extends NativeFunctionPresent {
+        Str() {
+            super("str", ParamsData.create().add("value"));
+        }
+
+        @Override
+        public boolean execute(Address[] args, int argc, Address returnAddress) {
+            return args[0].stringVal(returnAddress);
+        }
+    }
+
+    static class Int extends NativeFunctionPresent {
+        Int() {
+            super("int", ParamsData.create().add("value").optional("radix", 10));
+        }
+
+        @Override
+        public boolean execute(Address[] args, int argc, Address returnAddress) {
+            int radix = (argc==2)?(int)args[1].getLong():10;
+            long val = Long.parseLong(args[0].stringVal().toString(), radix);
+            returnAddress.set(val);
+            return true;
+        }
+    }
+
 
     public static List<Function> getNativeFunctions() {
         return nfp.stream().map(NativeFunctionPresent::build).collect(Collectors.toList());
