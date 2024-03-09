@@ -39,7 +39,7 @@ public final class ListHeap extends Heap implements Iterable<Address> {
     }
 
     public void setKey(int key) {
-        if (key < 0 || key >= length()) {
+        if (key < 0 || key > length()) {
             throw new IndexOutOfBoundsException();
         }
         this.key = key;
