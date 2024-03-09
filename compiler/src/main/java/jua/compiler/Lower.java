@@ -35,7 +35,8 @@ public final class Lower extends Translator {
                                 new Block(pos, tree.stats), 0))
                 .toFlow();
         tree.stats = Flow.empty();
-        result = tree;
+
+        super.visitDocument(tree);
     }
 
     @Override
