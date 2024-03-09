@@ -4,6 +4,7 @@ import jua.runtime.Function;
 import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.StringHeap;
 import jua.runtime.interpreter.Address;
+import jua.runtime.interpreter.Histogram;
 import jua.stdlib.util.ObjectSizeAnalyzing;
 
 import java.util.Arrays;
@@ -267,6 +268,24 @@ public class Lib {
             })
             .build();
 
+    private static final Function histogramAction = builder()
+            .name("histogramAction")
+            .param("actionId")
+            .callable((context, args, returnAddress) -> {
+                switch ((int)args[0].getLong()) {
+                    case 0:
+                        Histogram.enable();
+                        break;
+                    case 1:
+                        Histogram.get().print();
+                        break;
+                    case 2:
+                        Histogram.disable();
+                        break;
+                }
+                returnAddress.setNull();
+            })
+            .build();
 
 
     public static Collection<Function> getFunctions() {
@@ -292,7 +311,8 @@ public class Lib {
                 strLowerCase,
                 strUpperCase,
                 strTrim,
-                sizeof
+                sizeof,
+                histogramAction
         );
     }
 }
