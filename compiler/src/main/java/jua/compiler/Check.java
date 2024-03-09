@@ -58,11 +58,19 @@ public class Check extends Scanner {
 
     @Override
     public void visitFuncDef(FuncDef tree) {
-        Flow.forEach(tree.params, param -> {
-            if (param.expr != null) {
-                requireLiteralTree(param.expr);
+        if (Flags.hasFlag(tree.flags, Flags.FN_ONCE)) {
+            // Is "once" function
+            if (!Flow.isEmpty(tree.params)) {
+                report(Flow.first(tree.params).pos, "once-functions may not have parameters");
             }
-        });
+            // Анализировать параметры функции, которых не должно быть - бессмысленное действие.
+        } else {
+            Flow.forEach(tree.params, param -> {
+                if (param.expr != null) {
+                    requireLiteralTree(param.expr);
+                }
+            });
+        }
 
         scan(tree.body);
     }

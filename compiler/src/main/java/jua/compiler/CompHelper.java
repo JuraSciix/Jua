@@ -197,4 +197,8 @@ public class CompHelper {
             default: throw new AssertionError(operatorTag);
         }
     }
+
+    public static boolean isOnceFn(FuncDef tree) {
+        return Flags.hasFlag(tree.flags, Flags.FN_ONCE);
+    }
 }

@@ -202,7 +202,7 @@ public final class Code {
                 sym.loargc,
                 sym.hiargc,
                 sym.defs,
-                sym.params);
+                sym.params, sym.flags);
     }
 
     private LineNumberTable buildLineNumberTable() {

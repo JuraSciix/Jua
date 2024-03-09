@@ -29,7 +29,7 @@ public class Executable2FunctionTranslator {
                     AddressSupport.assignObject(a, o);
                     return a;
                 }).toArray(Address[]::new),
-                0,
+                executable.flags,
                 new CodeData(
                         executable.stackSize,
                         executable.regSize,

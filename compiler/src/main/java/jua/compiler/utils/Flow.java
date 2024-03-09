@@ -117,6 +117,14 @@ public class Flow<T> {
         return count;
     }
 
+    public static boolean isEmpty(Flow<?> flow) {
+        return flow == null;
+    }
+
+    public static <T> T first(Flow<T> flow) {
+        return flow.value;
+    }
+
     public T value;
 
     public Flow<T> next;

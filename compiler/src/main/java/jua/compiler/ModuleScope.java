@@ -15,8 +15,9 @@ public final class ModuleScope {
         public final String name;
         public final int loargc, hiargc;
         public final String[] params;
-
         public Object[] defs; // У пользовательских функций изначально всегда null, потом в Gen устанавливается
+        public int flags;
+
         public Code code;
 
         public Module.Executable executable;
@@ -24,12 +25,13 @@ public final class ModuleScope {
         public int opcode = 0; // Не равно нулю, если языковая конструкция
         public int nativeHandle = -1; // Неотрицательно, если это заглушка для нативной функции.
 
-        FunctionSymbol(String name, int loargc, int hiargc, String[] params, Object[] defs) {
+        FunctionSymbol(String name, int loargc, int hiargc, String[] params, Object[] defs, int flags) {
             this.name = name;
             this.loargc = loargc;
             this.hiargc = hiargc;
             this.params = params;
             this.defs = defs;
+            this.flags = flags;
         }
     }
 
@@ -63,7 +65,7 @@ public final class ModuleScope {
     }
 
     private void registerOperator(String name, Signature signature, int opcode) {
-        FunctionSymbol symbol = new FunctionSymbol(name, signature.argc, signature.argc, signature.names, new Object[0]);
+        FunctionSymbol symbol = new FunctionSymbol(name, signature.argc, signature.argc, signature.names, new Object[0], 0);
         symbol.opcode = opcode;
         functions.put(name, symbol);
     }
@@ -78,7 +80,7 @@ public final class ModuleScope {
         if (functions.containsKey(name)) {
             throw new IllegalArgumentException("Duplicate function: " + name);
         }
-        FunctionSymbol sym = new FunctionSymbol(name, minArgc, maxArgc, params, defs);
+        FunctionSymbol sym = new FunctionSymbol(name, minArgc, maxArgc, params, defs, Flags.FN_NATIVE);
         sym.nativeHandle = nativeHandle;
         functions.put(name, sym);
         return sym;
@@ -107,7 +109,8 @@ public final class ModuleScope {
                 a.min,
                 a.max,
                 params.toArray(new String[0]),
-                null // Потом будет установлено
+                null, // Потом будет установлено,
+                tree.flags
         );
         sym.nlocals = nlocals;
         functions.put(name, sym);
@@ -120,7 +123,8 @@ public final class ModuleScope {
                 0,
                 255,
                 null,
-                new Object[0]
+                new Object[0],
+                0
         );
         functions.put(name, sym);
         return sym;

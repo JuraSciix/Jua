@@ -6,6 +6,7 @@ import jua.compiler.Tree.*;
 import jua.compiler.utils.Conversions;
 import jua.compiler.utils.Flow;
 
+import java.sql.Statement;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -52,8 +53,14 @@ public final class JuaParser {
 
         while (!acceptToken(EOF)) {
             try {
+                if (acceptToken(ONCE)) {
+                    // todo: "once" variables
+                    expectToken(FN);
+                    funcDefs.append(parseFunction(Flags.FN_ONCE));
+                    continue;
+                }
                 if (acceptToken(FN)) {
-                    funcDefs.append(parseFunction());
+                    funcDefs.append(parseFunction(0));
                     continue;
                 }
                 stats.append(parseStatement());
@@ -191,7 +198,7 @@ public final class JuaParser {
         return new Fallthrough(pos, target, hasTarget);
     }
 
-    private FuncDef parseFunction() {
+    private FuncDef parseFunction(int flags) {
         int pos = acceptedPos;
         Token funcName = token;
         expectToken(IDENTIFIER);
@@ -217,7 +224,7 @@ public final class JuaParser {
             comma = !acceptToken(COMMA);
         }
         Stmt body = parseBody();
-        return new FuncDef(pos, funcName.pos, funcName.name(), params.toFlow(), body);
+        return new FuncDef(pos, funcName.pos, funcName.name(), params.toFlow(), body, flags);
     }
 
     private Stmt parseBody() {

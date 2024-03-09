@@ -32,7 +32,7 @@ public final class Lower extends Translator {
                                 pos,
                                 "<main>",
                                 Flow.empty(),
-                                new Block(pos, tree.stats)))
+                                new Block(pos, tree.stats), 0))
                 .toFlow();
         tree.stats = Flow.empty();
         result = tree;

@@ -110,11 +110,20 @@ public final class InterpreterThread {
         pushFrame();
         if (callee.isUserDefined()) {
             memory.acquire(callee.getCode().locals());
-            for (int i = 0; i < numArgs; i++) {
-                memory.get(numArgs - i - 1).set(stack().popGet());
-            }
-            for (int i = numArgs; i < callee.maxArgc; i++) {
-                memory.get(i).set(callee.defaults[i - callee.minArgc]);
+            if (callee.isOnce()) {
+                if (callee.onceCondition) {
+                    stack.pushGet().set(callee.onceContainer);
+                    set_msg(MSG_POPPING_FRAME);
+                    return;
+                }
+                // У "once" функций не должно быть параметров
+            } else {
+                for (int i = 0; i < numArgs; i++) {
+                    memory.get(numArgs - i - 1).set(stack().popGet());
+                }
+                for (int i = numArgs; i < callee.maxArgc; i++) {
+                    memory.get(i).set(callee.defaults[i - callee.minArgc]);
+                }
             }
             set_msg(MSG_RUNNING_FRAME);
         } else {
@@ -129,8 +138,6 @@ public final class InterpreterThread {
             boolean success = callee.nativeExecutor().execute(args, numArgs, stack().pushGet());
             if (success) {
                 set_msg(MSG_POPPING_FRAME);
-                popFrame();
-                set_msg(MSG_RUNNING_FRAME);
             } else {
                 Assert.check(isCrashed());
             }
@@ -138,8 +145,20 @@ public final class InterpreterThread {
     }
 
     private void leaveFrame() {
-        stack.cleanup();
-        memory.release(currentFrame().getFunction().getCode().locals());
+        Function fn = currentFrame().getFunction();
+        if (fn.isUserDefined()) {
+            stack.cleanup();
+            memory.release(fn.getCode().locals());
+            if (fn.isOnce()) {
+                if (!fn.onceCondition) {
+                    // Запоминаем возвращаемое значение
+                    fn.onceContainer = new Address();
+                    fn.onceContainer.set(stack().peek(-1));
+                    // Запоминаем состояние: функция выполнена, значение сохранено
+                    fn.onceCondition = true;
+                }
+            }
+        }
         popFrame();
         if (current == null) {
             interrupt(); // Выполнять более нечего
@@ -157,6 +176,9 @@ public final class InterpreterThread {
     }
 
     public void prepareCall(Function calleeFn, int argCount) {
+        if (DEBUG) {
+            System.out.printf("prepareCall: name=%s, once=%b %n", calleeFn.name, calleeFn.isOnce());
+        }
         callee = calleeFn;
         numArgs = argCount;
         set_msg(MSG_CALLING_FRAME);
@@ -190,12 +212,10 @@ public final class InterpreterThread {
      * Возвращает {@code true}, если ошибок не произошло, иначе {@code false}.
      */
     public boolean callAndWait(Function function, Address[] args, Address returnAddress) {
-        set_msg(MSG_CALLING_FRAME);
-        callee = function;
+        prepareCall(function, args.length);
         for (Address arg : args) {
             stack().push(arg);
         }
-        numArgs = args.length;
         run();
         if (isCrashed()) {
             return false;

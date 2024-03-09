@@ -623,12 +623,15 @@ public abstract class Tree {
 
         public FunctionSymbol sym;
 
-        public FuncDef(int pos, int namePos, String name, Flow<Parameter> params, Stmt body) {
+        public int flags;
+
+        public FuncDef(int pos, int namePos, String name, Flow<Parameter> params, Stmt body, int flags) {
             super(pos);
             this.namePos = namePos;
             this.name = name;
             this.params = params;
             this.body = body;
+            this.flags = flags;
         }
 
         @Override

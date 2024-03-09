@@ -23,10 +23,11 @@ public final class Module {
         public final int reqargs, totargs;
         public final Object[] defs;
         public final String[] varnames;
+        public final int flags;
 
         public Executable(String name, String fileName, InstructionUtils.InstrNode[] code,
                           int regSize, int stackSize, Object[] constantPool,
-                          LineNumberTable lineNumberTable, int reqargs, int totargs, Object[] defs, String[] varnames) {
+                          LineNumberTable lineNumberTable, int reqargs, int totargs, Object[] defs, String[] varnames, int flags) {
             this.name = name;
             this.fileName = fileName;
             this.code = code;
@@ -38,6 +39,7 @@ public final class Module {
             this.totargs = totargs;
             this.defs = defs;
             this.varnames = varnames;
+            this.flags = flags;
         }
     }
 }
