@@ -22,7 +22,7 @@ public final class ModuleScope {
 
         public Module.Executable executable;
         public int nlocals;
-        public int opcode = 0; // Не равно нулю, если языковая конструкция
+        public int opcode = -1; // Больше или равно нуля, если языковая конструкция
         public int nativeHandle = -1; // Неотрицательно, если это заглушка для нативной функции.
 
         FunctionSymbol(String name, int loargc, int hiargc, String[] params, Object[] defs, int flags) {
@@ -52,6 +52,7 @@ public final class ModuleScope {
     private void registerOperators() {
         registerOperator("length", new Signature(1, "value"), InstructionUtils.OPCodes.Length);
         registerOperator("list", new Signature(1, "size"), InstructionUtils.OPCodes.NewList);
+        registerOperator("nop", new Signature(0), InstructionUtils.OPCodes.Nop);
     }
 
     private static class Signature {
@@ -136,7 +137,7 @@ public final class ModuleScope {
 
     public Collection<FunctionSymbol> getUserFunctions() {
         return functions.values().stream()
-                .filter(s -> s.nativeHandle < 0 && s.opcode == 0)
+                .filter(s -> s.nativeHandle < 0 && s.opcode < 0)
                 .collect(Collectors.toList());
     }
 }

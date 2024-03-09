@@ -104,9 +104,6 @@ public class Gen extends Scanner {
         code.putPos(tree.pos);
         items = new Items(code);
 
-        // todo: Не использовать типы из runtime
-        // todo: Повысить качество кода: понизить связность, распределить ответственность.
-
         java.util.List<Object> defaults = new ArrayList<>();
         Flow.forEach(tree.params, param -> {
             if (param.expr != null) {
@@ -386,7 +383,7 @@ public class Gen extends Scanner {
         Assert.check(tree.target instanceof Member);
         Flow.forEach(tree.args, a -> genExpr(a.expr).load());
         code.putPos(tree.pos);
-        if (tree.sym.opcode == 0) {
+        if (tree.sym.opcode < 0) {
             // Обычный вызов функции
             int calleeId = code.resolveCallee(tree.sym.name);
             code.emitCall(calleeId, Flow.count(tree.args));
