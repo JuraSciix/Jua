@@ -848,17 +848,11 @@ public final class Address implements Comparable<Address> {
         }
     }
 
+    /**
+     * @deprecated Use {@link AddressSupport#toJavaObject(Address)}.
+     */
     public Object toObject() {
-        switch (type) {
-            case T_NULL:      return null;
-            case T_INT:       return l;
-            case T_FLOAT:     return d;
-            case T_BOOLEAN:   return Types.l2b(l);
-            case T_STRING:    return getStringHeap();
-            case T_LIST:      return getListHeap();
-            case T_UNDEFINED: // fallthrough
-            default: throw new AssertionError(type);
-        }
+        return AddressSupport.toJavaObject(this);
     }
 
     /**

@@ -3,6 +3,8 @@ package jua.runtime.interpreter;
 import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.StringHeap;
 
+import static jua.runtime.Types.*;
+
 public class AddressSupport {
 
     public static void assignObject(Address address, Object o) {
@@ -34,8 +36,34 @@ public class AddressSupport {
             address.set((ListHeap) o);
         } else if (o instanceof Address) {
             address.set((Address) o);
+        } else if (o instanceof Object[]) {
+            Object[] javaArray = (Object[]) o;
+            ListHeap array = new ListHeap(javaArray.length);
+            for (int i = 0; i < javaArray.length; i++) {
+                assignObject(array.get(i), javaArray[i]);
+            }
+            address.set(array);
         } else {
             throw new IllegalArgumentException(o.getClass().getName());
+        }
+    }
+
+    public static Object toJavaObject(Address a) {
+        switch (a.getType()) {
+            case T_INT:
+                return a.getLong();
+            case T_FLOAT:
+                return a.getDouble();
+            case T_BOOLEAN:
+                return a.getBoolean();
+            case T_STRING:
+                return a.getStringHeap();
+            case T_LIST:
+                return a.getListHeap();
+            case T_NULL:
+                return null;
+            default:
+                throw new AssertionError(a.getTypeName());
         }
     }
 }
