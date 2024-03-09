@@ -16,7 +16,8 @@ public class Lib {
 
     private static final Function print = builder()
             .name("print")
-            .param("value")
+            .optional()
+            .optional("value", "")
             .callable((context, args, returnAddress) -> {
                 Address stringAddress = new Address();
                 args[0].stringVal(stringAddress);
@@ -26,7 +27,8 @@ public class Lib {
 
     private static final Function println = builder()
             .name("println")
-            .param("value")
+            .optional()
+            .optional("value", "")
             .callable((context, args, returnAddress) -> {
                 Address stringAddress = new Address();
                 args[0].stringVal(stringAddress);
