@@ -219,7 +219,9 @@ public final class InterpreterThread {
         int i = limit;
 
         while (frame != null && i > 0) {
-            stackTrace.add(toStackTraceElement(frame));
+            if (!frame.getFunction().isHidden()) {
+                stackTrace.add(toStackTraceElement(frame));
+            }
             frame = frame.getCaller();
             i--;
         }

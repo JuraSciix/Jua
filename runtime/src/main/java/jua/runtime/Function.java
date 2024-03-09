@@ -8,7 +8,8 @@ import java.util.Objects;
 
 public final class Function {
 
-    public static final int FLAG_NATIVE = 0x01; /* Нативная функция. */
+    public static final int FLAG_NATIVE = 0x01; /* Нативная функция */
+    public static final int FLAG_HIDDEN = 0x01; /* Функция не показывается в трассировке стека */
 
     /** Название функции. */
     public final String name;
@@ -85,6 +86,10 @@ public final class Function {
 
     public boolean isUserDefined() {
         return (flags & FLAG_NATIVE) == 0;
+    }
+
+    public boolean isHidden() {
+        return (flags & FLAG_HIDDEN) == FLAG_HIDDEN;
     }
 
     public NativeExecutor nativeExecutor() {
