@@ -6,9 +6,10 @@ import jua.compiler.ModulePrinter;
 import jua.compiler.ModuleScope;
 import jua.runtime.Function;
 import jua.runtime.JuaEnvironment;
+import jua.runtime.interpreter.AddressSupport;
 import jua.runtime.interpreter.InterpreterThread;
 import jua.runtime.interpreter.Address;
-import jua.stdlib.NativeStdlib;
+import jua.stdlib.Lib;
 
 import java.io.File;
 import java.util.*;
@@ -58,11 +59,11 @@ public class Main {
         // Регистрируем нативные члены.
         ModuleScope ms = c.getModuleScope();
 
-        nativeFunctions = NativeStdlib.getNativeFunctions().toArray(new Function[0]);
+        nativeFunctions = Lib.getFunctions().toArray(new Function[0]);
         for (int i = 0; i < nativeFunctions.length; i++) {
             Function f = nativeFunctions[i];
             ms.defineNativeFunction(f.name, f.minArgc, f.maxArgc,
-                    Arrays.stream(f.defaults).map(Address::toObject).toArray(), f.params, i);
+                    Arrays.stream(f.defaults).map(AddressSupport::toJavaObject).toArray(), f.params, i);
         }
 
         module = c.compile();

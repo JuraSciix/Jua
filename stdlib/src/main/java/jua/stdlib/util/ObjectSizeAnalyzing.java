@@ -1,4 +1,4 @@
-package jua.stdlib;
+package jua.stdlib.util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
