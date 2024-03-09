@@ -15,11 +15,11 @@ public final class StringHeap extends Heap implements CharSequence, Comparable<S
         this("", 0, 0);
     }
 
-    public StringHeap(String source) {
+    public StringHeap(CharSequence source) {
         this(source, 0, source.length());
     }
 
-    public StringHeap(String source, int offset, int count) {
+    public StringHeap(CharSequence source, int offset, int count) {
         if (count == 0) {
             buffer = new StringBuilder(1);
             hashCodeCalculated = true; // Хеш-код пустой строки всегда равняется нулю.
