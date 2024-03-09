@@ -52,7 +52,6 @@ public final class ModuleScope {
     private void registerOperators() {
         registerOperator("length", new Signature(1, "value"), InstructionUtils.OPCodes.Length);
         registerOperator("list", new Signature(1, "size"), InstructionUtils.OPCodes.NewList);
-        registerOperator("nop", new Signature(0), InstructionUtils.OPCodes.Nop);
     }
 
     private static class Signature {
