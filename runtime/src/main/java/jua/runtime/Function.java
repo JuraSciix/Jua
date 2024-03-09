@@ -8,7 +8,7 @@ import java.util.Objects;
 
 public final class Function {
 
-    public static final long FLAG_NATIVE = 0x01; /* Нативная функция. */
+    public static final int FLAG_NATIVE = 0x01; /* Нативная функция. */
 
     /** Название функции. */
     public final String name;
@@ -29,13 +29,13 @@ public final class Function {
     public final Address[] defaults;
 
     /** Флаги функции. */
-    public final long flags;
+    public final int flags;
 
     public final CodeData code;
 
     public final NativeExecutor nativeBody;
 
-    public Function(String name, String module, int minArgc, int maxArgc, String[] params, Address[] defaults, long flags, CodeData code, NativeExecutor nativeBody) {
+    public Function(String name, String module, int minArgc, int maxArgc, String[] params, Address[] defaults, int flags, CodeData code, NativeExecutor nativeBody) {
         this.name = name;
         this.module = module;
         this.minArgc = minArgc;
@@ -71,7 +71,7 @@ public final class Function {
         return defaults;
     }
 
-    public long getFlags() {
+    public int getFlags() {
         return flags;
     }
 
@@ -88,14 +88,14 @@ public final class Function {
     }
 
     public NativeExecutor nativeExecutor() {
-        if ((flags & FLAG_NATIVE) == 0L) {
+        if ((flags & FLAG_NATIVE) == 0) {
             throw new IllegalStateException("trying to access the native executor of a non-native function");
         }
         return nativeBody;
     }
 
     public CodeData userCode() {
-        if ((flags & FLAG_NATIVE) != 0L) {
+        if ((flags & FLAG_NATIVE) != 0) {
             throw new IllegalStateException("trying to access the user code of a native function");
         }
         return code;
