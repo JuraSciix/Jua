@@ -35,7 +35,7 @@ public class Lib {
 
     private static final Function panic = builder()
             .name("panic")
-            .flags(Function.FLAG_HIDDEN)
+            .flags(Function.FLAG_HIDDEN | Function.FLAG_KILLER)
             .optional()
             .optional("msg", null)
             .callable((context, args, returnAddress) -> {

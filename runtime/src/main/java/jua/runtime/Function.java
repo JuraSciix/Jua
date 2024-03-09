@@ -11,6 +11,7 @@ public final class Function {
     public static final int FLAG_NATIVE = 0x01; /* Нативная функция */
     public static final int FLAG_HIDDEN = 0x02; /* Функция не показывается в трассировке стека */
     public static final int FLAG_ONCE = 0x04; /* Функция выполняется единожды, затем возвращается только результат */
+    public static final int FLAG_KILLER = 0x08; /* Функция, которая точно прекращает выполнение потока1 */
 
     /** Название функции. */
     public final String name;
