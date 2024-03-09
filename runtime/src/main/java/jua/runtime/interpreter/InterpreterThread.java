@@ -119,9 +119,12 @@ public final class InterpreterThread {
             set_msg(MSG_RUNNING_FRAME);
         } else {
             set_msg(MSG_RUNNING_FRAME);
-            Address[] args = AddressUtils.allocateMemory(numArgs, 0);
+            Address[] args = AddressUtils.allocateMemory(callee.maxArgc, 0);
             for (int i = 0; i < numArgs; i++) {
                 args[numArgs - i - 1].set(stack().popGet());
+            }
+            for (int i = numArgs; i < callee.maxArgc; i++) {
+                args[i].set(callee.defaults[i - callee.minArgc]);
             }
             boolean success = callee.nativeExecutor().execute(args, numArgs, stack().pushGet());
             if (success) {
