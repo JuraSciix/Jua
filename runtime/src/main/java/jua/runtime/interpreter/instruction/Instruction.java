@@ -10,4 +10,6 @@ public interface Instruction {
      * @param context Контекст выполнения функции.
      */
     void execute(ExecutionContext context);
+
+    int opcode();
 }
