@@ -1,6 +1,7 @@
 package jua.runtime.heap;
 
 import jua.runtime.interpreter.Address;
+import jua.runtime.interpreter.AddressSupport;
 import jua.runtime.interpreter.AddressUtils;
 
 import java.util.Arrays;
@@ -10,6 +11,9 @@ import java.util.StringJoiner;
 public final class ListHeap extends Heap implements Iterable<Address> {
 
     private final Address[] data;
+
+    /** Указатель на конец списка */
+    private int key = 0;
 
     public ListHeap(int size) {
         if (size < 0) {
@@ -30,8 +34,29 @@ public final class ListHeap extends Heap implements Iterable<Address> {
         return data.length;
     }
 
+    public int key() {
+        return key;
+    }
+
+    public void setKey(int key) {
+        if (key < 0 || key >= length()) {
+            throw new IndexOutOfBoundsException();
+        }
+        this.key = key;
+    }
+
     public Address get(int index) {
         return data[index];
+    }
+
+    public Address get() {
+        return get(key());
+    }
+
+    public Address add() {
+        int k = key();
+        setKey(k + 1);
+        return data[k];
     }
 
     public void set(int index, Address value, Address oldValueReceptor) {
@@ -42,7 +67,10 @@ public final class ListHeap extends Heap implements Iterable<Address> {
     }
 
     public void clear() {
-        Arrays.fill(data, null);
+        if (data.length > 0) {
+            data[0].setNull();
+            AddressUtils.fill(data, 1, data.length, data[0]);
+        }
     }
 
     public boolean contains(Address value) {
@@ -78,6 +106,10 @@ public final class ListHeap extends Heap implements Iterable<Address> {
             if (cmp != 0) return cmp;
         }
         return te.length - ae.length;
+    }
+
+    public Address[] getArray() {
+        return data.clone();
     }
 
     /** Возвращает {@code true}, если список пуст, в противном случае {@code false}. */

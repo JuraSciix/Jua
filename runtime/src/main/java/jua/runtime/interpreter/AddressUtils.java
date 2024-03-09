@@ -87,6 +87,12 @@ public class AddressUtils {
         return memory;
     }
 
+    public static void fill(Address[] memory, int start, int end, Address value) {
+        for (int i = start; i < end; i++) {
+            memory[i].set(value);
+        }
+    }
+
     public static boolean valid(Address a) {
         return (a != null) && a.isValid();
     }
