@@ -1,42 +1,32 @@
 package jua.runtime;
 
-import jua.runtime.interpreter.Address;
 import jua.runtime.code.CodeData;
-
-import java.util.Arrays;
-import java.util.Objects;
+import jua.runtime.interpreter.Address;
 
 public final class Function {
 
     public static final int FLAG_NATIVE = 0x01; /* Нативная функция */
     public static final int FLAG_HIDDEN = 0x02; /* Функция не показывается в трассировке стека */
-    public static final int FLAG_ONCE = 0x04; /* Функция выполняется единожды, затем возвращается только результат */
+    public static final int FLAG_ONCE = 0x04;   /* Функция выполняется единожды, затем возвращается только результат */
     public static final int FLAG_KILLER = 0x08; /* Функция, которая точно прекращает выполнение потока1 */
 
-    /** Название функции. */
-    public final String name;
+    private final String name;
 
-    /** Название модуля, в котором определена функция, если функция нативная, или название файла, если нет. */
-    public final String module;
+    private final String module;
 
-    /** Минимальное число принимаемых аргументов. */
-    public final int minArgc;
+    private final int minArgc;
 
-    /** Максимальное число принимаемых аргументов. */
-    public final int maxArgc;
+    private final int maxArgc;
 
-    /** Названия параметров. */
-    public final String[] params;
+    private final String[] params;
 
-    /** Значения опциональных аргументов по умолчанию. */
-    public final Address[] defaults;
+    private final Address[] defaults;
 
-    /** Флаги функции. */
-    public final int flags;
+    private final int flags;
 
-    public final CodeData code;
+    private final CodeData code;
 
-    public final NativeExecutor nativeBody;
+    private final NativeExecutor nativeBody;
 
     public Address onceContainer;
     public boolean onceCondition = false; // false=функция должна выполниться, true=только вернуть значение

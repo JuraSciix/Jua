@@ -4,9 +4,9 @@ import jua.runtime.Function;
 
 public class ResolvableCallee {
 
-    int utf8;
+    private final int utf8;
 
-    Function resolved;
+    private Function resolved;
 
     public ResolvableCallee(int utf8) {
         this.utf8 = utf8;

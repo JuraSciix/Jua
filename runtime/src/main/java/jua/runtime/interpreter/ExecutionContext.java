@@ -35,7 +35,7 @@ public final class ExecutionContext {
 
     public void setFrame(InterpreterFrame frame) {
         this.frame = frame;
-        constantPool = frame.getFunction().getCode().constantPool();
+        constantPool = frame.getFunction().getCode().getConstantPool();
     }
 
     public ConstantPool constantPool() {

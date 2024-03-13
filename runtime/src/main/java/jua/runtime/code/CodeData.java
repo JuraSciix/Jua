@@ -5,53 +5,53 @@ import jua.runtime.interpreter.instruction.Instruction;
 public final class CodeData {
 
     /** Число слотов на стеке, используемых в коде. */
-    public final int stack;
+    private final int stackWide;
 
     /** Число регистров (локальных переменных), используемых в коде. */
-    public final int locals;
+    private final int regNumber;
 
     /** Имена переменных. */
-    public final String[] localNames;
+    private final String[] vars;
 
     /** Последовательность инструкций. */
-    public final Instruction[] code;
+    private final Instruction[] code;
 
     /** Пул констант, используемых в коде. */
-    public final ConstantPool constantPool;
+    private final ConstantPool constantPool;
 
     /** Таблица строк. */
-    public final LineNumberTable lineNumTable;
+    private final LineNumberTable lineNumTable;
 
-    public CodeData(int stack, int locals, String[] localNames, Instruction[] code, ConstantPool constantPool, LineNumberTable lineNumTable) {
-        this.stack = stack;
-        this.locals = locals;
-        this.localNames = localNames;
+    public CodeData(int stackWide, int locals, String[] vars, Instruction[] code, ConstantPool constantPool, LineNumberTable lineNumTable) {
+        this.stackWide = stackWide;
+        this.regNumber = locals;
+        this.vars = vars;
         this.code = code;
         this.constantPool = constantPool;
         this.lineNumTable = lineNumTable;
     }
 
-    public int stack() {
-        return stack;
+    public int getStackWide() {
+        return stackWide;
     }
 
-    public int locals() {
-        return locals;
+    public int getRegNumber() {
+        return regNumber;
     }
 
-    public String[] localNames() {
-        return localNames;
+    public String[] getVars() {
+        return vars;
     }
 
-    public Instruction[] code() {
+    public Instruction[] getCode() {
         return code;
     }
 
-    public LineNumberTable linenumtab() {
+    public LineNumberTable getLineNumberTable() {
         return lineNumTable;
     }
 
-    public ConstantPool constantPool() {
+    public ConstantPool getConstantPool() {
         return constantPool;
     }
 }

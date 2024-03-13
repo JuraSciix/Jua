@@ -109,7 +109,7 @@ public final class InterpreterThread {
         Assert.checkNonNull(callee, "callee is not set");
         pushFrame();
         if (callee.isUserDefined()) {
-            memory.acquire(callee.getCode().locals());
+            memory.acquire(callee.getCode().getRegNumber());
             if (callee.isOnce()) {
                 if (callee.onceCondition) {
                     stack.pushGet().set(callee.onceContainer);
@@ -121,19 +121,19 @@ public final class InterpreterThread {
                 for (int i = 0; i < numArgs; i++) {
                     memory.get(numArgs - i - 1).set(stack().popGet());
                 }
-                for (int i = numArgs; i < callee.maxArgc; i++) {
-                    memory.get(i).set(callee.defaults[i - callee.minArgc]);
+                for (int i = numArgs; i < callee.getMaxArgc(); i++) {
+                    memory.get(i).set(callee.getDefaults()[i - callee.getMinArgc()]);
                 }
             }
             Histogram.get().end(OPCodes._JoinFrame);
             set_msg(MSG_RUNNING_FRAME);
         } else {
-            Address[] args = AddressUtils.allocateMemory(callee.maxArgc, 0);
+            Address[] args = AddressUtils.allocateMemory(callee.getMaxArgc(), 0);
             for (int i = 0; i < numArgs; i++) {
                 args[numArgs - i - 1].set(stack().popGet());
             }
-            for (int i = numArgs; i < callee.maxArgc; i++) {
-                args[i].set(callee.defaults[i - callee.minArgc]);
+            for (int i = numArgs; i < callee.getMaxArgc(); i++) {
+                args[i].set(callee.getDefaults()[i - callee.getMinArgc()]);
             }
             Histogram.get().end(OPCodes._JoinNativeFrame);
             set_msg(MSG_RUNNING_FRAME);
@@ -151,7 +151,7 @@ public final class InterpreterThread {
         Function fn = currentFrame().getFunction();
         if (fn.isUserDefined()) {
             stack.cleanup();
-            memory.release(fn.getCode().locals());
+            memory.release(fn.getCode().getRegNumber());
             if (fn.isOnce()) {
                 if (!fn.onceCondition) {
                     // Запоминаем возвращаемое значение
@@ -182,7 +182,7 @@ public final class InterpreterThread {
 
     public void prepareCall(Function calleeFn, int argCount) {
         if (DEBUG) {
-            System.out.printf("prepareCall: name=%s, once=%b %n", calleeFn.name, calleeFn.isOnce());
+            System.out.printf("prepareCall: name=%s, once=%b %n", calleeFn.getName(), calleeFn.isOnce());
         }
         Histogram.get().start(OPCodes._JoinFrame);
         Histogram.get().start(OPCodes._JoinNativeFrame);
@@ -264,12 +264,12 @@ public final class InterpreterThread {
     int executingLineNumber(InterpreterFrame frame) {
         if (!frame.getFunction().isUserDefined()) return -1; // native function
         int cp = frame.getCP() - 1;
-        return frame.getFunction().userCode().lineNumTable.getLineNumber(cp);
+        return frame.getFunction().userCode().getLineNumberTable().getLineNumber(cp);
     }
 
     StackTraceElement toStackTraceElement(InterpreterFrame frame) {
-        return new StackTraceElement(frame.getFunction().module,
-                frame.getFunction().name, executingLineNumber(frame));
+        return new StackTraceElement(frame.getFunction().getModule(),
+                frame.getFunction().getName(), executingLineNumber(frame));
     }
 
     public void printStackTrace() {
@@ -309,7 +309,7 @@ public final class InterpreterThread {
             String details;
             if (currentFrame() == null) {
                 details = "<NO FRAME>";
-            } else if ((currentFrame().getFunction().flags & Function.FLAG_NATIVE) != 0) {
+            } else if (!currentFrame().getFunction().isUserDefined()) {
                 details = "<NATIVE>";
             } else {
                 details = "CP=" + currentFrame().getCP() +
@@ -359,7 +359,7 @@ public final class InterpreterThread {
             }
 
             CodeData codeData = currentFrame().getFunction().userCode();
-            Instruction[] code = codeData.code;
+            Instruction[] code = codeData.getCode();
             ExecutionContext context = executionContext;
             context.setFrame(currentFrame());
 

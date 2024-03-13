@@ -62,8 +62,8 @@ public class Main {
         nativeFunctions = Lib.getFunctions().toArray(new Function[0]);
         for (int i = 0; i < nativeFunctions.length; i++) {
             Function f = nativeFunctions[i];
-            ms.defineNativeFunction(f.name, f.minArgc, f.maxArgc,
-                    Arrays.stream(f.defaults).map(AddressSupport::toJavaObject).toArray(), f.params, i);
+            ms.defineNativeFunction(f.getName(), f.getMinArgc(), f.getMaxArgc(),
+                    Arrays.stream(f.getDefaults()).map(AddressSupport::toJavaObject).toArray(), f.getParams(), i);
         }
 
         module = c.compile();
@@ -86,7 +86,7 @@ public class Main {
         Collections.addAll(functions, nativeFunctions);
 
         Function mainFn = functions.stream()
-                .filter(f -> f.name.equals("<main>"))
+                .filter(f -> f.getName().equals("<main>"))
                 .findAny().orElseThrow(AssertionError::new);
 
         JuaEnvironment env = new JuaEnvironment();
