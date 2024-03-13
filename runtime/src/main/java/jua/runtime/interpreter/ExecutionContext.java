@@ -26,6 +26,8 @@ public final class ExecutionContext {
     private Function msgCallee;
     private int msgArgc = 0;
 
+    private final Address tmp = new Address();
+
     public ExecutionContext(ThreadStack stack, ThreadMemory memory) {
         this.stack = stack;
         this.memory = memory;
@@ -114,7 +116,7 @@ public final class ExecutionContext {
     }
 
     public void doPush(int cpi) { // Constant Pool Index
-        getStack().pushGet().set(getConstantPool().getAddressEntry(cpi));
+        getConstantPool().load(cpi, getStack().pushGet());
     }
 
     public void doDup() {
@@ -411,9 +413,9 @@ public final class ExecutionContext {
         int selectorHash = selector.hashCode();
 
         for (int i = 0; i < labels.length; i++) {
-            Address k = getConstantPool().getAddressEntry(labels[i]);
-            int kHash = k.hashCode();
-            if (selectorHash == kHash && selector.fastCompareWith(k, 1) == 0) {
+            getConstantPool().load(labels[i], tmp);
+            int kHash = tmp.hashCode();
+            if (selectorHash == kHash && selector.fastCompareWith(tmp, 1) == 0) {
                 setNextCp(cps[i]);
                 return;
             }
@@ -435,8 +437,8 @@ public final class ExecutionContext {
 
         while (l <= h) {
             int x = (l + h) >> 1;
-            Address k = getConstantPool().getAddressEntry(labels[x]);
-            int d = selector.compareTo(k);
+            getConstantPool().load(labels[x], tmp);
+            int d = selector.compareTo(tmp);
 
             if (d > 0) {
                 l = x + 1;
@@ -447,7 +449,7 @@ public final class ExecutionContext {
                 /* assert d != 2; */
 
                 // Если selector != k, значит один из операндов это NaN и цикл все равно завершен.
-                if (selector.fastCompareWith(k, 1) == 0) {
+                if (selector.fastCompareWith(tmp, 1) == 0) {
                     setNextCp(cps[x]);
                 }
                 return;
@@ -463,7 +465,7 @@ public final class ExecutionContext {
         if (callee.isResolved()) {
             fn = callee.getResolved();
         } else {
-            String name = getConstantPool().getAddressEntry(callee.getUtf8()).stringVal().toString();
+            String name = getConstantPool().getUtf8(callee.getUtf8());
             fn = JuaEnvironment.getEnvironment().lookupFunction(name);
             callee.setResolved(fn);
         }

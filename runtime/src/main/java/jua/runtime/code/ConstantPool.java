@@ -1,6 +1,7 @@
 package jua.runtime.code;
 
 import jua.runtime.interpreter.Address;
+import jua.runtime.interpreter.AddressSupport;
 
 public final class ConstantPool {
 
@@ -23,7 +24,11 @@ public final class ConstantPool {
         return (ResolvableCallee) entries[index];
     }
 
-    public Address getAddressEntry(int index) {
-        return (Address) entries[index];
+    public String getUtf8(int index) {
+        return (String) entries[index];
+    }
+
+    public void load(int index, Address receiver) {
+        AddressSupport.assignObject(receiver, entries[index]);
     }
 }

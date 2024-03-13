@@ -45,12 +45,12 @@ public class Executable2FunctionTranslator {
     private static ConstantPool getConstantPool(Object[] values) {
         Object[] runtimeElements = new Object[values.length];
         for (int i = 0; i < values.length; i++) {
+            if (runtimeElements[i] != null)
+                continue;
             if (values[i] instanceof Code.Callee) {
                 runtimeElements[i] = new ResolvableCallee(((Code.Callee) values[i]).utf8);
             } else {
-                Address address = new Address();
-                AddressSupport.assignObject(address, values[i]);
-                runtimeElements[i] = address;
+                runtimeElements[i] = values[i];
             }
         }
         return new ConstantPool(runtimeElements);
