@@ -5,7 +5,19 @@ import java.util.Map;
 
 public final class JuaEnvironment {
 
+    private static final JuaEnvironment environment = new JuaEnvironment();
+
+    public static JuaEnvironment getEnvironment() {
+        return environment;
+    }
+
     private final Map<String, Function> fntab = new HashMap<>();
+
+    private JuaEnvironment() {
+        if (environment != null) {
+            throw new AssertionError();
+        }
+    }
 
     public void addFunction(Function function) {
         if (function == null) {

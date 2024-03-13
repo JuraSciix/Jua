@@ -1,53 +1,93 @@
 package jua.runtime.interpreter;
 
 import jua.runtime.Function;
+import jua.runtime.JuaEnvironment;
 import jua.runtime.Types;
+import jua.runtime.code.CodeData;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.ResolvableCallee;
 import jua.runtime.heap.ListHeap;
+import jua.runtime.interpreter.instruction.Instruction;
 
 import static jua.runtime.Operations.isResultFalse;
 import static jua.runtime.Operations.isResultTrue;
 
 public final class ExecutionContext {
 
-    private final InterpreterThread thread;
+    private final ThreadStack stack;
 
-    private InterpreterFrame frame;
+    private final ThreadMemory memory;
 
     private ConstantPool constantPool;
 
-    public ExecutionContext(InterpreterThread thread) {
-        this.thread = thread;
+    private int nextCP;
+
+    private int msg = 0;
+    private Function msgCallee;
+    private int msgArgc = 0;
+
+    public ExecutionContext(ThreadStack stack, ThreadMemory memory) {
+        this.stack = stack;
+        this.memory = memory;
     }
 
-    public InterpreterThread thread() {
-        return thread;
+    public ThreadStack getStack() {
+        return stack;
     }
 
-    public ThreadStack stack() {
-        return thread().stack();
+    public ThreadMemory getMemory() {
+        return memory;
     }
 
-    public ThreadMemory memory() {
-        return thread().memory();
+    public int execute(InterpreterFrame frame) {
+        msg = 0;
+        msgCallee = null;
+        msgArgc = 0;
+
+        CodeData code = frame.getFunction().getCode();
+        constantPool = code.getConstantPool();
+        Instruction[] instructions = code.getCode();
+
+        int cp = frame.getCP();
+        while (true) {
+            nextCP = cp + 1;
+            instructions[cp].execute(this);
+            cp = nextCP;
+            if (msg != 0) {
+                if (msg != InterpreterThread.MSG_CRASHED) {
+                    frame.setCP(cp);
+                }
+                break;
+            }
+            frame.setCP(cp);
+        }
+
+        constantPool = null;
+        return msg;
     }
 
-    public void setFrame(InterpreterFrame frame) {
-        this.frame = frame;
-        constantPool = frame.getFunction().getCode().getConstantPool();
-    }
-
-    public ConstantPool constantPool() {
+    public ConstantPool getConstantPool() {
         return constantPool;
     }
 
     public int getNextCp() {
-        return frame.getCP();
+        return nextCP;
     }
 
     public void setNextCp(int nextCp) {
-        frame.setCP(nextCp);
+        this.nextCP = nextCp;
+    }
+
+    public int getMsg() {
+        return msg;
+    }
+
+    public Function getMsgCallee() {
+        return msgCallee;
+    }
+
+    public int getMsgArgc() {
+        return msgArgc;
     }
 
     /*
@@ -58,292 +98,292 @@ public final class ExecutionContext {
      */
 
     public void doConstInt(long value) {
-        stack().pushGet().set(value);
+        getStack().pushGet().set(value);
     }
 
     public void doConstFalse() {
-        stack().pushGet().set(false);
+        getStack().pushGet().set(false);
     }
 
     public void doConstTrue() {
-        stack().pushGet().set(true);
+        getStack().pushGet().set(true);
     }
 
     public void doConstNull() {
-        stack().pushGet().setNull();
+        getStack().pushGet().setNull();
     }
 
     public void doPush(int cpi) { // Constant Pool Index
-        stack().pushGet().set(constantPool().getAddressEntry(cpi));
+        getStack().pushGet().set(getConstantPool().getAddressEntry(cpi));
     }
 
     public void doDup() {
-        stack().dup();
+        getStack().dup();
     }
 
     public void doDup2() {
-        stack().dup2();
+        getStack().dup2();
     }
 
     public void doDupX1() {
-        stack().dupX1();
+        getStack().dupX1();
     }
 
     public void doDupX2() {
-        stack().dupX2();
+        getStack().dupX2();
     }
 
     public void doDup2x1() {
-        stack().dup2X1();
+        getStack().dup2X1();
     }
 
     public void doDup2x2() {
-        stack().dup2X2();
+        getStack().dup2X2();
     }
 
     public void doPop() {
-        stack().pop();
+        getStack().pop();
     }
 
     public void doPop2() {
-        stack().pop2();
+        getStack().pop2();
     }
 
     public void doAdd() {
-        Address rhs = stack().popGet();
-        Address lhs = stack().popGet();
+        Address rhs = getStack().popGet();
+        Address lhs = getStack().popGet();
         lhs.add(rhs, lhs);
-        stack().push(lhs);
+        getStack().push(lhs);
     }
 
     public void doSub() {
-        Address lhs = stack().getStackAddress(-2);
-        Address rhs = stack().getStackAddress(-1);
+        Address lhs = getStack().getStackAddress(-2);
+        Address rhs = getStack().getStackAddress(-1);
         lhs.sub(rhs, lhs);
-        stack().addTos(-1);
+        getStack().addTos(-1);
     }
 
     public void doDiv() {
-        Address lhs = stack().getStackAddress(-2);
-        Address rhs = stack().getStackAddress(-1);
+        Address lhs = getStack().getStackAddress(-2);
+        Address rhs = getStack().getStackAddress(-1);
         lhs.div(rhs, lhs);
-        stack().addTos(-1);
+        getStack().addTos(-1);
     }
 
     public void doMul() {
-        Address lhs = stack().getStackAddress(-2);
-        Address rhs = stack().getStackAddress(-1);
+        Address lhs = getStack().getStackAddress(-2);
+        Address rhs = getStack().getStackAddress(-1);
         lhs.mul(rhs, lhs);
-        stack().addTos(-1);
+        getStack().addTos(-1);
     }
 
     public void doRem() {
-        Address lhs = stack().getStackAddress(-2);
-        Address rhs = stack().getStackAddress(-1);
+        Address lhs = getStack().getStackAddress(-2);
+        Address rhs = getStack().getStackAddress(-1);
         lhs.rem(rhs, lhs);
-        stack().addTos(-1);
+        getStack().addTos(-1);
     }
 
     public void doAnd() {
-        Address lhs = stack().getStackAddress(-2);
-        Address rhs = stack().getStackAddress(-1);
+        Address lhs = getStack().getStackAddress(-2);
+        Address rhs = getStack().getStackAddress(-1);
         lhs.and(rhs, lhs);
-        stack().addTos(-1);
+        getStack().addTos(-1);
     }
 
     public void doOr() {
-        Address lhs = stack().getStackAddress(-2);
-        Address rhs = stack().getStackAddress(-1);
+        Address lhs = getStack().getStackAddress(-2);
+        Address rhs = getStack().getStackAddress(-1);
         lhs.or(rhs, lhs);
-        stack().addTos(-1);
+        getStack().addTos(-1);
     }
 
     public void doXor() {
-        Address lhs = stack().getStackAddress(-2);
-        Address rhs = stack().getStackAddress(-1);
+        Address lhs = getStack().getStackAddress(-2);
+        Address rhs = getStack().getStackAddress(-1);
         lhs.xor(rhs, lhs);
-        stack().addTos(-1);
+        getStack().addTos(-1);
     }
 
     public void doShl() {
-        Address lhs = stack().getStackAddress(-2);
-        Address rhs = stack().getStackAddress(-1);
+        Address lhs = getStack().getStackAddress(-2);
+        Address rhs = getStack().getStackAddress(-1);
         lhs.shl(rhs, lhs);
-        stack().addTos(-1);
+        getStack().addTos(-1);
     }
 
     public void doShr() {
-        Address lhs = stack().getStackAddress(-2);
-        Address rhs = stack().getStackAddress(-1);
+        Address lhs = getStack().getStackAddress(-2);
+        Address rhs = getStack().getStackAddress(-1);
         lhs.shr(rhs, lhs);
-        stack().addTos(-1);
+        getStack().addTos(-1);
     }
 
     public void doPos() {
-        Address value = stack().getStackAddress(-1);
+        Address value = getStack().getStackAddress(-1);
         value.pos(value);
     }
 
     public void doNeg() {
-        Address value = stack().getStackAddress(-1);
+        Address value = getStack().getStackAddress(-1);
         value.neg(value);
     }
 
     public void doNot() {
-        Address value = stack().getStackAddress(-1);
+        Address value = getStack().getStackAddress(-1);
         value.not(value);
     }
 
     public void doLength() {
-        Address value = stack().getStackAddress(-1);
+        Address value = getStack().getStackAddress(-1);
         value.length(value);
     }
 
     public void doLoad(int i) {
-        stack().push(memory().get(i));
+        getStack().push(getMemory().get(i));
     }
 
     public void doStore(int i) {
-        memory().get(i).set(stack().getStackAddress(-1));
-        stack().addTos(-1);
+        getMemory().get(i).set(getStack().getStackAddress(-1));
+        getStack().addTos(-1);
     }
 
     public void doInc(int i) {
-        memory().get(i).inc();
+        getMemory().get(i).inc();
     }
 
     public void doDec(int i) {
-        memory().get(i).dec();
+        getMemory().get(i).dec();
     }
 
     public void doArrayLoad() {
-        Address arr = stack().getStackAddress(-2);
-        Address key = stack().getStackAddress(-1);
+        Address arr = getStack().getStackAddress(-2);
+        Address key = getStack().getStackAddress(-1);
         arr.load(key, arr);
-        stack().addTos(-1);
+        getStack().addTos(-1);
     }
 
     public void doArrayStore() {
-        Address arr = stack().getStackAddress(-3);
-        Address key = stack().getStackAddress(-2);
-        Address val = stack().getStackAddress(-1);
+        Address arr = getStack().getStackAddress(-3);
+        Address key = getStack().getStackAddress(-2);
+        Address val = getStack().getStackAddress(-1);
         arr.store(key, val);
-        stack().addTos(-3);
+        getStack().addTos(-3);
     }
 
     public void doArrayInc() {
-        Address arr = stack().getStackAddress(-2);
-        Address key = stack().getStackAddress(-1);
+        Address arr = getStack().getStackAddress(-2);
+        Address key = getStack().getStackAddress(-1);
         arr.arrayInc(key, arr);
-        stack().addTos(-1);
+        getStack().addTos(-1);
     }
 
     public void doArrayDec() {
-        Address arr = stack().getStackAddress(-2);
-        Address key = stack().getStackAddress(-1);
+        Address arr = getStack().getStackAddress(-2);
+        Address key = getStack().getStackAddress(-1);
         arr.arrayDec(key, arr);
-        stack().addTos(-1);
+        getStack().addTos(-1);
     }
 
     public void doNewList() {
-        Address value = stack().getStackAddress(-1);
+        Address value = getStack().getStackAddress(-1);
         long a;
         if (!value.hasType(Types.T_INT) ||
                 (a = value.getLong()) < 0 ||
                 Integer.MAX_VALUE < a) {
-            thread().error("List size must be an unsigned 32-bit integer");
+            InterpreterThread.currentThread().error("List size must be an unsigned 32-bit integer");
             return;
         }
         value.set(new ListHeap((int) a));
     }
 
     public void doJumpIfEq(int nextCp) {
-        Address lhs = stack().getStackAddress(-2);
-        Address rhs = stack().getStackAddress(-1);
-        stack().addTos(-2);
+        Address lhs = getStack().getStackAddress(-2);
+        Address rhs = getStack().getStackAddress(-1);
+        getStack().addTos(-2);
         if (lhs.fastCompareWith(rhs, 1) == 0) {
             setNextCp(nextCp);
         }
     }
 
     public void doJumpIfntEq(int thenCp) {
-        Address rhs = stack().popGet();
-        Address lhs = stack().popGet();
+        Address rhs = getStack().popGet();
+        Address lhs = getStack().popGet();
         if (lhs.fastCompareWith(rhs, 1) != 0)
             setNextCp(thenCp);
     }
 
     public void doJumpIfGt(int nextCp) {
-        Address lhs = stack().getStackAddress(-2);
-        Address rhs = stack().getStackAddress(-1);
-        stack().addTos(-2);
+        Address lhs = getStack().getStackAddress(-2);
+        Address rhs = getStack().getStackAddress(-1);
+        getStack().addTos(-2);
         if (lhs.fastCompareWith(rhs, -1) > 0) {
             setNextCp(nextCp);
         }
     }
 
     public void doJumpIfGe(int nextCp) {
-        Address lhs = stack().getStackAddress(-2);
-        Address rhs = stack().getStackAddress(-1);
-        stack().addTos(-2);
+        Address lhs = getStack().getStackAddress(-2);
+        Address rhs = getStack().getStackAddress(-1);
+        getStack().addTos(-2);
         if (lhs.fastCompareWith(rhs, -1) >= 0) {
             setNextCp(nextCp);
         }
     }
 
     public void doJumpIfLt(int nextCp) {
-        Address lhs = stack().getStackAddress(-2);
-        Address rhs = stack().getStackAddress(-1);
-        stack().addTos(-2);
+        Address lhs = getStack().getStackAddress(-2);
+        Address rhs = getStack().getStackAddress(-1);
+        getStack().addTos(-2);
         if (lhs.fastCompareWith(rhs, 1) < 0) {
             setNextCp(nextCp);
         }
     }
 
     public void doJumpIfLe(int nextCp) {
-        Address lhs = stack().getStackAddress(-2);
-        Address rhs = stack().getStackAddress(-1);
-        stack().addTos(-2);
+        Address lhs = getStack().getStackAddress(-2);
+        Address rhs = getStack().getStackAddress(-1);
+        getStack().addTos(-2);
         if (lhs.fastCompareWith(rhs, 1) <= 0) {
             setNextCp(nextCp);
         }
     }
 
     public void doJumpIfNull(int nextCp) {
-        Address value = stack().getStackAddress(-1);
-        stack().addTos(-1);
+        Address value = getStack().getStackAddress(-1);
+        getStack().addTos(-1);
         if (value.isNull()) {
             setNextCp(nextCp);
         }
     }
 
     public void doJumpIfNonZero(int nextCp) {
-        Address value = stack().getStackAddress(-1);
-        stack().addTos(-1);
+        Address value = getStack().getStackAddress(-1);
+        getStack().addTos(-1);
         if (value.booleanVal()) {
             setNextCp(nextCp);
         }
     }
 
     public void doJumpIfZero(int nextCp) {
-        Address value = stack().getStackAddress(-1);
-        stack().addTos(-1);
+        Address value = getStack().getStackAddress(-1);
+        getStack().addTos(-1);
         if (!value.booleanVal()) {
             setNextCp(nextCp);
         }
     }
 
     public void doJumpIfntNull(int nextCp) {
-        Address value = stack().getStackAddress(-1);
-        stack().addTos(-1);
+        Address value = getStack().getStackAddress(-1);
+        getStack().addTos(-1);
         if (!value.isNull()) {
             setNextCp(nextCp);
         }
     }
 
     public void doJumpIfPresent(int nextCp) {
-        Address key = stack().popGet();
-        Address arr = stack().popGet();
+        Address key = getStack().popGet();
+        Address arr = getStack().popGet();
         int responseCode = arr.contains(key);
         if (isResultTrue(responseCode)) {
             setNextCp(nextCp);
@@ -351,8 +391,8 @@ public final class ExecutionContext {
     }
 
     public void doJumpIfAbsent(int nextCp) {
-        Address key = stack().popGet();
-        Address arr = stack().popGet();
+        Address key = getStack().popGet();
+        Address arr = getStack().popGet();
         int responseCode = arr.contains(key);
         if (isResultFalse(responseCode)) {
             setNextCp(nextCp);
@@ -360,7 +400,7 @@ public final class ExecutionContext {
     }
 
     public void doLinearSwitch(int[] labels, int[] cps, int defaultCp) {
-        Address selector = stack().popGet();
+        Address selector = getStack().popGet();
 
         // Не скалярные значения семантически запрещены
         if (!selector.isScalar()) {
@@ -371,7 +411,7 @@ public final class ExecutionContext {
         int selectorHash = selector.hashCode();
 
         for (int i = 0; i < labels.length; i++) {
-            Address k = constantPool().getAddressEntry(labels[i]);
+            Address k = getConstantPool().getAddressEntry(labels[i]);
             int kHash = k.hashCode();
             if (selectorHash == kHash && selector.fastCompareWith(k, 1) == 0) {
                 setNextCp(cps[i]);
@@ -382,7 +422,7 @@ public final class ExecutionContext {
     }
 
     public void doBinarySwitch(int[] labels, int[] cps, int defaultCp) {
-        Address selector = stack().popGet();
+        Address selector = getStack().popGet();
 
         // Не скалярные значения семантически запрещены
         if (!selector.isScalar()) {
@@ -395,7 +435,7 @@ public final class ExecutionContext {
 
         while (l <= h) {
             int x = (l + h) >> 1;
-            Address k = constantPool().getAddressEntry(labels[x]);
+            Address k = getConstantPool().getAddressEntry(labels[x]);
             int d = selector.compareTo(k);
 
             if (d > 0) {
@@ -418,23 +458,27 @@ public final class ExecutionContext {
     }
 
     public void doCall(int calleeId, int argCount) {
-        ResolvableCallee callee = constantPool().getCallee(calleeId);
+        ResolvableCallee callee = getConstantPool().getCallee(calleeId);
         Function fn;
         if (callee.isResolved()) {
             fn = callee.getResolved();
         } else {
-            String name = constantPool().getAddressEntry(callee.getUtf8()).stringVal().toString();
-            fn = thread().getEnvironment().lookupFunction(name);
+            String name = getConstantPool().getAddressEntry(callee.getUtf8()).stringVal().toString();
+            fn = JuaEnvironment.getEnvironment().lookupFunction(name);
             callee.setResolved(fn);
         }
-        thread().prepareCall(fn, argCount);
+
+        msg = InterpreterThread.MSG_CALLING_FRAME;
+        msgCallee = fn;
+        msgArgc = argCount;
     }
 
     public void doReturn() {
-        thread().doReturn();
+        msg = InterpreterThread.MSG_POPPING_FRAME;
     }
 
     public void doLeave() {
-        thread().leave();
+        getStack().pushGet().setNull();
+        msg = InterpreterThread.MSG_POPPING_FRAME;
     }
 }

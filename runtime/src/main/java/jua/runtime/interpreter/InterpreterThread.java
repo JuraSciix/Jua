@@ -16,12 +16,12 @@ public final class InterpreterThread {
 
     private static final boolean DEBUG = false; // Информация об инструкции и стеке меж каждой инструкции
 
-    private static final int MSG_UNSTARTED         = 0; /* Поток создан, но не запущен */
-    private static final int MSG_RUNNING_FRAME     = 1; /* Поток выполняет фрейм */
-    private static final int MSG_CALLING_FRAME     = 2; /* Поток вызывает фрейм */
-    private static final int MSG_POPPING_FRAME     = 4; /* Поток возвращает фрейм */
-    private static final int MSG_CRASHED           = 6; /* В потоке произошла ошибка */
-    private static final int MSG_HALTED            = 7; /* Поток прерван */
+    public static final int MSG_UNSTARTED         = 0; /* Поток создан, но не запущен */
+    public static final int MSG_RUNNING_FRAME     = 1; /* Поток выполняет фрейм */
+    public static final int MSG_CALLING_FRAME     = 2; /* Поток вызывает фрейм */
+    public static final int MSG_POPPING_FRAME     = 4; /* Поток возвращает фрейм */
+    public static final int MSG_CRASHED           = 6; /* В потоке произошла ошибка */
+    public static final int MSG_HALTED            = 7; /* Поток прерван */
 
     private static final ThreadLocal<InterpreterThread> THREADED_INSTANCE = new ThreadLocal<>();
 
@@ -62,13 +62,7 @@ public final class InterpreterThread {
     private final FrameFactory frameFactory = new FrameFactory();
     private InterpreterFrame current = null;
 
-    ThreadStack stack() {
-        return stack;
-    }
-
-    ThreadMemory memory() {
-        return memory;
-    }
+    private final ExecutionContext executionContext;
 
     public InterpreterThread(Thread jvmThread, JuaEnvironment environment) {
         Objects.requireNonNull(jvmThread, "JVM thread");
@@ -76,6 +70,15 @@ public final class InterpreterThread {
         bind();
         this.jvmThread = jvmThread;
         this.environment = environment;
+        executionContext = new ExecutionContext(stack(), memory());
+    }
+
+    public ThreadStack stack() {
+        return stack;
+    }
+
+    public ThreadMemory memory() {
+        return memory;
     }
 
     private void bind() {
@@ -89,6 +92,10 @@ public final class InterpreterThread {
         return jvmThread;
     }
 
+    /**
+     * @deprecated Use {@link JuaEnvironment#getEnvironment()}.
+     * @return
+     */
     public JuaEnvironment getEnvironment() {
         return environment;
     }
@@ -323,8 +330,6 @@ public final class InterpreterThread {
         }
     }
 
-    private final ExecutionContext executionContext = new ExecutionContext(this);
-
     private void runInternal() {
         while (true) {
             if (DEBUG) {
@@ -352,35 +357,33 @@ public final class InterpreterThread {
                     return;
 
                 case MSG_RUNNING_FRAME:
+                    msg = executionContext.execute(currentFrame());
+                    callee = executionContext.getMsgCallee();
+                    numArgs = executionContext.getMsgArgc();
                     break;
 
                 default:
                     Assert.error("unexpected msg: " + msg);
             }
 
-            CodeData codeData = currentFrame().getFunction().userCode();
-            Instruction[] code = codeData.getCode();
-            ExecutionContext context = executionContext;
-            context.setFrame(currentFrame());
-
-            while (isRunning()) {
-                stack().validate();
-                int cp = context.getNextCp();
-                int tos = stack().tos();
-                context.setNextCp(cp + 1);
-                Histogram.get().start(code[cp].opcode());
-                code[cp].execute(context);
-                Histogram.get().end(code[cp].opcode());
-
-                if (DEBUG) {
-                    stack.debugUpdate(code[cp].getClass().getSimpleName().toLowerCase()+"{"+cp+"}");
-                }
-                if (msg() == MSG_CRASHED) {
-                    context.setNextCp(cp);
-                    stack().tos(tos);
-                    break;
-                }
-            }
+//            while (isRunning()) {
+//                stack().validate();
+//                int cp = context.getNextCp();
+//                int tos = stack().tos();
+//                context.setNextCp(cp + 1);
+//                Histogram.get().start(code[cp].opcode());
+//                code[cp].execute(context);
+//                Histogram.get().end(code[cp].opcode());
+//
+//                if (DEBUG) {
+//                    stack.debugUpdate(code[cp].getClass().getSimpleName().toLowerCase()+"{"+cp+"}");
+//                }
+//                if (msg() == MSG_CRASHED) {
+//                    context.setNextCp(cp);
+//                    stack().tos(tos);
+//                    break;
+//                }
+//            }
         }
     }
 
