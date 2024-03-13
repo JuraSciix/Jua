@@ -45,13 +45,24 @@ public class Histogram {
 
     private final long[] starts = new long[OPCodes._InstrCount];
 
+    private long start;
+    private int state = 1; // 0 start, 1 = end
+
     public void start(int opcode) {
-        starts[opcode] = System.nanoTime();
+        if (state != 0) {
+            start = System.nanoTime();
+            state = 0;
+        }
+        starts[opcode] = start;
     }
 
     public void end(int opcode) {
+        if (state != 1) {
+            start = System.nanoTime();
+            state = 1;
+        }
         if (starts[opcode] > 0) {
-            measurements[opcode] += System.nanoTime() - starts[opcode];
+            measurements[opcode] += start - starts[opcode];
             counters[opcode]++;
             starts[opcode] = 0;
         }
