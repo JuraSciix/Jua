@@ -227,10 +227,10 @@ public class Lib {
                 }
 
                 if (offset >= 0) {
-                    returnAddress.set(new StringHeap(str, offset, count));
+                    returnAddress.set(new StringHeap(str, offset, offset + count));
                 } else {
-                    // a - (-b) = a + b
-                    returnAddress.set(new StringHeap(str, str.length() + offset, count));
+                    int start = str.length() + offset; // a - (-b) = a + b
+                    returnAddress.set(new StringHeap(str, start, start + count));
                 }
             })
             .build();

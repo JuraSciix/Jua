@@ -72,7 +72,7 @@ public class MemoryArithms {
         if (getTypeUnion(T_STRING, T_STRING) == u) {
             StringHeap x = getStringHeap(m, lhs);
             StringHeap y = getStringHeap(m, rhs);
-            return x.fastCompareWith(y);
+            return x.compareTo(y);
         }
 
         if (getTypeUnion(T_LIST, T_LIST) == u) {

@@ -1,183 +1,186 @@
 package jua.runtime.heap;
 
-import java.io.IOException;
-import java.io.Writer;
+import java.util.stream.IntStream;
 
 public final class StringHeap extends Heap implements CharSequence, Comparable<StringHeap> {
 
-    private final StringBuilder buffer;
+    private final StringBuilder data;
 
-    // Кеш-содержащие поля
-    private volatile transient int hashCode;
-    private volatile transient boolean hashCodeCalculated = false;
+    private volatile boolean hcCalculated;
+    private volatile int hcValue;
 
     public StringHeap() {
-        this("", 0, 0);
+        data = new StringBuilder(0);
+        hcCalculated = true;
+        hcValue = 0;
     }
 
-    public StringHeap(CharSequence source) {
-        this(source, 0, source.length());
-    }
-
-    public StringHeap(CharSequence source, int offset, int count) {
-        if (count == 0) {
-            buffer = new StringBuilder(1);
-            hashCodeCalculated = true; // Хеш-код пустой строки всегда равняется нулю.
+    public StringHeap(CharSequence csq) {
+        if (csq instanceof StringHeap) {
+            StringHeap h = (StringHeap) csq;
+            data = new StringBuilder(h.data);
+            hcCalculated = h.hcCalculated;
+            hcValue = h.hcValue;
         } else {
-            buffer = new StringBuilder(count);
-            buffer.append(source, offset, offset + count);
+            data = new StringBuilder(csq);
+            hcCalculated = false;
+            hcValue = 0;
         }
     }
 
-    public StringHeap(StringHeap original) {
-        this(original, 0, original.length());
-    }
-
-    public StringHeap(StringHeap original, int offset, int count) {
-        if (count == 0) {
-            buffer = new StringBuilder(1);
-            hashCodeCalculated = true;
+    public StringHeap(CharSequence csq, int start, int end) {
+        if (csq instanceof StringHeap) {
+            StringHeap h = (StringHeap) csq;
+            data = new StringBuilder().append(h.data, start, end);
         } else {
-            buffer = new StringBuilder(count);
-            buffer.append(original.buffer, offset, offset + count);
-            if (offset == 0 && count == original.length()) {
-                hashCode = original.hashCode;
-                hashCodeCalculated = original.hashCodeCalculated;
-            }
+            data = new StringBuilder().append(csq, start, end);
         }
+        hcCalculated = false;
+        hcValue = 0;
     }
 
     @Override
     public int length() {
-        return buffer.length();
+        return data.length();
     }
-
-    public boolean isEmpty() { return length() == 0; }
-    public boolean nonEmpty() { return !isEmpty(); }
 
     @Override
     public char charAt(int index) {
-        return buffer.charAt(index);
-    }
-
-    public int codePointAt(int index) {
-        return Character.codePointAt(this, index);
+        return data.charAt(index);
     }
 
     @Override
     public StringHeap subSequence(int start, int end) {
-        return new StringHeap(this, start, end - start);
+        return new StringHeap(this, start, end);
     }
 
-    public int size() {
-        return buffer.length();
+    public boolean isEmpty() {
+        return length() == 0;
     }
 
-    public boolean isSame(StringHeap that) {
-        StringBuilder b1 = buffer;
-        StringBuilder b2 = that.buffer;
-        if (b1.length() != b2.length()) return false;
-        for (int i = 0; i < b1.length(); i++)
-            if (b1.charAt(i) != b2.charAt(i)) return false;
-        return true;
+    public boolean nonEmpty() {
+        return !isEmpty();
     }
 
-    public StringHeap refCopy() {
-        return new StringHeap(this);
+    public int codePointAt(int index) {
+        return data.codePointAt(index);
     }
 
-    public StringHeap deepCopy() {
-        return new StringHeap(this);
+    public int codePointBefore(int index) {
+        return data.codePointBefore(index);
     }
 
-    public StringHeap append(long l) {
-        buffer.append(l);
+    public IntStream codePoints() {
+        return data.codePoints();
+    }
+
+    public IntStream chars() {
+        return data.chars();
+    }
+
+    public void setLength(int newLength) {
         resetCaches();
+        data.setLength(newLength);
+    }
+
+    public StringHeap append(long value) {
+        resetCaches();
+        data.append(value);
         return this;
     }
 
-    public StringHeap append(double d) {
-        buffer.append(d);
+    public StringHeap append(double value) {
         resetCaches();
+        data.append(value);
         return this;
     }
 
-    public StringHeap append(boolean b) {
-        buffer.append(b);
+    public StringHeap append(boolean value) {
         resetCaches();
+        data.append(value);
         return this;
     }
 
-    public StringHeap append(StringHeap s) {
-        buffer.append(s.buffer);
+    public StringHeap append(CharSequence value) {
         resetCaches();
+        if (value instanceof StringHeap) {
+            StringHeap h = (StringHeap) value;
+            data.append(h.data);
+        } else {
+            data.append(value);
+        }
+        return this;
+    }
+
+    public StringHeap append(char ch) {
+        resetCaches();
+        data.append(ch);
+        return this;
+    }
+
+    public StringHeap appendCodePoint(int codePoint) {
+        resetCaches();
+        data.appendCodePoint(codePoint);
         return this;
     }
 
     public StringHeap appendNull() {
-        buffer.append("null");
         resetCaches();
+        data.append((CharSequence) null);
         return this;
     }
 
-    private void resetCaches() {
-        hashCodeCalculated = false;
+    public void resetCaches() {
+        hcCalculated = false;
     }
 
-    public void writeTo(Writer writer) throws IOException {
-        int i = 0;
-        int j = buffer.length();
-
-        while (i < j) {
-            int codePoint = buffer.codePointAt(i);
-            writer.write(codePoint);
-            i += Character.charCount(i);
-        }
+    @Override
+    public StringHeap refCopy() {
+        return this;
     }
 
-    public int fastCompareWith(StringHeap o) {
-        if (length() != o.length())
-            return length() - o.length();
-        return compareTo(o);
+    @Override
+    public StringHeap deepCopy() {
+        return new StringHeap(this);
     }
 
     @Override
     public int compareTo(StringHeap o) {
-        if (this == o) return 0;
-        StringBuilder bt = buffer;
-        StringBuilder bo = o.buffer;
-        int lbt = bt.length();
-        int lbo = bo.length();
-        int lm = Math.min(lbt, lbo);
-        for (int i = 0; i < lm; i++) {
-            char ct = bt.charAt(i);
-            char co = bo.charAt(i);
-            if (ct != co) return ct - co;
+        int len1 = length();
+        int len2 = o.length();
+        if (len1 != len2) return len1 - len2;
+        for (int i = 0; i < len1; i++) {
+            char c1 = charAt(i);
+            char c2 = o.charAt(i);
+            if (c1 != c2) return c1 - c2;
         }
-        return lbt - lbo;
+        return 0;
     }
 
     @Override
     public int hashCode() {
-        int h = hashCode;
-        if (!hashCodeCalculated) {
-            for (int i = 0, l = buffer.length(); i < l; i++)
-                h = (h << 5) - h + buffer.charAt(i);
-            hashCode = h;
-            hashCodeCalculated = true;
+        if (!hcCalculated) {
+            int hc = 0;
+            for (int i = 0; i < data.length(); i++) {
+                hc = hc * 17 + Character.hashCode(data.charAt(i));
+            }
+            hcValue = hc;
+            hcCalculated = true;
         }
-        return h;
+        return hcValue;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        return isSame((StringHeap) o);
+        if (!(o instanceof StringHeap)) {
+            return false;
+        }
+        // todo: verctorized mismatch
+        return compareTo((StringHeap) o) == 0;
     }
 
     @Override
     public String toString() {
-        return buffer.toString();
+        return data.toString();
     }
 }

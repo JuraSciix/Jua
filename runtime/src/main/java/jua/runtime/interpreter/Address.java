@@ -682,7 +682,7 @@ public final class Address implements Comparable<Address> {
 
     public boolean length(Address receptor) {
         if (type == T_STRING) {
-            receptor.set(getStringHeap().size());
+            receptor.set(getStringHeap().length());
             return true;
         }
 
@@ -770,7 +770,7 @@ public final class Address implements Comparable<Address> {
         }
 
         if (getTypeUnion(T_STRING, T_STRING) == union) {
-            return getStringHeap().fastCompareWith(a.getStringHeap());
+            return getStringHeap().compareTo(a.getStringHeap());
         }
 
         if (getTypeUnion(T_LIST, T_LIST) == union) {
