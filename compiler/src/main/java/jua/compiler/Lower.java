@@ -1,6 +1,6 @@
 package jua.compiler;
 
-import jua.compiler.SemanticInfo.BooleanEquivalent;
+import jua.compiler.SemanticInfo.BoolCode;
 import jua.compiler.Tree.*;
 import jua.compiler.utils.Flow;
 
@@ -11,7 +11,7 @@ import static jua.compiler.CompHelper.*;
 
 public final class Lower extends Translator {
     private final ModuleScope scope;
-    private final Operators operators = new Operators();
+    private final Evaluator evaluator = new Evaluator();
 
     public Lower(ModuleScope scope) {
         this.scope = Objects.requireNonNull(scope);
@@ -59,7 +59,7 @@ public final class Lower extends Translator {
         Expr condTree = stripParens(tree.cond);
         if (condTree.hasTag(Tag.LITERAL)) {
             Literal condLit = (Literal) condTree;
-            BooleanEquivalent booleanEquivalent = ofBoolean(condLit.value);
+            BoolCode booleanEquivalent = ofBoolean(condLit.value);
             if (booleanEquivalent.isTrue()) {
                 result = translate(tree.ths);
                 return;
@@ -112,36 +112,13 @@ public final class Lower extends Translator {
                     break;
                 }
             default:
-                Expr lhsTree = stripParens(tree.lhs);
-                Expr rhsTree = stripParens(tree.rhs);
-                if (lhsTree.hasTag(Tag.LITERAL) && rhsTree.hasTag(Tag.LITERAL)) {
-                    Literal lhsLit = (Literal) lhsTree;
-                    Literal rhsLit = (Literal) rhsTree;
-                    result = operators.applyBinaryOperator(tree.tag, tree.pos, lhsLit.value, rhsLit.value, tree);
-                    break;
-                }
-                result = tree;
+                result = evaluator.tryEvaluate(tree);
         }
     }
 
     @Override
     public void visitUnaryOp(UnaryOp tree) {
         tree.expr = translate(tree.expr);
-
-        Expr exprTree = stripParens(tree.expr);
-        if (exprTree.hasTag(Tag.LITERAL)) {
-            // Пост-унарными операциями считаются только POSTINC и POSTDEC,
-            // которые:
-            // 1. Не сворачиваются.
-            // 2. Не применяются к литералам.
-            // А значит, что никогда не встречаются в этом куске кода,
-            // и что проверку на пост-унарную инструкцию для вычисления
-            // минимальной позиции делать не нужно - она всегда у tree.
-            Literal exprLit = (Literal) exprTree;
-            result = operators.applyUnaryOperator(tree.tag, tree.pos, exprLit.value, tree);
-            return;
-        }
-
-        result = tree;
+        result = evaluator.tryEvaluate(tree);
     }
 }

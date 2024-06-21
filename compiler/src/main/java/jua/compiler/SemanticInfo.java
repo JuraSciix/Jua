@@ -5,7 +5,7 @@ package jua.compiler;
  */
 public final class SemanticInfo {
 
-    public enum BooleanEquivalent {
+    public enum BoolCode {
         /** Значение эквивалентно {@code true}. */
         TRUE,
 
@@ -15,7 +15,7 @@ public final class SemanticInfo {
         /** Значение нельзя привести к логическому. */
         UNDEFINED;
 
-        public static BooleanEquivalent of(boolean value) {
+        public static BoolCode of(boolean value) {
             return value ? TRUE : FALSE;
         }
 
@@ -31,16 +31,20 @@ public final class SemanticInfo {
         public boolean isFalse() {
             return this == FALSE;
         }
+
+        public boolean isUndefined() {
+            return this == UNDEFINED;
+        }
     }
 
-    public static BooleanEquivalent ofBoolean(Object o) {
-        if (o == null) return BooleanEquivalent.FALSE;
+    public static BoolCode ofBoolean(Object o) {
+        if (o == null) return BoolCode.FALSE;
         Class<?> c = o.getClass();
-        if (c == Long.class) return BooleanEquivalent.of((long) o != 0);
-        if (c == Double.class) return BooleanEquivalent.of((double) o != 0);
-        if (c == Boolean.class) return BooleanEquivalent.of((boolean) o);
-        if (c == String.class) return BooleanEquivalent.of(!((String) o).isEmpty());
-        return BooleanEquivalent.UNDEFINED;
+        if (c == Long.class) return BoolCode.of((long) o != 0);
+        if (c == Double.class) return BoolCode.of((double) o != 0);
+        if (c == Boolean.class) return BoolCode.of((boolean) o);
+        if (c == String.class) return BoolCode.of(!((String) o).isEmpty());
+        return BoolCode.UNDEFINED;
     }
 
     private SemanticInfo() {
