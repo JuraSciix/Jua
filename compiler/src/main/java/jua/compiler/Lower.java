@@ -4,19 +4,11 @@ import jua.compiler.SemanticInfo.BoolCode;
 import jua.compiler.Tree.*;
 import jua.compiler.utils.Flow;
 
-import java.util.Objects;
-
-import static jua.compiler.SemanticInfo.ofBoolean;
 import static jua.compiler.CompHelper.*;
+import static jua.compiler.SemanticInfo.ofBoolean;
 
 public final class Lower extends Translator {
-    private final ModuleScope scope;
-    private final Evaluator evaluator = new Evaluator();
-
-    public Lower(ModuleScope scope) {
-        this.scope = Objects.requireNonNull(scope);
-    }
-
+     private final Evaluator evaluator = new Evaluator();
 
     @Override
     public void visitDocument(Document tree) {
