@@ -10,8 +10,6 @@ import java.util.*;
 
 public final class Code {
 
-    public static final int MAX_CONSTANT_POOL_SIZE = 65535;
-
     public static class Chain {
         final int pc, tos;
         final Chain next;
@@ -181,7 +179,7 @@ public final class Code {
     public int resolveConstant(Object o) {
         return constantPool.computeIfAbsent(o, o1 -> {
             int d = constantPool.size();
-            if (d >= MAX_CONSTANT_POOL_SIZE) {
+            if (d >= Constants.CONSTANT_POOL_LIMIT) {
                 throw new JuaCompiler.CompileException("Constant pool overflow");
             }
             return d;
