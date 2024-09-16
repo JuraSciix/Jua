@@ -230,11 +230,6 @@ public final class Items {
         }
 
         @Override
-        void drop() {
-            code.emitSingle(OPCodes.Pop2);
-        }
-
-        @Override
         void store() {
             code.markTreePos(tree);
             code.emitSingle(OPCodes.ArrayStore);
