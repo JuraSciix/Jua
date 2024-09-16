@@ -242,7 +242,7 @@ public class InstructionUtils {
     }
 
     public static int negate(int opcode) {
-        return opcode ^ 1;
+        return ((opcode+1) ^ 1)-1;
     }
 
     public interface InstrVisitor {
