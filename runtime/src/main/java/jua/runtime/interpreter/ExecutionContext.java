@@ -41,6 +41,10 @@ public final class ExecutionContext {
         return memory;
     }
 
+    public void setMsg(int msg) {
+        this.msg = msg;
+    }
+
     public int execute(InterpreterFrame frame) {
         msg = 0;
         msgCallee = null;
@@ -53,9 +57,9 @@ public final class ExecutionContext {
         int cp = frame.getCP();
         while (true) {
             nextCP = cp + 1;
-            Histogram.get().start(instructions[cp].opcode());
+//            Histogram.get().start(instructions[cp].opcode());
             instructions[cp].execute(this);
-            Histogram.get().end(instructions[cp].opcode());
+//            Histogram.get().end(instructions[cp].opcode());
             cp = nextCP;
             if (msg != 0) {
                 if (msg != InterpreterThread.MSG_CRASHED) {
@@ -462,8 +466,8 @@ public final class ExecutionContext {
     }
 
     public void doCall(int calleeId, int argCount) {
-        Histogram.get().start(OPCodes._JoinNativeFrame);
-        Histogram.get().start(OPCodes._JoinFrame);
+//        Histogram.get().start(OPCodes._JoinNativeFrame);
+//        Histogram.get().start(OPCodes._JoinFrame);
         ResolvableCallee callee = getConstantPool().getCallee(calleeId);
         Function fn;
         if (callee.isResolved()) {
@@ -481,12 +485,12 @@ public final class ExecutionContext {
 
     public void doReturn() {
         msg = InterpreterThread.MSG_POPPING_FRAME;
-        Histogram.get().start(OPCodes._PopFrame);
+//        Histogram.get().start(OPCodes._PopFrame);
     }
 
     public void doLeave() {
         getStack().pushGet().setNull();
         msg = InterpreterThread.MSG_POPPING_FRAME;
-        Histogram.get().start(OPCodes._PopFrame);
+//        Histogram.get().start(OPCodes._PopFrame);
     }
 }

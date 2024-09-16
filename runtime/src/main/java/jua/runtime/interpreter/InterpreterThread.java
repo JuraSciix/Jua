@@ -132,7 +132,7 @@ public final class InterpreterThread {
                     memory.get(i).set(callee.getDefaults()[i - callee.getMinArgc()]);
                 }
             }
-            Histogram.get().end(OPCodes._JoinFrame);
+//            Histogram.get().end(OPCodes._JoinFrame);
             set_msg(MSG_RUNNING_FRAME);
         } else {
             Address[] args = AddressUtils.allocateMemory(callee.getMaxArgc(), 0);
@@ -142,11 +142,11 @@ public final class InterpreterThread {
             for (int i = numArgs; i < callee.getMaxArgc(); i++) {
                 args[i].set(callee.getDefaults()[i - callee.getMinArgc()]);
             }
-            Histogram.get().end(OPCodes._JoinNativeFrame);
+//            Histogram.get().end(OPCodes._JoinNativeFrame);
             set_msg(MSG_RUNNING_FRAME);
             boolean success = callee.nativeExecutor().execute(args, numArgs, stack().pushGet());
             if (success) {
-                Histogram.get().start(OPCodes._PopNativeFrame);
+//                Histogram.get().start(OPCodes._PopNativeFrame);
                 set_msg(MSG_POPPING_FRAME);
             } else {
                 Assert.check(isCrashed());
@@ -170,8 +170,8 @@ public final class InterpreterThread {
             }
         }
         popFrame();
-        Histogram.get().end(OPCodes._PopFrame);
-        Histogram.get().end(OPCodes._PopNativeFrame);
+//        Histogram.get().end(OPCodes._PopFrame);
+//        Histogram.get().end(OPCodes._PopNativeFrame);
         if (current == null) {
             interrupt(); // Выполнять более нечего
         } else {
@@ -191,8 +191,8 @@ public final class InterpreterThread {
         if (DEBUG) {
             System.out.printf("prepareCall: name=%s, once=%b %n", calleeFn.getName(), calleeFn.isOnce());
         }
-        Histogram.get().start(OPCodes._JoinFrame);
-        Histogram.get().start(OPCodes._JoinNativeFrame);
+//        Histogram.get().start(OPCodes._JoinFrame);
+//        Histogram.get().start(OPCodes._JoinNativeFrame);
         callee = calleeFn;
         numArgs = argCount;
         set_msg(MSG_CALLING_FRAME);
@@ -204,7 +204,7 @@ public final class InterpreterThread {
     }
 
     public void doReturn() {
-        Histogram.get().start(OPCodes._PopFrame);
+//        Histogram.get().start(OPCodes._PopFrame);
         // Результат уже на стеке
         set_msg(MSG_POPPING_FRAME);
     }
@@ -389,6 +389,7 @@ public final class InterpreterThread {
 
     public void error(String msg) {
         this.msg = MSG_CRASHED;
+        executionContext.setMsg(MSG_CRASHED);
         error_msg = msg;
     }
 
