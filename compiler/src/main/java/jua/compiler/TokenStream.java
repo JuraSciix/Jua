@@ -7,11 +7,16 @@ public class TokenStream {
 
     private final Lexer lexer;
 
-    private Token[] queue = new Token[16];
+    private final Token[] queue = new Token[16];
     private int top = 0;
+    private Token last;
 
     public TokenStream(Lexer lexer) {
         this.lexer = lexer;
+    }
+
+    public Token last() {
+        return last;
     }
 
     public Token nextToken() {
@@ -19,16 +24,7 @@ public class TokenStream {
     }
 
     public Token take() {
-        if (top == 0) {
-            return lexer.nextToken();
-        }
-        return queue[--top];
-    }
-
-    public void take(int count) {
-        for (int i = 0; i < count; i++) {
-            take();
-        }
+        return last = (top == 0) ? lexer.nextToken() : queue[--top];
     }
 
     public Token peek(int step) {
@@ -45,5 +41,4 @@ public class TokenStream {
     public boolean sequence(TokenType t1, TokenType t2) {
         return peek(1).type == t2 && peek(0).type == t1;
     }
-
 }
