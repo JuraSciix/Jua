@@ -289,6 +289,14 @@ public class Lib {
             })
             .build();
 
+    private static final Function clone = builder()
+            .name("clone")
+            .param("value")
+            .callable((context, args, returnAddress) -> {
+                args[0].clone(returnAddress);
+            })
+            .build();
+
 
     public static Collection<Function> getFunctions() {
         return Arrays.asList(
@@ -314,7 +322,8 @@ public class Lib {
                 strUpperCase,
                 strTrim,
                 sizeof,
-                histogramAction
+                histogramAction,
+                clone
         );
     }
 }
