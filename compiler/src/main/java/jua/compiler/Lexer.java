@@ -189,13 +189,12 @@ public class Lexer {
                 case '&': case '|': case '^':
                 case '=': case '!': case '>':
                 case '<': case '-': case '%':
-                case '+': case '*':
+                case '+': case '*': case ':':
                     scanOperator();
                     break loop;
 
                 case ',': reader.next(); type = COMMA;    break loop;
                 case ';': reader.next(); type = SEMI;     break loop;
-                case ':': reader.next(); type = COL;      break loop;
                 case '~': reader.next(); type = TILDE;    break loop;
                 case '{': reader.next(); type = LBRACE;   break loop;
                 case '(': reader.next(); type = LPAREN;   break loop;
@@ -549,7 +548,11 @@ public class Lexer {
         while (b != null) {
             a = b;
             reader.next();
-            buffer.appendCodePoint(reader.peek());
+            int c = reader.peek();
+            if (c < 0) {
+                break;
+            }
+            buffer.appendCodePoint(c);
             b = lookup(buffer.toString());
         }
 

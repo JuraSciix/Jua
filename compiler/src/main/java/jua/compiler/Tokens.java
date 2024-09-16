@@ -47,6 +47,7 @@ public final class Tokens {
         GTGTEQ(">>="),
         LTLTEQ("<<="),
         QUESQUESEQ("??="),
+        COLEQ(":="),
 
         // STATEMENT KEYWORDS
         BREAK("break"),

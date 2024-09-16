@@ -34,7 +34,7 @@ public final class JuaParser {
 
     private final Log log;
 
-    private final Lexer tokenizer;
+    private final TokenStream tokenizer;
 
     Token token;
 
@@ -43,7 +43,7 @@ public final class JuaParser {
     public JuaParser(Source source, Log log) {
         this.source = source;
         this.log = log;
-        tokenizer = new Lexer(source, log);
+        tokenizer = new TokenStream(new Lexer(source, log));
     }
 
     public Document parseDocument() {
@@ -136,6 +136,19 @@ public final class JuaParser {
             case WHILE: {
                 nextToken();
                 return new WhileLoop(acceptedPos, parseExpression(), parseStatement());
+            }
+            case IDENTIFIER: {
+                Token id = token;
+                if (tokenizer.peek(0).type == COLEQ) {
+                    nextToken();
+                    nextToken();
+                    Expr expr = parseExpression();
+                    expectSemi();
+                    return new VarDef(id.pos, Flow.of(
+                            new VarDef.Definition(id.pos, id.name(), expr)
+                    ));
+                }
+                return parseUnusedExpression();
             }
             default: return parseUnusedExpression();
         }
@@ -241,7 +254,17 @@ public final class JuaParser {
 
     private Flow<Stmt> parseForInit() {
         Flow.Builder<Stmt> init = Flow.builder();
-        if (acceptToken(VAR)) {
+        if (matchesToken(IDENTIFIER) && tokenizer.matches(COLEQ)) {
+            Token id = token;
+            nextToken();
+            nextToken();
+            init.append(new VarDef(id.pos,
+                    Flow.of(new VarDef.Definition(
+                            id.pos, id.name(), parseExpression()
+                    ))
+            ));
+            expectToken(SEMI);
+        } else if (acceptToken(VAR)) {
             init.append(parseVar());
         } else {
             try {
