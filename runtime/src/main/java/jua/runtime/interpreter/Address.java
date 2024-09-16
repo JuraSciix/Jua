@@ -249,6 +249,7 @@ public final class Address implements Comparable<Address> {
                 break;
             case T_LIST:
                 receiver.set(getListHeap().deepCopy());
+                break;
             case T_NULL:
                 receiver.setNull();
                 break;
