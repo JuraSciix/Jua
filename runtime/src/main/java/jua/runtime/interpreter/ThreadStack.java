@@ -92,7 +92,7 @@ public final class ThreadStack {
     }
 
     public Address pushGet() {
-        ensureCapacity(0);
+        ensureCapacity(1);
         Address a = data[tos];
         tos++;
         return a;
