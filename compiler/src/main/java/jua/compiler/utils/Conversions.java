@@ -1,5 +1,6 @@
 package jua.compiler.utils;
 
+@Deprecated
 public final class Conversions {
 
     public static long parseLong(String str, int radix) {

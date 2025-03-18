@@ -2,6 +2,7 @@ package jua.compiler.utils;
 
 import java.util.function.Supplier;
 
+@Deprecated
 public final class Assert {
 
     // ensure - очень хорошее слово, но check роднее.
