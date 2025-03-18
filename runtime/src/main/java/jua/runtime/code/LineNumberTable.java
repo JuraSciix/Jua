@@ -16,7 +16,7 @@ public final class LineNumberTable {
 
         int bottom = 0;
         int top = _codePoints.length;
-        int current = (top >> 1);
+        int current = (top >>> 1);
 
         while ((top - bottom) > 1) {
             int cp = _codePoints[current] & 0xffff;
@@ -25,7 +25,7 @@ public final class LineNumberTable {
             } else {
                 top = current;
             }
-            current = (top + bottom) >> 1;
+            current = (top + bottom) >>> 1;
         }
 
         return lineNumbers[current];
