@@ -1,5 +1,7 @@
 package jua.compiler;
 
+import jua.compiler.utils.EnumMath;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -118,7 +120,7 @@ public final class Tokens {
         }
 
         TokenKind kind() {
-            if (PLUS.ordinal() <= ordinal() && ordinal() <= INVALID.ordinal())
+            if (EnumMath.between(this, PLUS, INVALID))
                 return TokenKind.DEFAULT;
             if (this == STRINGLITERAL)
                 return TokenKind.STRING;

@@ -2,6 +2,7 @@ package jua.compiler;
 
 import jua.compiler.Tokens.TokenType;
 import jua.compiler.Tree.*;
+import jua.compiler.utils.EnumMath;
 import jua.compiler.utils.Flow;
 
 import static jua.compiler.Tokens.TokenType.*;
@@ -11,23 +12,17 @@ import static jua.compiler.Tokens.TokenType.*;
  */
 public class CompHelper {
 
-    private static boolean checkRange(TokenType target, TokenType lo, TokenType hi) {
-        int o = target.ordinal();
-        return lo.ordinal() <= o && o <= hi.ordinal();
-    }
-
     public static boolean isBinaryOperator(TokenType t) {
-        return checkRange(t, PLUS, QUESQUES);
+        return EnumMath.between(t, PLUS, QUESQUES);
     }
 
     public static boolean isUnaryOperator(TokenType t) {
-        return checkRange(t, BANG, AT) || t == PLUS || t == MINUS;
+        return EnumMath.between(t, BANG, AT) || t == PLUS || t == MINUS;
     }
 
     public static boolean isEnhancedAsgOperator(TokenType t) {
-        return checkRange(t, PLUSEQ, QUESQUESEQ);
+        return EnumMath.between(t, PLUSEQ, QUESQUESEQ);
     }
-
 
     public static Expr stripParens(Expr tree) {
         Expr e = tree;
