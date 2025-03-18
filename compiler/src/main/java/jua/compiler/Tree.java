@@ -2,7 +2,8 @@ package jua.compiler;
 
 import jua.compiler.ModuleScope.FunctionSymbol;
 import jua.compiler.ModuleScope.VarSymbol;
-import jua.compiler.utils.Flow;
+
+import java.util.ListIterator;
 
 public abstract class Tree {
 
@@ -196,8 +197,8 @@ public abstract class Tree {
             }
         }
 
-        public void scan(Flow<? extends Tree> flow) {
-            Flow.forEach(flow, this::scan);
+        public void scan(TList<? extends Tree> list) {
+            list.forEach(this::scan);
         }
 
         @Override
@@ -208,7 +209,7 @@ public abstract class Tree {
 
         @Override
         public void visitFuncDef(FuncDef tree) {
-            Flow.forEach(tree.params, param -> {
+            tree.params.forEach(param -> {
                 if (param.expr != null) {
                     scan(param.expr);
                 }
@@ -273,7 +274,7 @@ public abstract class Tree {
 
         @Override
         public void visitVarDef(VarDef tree) {
-            Flow.forEach(tree.defs, def -> {
+            tree.defs.forEach(def -> {
                 if (def.init != null) {
                     scan(def.init);
                 }
@@ -314,7 +315,7 @@ public abstract class Tree {
 
         @Override
         public void visitInvocation(Invocation tree) {
-            Flow.forEach(tree.args, a -> scan(a.expr));
+            tree.args.forEach(a -> scan(a.expr));
         }
 
         @Override
@@ -368,11 +369,14 @@ public abstract class Tree {
             return null;
         }
 
-        public <T extends Tree> Flow<T> translate(Flow<T> flow) {
-            if (flow != null) {
-                Flow.translate(flow, this::translate);
+        public <T extends Tree> TList<T> translate(TList<T> list) {
+            if (list != null) {
+                ListIterator<T> tListIterator = list.listIterator();
+                while (tListIterator.hasNext()) {
+                    tListIterator.set(translate(tListIterator.next()));
+                }
             }
-            return flow;
+            return list;
         }
 
         @Override
@@ -384,7 +388,7 @@ public abstract class Tree {
 
         @Override
         public void visitFuncDef(FuncDef tree) {
-            Flow.forEach(tree.params, param -> {
+            tree.params.forEach(param -> {
                 if (param.expr != null) {
                     param.expr = translate(param.expr);
                 }
@@ -458,7 +462,7 @@ public abstract class Tree {
 
         @Override
         public void visitVarDef(VarDef tree) {
-            Flow.forEach(tree.defs, def -> {
+            tree.defs.forEach(def -> {
                 if (def.init != null) {
                     def.init = translate(def.init);
                 }
@@ -505,7 +509,7 @@ public abstract class Tree {
 
         @Override
         public void visitInvocation(Invocation tree) {
-            Flow.forEach(tree.args, a -> a.expr = translate(a.expr));
+            tree.args.forEach(a -> a.expr = translate(a.expr));
             result = tree;
         }
 
@@ -568,13 +572,13 @@ public abstract class Tree {
         public final Source source;
 
         @Deprecated
-        public Flow<Stmt> stats;
+        public TList<Stmt> stats;
 
-        public Flow<FuncDef> functions;
+        public TList<FuncDef> functions;
 
         public Document(int pos, Source source,
-                        Flow<FuncDef> functions,
-                        Flow<Stmt> stats) {
+                        TList<FuncDef> functions,
+                        TList<Stmt> stats) {
             super(pos);
             this.source = source;
             this.functions = functions;
@@ -617,7 +621,7 @@ public abstract class Tree {
 
         public final String name;
 
-        public Flow<Parameter> params;
+        public TList<Parameter> params;
 
         public Stmt body;
 
@@ -625,7 +629,7 @@ public abstract class Tree {
 
         public int flags;
 
-        public FuncDef(int pos, int namePos, String name, Flow<Parameter> params, Stmt body, int flags) {
+        public FuncDef(int pos, int namePos, String name, TList<Parameter> params, Stmt body, int flags) {
             super(pos);
             this.namePos = namePos;
             this.name = name;
@@ -643,9 +647,9 @@ public abstract class Tree {
 
     public static class Block extends Stmt {
 
-        public Flow<Stmt> stats;
+        public TList<Stmt> stats;
 
-        public Block(int pos, Flow<Stmt> stats) {
+        public Block(int pos, TList<Stmt> stats) {
             super(pos);
             this.stats = stats;
         }
@@ -719,15 +723,15 @@ public abstract class Tree {
 
     public static class ForLoop extends Stmt {
 
-        public Flow<Stmt> init;
+        public TList<Stmt> init;
 
         public Expr cond;
 
-        public Flow<Expr> step;
+        public TList<Expr> step;
 
         public Stmt body;
 
-        public ForLoop(int pos, Flow<Stmt> init, Expr cond, Flow<Expr> step, Stmt body) {
+        public ForLoop(int pos, TList<Stmt> init, Expr cond, TList<Expr> step, Stmt body) {
             super(pos);
             this.init = init;
             this.cond = cond;
@@ -746,9 +750,9 @@ public abstract class Tree {
 
         public Expr expr;
 
-        public Flow<Case> cases;
+        public TList<Case> cases;
 
-        public Switch(int pos, Expr expr, Flow<Case> cases) {
+        public Switch(int pos, Expr expr, TList<Case> cases) {
             super(pos);
             this.expr = expr;
             this.cases = cases;
@@ -763,11 +767,11 @@ public abstract class Tree {
 
     public static class Case extends Stmt {
 
-        public Flow<Expr> labels;
+        public TList<Expr> labels;
 
         public Stmt body;
 
-        public Case(int pos, Flow<Expr> labels, Stmt body) {
+        public Case(int pos, TList<Expr> labels, Stmt body) {
             super(pos);
             this.labels = labels;
             this.body = body;
@@ -843,9 +847,9 @@ public abstract class Tree {
             }
         }
 
-        public Flow<Definition> defs;
+        public TList<Definition> defs;
 
-        public VarDef(int pos, Flow<Definition> defs) {
+        public VarDef(int pos, TList<Definition> defs) {
             super(pos);
             this.defs = defs;
         }
@@ -914,9 +918,9 @@ public abstract class Tree {
 
     public static class ListLiteral extends Expr {
 
-        public Flow<Expr> entries;
+        public TList<Expr> entries;
 
-        public ListLiteral(int pos, Flow<Expr> entries) {
+        public ListLiteral(int pos, TList<Expr> entries) {
             super(pos);
             this.entries = entries;
         }
@@ -1008,11 +1012,11 @@ public abstract class Tree {
         
         public final Expr target;
 
-        public Flow<Argument> args;
+        public TList<Argument> args;
 
         public FunctionSymbol sym;
 
-        public Invocation(int pos, Expr target, Flow<Argument> args) {
+        public Invocation(int pos, Expr target, TList<Argument> args) {
             super(pos);
             this.target = target;
             this.args = args;

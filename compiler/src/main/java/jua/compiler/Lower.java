@@ -2,7 +2,6 @@ package jua.compiler;
 
 import jua.compiler.SemanticInfo.BoolCode;
 import jua.compiler.Tree.*;
-import jua.compiler.utils.Flow;
 
 import static jua.compiler.CompHelper.*;
 import static jua.compiler.SemanticInfo.ofBoolean;
@@ -18,15 +17,13 @@ public final class Lower extends Translator {
 
         // Заметка: в tree.stats не могут находиться операторы Tag.FUNCDEF и Tag.CONSTDEF.
         int pos = tree.pos;
-        tree.functions = Flow.builder(tree.functions)
-                .append(
-                        new FuncDef(pos,
-                                pos,
-                                "<main>",
-                                Flow.empty(),
-                                new Block(pos, tree.stats), 0))
-                .toFlow();
-        tree.stats = Flow.empty();
+        FuncDef element = new FuncDef(pos,
+                pos,
+                "<main>",
+                TList.empty(),
+                new Block(pos, tree.stats), 0);
+        tree.functions.add(element);
+        tree.stats = TList.empty();
 
         super.visitDocument(tree);
     }

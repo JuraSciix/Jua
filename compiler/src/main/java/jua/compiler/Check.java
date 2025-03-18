@@ -2,11 +2,11 @@ package jua.compiler;
 
 import jua.compiler.ModuleScope.FunctionSymbol;
 import jua.compiler.Tree.*;
-import jua.compiler.utils.Flow;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import static jua.compiler.CompHelper.*;
 
@@ -60,12 +60,12 @@ public class Check extends Scanner {
     public void visitFuncDef(FuncDef tree) {
         if (Flags.hasFlag(tree.flags, Flags.FN_ONCE)) {
             // Is "once" function
-            if (!Flow.isEmpty(tree.params)) {
-                report(Flow.first(tree.params).pos, "once-functions may not have parameters");
+            if (!tree.params.isEmpty()) {
+                report(tree.params.getFirst().pos, "once-functions may not have parameters");
             }
             // Анализировать параметры функции, которых не должно быть - бессмысленное действие.
         } else {
-            Flow.forEach(tree.params, param -> {
+            tree.params.forEach((Consumer<? super FuncDef.Parameter>) param -> {
                 if (param.expr != null) {
                     requireLiteralTree(param.expr);
                 }
@@ -100,13 +100,13 @@ public class Check extends Scanner {
         super.visitSwitch(tree);
 
         Set<Object> dejaVu = new HashSet<>();
-        Flow.forEach(tree.cases, c -> {
+        tree.cases.forEach((Consumer<? super Case>) c -> {
             if (c.labels == null) {
                 if (!dejaVu.add(null)) {
                     report(c.pos, "duplicate default-case");
                 }
             } else {
-                Flow.forEach(c.labels, label -> {
+                c.labels.forEach((Consumer<? super Expr>) label -> {
                     Literal l = (Literal) stripParens(label);
                     if (!dejaVu.add(l.value)) {
                         report(label.pos, "duplicate label");
@@ -132,7 +132,7 @@ public class Check extends Scanner {
     @Override
     public void visitCase(Case tree) {
         if (tree.labels != null) { // default-case?
-            Flow.forEach(tree.labels, label -> {
+            tree.labels.forEach((Consumer<? super Expr>) label -> {
                 if (!isLiteral(label)) {
                     report(stripParens(label).pos, "only literals are allowed as the case label expression");
                 }
@@ -197,7 +197,7 @@ public class Check extends Scanner {
         }
         tree.sym = calleeSym;
 
-        int count = Flow.count(tree.args);
+        int count = tree.args.size();
         if (count > calleeSym.hiargc) {
             report(tree.pos, "cannot call function %s: too many arguments: %d total, %d passed", calleeSym.name, calleeSym.hiargc, count);
             return;
@@ -208,7 +208,7 @@ public class Check extends Scanner {
             return;
         }
 
-        Flow.forEach(tree.args, a -> {
+        tree.args.forEach((Consumer<? super Invocation.Argument>) a -> {
             if (a.name != null) {
                 if (calleeSym.params != null && !Arrays.asList(calleeSym.params).contains(a.name)) {
                     report(a.pos, "cannot call function %s: unrecognized function parameter name", calleeSym.name);

@@ -3,7 +3,6 @@ package jua.compiler;
 import jua.compiler.Tokens.TokenType;
 import jua.compiler.Tree.*;
 import jua.compiler.utils.EnumMath;
-import jua.compiler.utils.Flow;
 
 import static jua.compiler.Tokens.TokenType.*;
 
@@ -67,7 +66,7 @@ public class CompHelper {
                 return true;
             case LISTLIT:
                 ListLiteral listTree = (ListLiteral) innerTree;
-                return Flow.allMatch(listTree.entries, CompHelper::isLiteral);
+                return listTree.entries.stream().allMatch(CompHelper::isLiteral);
             default:
                 return false;
         }

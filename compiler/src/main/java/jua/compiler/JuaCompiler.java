@@ -2,13 +2,13 @@ package jua.compiler;
 
 import jua.compiler.Tokens.Token;
 import jua.compiler.Tokens.TokenType;
-import jua.compiler.utils.Flow;
 import jua.compiler.utils.IOUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
+import java.util.function.Consumer;
 
 public final class JuaCompiler {
 
@@ -104,9 +104,9 @@ public final class JuaCompiler {
                 return null;
             }
 
-            Flow.forEach(compilationUnit.functions, funcDef -> funcDef.sym.code = new Code(programScope, source));
+            compilationUnit.functions.forEach((Consumer<? super Tree.FuncDef>) funcDef1 -> funcDef1.sym.code = new Code(programScope, source));
 
-            Flow.forEach(compilationUnit.functions, funcDef -> {
+            compilationUnit.functions.forEach((Consumer<? super Tree.FuncDef>) funcDef -> {
                 funcDef.accept(funcDef.sym.code.gen);
                 programScope.lookupFunction(funcDef.name).executable = funcDef.sym.executable;
             });

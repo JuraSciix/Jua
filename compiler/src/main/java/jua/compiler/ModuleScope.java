@@ -1,7 +1,6 @@
 package jua.compiler;
 
 import jua.compiler.Tree.FuncDef;
-import jua.compiler.utils.Flow;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -92,22 +91,22 @@ public final class ModuleScope {
         List<String> params = new ArrayList<>();
 
         class ArgCountData {
-            int min = Flow.count(tree.params);
+            int min = tree.params.size();
             int max = 0;
         }
 
-        ArgCountData a = Flow.reduce(tree.params, new ArgCountData(), (param, data) -> {
+        ArgCountData data = new ArgCountData();
+        tree.params.forEach( param -> {
             params.add(param.name);
             if (param.expr != null && data.min > data.max) {
                 data.min = data.max;
             }
             data.max++;
-            return data;
         });
         FunctionSymbol sym = new FunctionSymbol(
                 name,
-                a.min,
-                a.max,
+                data.min,
+                data.max,
                 params.toArray(new String[0]),
                 null, // Потом будет установлено,
                 tree.flags

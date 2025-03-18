@@ -1,12 +1,11 @@
 package jua.compiler;
 
-import jua.compiler.ModuleScope.FunctionSymbol;
 import jua.compiler.ModuleScope.VarSymbol;
 import jua.compiler.Tree.*;
 import jua.compiler.utils.Assert;
-import jua.compiler.utils.Flow;
 
 import java.util.HashMap;
+import java.util.function.Consumer;
 
 /**
  * Учет локальных переменных
@@ -94,11 +93,11 @@ public class Enter extends Scanner {
         }
     }
 
-    private VarScope scanInnerScope(VarScope parentScope, Flow<? extends Tree> flow) {
+    private VarScope scanInnerScope(VarScope parentScope, TList<? extends Tree> list) {
         VarScope innerScope = new VarScope(parentScope);
-        if (flow != null) {
+        if (list != null) {
             scope = innerScope;
-            scan(flow);
+            scan(list);
             ensureScopeChainUnaffected(parentScope);
             scope = parentScope;
         }
@@ -108,7 +107,7 @@ public class Enter extends Scanner {
     private void scanBody(VarScope parentScope, Tree tree) {
         if (tree != null) {
             checkNotVarDef(tree);
-            scanInnerScope(parentScope, Flow.of(tree));
+            scanInnerScope(parentScope, TList.of(tree));
         }
     }
 
@@ -127,7 +126,9 @@ public class Enter extends Scanner {
 
         // У "once" функций не должно быть параметров
         if (!CompHelper.isOnceFn(tree)) {
-            Flow.forEach(tree.params, param -> {
+            // Так как это не позитивный случай, избегать двойного поиска (defined + resolve) нет смысла.
+            // Сканировать param.expr не нужно, поскольку это должен быть литерал.
+            tree.params.forEach((Consumer<? super FuncDef.Parameter>) param -> {
                 if (scope.defined(param.name)) {
                     report(param.pos, "duplicated function parameter");
                     // Так как это не позитивный случай, избегать двойного поиска (defined + resolve) нет смысла.
@@ -193,7 +194,7 @@ public class Enter extends Scanner {
     public void visitForLoop(ForLoop tree) {
         VarScope parentScope = scope;
         VarScope initScope = scanInnerScope(parentScope, tree.init);
-        scanInnerScope(initScope, Flow.of(tree.cond));
+        scanInnerScope(initScope, TList.of(tree.cond));
         scanBody(initScope, tree.body);
         scanInnerScope(initScope, tree.step);
         ensureScopeChainUnaffected(parentScope);
@@ -208,7 +209,8 @@ public class Enter extends Scanner {
 
     @Override
     public void visitVarDef(VarDef tree) {
-        Flow.forEach(tree.defs, def -> {
+        // Так как это не позитивный случай, избегать двойного поиска (defined + resolve) нет смысла.
+        tree.defs.forEach((Consumer<? super VarDef.Definition>) def -> {
             if (scope.defined(def.name)) {
                 report(def.pos, "duplicated variable declaration");
                 // Так как это не позитивный случай, избегать двойного поиска (defined + resolve) нет смысла.
