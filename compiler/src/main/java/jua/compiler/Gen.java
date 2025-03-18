@@ -28,6 +28,26 @@ public class Gen extends Scanner {
         FlowEnv(FlowEnv parent) {
             this.parent = parent;
         }
+
+        void ontoNext(Chain opcode, boolean loop) {
+            if (loop) {
+                contChain = mergeChains(contChain, opcode);
+            } else {
+                parent.ontoNext(opcode, false);
+            }
+        }
+
+        void ontoExit(Chain opcode) {
+            exitChain = mergeChains(exitChain, opcode);
+        }
+
+        void ontoElse(Chain opcode) {
+            parent.ontoElse(opcode);
+        }
+
+        void ontoCase(int labelIndex, Chain opcode) {
+            parent.ontoCase(labelIndex, opcode);
+        }
     }
 
     static class SwitchEnv extends FlowEnv {
@@ -45,6 +65,25 @@ public class Gen extends Scanner {
 
         SwitchEnv(FlowEnv parent) {
             super(parent);
+        }
+
+        @Override
+        void ontoNext(Chain opcode, boolean loop) {
+            if (loop) {
+                parent.ontoNext(opcode, true);
+            } else {
+                contChain = mergeChains(contChain, opcode);
+            }
+        }
+
+        @Override
+        void ontoElse(Chain opcode) {
+            elseCaseChain = mergeChains(elseCaseChain, opcode);
+        }
+
+        @Override
+        void ontoCase(int labelIndex, Chain opcode) {
+            caseChains.computeIfPresent(labelIndex, (i, prev) -> mergeChains(prev, opcode));
         }
     }
 
@@ -262,48 +301,37 @@ public class Gen extends Scanner {
 
     @Override
     public void visitBreak(Break tree) {
-        FlowEnv env = searchEnv(false);
-        Assert.checkNonNull(env);
+        Assert.checkNonNull(flow);
         code.putPos(tree.pos);
-        env.exitChain = mergeChains(env.exitChain, code.branch(OPCodes.Goto));
+        flow.ontoExit(code.branch(OPCodes.Goto));
         code.setAlive(false);
     }
 
     @Override
     public void visitContinue(Continue tree) {
-        FlowEnv env = searchEnv(false);
-        Assert.checkNonNull(env);
+        Assert.checkNonNull(flow);
         code.putPos(tree.pos);
-        env.contChain = mergeChains(env.contChain, code.branch(OPCodes.Goto));
+        flow.ontoNext(code.branch(OPCodes.Goto), true);
         code.setAlive(false);
     }
 
     @Override
     public void visitFallthrough(Fallthrough tree) {
-        SwitchEnv env = (SwitchEnv) searchEnv(true);
-        Assert.checkNonNull(env);
+        Assert.checkNonNull(flow);
         code.putPos(tree.pos);
         Chain branch = code.branch(OPCodes.Goto);
         if (tree.hasTarget) {
             if (tree.target == null) {
                 // fallthrough else;
-                env.elseCaseChain = mergeChains(env.elseCaseChain, branch);
+                flow.ontoElse(branch);
             } else {
                 int labelIndex = genExpr(tree.target).constantIndex();
-                env.caseChains.put(labelIndex,
-                        mergeChains(env.caseChains.get(labelIndex), branch));
+                flow.ontoCase(labelIndex, branch);
             }
         } else {
-            env.contChain = mergeChains(env.contChain, branch);
+            flow.ontoNext(branch, false);
         }
         code.setAlive(false);
-    }
-
-    private FlowEnv searchEnv(boolean isSwitch) {
-        for (FlowEnv env = flow; env != null; env = env.parent)
-            if ((env instanceof SwitchEnv) == isSwitch)
-                return env;
-        return null;
     }
 
     @Override
