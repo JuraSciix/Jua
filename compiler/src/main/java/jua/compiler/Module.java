@@ -18,7 +18,7 @@ public final class Module {
         public final InstructionUtils.InstrNode[] code;
         public final int regSize;
         public final int stackSize;
-        public final Object[] constantPool; // todo: replace with compiler object
+        public final Object[] constantPool; // todo: replace with a compiler object
         public final LineNumberTable lineNumberTable;
         public final int reqargs, totargs;
         public final Object[] defs;

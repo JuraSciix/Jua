@@ -19,7 +19,6 @@ public final class LineMap {
     }
 
     private int[] buildLineMap(SourceReader reader) {
-        // todo: Не полагаться на обертки.
         IntArrayList lineStartPoints = new IntArrayList();
 
         // Первая линия
