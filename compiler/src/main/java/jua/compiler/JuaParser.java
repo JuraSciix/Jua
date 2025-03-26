@@ -121,7 +121,7 @@ public final class JuaParser {
             }
             case SEMI: {
                 nextToken();
-                return new Block(acceptedPos, null);
+                return new Block(acceptedPos, TList.empty());
             }
             case SWITCH: {
                 nextToken();
@@ -280,7 +280,7 @@ public final class JuaParser {
     private Stmt parseFor() {
         int position = acceptedPos;
         boolean parens = acceptToken(LPAREN);
-        TList<Stmt> init = acceptToken(SEMI) ? null : parseForInit();
+        TList<Stmt> init = acceptToken(SEMI) ? TList.empty() : parseForInit();
 
         Expr cond = null;
 
@@ -288,7 +288,7 @@ public final class JuaParser {
             cond = parseExpression();
             expectToken(SEMI);
         }
-        TList<Expr> step = null;
+        TList<Expr> step = TList.empty();
 
         if (parens) {
             if (!acceptToken(RPAREN)) {
@@ -368,7 +368,7 @@ public final class JuaParser {
     }
 
     private Case parseCase(int position, boolean isDefault) {
-        TList<Expr> expressions = null;
+        TList<Expr> expressions = TList.empty();
 
         if (!isDefault) {
             expressions = parseExpressions();
