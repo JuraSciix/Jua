@@ -28,6 +28,8 @@ public final class Tokens {
         AMPAMP("&&"),
         BARBAR("||"),
         QUESQUES("??"),
+        LCOMP("<<<"),
+        RCOMP(">>>"),
 
         // UNARY OPERATORS,
         BANG("!"),
