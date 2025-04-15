@@ -297,6 +297,15 @@ public class Lib {
             })
             .build();
 
+    private static final Function sqrt = builder()
+            .name("sqrt")
+            .param("x")
+            .callable((context, args, returnAddress) -> {
+                args[0].doubleVal(returnAddress);
+                returnAddress.set(Math.sqrt(returnAddress.getDouble()));
+            })
+            .build();
+
 
     public static Collection<Function> getFunctions() {
         return Arrays.asList(
@@ -323,7 +332,8 @@ public class Lib {
                 strTrim,
                 sizeof,
                 histogramAction,
-                clone
+                clone,
+                sqrt
         );
     }
 }
