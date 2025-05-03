@@ -1,0 +1,33 @@
+// Рекуррентный алгоритм для вычисления чисел Бернулли.
+
+/* Алгоритм генерации треугольника Паскаля. */
+fn GeneratePascalTriangle(height) {
+    var cols = list(height);
+    for (i := 0; i < height; i++) {
+        cols[i] = list(i + 1);
+        cols[i][0] = cols[i][i] = 1;
+        for (j := 1; j < i; j++) {
+            cols[i][j] = cols[i - 1][j - 1] + cols[i - 1][j];
+        }
+    }
+    return cols;
+}
+
+fn GetBernoulliNumber(n) {
+    if n < 0 {
+        panic("n cannot be less than 0");
+    }
+    if n == 0 {
+        return 1;
+    }
+    S := 0;
+    t := GeneratePascalTriangle(n+2);
+    for (i := 1; i <= n; i++) {
+        S += t[n+1][i+1] * GetBernoulliNumber(n-i);
+    }
+    return -1.0/(n+1)*S;
+}
+
+for (i := 0; i < 10; i++) {
+    println(GetBernoulliNumber(i));
+}
