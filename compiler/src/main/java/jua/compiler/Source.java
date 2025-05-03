@@ -1,5 +1,7 @@
 package jua.compiler;
 
+import java.util.Objects;
+
 public final class Source {
 
     public final String fileName;
@@ -8,9 +10,20 @@ public final class Source {
 
     private LineMap _linemap;
 
-    public Source(String fileName, char[] content) {
+    private final Log log;
+
+    public Source(String fileName, char[] content, Log log) {
         this.fileName = fileName;
         this.content = content;
+        this.log = Objects.requireNonNull(log);
+    }
+
+    public SourceReader getReader() {
+        return new SourceReader(content, 0, content.length);
+    }
+
+    public Log getLog() {
+        return log;
     }
 
     public LineMap getLineMap() {

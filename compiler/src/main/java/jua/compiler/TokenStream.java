@@ -3,20 +3,27 @@ package jua.compiler;
 import jua.compiler.Tokens.Token;
 import jua.compiler.Tokens.TokenType;
 
+import java.util.List;
+
 public class TokenStream {
-
-    private final Lexer lexer;
-
-    private final Token[] queue = new Token[16];
+    private final Token[] tokens;
     private int top = 0;
-    private Token last;
 
-    public TokenStream(Lexer lexer) {
-        this.lexer = lexer;
+    public TokenStream(List<Token> lexer) {
+        // Копируем токены из списка в массив ради независимости,
+        // и чтобы не тянуть за собой лишний объект.
+        this.tokens = new Token[lexer.size()];
+        lexer.toArray(tokens);
+    }
+
+    public int remaining() {
+        return tokens.length - top;
     }
 
     public Token last() {
-        return last;
+        if (top <= 0)
+            return null;
+        return tokens[top - 1];
     }
 
     public Token nextToken() {
@@ -24,21 +31,22 @@ public class TokenStream {
     }
 
     public Token take() {
-        return last = (top == 0) ? lexer.nextToken() : queue[--top];
+        if (remaining() <= 0)
+            return null;
+        return tokens[top++];
     }
 
     public Token peek(int step) {
-        while (top <= step) {
-            queue[top++] = lexer.nextToken();
-        }
-        return queue[step];
+        if (remaining() <= 0)
+            return null;
+        return tokens[top + step];
     }
 
     public boolean matches(TokenType type) {
-        return peek(0).type == type;
+        return remaining() >= 1 && peek(0).type == type;
     }
 
     public boolean sequence(TokenType t1, TokenType t2) {
-        return peek(1).type == t2 && peek(0).type == t1;
+        return remaining() >= 2 && peek(1).type == t2 && peek(0).type == t1;
     }
 }

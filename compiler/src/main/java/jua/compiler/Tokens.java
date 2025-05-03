@@ -152,6 +152,8 @@ public final class Tokens {
             this.pos = pos;
         }
 
+        public boolean isEOF() { return type == TokenType.EOF; }
+
         public String name() { throw unsupportedOperationException(); }
 
         public String value() { throw unsupportedOperationException(); }

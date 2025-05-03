@@ -25,10 +25,10 @@ public class Lexer {
 
     private TokenType type = INVALID;
 
-    public Lexer(Source source, Log log) {
+    public Lexer(Source source) {
         this.source = source;
-        this.log = log;
-        reader = new SourceReader(source.content, 0, source.content.length);
+        this.log = source.getLog();
+        reader = source.getReader();
     }
 
     private void report(int pos, String message) {

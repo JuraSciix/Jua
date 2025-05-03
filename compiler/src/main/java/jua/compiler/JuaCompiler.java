@@ -8,6 +8,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 public final class JuaCompiler {
@@ -80,14 +82,21 @@ public final class JuaCompiler {
             return null;
         }
         Log log = new Log.SimpleLog(stderr, logLimit);
-        Source source = new Source(file, filecontents);
+        Source source = new Source(file, filecontents, log);
 
         if (lintMode) {
-            lint(log, source);
+            lint(source);
             return null;
         }
         try {
-            JuaParser parser = new JuaParser(source, log);
+            Lexer lexer = new Lexer(source);
+            List<Token> tokens = new ArrayList<>();
+            Token t;
+            do {
+                t = lexer.nextToken();
+                tokens.add(t);
+            } while (!t.isEOF());
+            JuaParser parser = new JuaParser(source, new TokenStream(tokens));
             Tree.Document compilationUnit = parser.parseDocument();
             if (prettyTreeMode) {
                 System.err.println("Prettier isn't available.");
@@ -123,8 +132,8 @@ public final class JuaCompiler {
         }
     }
 
-    private void lint(Log log, Source source) {
-        Lexer tokenizer = new Lexer(source, log);
+    private void lint(Source source) {
+        Lexer tokenizer = new Lexer(source);
         for (Token token = tokenizer.nextToken();
              token.type != TokenType.EOF;
              token = tokenizer.nextToken()) {

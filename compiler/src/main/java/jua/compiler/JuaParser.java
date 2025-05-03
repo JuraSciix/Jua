@@ -38,10 +38,10 @@ public final class JuaParser {
 
     int acceptedPos;
 
-    public JuaParser(Source source, Log log) {
+    public JuaParser(Source source, TokenStream ts) {
         this.source = source;
-        this.log = log;
-        tokenizer = new TokenStream(new Lexer(source, log));
+        this.log = source.getLog();
+        tokenizer = ts;
     }
 
     public Document parseDocument() {
@@ -652,7 +652,7 @@ public final class JuaParser {
     private boolean matchesToken(TokenType type) {
         return token.type == type;
     }
-    
+
     private boolean acceptToken(TokenType type) {
         if (matchesToken(type)) {
             acceptedPos = token.pos;
