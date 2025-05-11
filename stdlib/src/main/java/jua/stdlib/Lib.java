@@ -5,6 +5,7 @@ import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.StringHeap;
 import jua.runtime.interpreter.Address;
 import jua.runtime.interpreter.Histogram;
+import jua.runtime.interpreter.InterpreterThread;
 import jua.stdlib.util.ObjectSizeAnalyzing;
 
 import java.util.Arrays;
@@ -306,6 +307,16 @@ public class Lib {
             })
             .build();
 
+    private static final Function printStack = builder()
+            .name("print_stack")
+            .callable((context, args, returnAddress) -> {
+                InterpreterThread.currentThread()
+                        .memory()
+                        .debug();
+                returnAddress.setNull();
+            })
+            .build();
+
 
     public static Collection<Function> getFunctions() {
         return Arrays.asList(
@@ -333,7 +344,8 @@ public class Lib {
                 sizeof,
                 histogramAction,
                 clone,
-                sqrt
+                sqrt,
+                printStack
         );
     }
 }
