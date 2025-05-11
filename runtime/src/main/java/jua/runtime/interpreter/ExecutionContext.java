@@ -496,10 +496,10 @@ public final class ExecutionContext {
     }
 
     public void shareLoad(int index) {
-        // todo
+        getStack().push(memory.getShared(index));
     }
 
     public void shareStore(int index) {
-        // todo
+        memory.getShared(index).set(getStack().popGet());
     }
 }

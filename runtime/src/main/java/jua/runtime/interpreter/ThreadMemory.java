@@ -23,7 +23,7 @@ public final class ThreadMemory {
     }
 
     public Address getShared(int offset) {
-        return null;
+        return data[offset];
     }
 
     public void acquire(int capacity) {
