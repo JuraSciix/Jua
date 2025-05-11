@@ -123,6 +123,7 @@ public final class InterpreterThread {
 
     private void popFrame() {
         current = current.getCaller();
+        frameFactory.release();
     }
 
     private void enterFrame() {
