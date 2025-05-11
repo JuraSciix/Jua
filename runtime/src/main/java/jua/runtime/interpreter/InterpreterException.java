@@ -10,11 +10,11 @@ import java.util.Objects;
 public class InterpreterException extends RuntimeException {
 
     public InterpreterException(String message) {
-        super(Objects.requireNonNull(message, "message"));
+        super(Objects.requireNonNull(message, "message"), null, false, false);
     }
 
     public InterpreterException(String message, Throwable cause) {
-        super(Objects.requireNonNull(message, "message"), cause);
+        super(Objects.requireNonNull(message, "message"), cause, false, false);
     }
 
     public InterpreterException(Throwable cause) {

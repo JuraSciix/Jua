@@ -13,6 +13,6 @@ public class RuntimeErrorException extends RuntimeException {
     public InterpreterThread thread; // todo:  Исправить этот костыль
 
     public RuntimeErrorException(String message) {
-        super(Objects.requireNonNull(message, "message"));
+        super(Objects.requireNonNull(message, "message"), null, false, false);
     }
 }
