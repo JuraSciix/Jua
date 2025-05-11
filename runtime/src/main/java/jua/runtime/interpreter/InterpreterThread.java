@@ -94,7 +94,6 @@ public final class InterpreterThread {
 
     /**
      * @deprecated Use {@link JuaEnvironment#getEnvironment()}.
-     * @return
      */
     public JuaEnvironment getEnvironment() {
         return environment;
@@ -104,6 +103,20 @@ public final class InterpreterThread {
         InterpreterFrame frame = frameFactory.allocate();
         frame.setCaller(currentFrame());
         frame.setFunction(callee);
+        if (currentFrame() == null) {
+            frame.setRegBase(0);
+        } else {
+            InterpreterFrame caller = currentFrame().getCaller();
+            if (caller == null) {
+                if (currentFrame().getFunction().isUserDefined()) {
+                    frame.setRegBase(currentFrame().getFunction().getCode().getRegNumber());
+                } else {
+                    frame.setRegBase(0);
+                }
+            } else {
+                frame.setRegBase(caller.getRegBase() + currentFrame().getFunction().getCode().getRegNumber());
+            }
+        }
         frame.setCP(0);
         current = frame;
     }

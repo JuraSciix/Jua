@@ -7,6 +7,7 @@ public final class InterpreterFrame {
     private InterpreterFrame caller;
     private Function function;
     private int cp;
+    private int regBase;
 
     public void setCaller(InterpreterFrame caller) {
         this.caller = caller;
@@ -20,6 +21,13 @@ public final class InterpreterFrame {
         this.cp = cp;
     }
 
+    public void setRegBase(int regBase) {
+        if (regBase < 0) {
+            throw new IllegalArgumentException("Negative reg base: " + regBase);
+        }
+        this.regBase = regBase;
+    }
+
     public InterpreterFrame getCaller() {
         return caller;
     }
@@ -30,5 +38,9 @@ public final class InterpreterFrame {
 
     public int getCP() {
         return cp;
+    }
+
+    public int getRegBase() {
+        return regBase;
     }
 }

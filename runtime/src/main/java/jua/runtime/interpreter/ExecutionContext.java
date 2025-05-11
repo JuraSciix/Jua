@@ -54,6 +54,7 @@ public final class ExecutionContext {
         constantPool = code.getConstantPool();
         Instruction[] instructions = code.getCode();
 
+        memory.setCurrentFrame(frame);
         int cp = frame.getCP();
         while (true) {
             nextCP = cp + 1;

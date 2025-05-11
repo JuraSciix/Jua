@@ -1,17 +1,25 @@
 package jua.runtime.interpreter;
 
+import java.util.Objects;
+
 public final class ThreadMemory {
 
     private Address[] data;
 
     private int top = 0;
 
+    private InterpreterFrame cFrame;
+
     public ThreadMemory() {
         data = AddressUtils.allocateMemory(32, 0);
     }
 
+    public void setCurrentFrame(InterpreterFrame frame) {
+        cFrame = Objects.requireNonNull(frame);
+    }
+
     public Address get(int offset) {
-        return data[top - offset - 1];
+        return data[cFrame.getRegBase() + offset];
     }
 
     public Address getShared(int offset) {
