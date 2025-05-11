@@ -137,6 +137,9 @@ public class InstructionUtils {
                 Return = 64,
                 Leave = 65,
 
+                ShLoad = 66, // Shared Load. Чтение разделенной переменной
+                ShStore = 67, // Shared Store. Запись в разделенную переменную
+
         _InstrCount = Leave + 1;
     }
 
