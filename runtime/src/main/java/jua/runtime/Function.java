@@ -7,7 +7,6 @@ public final class Function {
 
     public static final int FLAG_NATIVE = 0x01; /* Нативная функция */
     public static final int FLAG_HIDDEN = 0x02; /* Функция не показывается в трассировке стека */
-    public static final int FLAG_ONCE = 0x04;   /* Функция выполняется единожды, затем возвращается только результат */
     public static final int FLAG_KILLER = 0x08; /* Функция, которая точно прекращает выполнение потока1 */
 
     private final String name;
@@ -27,9 +26,6 @@ public final class Function {
     private final CodeData code;
 
     private final NativeExecutor nativeBody;
-
-    public Address onceContainer;
-    public boolean onceCondition = false; // false=функция должна выполниться, true=только вернуть значение
 
     public int runtimeId = -1;
 
@@ -87,10 +83,6 @@ public final class Function {
 
     public boolean isHidden() {
         return (flags & FLAG_HIDDEN) == FLAG_HIDDEN;
-    }
-
-    public boolean isOnce() {
-        return (flags & FLAG_ONCE) == FLAG_ONCE;
     }
 
     public NativeExecutor nativeExecutor() {

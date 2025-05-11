@@ -132,20 +132,11 @@ public final class InterpreterThread {
         pushFrame();
         if (callee.isUserDefined()) {
             memory.acquire(callee.getCode().getRegNumber());
-            if (callee.isOnce()) {
-                if (callee.onceCondition) {
-                    stack.pushGet().set(callee.onceContainer);
-                    set_msg(MSG_POPPING_FRAME);
-                    return;
-                }
-                // У "once" функций не должно быть параметров
-            } else {
-                for (int i = 0; i < numArgs; i++) {
-                    memory.get(numArgs - i - 1).set(stack().popGet());
-                }
-                for (int i = numArgs; i < callee.getMaxArgc(); i++) {
-                    memory.get(i).set(callee.getDefaults()[i - callee.getMinArgc()]);
-                }
+            for (int i = 0; i < numArgs; i++) {
+                memory.get(numArgs - i - 1).set(stack().popGet());
+            }
+            for (int i = numArgs; i < callee.getMaxArgc(); i++) {
+                memory.get(i).set(callee.getDefaults()[i - callee.getMinArgc()]);
             }
 //            Histogram.get().end(OPCodes._JoinFrame);
             set_msg(MSG_RUNNING_FRAME);
@@ -174,15 +165,6 @@ public final class InterpreterThread {
         if (fn.isUserDefined()) {
             stack.cleanup();
             memory.release(fn.getCode().getRegNumber());
-            if (fn.isOnce()) {
-                if (!fn.onceCondition) {
-                    // Запоминаем возвращаемое значение
-                    fn.onceContainer = new Address();
-                    fn.onceContainer.set(stack().peek(-1));
-                    // Запоминаем состояние: функция выполнена, значение сохранено
-                    fn.onceCondition = true;
-                }
-            }
         }
         popFrame();
 //        Histogram.get().end(OPCodes._PopFrame);
@@ -204,7 +186,7 @@ public final class InterpreterThread {
 
     public void prepareCall(Function calleeFn, int argCount) {
         if (DEBUG) {
-            System.out.printf("prepareCall: name=%s, once=%b %n", calleeFn.getName(), calleeFn.isOnce());
+            System.out.printf("prepareCall: name=%s%n", calleeFn.getName());
         }
 //        Histogram.get().start(OPCodes._JoinFrame);
 //        Histogram.get().start(OPCodes._JoinNativeFrame);
