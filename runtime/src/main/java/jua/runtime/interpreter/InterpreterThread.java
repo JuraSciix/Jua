@@ -1,11 +1,9 @@
 package jua.runtime.interpreter;
 
-import jua.runtime.interpreter.instruction.Instruction;
 import jua.runtime.Function;
 import jua.runtime.JuaEnvironment;
 import jua.runtime.RuntimeErrorException;
 import jua.runtime.StackTraceElement;
-import jua.runtime.code.CodeData;
 import jua.runtime.utils.Assert;
 
 import java.io.PrintStream;
@@ -40,6 +38,8 @@ public final class InterpreterThread {
     public static void threadError(String message, Object... args) {
         currentThread().error(message, args);
     }
+
+    private final JuaEnvironment env = JuaEnvironment.getEnvironment();
 
     private final Thread jvmThread;
 
@@ -102,19 +102,20 @@ public final class InterpreterThread {
     private void pushFrame() {
         InterpreterFrame frame = frameFactory.allocate();
         frame.setCaller(currentFrame());
-        frame.setFunction(callee);
+        frame.setFunctionId(callee.runtimeId);
         if (currentFrame() == null) {
             frame.setRegBase(0);
         } else {
             InterpreterFrame caller = currentFrame().getCaller();
+            Function f = JuaEnvironment.getEnvironment().getFunctionById(current.getFunctionId());
             if (caller == null) {
-                if (currentFrame().getFunction().isUserDefined()) {
-                    frame.setRegBase(currentFrame().getFunction().getCode().getRegNumber());
+                if (f.isUserDefined()) {
+                    frame.setRegBase(f.getCode().getRegNumber());
                 } else {
                     frame.setRegBase(0);
                 }
             } else {
-                frame.setRegBase(caller.getRegBase() + currentFrame().getFunction().getCode().getRegNumber());
+                frame.setRegBase(caller.getRegBase() + f.getCode().getRegNumber());
             }
         }
         frame.setCP(0);
@@ -169,7 +170,7 @@ public final class InterpreterThread {
     }
 
     private void leaveFrame() {
-        Function fn = currentFrame().getFunction();
+        Function fn = JuaEnvironment.getEnvironment().getFunctionById(currentFrame().getFunctionId());
         if (fn.isUserDefined()) {
             stack.cleanup();
             memory.release(fn.getCode().getRegNumber());
@@ -271,7 +272,9 @@ public final class InterpreterThread {
         int i = limit;
 
         while (frame != null && i > 0) {
-            if (!frame.getFunction().isHidden()) {
+            if (!JuaEnvironment.getEnvironment()
+                    .getFunctionById(frame.getFunctionId())
+                    .isHidden()) {
                 stackTrace.add(toStackTraceElement(frame));
             }
             frame = frame.getCaller();
@@ -283,14 +286,15 @@ public final class InterpreterThread {
 
     /** Возвращает номер строки, которая сейчас выполняется. */
     int executingLineNumber(InterpreterFrame frame) {
-        if (!frame.getFunction().isUserDefined()) return -1; // native function
+        Function f = JuaEnvironment.getEnvironment().getFunctionById(frame.getFunctionId());
+        if (!f.isUserDefined()) return -1; // native function
         int cp = frame.getCP() - 1;
-        return frame.getFunction().userCode().getLineNumberTable().getLineNumber(cp);
+        return f.userCode().getLineNumberTable().getLineNumber(cp);
     }
 
     StackTraceElement toStackTraceElement(InterpreterFrame frame) {
-        return new StackTraceElement(frame.getFunction().getModule(),
-                frame.getFunction().getName(), executingLineNumber(frame));
+        Function f = env.getFunctionById(frame.getFunctionId());
+        return new StackTraceElement(f.getModule(), f.getName(), executingLineNumber(frame));
     }
 
     public void printStackTrace() {
@@ -330,7 +334,7 @@ public final class InterpreterThread {
             String details;
             if (currentFrame() == null) {
                 details = "<NO FRAME>";
-            } else if (!currentFrame().getFunction().isUserDefined()) {
+            } else if (!env.getFunctionById(currentFrame().getFunctionId()).isUserDefined()) {
                 details = "<NATIVE>";
             } else {
                 details = "CP=" + currentFrame().getCP() +

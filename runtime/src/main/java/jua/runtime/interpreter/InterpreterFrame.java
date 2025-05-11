@@ -1,11 +1,9 @@
 package jua.runtime.interpreter;
 
-import jua.runtime.Function;
-
 public final class InterpreterFrame {
 
     private InterpreterFrame caller;
-    private Function function;
+    private int functionId;
     private int cp;
     private int regBase;
 
@@ -13,8 +11,8 @@ public final class InterpreterFrame {
         this.caller = caller;
     }
 
-    public void setFunction(Function function) {
-        this.function = function;
+    public void setFunctionId(int functionId) {
+        this.functionId = functionId;
     }
 
     public void setCP(int cp) {
@@ -32,8 +30,8 @@ public final class InterpreterFrame {
         return caller;
     }
 
-    public Function getFunction() {
-        return function;
+    public int getFunctionId() {
+        return functionId;
     }
 
     public int getCP() {

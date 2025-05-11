@@ -31,6 +31,8 @@ public final class Function {
     public Address onceContainer;
     public boolean onceCondition = false; // false=функция должна выполниться, true=только вернуть значение
 
+    public int runtimeId = -1;
+
     public Function(String name, String module, int minArgc, int maxArgc, String[] params, Address[] defaults, int flags, CodeData code, NativeExecutor nativeBody) {
         this.name = name;
         this.module = module;

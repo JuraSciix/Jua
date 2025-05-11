@@ -1,6 +1,8 @@
 package jua.runtime;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public final class JuaEnvironment {
@@ -13,6 +15,8 @@ public final class JuaEnvironment {
 
     private final Map<String, Function> fntab = new HashMap<>();
 
+    private final List<Function> functionData = new ArrayList<>();
+
     private JuaEnvironment() {
         if (environment != null) {
             throw new AssertionError();
@@ -23,6 +27,10 @@ public final class JuaEnvironment {
         if (function == null) {
             throw new NullPointerException("Function");
         }
+        if (function.runtimeId >= 0) {
+            throw new RuntimeErrorException(
+                    "Function " + function.getName() + " already have an runtime ID " + function.runtimeId);
+        }
 
         String name = function.getName();
         synchronized (fntab) {
@@ -30,7 +38,14 @@ public final class JuaEnvironment {
                 throw new RuntimeErrorException("Unable to override function \"" + name + "\"");
             }
             fntab.put(name, function);
+            function.runtimeId = functionData.size();
+            functionData.add(function);
+
         }
+    }
+
+    public Function getFunctionById(int id) {
+        return functionData.get(id);
     }
 
     public Function lookupFunction(String name) {

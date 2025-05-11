@@ -50,7 +50,9 @@ public final class ExecutionContext {
         msgCallee = null;
         msgArgc = 0;
 
-        CodeData code = frame.getFunction().getCode();
+        JuaEnvironment env = JuaEnvironment.getEnvironment();
+
+        CodeData code = env.getFunctionById(frame.getFunctionId()).getCode();
         constantPool = code.getConstantPool();
         Instruction[] instructions = code.getCode();
 
