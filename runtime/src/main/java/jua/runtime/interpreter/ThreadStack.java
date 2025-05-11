@@ -38,14 +38,21 @@ public final class ThreadStack {
         return peek(offset);
     }
 
+    public Address getStackAddressBack(int offset) {
+        return getStackAddress(-offset);
+    }
+
     /**
      * @deprecated Use {@link #push(Address)} and {@link #popGet()}
      */
     public void addTos(int tos) {
         this.tos += tos;
-        if (this.tos < 0) {
-            throw new RuntimeException("Tos < 0");
-        }
+        validate();
+    }
+
+    public void subTos(int tos) {
+        this.tos -= tos;
+        validate();
     }
 
     /**

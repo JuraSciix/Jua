@@ -168,85 +168,85 @@ public final class ExecutionContext {
     }
 
     public void doSub() {
-        Address lhs = getStack().getStackAddress(-2);
-        Address rhs = getStack().getStackAddress(-1);
+        Address lhs = getStack().getStackAddressBack(2);
+        Address rhs = getStack().getStackAddressBack(1);
         lhs.sub(rhs, lhs);
-        getStack().addTos(-1);
+        getStack().subTos(1);
     }
 
     public void doDiv() {
-        Address lhs = getStack().getStackAddress(-2);
-        Address rhs = getStack().getStackAddress(-1);
+        Address lhs = getStack().getStackAddressBack(2);
+        Address rhs = getStack().getStackAddressBack(1);
         lhs.div(rhs, lhs);
-        getStack().addTos(-1);
+        getStack().subTos(1);
     }
 
     public void doMul() {
-        Address lhs = getStack().getStackAddress(-2);
-        Address rhs = getStack().getStackAddress(-1);
+        Address lhs = getStack().getStackAddressBack(2);
+        Address rhs = getStack().getStackAddressBack(1);
         lhs.mul(rhs, lhs);
-        getStack().addTos(-1);
+        getStack().subTos(1);
     }
 
     public void doRem() {
-        Address lhs = getStack().getStackAddress(-2);
-        Address rhs = getStack().getStackAddress(-1);
+        Address lhs = getStack().getStackAddressBack(2);
+        Address rhs = getStack().getStackAddressBack(1);
         lhs.rem(rhs, lhs);
-        getStack().addTos(-1);
+        getStack().subTos(1);
     }
 
     public void doAnd() {
-        Address lhs = getStack().getStackAddress(-2);
-        Address rhs = getStack().getStackAddress(-1);
+        Address lhs = getStack().getStackAddressBack(2);
+        Address rhs = getStack().getStackAddressBack(1);
         lhs.and(rhs, lhs);
-        getStack().addTos(-1);
+        getStack().subTos(1);
     }
 
     public void doOr() {
-        Address lhs = getStack().getStackAddress(-2);
-        Address rhs = getStack().getStackAddress(-1);
+        Address lhs = getStack().getStackAddressBack(2);
+        Address rhs = getStack().getStackAddressBack(1);
         lhs.or(rhs, lhs);
-        getStack().addTos(-1);
+        getStack().subTos(1);
     }
 
     public void doXor() {
-        Address lhs = getStack().getStackAddress(-2);
-        Address rhs = getStack().getStackAddress(-1);
+        Address lhs = getStack().getStackAddressBack(2);
+        Address rhs = getStack().getStackAddressBack(1);
         lhs.xor(rhs, lhs);
-        getStack().addTos(-1);
+        getStack().subTos(1);
     }
 
     public void doShl() {
-        Address lhs = getStack().getStackAddress(-2);
-        Address rhs = getStack().getStackAddress(-1);
+        Address lhs = getStack().getStackAddressBack(2);
+        Address rhs = getStack().getStackAddressBack(1);
         lhs.shl(rhs, lhs);
-        getStack().addTos(-1);
+        getStack().subTos(1);
     }
 
     public void doShr() {
-        Address lhs = getStack().getStackAddress(-2);
-        Address rhs = getStack().getStackAddress(-1);
+        Address lhs = getStack().getStackAddressBack(2);
+        Address rhs = getStack().getStackAddressBack(1);
         lhs.shr(rhs, lhs);
-        getStack().addTos(-1);
+        getStack().subTos(1);
     }
 
     public void doPos() {
-        Address value = getStack().getStackAddress(-1);
+        Address value = getStack().getStackAddressBack(1);
         value.pos(value);
     }
 
     public void doNeg() {
-        Address value = getStack().getStackAddress(-1);
+        Address value = getStack().getStackAddressBack(1);
         value.neg(value);
     }
 
     public void doNot() {
-        Address value = getStack().getStackAddress(-1);
+        Address value = getStack().getStackAddressBack(1);
         value.not(value);
     }
 
     public void doLength() {
-        Address value = getStack().getStackAddress(-1);
+        Address value = getStack().getStackAddressBack(1);
         value.length(value);
     }
 
@@ -255,8 +255,8 @@ public final class ExecutionContext {
     }
 
     public void doStore(int i) {
-        getMemory().get(i).set(getStack().getStackAddress(-1));
-        getStack().addTos(-1);
+        getMemory().get(i).set(getStack().getStackAddressBack(1));
+        getStack().subTos(1);
     }
 
     public void doInc(int i) {
@@ -268,36 +268,36 @@ public final class ExecutionContext {
     }
 
     public void doArrayLoad() {
-        Address arr = getStack().getStackAddress(-2);
-        Address key = getStack().getStackAddress(-1);
+        Address arr = getStack().getStackAddressBack(2);
+        Address key = getStack().getStackAddressBack(1);
         arr.load(key, arr);
-        getStack().addTos(-1);
+        getStack().subTos(1);
     }
 
     public void doArrayStore() {
-        Address arr = getStack().getStackAddress(-3);
-        Address key = getStack().getStackAddress(-2);
-        Address val = getStack().getStackAddress(-1);
+        Address arr = getStack().getStackAddressBack(3);
+        Address key = getStack().getStackAddressBack(2);
+        Address val = getStack().getStackAddressBack(1);
         arr.store(key, val);
-        getStack().addTos(-3);
+        getStack().subTos(3);
     }
 
     public void doArrayInc() {
-        Address arr = getStack().getStackAddress(-2);
-        Address key = getStack().getStackAddress(-1);
+        Address arr = getStack().getStackAddressBack(2);
+        Address key = getStack().getStackAddressBack(1);
         arr.arrayInc(key, arr);
-        getStack().addTos(-1);
+        getStack().subTos(1);
     }
 
     public void doArrayDec() {
-        Address arr = getStack().getStackAddress(-2);
-        Address key = getStack().getStackAddress(-1);
+        Address arr = getStack().getStackAddressBack(2);
+        Address key = getStack().getStackAddressBack(1);
         arr.arrayDec(key, arr);
-        getStack().addTos(-1);
+        getStack().subTos(1);
     }
 
     public void doNewList() {
-        Address value = getStack().getStackAddress(-1);
+        Address value = getStack().getStackAddressBack(1);
         long a;
         if (!value.hasType(Types.T_INT) ||
                 (a = value.getLong()) < 0 ||
@@ -309,9 +309,9 @@ public final class ExecutionContext {
     }
 
     public void doJumpIfEq(int nextCp) {
-        Address lhs = getStack().getStackAddress(-2);
-        Address rhs = getStack().getStackAddress(-1);
-        getStack().addTos(-2);
+        Address lhs = getStack().getStackAddressBack(2);
+        Address rhs = getStack().getStackAddressBack(1);
+        getStack().subTos(2);
         if (lhs.fastCompareWith(rhs, 1) == 0) {
             setNextCp(nextCp);
         }
@@ -325,68 +325,68 @@ public final class ExecutionContext {
     }
 
     public void doJumpIfGt(int nextCp) {
-        Address lhs = getStack().getStackAddress(-2);
-        Address rhs = getStack().getStackAddress(-1);
-        getStack().addTos(-2);
+        Address lhs = getStack().getStackAddressBack(2);
+        Address rhs = getStack().getStackAddressBack(1);
+        getStack().subTos(2);
         if (lhs.fastCompareWith(rhs, -1) > 0) {
             setNextCp(nextCp);
         }
     }
 
     public void doJumpIfGe(int nextCp) {
-        Address lhs = getStack().getStackAddress(-2);
-        Address rhs = getStack().getStackAddress(-1);
-        getStack().addTos(-2);
+        Address lhs = getStack().getStackAddressBack(2);
+        Address rhs = getStack().getStackAddressBack(1);
+        getStack().subTos(2);
         if (lhs.fastCompareWith(rhs, -1) >= 0) {
             setNextCp(nextCp);
         }
     }
 
     public void doJumpIfLt(int nextCp) {
-        Address lhs = getStack().getStackAddress(-2);
-        Address rhs = getStack().getStackAddress(-1);
-        getStack().addTos(-2);
+        Address lhs = getStack().getStackAddressBack(2);
+        Address rhs = getStack().getStackAddressBack(1);
+        getStack().subTos(2);
         if (lhs.fastCompareWith(rhs, 1) < 0) {
             setNextCp(nextCp);
         }
     }
 
     public void doJumpIfLe(int nextCp) {
-        Address lhs = getStack().getStackAddress(-2);
-        Address rhs = getStack().getStackAddress(-1);
-        getStack().addTos(-2);
+        Address lhs = getStack().getStackAddressBack(2);
+        Address rhs = getStack().getStackAddressBack(1);
+        getStack().subTos(2);
         if (lhs.fastCompareWith(rhs, 1) <= 0) {
             setNextCp(nextCp);
         }
     }
 
     public void doJumpIfNull(int nextCp) {
-        Address value = getStack().getStackAddress(-1);
-        getStack().addTos(-1);
+        Address value = getStack().getStackAddressBack(1);
+        getStack().subTos(1);
         if (value.isNull()) {
             setNextCp(nextCp);
         }
     }
 
     public void doJumpIfNonZero(int nextCp) {
-        Address value = getStack().getStackAddress(-1);
-        getStack().addTos(-1);
+        Address value = getStack().getStackAddressBack(1);
+        getStack().subTos(1);
         if (value.booleanVal()) {
             setNextCp(nextCp);
         }
     }
 
     public void doJumpIfZero(int nextCp) {
-        Address value = getStack().getStackAddress(-1);
-        getStack().addTos(-1);
+        Address value = getStack().getStackAddressBack(1);
+        getStack().subTos(1);
         if (!value.booleanVal()) {
             setNextCp(nextCp);
         }
     }
 
     public void doJumpIfntNull(int nextCp) {
-        Address value = getStack().getStackAddress(-1);
-        getStack().addTos(-1);
+        Address value = getStack().getStackAddressBack(1);
+        getStack().subTos(1);
         if (!value.isNull()) {
             setNextCp(nextCp);
         }
