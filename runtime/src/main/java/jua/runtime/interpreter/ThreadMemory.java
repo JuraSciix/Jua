@@ -8,18 +8,19 @@ public final class ThreadMemory {
 
     private int top = 0;
 
-    private InterpreterFrame cFrame;
+    private int fRegBase = 0;
 
     public ThreadMemory() {
         data = AddressUtils.allocateMemory(32, 0);
     }
 
     public void setCurrentFrame(InterpreterFrame frame) {
-        cFrame = Objects.requireNonNull(frame);
+        Objects.requireNonNull(frame);
+        fRegBase = frame.getRegBase();
     }
 
     public Address get(int offset) {
-        return data[cFrame.getRegBase() + offset];
+        return data[fRegBase + offset];
     }
 
     public Address getShared(int offset) {
