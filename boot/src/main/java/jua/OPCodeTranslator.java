@@ -100,6 +100,12 @@ public class OPCodeTranslator implements InstrVisitor {
             case OPCodes.Dec:
                 put(new Dec(node.index));
                 break;
+            case OPCodes.ShLoad:
+                put(new Shload(node.index));
+                break;
+            case OPCodes.ShStore:
+                put(new Shstore(node.index));
+                break;
             default:
                 opcodeMismatch(node);
         }
