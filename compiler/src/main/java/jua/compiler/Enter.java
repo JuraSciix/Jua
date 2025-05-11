@@ -124,22 +124,6 @@ public class Enter extends Scanner {
         ensureRootScope();
         scope = new VarScope(null);
 
-        // У "once" функций не должно быть параметров
-        if (!CompHelper.isOnceFn(tree)) {
-            // Так как это не позитивный случай, избегать двойного поиска (defined + resolve) нет смысла.
-            // Сканировать param.expr не нужно, поскольку это должен быть литерал.
-            tree.params.forEach((Consumer<? super FuncDef.Parameter>) param -> {
-                if (scope.defined(param.name)) {
-                    report(param.pos, "duplicated function parameter");
-                    // Так как это не позитивный случай, избегать двойного поиска (defined + resolve) нет смысла.
-                    param.sym = scope.resolve(param.name);
-                    return;
-                }
-                param.sym = scope.define(param.name);
-                // Сканировать param.expr не нужно, поскольку это должен быть литерал.
-            });
-        }
-
         if (globalScope.isFunctionDefined(tree.name)) {
             report(tree.namePos, "function redefinition");
             tree.sym = globalScope.lookupFunction(tree.name);

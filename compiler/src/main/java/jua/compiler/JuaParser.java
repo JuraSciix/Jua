@@ -51,14 +51,8 @@ public final class JuaParser {
 
         while (!acceptToken(EOF)) {
             try {
-                if (acceptToken(ONCE)) {
-                    // todo: "once" variables
-                    expectToken(FN);
-                    funcDefs.add(parseFunction(Flags.FN_ONCE));
-                    continue;
-                }
                 if (acceptToken(FN)) {
-                    funcDefs.add(parseFunction(0));
+                    funcDefs.add(parseFunction());
                     continue;
                 }
                 stats.add(parseStatement());
@@ -209,7 +203,7 @@ public final class JuaParser {
         return new Fallthrough(pos, target, hasTarget);
     }
 
-    private FuncDef parseFunction(int flags) {
+    private FuncDef parseFunction() {
         int pos = acceptedPos;
         Token funcName = token;
         expectToken(IDENTIFIER);
@@ -235,7 +229,7 @@ public final class JuaParser {
             comma = !acceptToken(COMMA);
         }
         Stmt body = parseBody();
-        return new FuncDef(pos, funcName.pos, funcName.name(), params, body, flags);
+        return new FuncDef(pos, funcName.pos, funcName.name(), params, body, 0);
     }
 
     private Stmt parseBody() {

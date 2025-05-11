@@ -70,7 +70,6 @@ public final class Tokens {
         VAR("var"),
         WHILE("while"),
         YIELD("yield"),
-        ONCE("once"),
 
         // EXPRESSION KEYWORDS
         NULL("null"),

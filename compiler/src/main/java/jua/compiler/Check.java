@@ -58,19 +58,11 @@ public class Check extends Scanner {
 
     @Override
     public void visitFuncDef(FuncDef tree) {
-        if (Flags.hasFlag(tree.flags, Flags.FN_ONCE)) {
-            // Is "once" function
-            if (!tree.params.isEmpty()) {
-                report(tree.params.getFirst().pos, "once-functions may not have parameters");
+        tree.params.forEach((Consumer<? super FuncDef.Parameter>) param -> {
+            if (param.expr != null) {
+                requireLiteralTree(param.expr);
             }
-            // Анализировать параметры функции, которых не должно быть - бессмысленное действие.
-        } else {
-            tree.params.forEach((Consumer<? super FuncDef.Parameter>) param -> {
-                if (param.expr != null) {
-                    requireLiteralTree(param.expr);
-                }
-            });
-        }
+        });
 
         scan(tree.body);
     }
