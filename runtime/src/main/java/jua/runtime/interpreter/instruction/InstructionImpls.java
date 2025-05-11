@@ -665,4 +665,32 @@ public interface InstructionImpls {
         @Override
         public int opcode() { return Leave; }
     }
+
+    class Shload implements Instruction {
+        private final int index;
+
+        public Shload(int index) {
+            this.index = index;
+        }
+
+        @Override
+        public void execute(ExecutionContext context) { context.shareLoad(index); }
+
+        @Override
+        public int opcode() { return Shload; }
+    }
+
+    class Shstore implements Instruction {
+        private final int index;
+
+        public Shstore(int index) {
+            this.index = index;
+        }
+
+        @Override
+        public void execute(ExecutionContext context) { context.shareStore(index); }
+
+        @Override
+        public int opcode() { return Shstore; }
+    }
 }

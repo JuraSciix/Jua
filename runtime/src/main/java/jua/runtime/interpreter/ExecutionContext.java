@@ -493,4 +493,12 @@ public final class ExecutionContext {
         msg = InterpreterThread.MSG_POPPING_FRAME;
 //        Histogram.get().start(OPCodes._PopFrame);
     }
+
+    public void shareLoad(int index) {
+        // todo
+    }
+
+    public void shareStore(int index) {
+        // todo
+    }
 }

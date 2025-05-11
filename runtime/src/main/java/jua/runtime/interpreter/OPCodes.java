@@ -69,12 +69,10 @@ public interface OPCodes {
             Return = 64,
             Leave = 65,
             // Мнимые инструкции, которые нужны лишь для гистограммы
-            _JoinFrame = 66,
-            _PopFrame = 67,
-            _JoinNativeFrame = 68,
-            _PopNativeFrame = 69,
+            Shload = 66,
+            Shstore = 67,
 
-    _InstrCount = _PopNativeFrame + 1;
+    _InstrCount = Shstore + 1;
 
     String[] NAMES = {
             "Nop",

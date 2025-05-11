@@ -14,6 +14,10 @@ public final class ThreadMemory {
         return data[top - offset - 1];
     }
 
+    public Address getShared(int offset) {
+        return null;
+    }
+
     public void acquire(int capacity) {
         checkAndGrow(capacity);
         top += capacity;
