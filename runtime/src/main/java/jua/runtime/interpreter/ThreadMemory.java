@@ -36,4 +36,18 @@ public final class ThreadMemory {
         }
         top = a;
     }
+
+    public void debug() {
+        System.out.println("Memory used: " + top);
+        System.out.print(" > ");
+        for (int i = 0; i < top; i++) {
+            System.out.printf("%-2s ", data[i].getTypeName().charAt(0));
+        }
+        System.out.println();
+        System.out.print(" > ");
+        for (int i = 0; i < top; i++) {
+            System.out.printf("%02x ", i);
+        }
+        System.out.println();
+    }
 }
