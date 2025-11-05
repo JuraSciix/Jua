@@ -186,12 +186,6 @@ public class Enter extends Scanner {
     }
 
     @Override
-    public void visitCase(Case tree) {
-        // Сканировать tree.labels не нужно, так как это должны быть литералы.
-        scanBody(scope, tree.body);
-    }
-
-    @Override
     public void visitVarDef(VarDef tree) {
         // Так как это не позитивный случай, избегать двойного поиска (defined + resolve) нет смысла.
         tree.defs.forEach((Consumer<? super VarDef.Definition>) def -> {

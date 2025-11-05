@@ -89,10 +89,6 @@ public final class JuaParser {
                 nextToken();
                 reportError(acceptedPos, "missing expected statement.");
             }
-            case FALLTHROUGH: {
-                nextToken();
-                return parseFallthrough();
-            }
             case FN: {
                 nextToken();
                 reportError(acceptedPos, "function declaration is not allowed here");
@@ -116,10 +112,6 @@ public final class JuaParser {
             case SEMI: {
                 nextToken();
                 return new Block(acceptedPos, TList.empty());
-            }
-            case SWITCH: {
-                nextToken();
-                return parseSwitch();
             }
             case VAR: {
                 nextToken();
@@ -187,20 +179,6 @@ public final class JuaParser {
         Expr cond = parseExpression();
         expectSemi();
         return new DoLoop(position, body, cond);
-    }
-
-    private Stmt parseFallthrough() {
-        int pos = acceptedPos;
-        Expr target = null;
-        boolean hasTarget = false;
-        if (!acceptToken(SEMI)) {
-            if (!acceptToken(ELSE)) {
-                target = parseExpression();
-            }
-            expectSemi();
-            hasTarget = true;
-        }
-        return new Fallthrough(pos, target, hasTarget);
     }
 
     private FuncDef parseFunction() {
@@ -336,40 +314,6 @@ public final class JuaParser {
         }
         expectSemi();
         return new Return(pos, expr);
-    }
-
-    private Stmt parseSwitch() {
-        int position = acceptedPos;
-        Expr selector = parseExpression();
-        TList<Case> cases = new TList<>();
-        expectToken(LBRACE);
-
-        while (!acceptToken(RBRACE)) {
-            try {
-                int position1 = token.pos;
-                Case c;
-                if (acceptToken(ELSE)) {
-                    c = parseCase(position1, true);
-                } else {
-                    c = parseCase(position1, false);
-                }
-                cases.add(c);
-            } catch (ParseNodeExit e) {
-                report(e);
-            }
-        }
-        return new Switch(position, selector, cases);
-    }
-
-    private Case parseCase(int position, boolean isDefault) {
-        TList<Expr> expressions = TList.empty();
-
-        if (!isDefault) {
-            expressions = parseExpressions();
-        }
-        expectToken(ARROW);
-        Stmt body = parseStatement();
-        return new Case(position, expressions, body);
     }
 
     private Stmt parseUnusedExpression() {

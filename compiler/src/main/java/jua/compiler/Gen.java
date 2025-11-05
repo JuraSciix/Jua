@@ -225,84 +225,6 @@ public class Gen extends Scanner {
     }
 
     @Override
-    public void visitSwitch(Switch tree) {
-        genExpr(tree.expr).load();
-        SwitchEnv env = new SwitchEnv(flow);
-        flow = env;
-        code.putPos(tree.pos);
-        int opcode = tree.cases.size() >= 16
-                ? OPCodes.BinarySwitch
-                : OPCodes.LinearSwitch;
-        SwitchInstrNode node = new SwitchInstrNode(opcode);
-        code.emitNode(node);
-
-        boolean codeAlive = TList.reduceBoolean(tree.cases, false, (state, c) -> {
-            boolean alive = genBlock(c);
-            code.resolve(env.contChain);
-            env.contChain = null;
-            return state | alive;
-        });
-
-        if (env.switchDefaultOffset == -1) {
-            // Явного default-case не было
-            env.switchDefaultOffset = code.pc() - 1;
-        }
-
-        // resolving fallthrough
-        for (Map.Entry<Integer, Chain> entry : env.caseChains.entrySet()) {
-            int labelIndex = entry.getKey();
-            Chain chain = entry.getValue();
-            int index = env.caseLabelsConstantIndexes.indexOf(labelIndex);
-            if (index >= 0) {
-                int offset = env.switchCaseOffsets.get(index);
-                code.resolve(chain, offset);
-            } else {
-                code.resolve(chain);
-            }
-        }
-        if (env.elseCaseChain != null && env.switchDefaultOffset >= 0) {
-            code.resolve(env.elseCaseChain, env.switchDefaultOffset);
-        }
-
-        node.literals = env.caseLabelsConstantIndexes.toArray();
-        node.dstIps = env.switchCaseOffsets.toArray();
-        node.defCp = env.switchDefaultOffset;
-
-        code.resolve(env.exitChain);
-
-        if (!codeAlive) {
-            code.setAlive(false);
-        }
-
-        flow = env.parent;
-    }
-
-    @Override
-    public void visitCase(Case tree) {
-        Assert.check(flow instanceof SwitchEnv);
-        SwitchEnv env = (SwitchEnv) flow;
-        if (tree.labels == null) {
-            // default case
-            env.switchDefaultOffset = code.pc();
-        } else {
-            // Это не ошибка. Следующая строчка должна находиться именно в цикле
-            // Потому что инструкция switch ассоциирует значения к переходам в масштабе 1 к 1.
-            tree.labels.forEach((Consumer<? super Expr>) label -> {
-                int labelIndex = genExpr(label).constantIndex();
-                env.caseLabelsConstantIndexes.add(labelIndex);
-                // Это не ошибка. Следующая строчка должна находиться именно в цикле
-                // Потому что инструкция switch ассоциирует значения к переходам в масштабе 1 к 1.
-                env.switchCaseOffsets.add(code.pc());
-            });
-        }
-
-        // Весь кейз целиком это один из дочерних бранчей switch.
-        scan(tree.body);
-
-        flow.exitChain = mergeChains(flow.exitChain, code.branch(OPCodes.Goto));
-    }
-
-    @Override
     public void visitBreak(Break tree) {
         Assert.checkNonNull(flow);
         code.putPos(tree.pos);
@@ -315,25 +237,6 @@ public class Gen extends Scanner {
         Assert.checkNonNull(flow);
         code.putPos(tree.pos);
         flow.ontoNext(code.branch(OPCodes.Goto), true);
-        code.setAlive(false);
-    }
-
-    @Override
-    public void visitFallthrough(Fallthrough tree) {
-        Assert.checkNonNull(flow);
-        code.putPos(tree.pos);
-        Chain branch = code.branch(OPCodes.Goto);
-        if (tree.hasTarget) {
-            if (tree.target == null) {
-                // fallthrough else;
-                flow.ontoElse(branch);
-            } else {
-                int labelIndex = genExpr(tree.target).constantIndex();
-                flow.ontoCase(labelIndex, branch);
-            }
-        } else {
-            flow.ontoNext(branch, false);
-        }
         code.setAlive(false);
     }
 

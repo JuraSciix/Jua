@@ -82,11 +82,8 @@ public abstract class Tree {
         void visitWhileLoop(WhileLoop tree);
         void visitDoLoop(DoLoop tree);
         void visitForLoop(ForLoop tree);
-        void visitSwitch(Switch tree);
-        void visitCase(Case tree);
         void visitBreak(Break tree);
         void visitContinue(Continue tree);
-        void visitFallthrough(Fallthrough tree);
         void visitVarDef(VarDef tree);
         void visitReturn(Return tree);
         void visitDiscarded(Discarded tree);
@@ -127,19 +124,10 @@ public abstract class Tree {
         public void visitForLoop(ForLoop tree) { visitTree(tree); }
 
         @Override
-        public void visitSwitch(Switch tree) { visitTree(tree); }
-
-        @Override
-        public void visitCase(Case tree) { visitTree(tree); }
-
-        @Override
         public void visitBreak(Break tree) { visitTree(tree); }
 
         @Override
         public void visitContinue(Continue tree) { visitTree(tree); }
-
-        @Override
-        public void visitFallthrough(Fallthrough tree) { visitTree(tree); }
 
         @Override
         public void visitVarDef(VarDef tree) { visitTree(tree); }
@@ -250,27 +238,10 @@ public abstract class Tree {
         }
 
         @Override
-        public void visitSwitch(Switch tree) {
-            scan(tree.expr);
-            scan(tree.cases);
-        }
-
-        @Override
-        public void visitCase(Case tree) {
-            scan(tree.labels);
-            scan(tree.body);
-        }
-
-        @Override
         public void visitBreak(Break tree) {}
 
         @Override
         public void visitContinue(Continue tree) { }
-
-        @Override
-        public void visitFallthrough(Fallthrough tree) {
-            scan(tree.target);
-        }
 
         @Override
         public void visitVarDef(VarDef tree) {
@@ -435,30 +406,10 @@ public abstract class Tree {
         }
 
         @Override
-        public void visitSwitch(Switch tree) {
-            tree.expr = translate(tree.expr);
-            tree.cases = translate(tree.cases);
-            result = tree;
-        }
-
-        @Override
-        public void visitCase(Case tree) {
-            tree.labels = translate(tree.labels);
-            tree.body = translate(tree.body);
-            result = tree;
-        }
-
-        @Override
         public void visitBreak(Break tree) { result = tree; }
 
         @Override
         public void visitContinue(Continue tree) { result = tree; }
-
-        @Override
-        public void visitFallthrough(Fallthrough tree) {
-            tree.target = translate(tree.target);
-            result = tree;
-        }
 
         @Override
         public void visitVarDef(VarDef tree) {
@@ -746,44 +697,6 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitForLoop(this); }
     }
 
-    public static class Switch extends Stmt {
-
-        public Expr expr;
-
-        public TList<Case> cases;
-
-        public Switch(int pos, Expr expr, TList<Case> cases) {
-            super(pos);
-            this.expr = expr;
-            this.cases = cases;
-        }
-
-        @Override
-        public Tag getTag() { return Tag.SWITCH; }
-
-        @Override
-        public void accept(Visitor visitor) { visitor.visitSwitch(this); }
-    }
-
-    public static class Case extends Stmt {
-
-        public TList<Expr> labels;
-
-        public Stmt body;
-
-        public Case(int pos, TList<Expr> labels, Stmt body) {
-            super(pos);
-            this.labels = labels;
-            this.body = body;
-        }
-
-        @Override
-        public Tag getTag() { return Tag.CASE; }
-
-        @Override
-        public void accept(Visitor visitor) { visitor.visitCase(this); }
-    }
-
     public static class Break extends Stmt {
 
         public Break(int pos) {
@@ -808,24 +721,6 @@ public abstract class Tree {
 
         @Override
         public void accept(Visitor visitor) { visitor.visitContinue(this); }
-    }
-
-    public static class Fallthrough extends Stmt {
-
-        public Expr target;
-        public boolean hasTarget;
-
-        public Fallthrough(int pos, Expr target, boolean hasTarget) {
-            super(pos);
-            this.target = target;
-            this.hasTarget = hasTarget;
-        }
-
-        @Override
-        public Tag getTag() { return Tag.FALLTHROUGH; }
-
-        @Override
-        public void accept(Visitor visitor) { visitor.visitFallthrough(this); }
     }
 
     public static class VarDef extends Stmt {

@@ -87,27 +87,6 @@ public class Check extends Scanner {
         scan(tree.step);
     }
 
-    @Override
-    public void visitSwitch(Switch tree) {
-        super.visitSwitch(tree);
-
-        Set<Object> dejaVu = new HashSet<>();
-        tree.cases.forEach((Consumer<? super Case>) c -> {
-            if (c.labels == null) {
-                if (!dejaVu.add(null)) {
-                    report(c.pos, "duplicate default-case");
-                }
-            } else {
-                c.labels.forEach((Consumer<? super Expr>) label -> {
-                    Literal l = (Literal) stripParens(label);
-                    if (!dejaVu.add(l.value)) {
-                        report(label.pos, "duplicate label");
-                    }
-                });
-            }
-        });
-    }
-
     private void scanLoopBody(Stmt tree) {
         boolean prevAllowsBreak = allowsBreak;
         boolean prevAllowsContinue = allowsContinue;
@@ -122,31 +101,6 @@ public class Check extends Scanner {
     }
 
     @Override
-    public void visitCase(Case tree) {
-        if (tree.labels != null) { // default-case?
-            tree.labels.forEach((Consumer<? super Expr>) label -> {
-                if (!isLiteral(label)) {
-                    report(stripParens(label).pos, "only literals are allowed as the case label expression");
-                }
-            });
-        }
-        scanCaseBody(tree.body);
-    }
-
-    private void scanCaseBody(Stmt tree) {
-        boolean prevAllowsBreak = allowsBreak;
-        boolean prevAllowsFallthrough = allowsFallthrough;
-        allowsBreak = true;
-        allowsFallthrough = true;
-        try {
-            scan(tree);
-        } finally {
-            allowsBreak = prevAllowsBreak;
-            allowsFallthrough = prevAllowsFallthrough;
-        }
-    }
-
-    @Override
     public void visitBreak(Break tree) {
         if (!allowsBreak) {
             report(tree.pos, "break-statement is allowed only inside loop/switch-case");
@@ -157,16 +111,6 @@ public class Check extends Scanner {
     public void visitContinue(Continue tree) {
         if (!allowsContinue) {
             report(tree.pos, "continue-statement is allowed only inside loop");
-        }
-    }
-
-    @Override
-    public void visitFallthrough(Fallthrough tree) {
-        if (!allowsFallthrough) {
-            report(tree.pos, "fallthrough-statement is allowed only inside switch-case");
-        }
-        if (tree.target != null) {
-            requireLiteralTree(tree.target);
         }
     }
 
