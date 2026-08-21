@@ -74,6 +74,10 @@ public final class StringHeap extends Heap implements CharSequence, Comparable<S
         return data.codePoints();
     }
 
+    public byte[] getBytes() {
+        return data.toString().getBytes();
+    }
+
     public IntStream chars() {
         return data.chars();
     }
