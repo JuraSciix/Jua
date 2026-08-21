@@ -131,6 +131,14 @@ public class Enter extends Scanner {
             tree.sym = globalScope.defineUserFunction(tree, 0);
         }
 
+        tree.params.forEach(param -> {
+            if (scope.defined(param.name)) {
+                report(param.pos, "duplicate parameter");
+                return;
+            }
+            scope.define(param.name);
+        });
+
         switch (tree.body.getTag()) {
             case BLOCK:
                 Block blockTree = (Block) tree.body;
