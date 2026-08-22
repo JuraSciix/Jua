@@ -1,8 +1,8 @@
 package jua;
 
 import jua.compiler.InstructionUtils;
-import jua.runtime.interpreter.instruction.Instruction;
-import jua.runtime.interpreter.instruction.InstructionImpls.*;
+import jua.vm.instruction.Instruction;
+import jua.vm.instruction.InstructionImpls.*;
 
 public class InstructionFactory {
 

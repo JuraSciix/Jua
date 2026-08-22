@@ -1,4 +1,4 @@
-package jua.runtime.interpreter;
+package jua.vm;
 
 public final class InterpreterFrame {
 

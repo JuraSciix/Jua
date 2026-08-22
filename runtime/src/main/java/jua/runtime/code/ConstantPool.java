@@ -1,7 +1,7 @@
 package jua.runtime.code;
 
-import jua.runtime.interpreter.Address;
-import jua.runtime.interpreter.AddressSupport;
+import jua.vm.Address;
+import jua.vm.AddressSupport;
 
 public final class ConstantPool {
 

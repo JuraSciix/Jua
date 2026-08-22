@@ -1,4 +1,4 @@
-package jua.runtime.interpreter;
+package jua.vm;
 
 /**
  * Арифметика над значениями {@link Address адресов}. Здесь находятся методы, реализующие:

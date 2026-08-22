@@ -1,7 +1,7 @@
 package jua.runtime;
 
 import jua.runtime.code.CodeData;
-import jua.runtime.interpreter.Address;
+import jua.vm.Address;
 
 public final class Function {
 

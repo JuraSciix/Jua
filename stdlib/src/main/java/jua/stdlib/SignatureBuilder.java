@@ -1,9 +1,9 @@
 package jua.stdlib;
 
 import jua.runtime.*;
-import jua.runtime.interpreter.Address;
-import jua.runtime.interpreter.AddressSupport;
-import jua.runtime.interpreter.InterpreterThread;
+import jua.vm.Address;
+import jua.vm.AddressSupport;
+import jua.vm.InterpreterThread;
 
 import java.util.ArrayList;
 import java.util.List;

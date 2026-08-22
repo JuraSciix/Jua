@@ -1,6 +1,6 @@
-package jua.runtime.interpreter.instruction;
+package jua.vm.instruction;
 
-import jua.runtime.interpreter.ExecutionContext;
+import jua.vm.ExecutionContext;
 
 public interface Instruction {
 

@@ -6,9 +6,9 @@ import jua.compiler.ModulePrinter;
 import jua.compiler.ModuleScope;
 import jua.runtime.Function;
 import jua.runtime.JuaEnvironment;
-import jua.runtime.interpreter.AddressSupport;
-import jua.runtime.interpreter.InterpreterThread;
-import jua.runtime.interpreter.Address;
+import jua.vm.AddressSupport;
+import jua.vm.InterpreterThread;
+import jua.vm.Address;
 import jua.stdlib.Lib;
 
 import java.io.File;

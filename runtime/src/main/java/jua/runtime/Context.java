@@ -1,9 +1,9 @@
 package jua.runtime;
 
-import jua.runtime.interpreter.Address;
-import jua.runtime.interpreter.AddressSupport;
-import jua.runtime.interpreter.AddressUtils;
-import jua.runtime.interpreter.InterpreterThread;
+import jua.vm.Address;
+import jua.vm.AddressSupport;
+import jua.vm.AddressUtils;
+import jua.vm.InterpreterThread;
 
 public final class Context {
 

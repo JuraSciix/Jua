@@ -3,9 +3,9 @@ package jua.stdlib;
 import jua.runtime.Function;
 import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.StringHeap;
-import jua.runtime.interpreter.Address;
-import jua.runtime.interpreter.Histogram;
-import jua.runtime.interpreter.InterpreterThread;
+import jua.vm.Address;
+import jua.vm.Histogram;
+import jua.vm.InterpreterThread;
 import jua.stdlib.util.ObjectSizeAnalyzing;
 
 import java.util.Arrays;

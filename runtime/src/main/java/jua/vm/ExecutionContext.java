@@ -1,4 +1,4 @@
-package jua.runtime.interpreter;
+package jua.vm;
 
 import jua.runtime.Function;
 import jua.runtime.JuaEnvironment;
@@ -7,7 +7,7 @@ import jua.runtime.code.CodeData;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.ResolvableCallee;
 import jua.runtime.heap.ListHeap;
-import jua.runtime.interpreter.instruction.Instruction;
+import jua.vm.instruction.Instruction;
 
 import static jua.runtime.Operations.isResultFalse;
 import static jua.runtime.Operations.isResultTrue;

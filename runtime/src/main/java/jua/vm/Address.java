@@ -1,4 +1,4 @@
-package jua.runtime.interpreter;
+package jua.vm;
 
 import jua.runtime.Operations;
 import jua.runtime.Types;
@@ -7,7 +7,7 @@ import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.StringHeap;
 
 import static jua.runtime.Operations.toResultCode;
-import static jua.runtime.interpreter.InterpreterThread.threadError;
+import static jua.vm.InterpreterThread.threadError;
 import static jua.runtime.Types.*;
 
 public final class Address implements Comparable<Address> {

@@ -1,6 +1,6 @@
 package jua.runtime;
 
-import jua.runtime.interpreter.Address;
+import jua.vm.Address;
 
 /**
  * @deprecated Скоро будет заменено на {@link JuaCallable}.

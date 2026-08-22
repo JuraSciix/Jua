@@ -1,8 +1,8 @@
-package jua.runtime.interpreter.instruction;
+package jua.vm.instruction;
 
-import jua.runtime.interpreter.ExecutionContext;
+import jua.vm.ExecutionContext;
 
-import static jua.runtime.interpreter.OPCodes.*;
+import static jua.vm.OPCodes.*;
 
 public interface InstructionImpls {
 

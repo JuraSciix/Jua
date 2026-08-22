@@ -1,6 +1,6 @@
 package jua.runtime.code;
 
-import jua.runtime.interpreter.instruction.Instruction;
+import jua.vm.instruction.Instruction;
 
 public final class CodeData {
 

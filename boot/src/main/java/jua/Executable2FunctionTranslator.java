@@ -8,9 +8,9 @@ import jua.runtime.Function;
 import jua.runtime.code.CodeData;
 import jua.runtime.code.ConstantPool;
 import jua.runtime.code.ResolvableCallee;
-import jua.runtime.interpreter.instruction.Instruction;
-import jua.runtime.interpreter.Address;
-import jua.runtime.interpreter.AddressSupport;
+import jua.vm.instruction.Instruction;
+import jua.vm.Address;
+import jua.vm.AddressSupport;
 
 import java.util.Arrays;
 

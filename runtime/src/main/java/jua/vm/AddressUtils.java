@@ -1,4 +1,4 @@
-package jua.runtime.interpreter;
+package jua.vm;
 
 /**
  * Утилитарный класс для работы с {@link Address регистрами}.
