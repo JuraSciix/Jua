@@ -120,6 +120,7 @@ public final class InterpreterThread {
         }
         frame.setCP(0);
         current = frame;
+        memory.setCurrentFrame(current);
     }
 
     private void popFrame() {
