@@ -130,11 +130,41 @@ public class Lib {
     private static final Function byteArrayToStr = builder()
             .name("byteArrayToStr")
             .param("array")
+            .optional()
+            .optional("offset", null)
+            .optional("count", null)
             .callable((context, args, returnAddress) -> {
+                Address tmp = new Address();
+
                 ListHeap bytes = args[0].getListHeap();
-                byte[] byteArray = new byte[bytes.length()];
-                for (int i = 0; i < bytes.length(); i++) {
-                    long b = bytes.get(i).getLong();
+                int offset = 0;
+                int count = bytes.length();
+                if (!args[1].isNull()) {
+                    if (!args[1].longVal(tmp))return;
+                    long longOffset = tmp.getLong();
+                    if (Integer.MAX_VALUE < longOffset || longOffset < 0) {
+                        context.error("Offset must be unsigned 32-bit integer");
+                        return;
+                    }
+                    offset = (int) longOffset;
+                }
+                if (!args[2].isNull()) {
+                    if (!args[2].longVal(tmp))return;
+                    long longCount = tmp.getLong();
+                    if (Integer.MAX_VALUE < longCount || longCount < 0) {
+                        context.error("Count must be unsigned 32-bit integer");
+                        return;
+                    }
+                    count = (int) longCount;
+                }
+                if (offset+count > bytes.length()) {
+                    context.error("offset+count is out of bounds");
+                    return;
+                }
+
+                byte[] byteArray = new byte[count];
+                for (int i = 0; i < count; i++) {
+                    long b = bytes.get(offset + i).getLong();
                     if (0xff < b || b < 0) {
                         context.error("#%d integer is not a byte: %d", i, b);
                         return;
