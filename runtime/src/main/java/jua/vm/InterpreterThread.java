@@ -1,25 +1,25 @@
 package jua.vm;
 
-import jua.runtime.Function;
-import jua.runtime.JuaEnvironment;
-import jua.runtime.RuntimeErrorException;
+import jua.runtime.*;
 import jua.runtime.StackTraceElement;
+import jua.runtime.code.CodeData;
 import jua.runtime.utils.Assert;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Objects;
 
 public final class InterpreterThread {
 
     private static final boolean DEBUG = false; // Информация об инструкции и стеке меж каждой инструкции
 
-    public static final int MSG_UNSTARTED         = 0; /* Поток создан, но не запущен */
-    public static final int MSG_RUNNING_FRAME     = 1; /* Поток выполняет фрейм */
-    public static final int MSG_CALLING_FRAME     = 2; /* Поток вызывает фрейм */
-    public static final int MSG_POPPING_FRAME     = 4; /* Поток возвращает фрейм */
-    public static final int MSG_CRASHED           = 6; /* В потоке произошла ошибка */
-    public static final int MSG_HALTED            = 7; /* Поток прерван */
+    public static final int MSG_UNSTARTED = 0; /* Поток создан, но не запущен */
+    public static final int MSG_RUNNING_FRAME = 1; /* Поток выполняет фрейм */
+    public static final int MSG_CALLING_FRAME = 2; /* Поток вызывает фрейм */
+    public static final int MSG_POPPING_FRAME = 4; /* Поток возвращает фрейм */
+    public static final int MSG_CRASHED = 6; /* В потоке произошла ошибка */
+    public static final int MSG_HALTED = 7; /* Поток прерван */
 
     private static final ThreadLocal<InterpreterThread> THREADED_INSTANCE = new ThreadLocal<>();
 
@@ -46,7 +46,7 @@ public final class InterpreterThread {
     private final JuaEnvironment environment;
 
     public InterpreterFrame currentFrame() {
-        return  current;
+        return current;
     }
 
     private Function callee;
@@ -57,8 +57,8 @@ public final class InterpreterThread {
 
     private int msg = MSG_UNSTARTED;
 
-    private final ThreadStack stack = new ThreadStack();
-    private final ThreadMemory memory = new ThreadMemory();
+    private final ThreadRegion memory = new ThreadRegion();
+    private final ThreadStack stack = new ThreadStack(memory);
     private final FrameFactory frameFactory = new FrameFactory();
     private InterpreterFrame current = null;
 
@@ -77,7 +77,12 @@ public final class InterpreterThread {
         return stack;
     }
 
-    public ThreadMemory memory() {
+    @Deprecated
+    public ThreadRegion memory() {
+        return memory;
+    }
+
+    public ThreadRegion region() {
         return memory;
     }
 
@@ -92,90 +97,8 @@ public final class InterpreterThread {
         return jvmThread;
     }
 
-    /**
-     * @deprecated Use {@link JuaEnvironment#getEnvironment()}.
-     */
     public JuaEnvironment getEnvironment() {
         return environment;
-    }
-
-    private void pushFrame() {
-        InterpreterFrame frame = frameFactory.allocate();
-        frame.setCaller(currentFrame());
-        frame.setFunctionId(callee.runtimeId);
-        if (currentFrame() == null) {
-            frame.setRegBase(0);
-        } else {
-            InterpreterFrame caller = currentFrame().getCaller();
-            Function f = JuaEnvironment.getEnvironment().getFunctionById(current.getFunctionId());
-            if (caller == null) {
-                if (f.isUserDefined()) {
-                    frame.setRegBase(f.getCode().getRegNumber());
-                } else {
-                    frame.setRegBase(0);
-                }
-            } else {
-                frame.setRegBase(caller.getRegBase() + f.getCode().getRegNumber());
-            }
-        }
-        frame.setCP(0);
-        current = frame;
-        memory.setCurrentFrame(current);
-    }
-
-    private void popFrame() {
-        current = current.getCaller();
-        frameFactory.release();
-    }
-
-    private void enterFrame() {
-        Assert.checkNonNull(callee, "callee is not set");
-        pushFrame();
-        if (callee.isUserDefined()) {
-            memory.acquire(callee.getCode().getRegNumber());
-            for (int i = 0; i < numArgs; i++) {
-                memory.get(numArgs - i - 1).set(stack().popGet());
-            }
-            for (int i = numArgs; i < callee.getMaxArgc(); i++) {
-                memory.get(i).set(callee.getDefaults()[i - callee.getMinArgc()]);
-            }
-//            Histogram.get().end(OPCodes._JoinFrame);
-            set_msg(MSG_RUNNING_FRAME);
-        } else {
-            Address[] args = AddressUtils.allocateMemory(callee.getMaxArgc(), 0);
-            for (int i = 0; i < numArgs; i++) {
-                args[numArgs - i - 1].set(stack().popGet());
-            }
-            for (int i = numArgs; i < callee.getMaxArgc(); i++) {
-                args[i].set(callee.getDefaults()[i - callee.getMinArgc()]);
-            }
-//            Histogram.get().end(OPCodes._JoinNativeFrame);
-            set_msg(MSG_RUNNING_FRAME);
-            boolean success = callee.nativeExecutor().execute(args, numArgs, stack().pushGet());
-            if (success) {
-//                Histogram.get().start(OPCodes._PopNativeFrame);
-                set_msg(MSG_POPPING_FRAME);
-            } else {
-                Assert.check(isCrashed());
-            }
-        }
-    }
-
-    private void leaveFrame() {
-        Function fn = JuaEnvironment.getEnvironment().getFunctionById(currentFrame().getFunctionId());
-        if (fn.isUserDefined()) {
-            stack.cleanup();
-            memory.release(fn.getCode().getRegNumber());
-        }
-        popFrame();
-//        Histogram.get().end(OPCodes._PopFrame);
-//        Histogram.get().end(OPCodes._PopNativeFrame);
-        if (current == null) {
-            interrupt(); // Выполнять более нечего
-        } else {
-            memory.setCurrentFrame(current);
-            set_msg(MSG_RUNNING_FRAME);
-        }
     }
 
     private int msg() {
@@ -226,17 +149,24 @@ public final class InterpreterThread {
      * Возвращает {@code true}, если ошибок не произошло, иначе {@code false}.
      */
     public boolean callAndWait(Function function, Address[] args, Address returnAddress) {
+        ThreadRegion region = region();
+
+        // Инициализируем системного коллера
+        region.unblock(0, Math.max(1, args.length), 0); // Для передачи значений и возврата
+
         prepareCall(function, args.length);
-        for (Address arg : args) {
-            stack().push(arg);
+        for (int i = 0; i < args.length; i++) {
+            region.stackTop().set(args[args.length - 1 - i]);
+            region.stackInc();
         }
         run();
+
         if (isCrashed()) {
             return false;
-        } else {
-            returnAddress.set(stack().popGet());
-            return true;
         }
+        // Передаем результат
+        returnAddress.set(region.stack(-1));
+        return true;
     }
 
     public StackTraceElement[] getStackTrace() {
@@ -268,7 +198,9 @@ public final class InterpreterThread {
         return stackTrace.toArray(new StackTraceElement[0]);
     }
 
-    /** Возвращает номер строки, которая сейчас выполняется. */
+    /**
+     * Возвращает номер строки, которая сейчас выполняется.
+     */
     int executingLineNumber(InterpreterFrame frame) {
         Function f = JuaEnvironment.getEnvironment().getFunctionById(frame.getFunctionId());
         if (!f.isUserDefined()) return -1; // native function
@@ -326,7 +258,7 @@ public final class InterpreterThread {
             }
             printStackTrace();
             t.printStackTrace();
-            RuntimeErrorException ex = new RuntimeErrorException("INTERPRETER CRASHED: " + details );
+            RuntimeErrorException ex = new RuntimeErrorException("INTERPRETER CRASHED: " + details);
             ex.thread = this;
             throw ex;
         }
@@ -334,9 +266,6 @@ public final class InterpreterThread {
 
     private void runInternal() {
         while (true) {
-            if (DEBUG) {
-                stack.debugUpdate(null);
-            }
             switch (msg) {
                 case MSG_CRASHED: {
 //                    printStackTrace();
@@ -347,12 +276,12 @@ public final class InterpreterThread {
                 }
 
                 case MSG_CALLING_FRAME:
-                    enterFrame();
-                    continue;
+                    callFrame();
+                    break;
 
                 case MSG_POPPING_FRAME:
-                    leaveFrame();
-                    continue;
+                    popFrame();
+                    break;
 
                 case MSG_HALTED:
                     jvmThread.interrupt();
@@ -367,26 +296,125 @@ public final class InterpreterThread {
                 default:
                     Assert.error("unexpected msg: " + msg);
             }
-
-//            while (isRunning()) {
-//                stack().validate();
-//                int cp = context.getNextCp();
-//                int tos = stack().tos();
-//                context.setNextCp(cp + 1);
-//                Histogram.get().start(code[cp].opcode());
-//                code[cp].execute(context);
-//                Histogram.get().end(code[cp].opcode());
-//
-//                if (DEBUG) {
-//                    stack.debugUpdate(code[cp].getClass().getSimpleName().toLowerCase()+"{"+cp+"}");
-//                }
-//                if (msg() == MSG_CRASHED) {
-//                    context.setNextCp(cp);
-//                    stack().tos(tos);
-//                    break;
-//                }
-//            }
         }
+    }
+
+    // Буфер для передачи аргументов в вызове
+    private final Address[] buffer = new Address[256];
+    private final Address returnAddress = new Address();
+
+    private void callFrame() {
+        ThreadRegion region = region();
+        InterpreterFrame caller = currentFrame();
+        Function function = callee;
+        int argc = numArgs;
+        int maxArgc = function.getMaxArgc();
+        int minArgc = function.getMinArgc();
+        Address[] defaults = function.getDefaults();
+
+        // Копируем аргументы и опущенные значения в буфер.
+        // Это временная надежная мера....
+        for (int i = 0; i < argc; i++) {
+            region.stackDec();
+            buffer[argc - 1 - i] = region.stackTop();
+        }
+        if (argc < maxArgc) {
+            System.arraycopy(defaults, argc - minArgc, buffer, argc, maxArgc - argc);
+        }
+
+        InterpreterFrame frame = frameFactory.allocate();
+        frame.setFunctionId(function.runtimeId);
+        // Сохраняем информацию о предыдущем фрейме
+        frame.setCaller(caller);
+        frame.setOffset(region.offset());
+        frame.setTop(region.top());
+        frame.stackPointer(region.stackPointer());
+        // Очищаем мусорные данные
+        frame.setCP(0);
+
+        if (function.isUserDefined()) {
+            // Фиксируем фрейм
+            CodeData code = function.getCode();
+            int registry = code.getRegNumber();
+            int stack = code.getStackWide();
+            region.block(registry, stack);
+
+            // После заморозки данных сразу же устанавливаем новый фрейм.
+            current = frame;
+
+            // Отправляем данные
+            for (int i = 0; i < maxArgc; i++)
+                region.registry(i).set(buffer[i]);
+            // Очищаем буфер
+            Arrays.fill(buffer, null);
+
+            // Мы готовы
+            set_msg(MSG_RUNNING_FRAME);
+        } else {
+            NativeExecutor executor = function.nativeExecutor();
+
+            // Замораживаем данные.
+            // Оставляем место на стеке для возврата.
+            region.block(0, 1);
+
+            // После заморозки данных сразу же устанавливаем новый фрейм.
+            current = frame;
+
+            // Копируем часть буфера
+            Address[] args = Arrays.copyOf(buffer, maxArgc);
+            // Очищаем буфер
+            Arrays.fill(buffer, null);
+
+            set_msg(MSG_RUNNING_FRAME);
+            boolean result;
+            try {
+                result = executor.execute(args, argc, returnAddress);
+            } catch (Exception e) {
+                String name = function.getName();
+                RuntimeErrorException ex = new RuntimeErrorException(
+                        "Fatal error occurred in native function " + name, e);
+                ex.thread = this;
+                throw ex;
+            }
+            if (result) {
+                // Отдаём адрес возврата.
+                region.stackTop().set(returnAddress);
+                region.stackInc();
+
+                popFrame();
+            }
+        }
+    }
+
+    private void popFrame() {
+        ThreadRegion region = region();
+        InterpreterFrame frame = currentFrame();
+
+        // Снимаем адрес возврата.
+        // Копирование - это временная надежная мера...
+        region.stackDec();
+        returnAddress.set(region.stackTop());
+
+        // Очищаем память.
+        region.clear();
+
+        // Размораживаем данные.
+        int offset = frame.offset();
+        int top = frame.top();
+        int stackPointer = frame.stackPointer();
+        region.unblock(offset, top, stackPointer);
+
+        // Возвращаем управление предыдущему фрейму, если есть.
+        InterpreterFrame caller = frame.getCaller();
+        current = caller;
+        frameFactory.release();
+
+        // Отправляем возвратное значение
+        region.stackTop().set(returnAddress);
+        region.stackInc();
+
+        // Мы готовы
+        set_msg(caller == null ? MSG_HALTED : MSG_RUNNING_FRAME);
     }
 
     public void error(String msg) {

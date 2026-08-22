@@ -15,4 +15,8 @@ public class RuntimeErrorException extends RuntimeException {
     public RuntimeErrorException(String message) {
         super(Objects.requireNonNull(message, "message"), null, false, false);
     }
+
+    public RuntimeErrorException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

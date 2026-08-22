@@ -16,7 +16,7 @@ public final class ExecutionContext {
 
     private final ThreadStack stack;
 
-    private final ThreadMemory memory;
+    private final ThreadRegion memory;
 
     private ConstantPool constantPool;
 
@@ -28,7 +28,7 @@ public final class ExecutionContext {
 
     private final Address tmp = new Address();
 
-    public ExecutionContext(ThreadStack stack, ThreadMemory memory) {
+    public ExecutionContext(ThreadStack stack, ThreadRegion memory) {
         this.stack = stack;
         this.memory = memory;
     }
@@ -37,7 +37,7 @@ public final class ExecutionContext {
         return stack;
     }
 
-    public ThreadMemory getMemory() {
+    public ThreadRegion getMemory() {
         return memory;
     }
 
@@ -170,63 +170,63 @@ public final class ExecutionContext {
         Address lhs = getStack().peek2();
         Address rhs = getStack().peek1();
         lhs.sub(rhs, lhs);
-        getStack().subTos(1);
+        getStack().decrement();
     }
 
     public void doDiv() {
         Address lhs = getStack().peek2();
         Address rhs = getStack().peek1();
         lhs.div(rhs, lhs);
-        getStack().subTos(1);
+        getStack().decrement();
     }
 
     public void doMul() {
         Address lhs = getStack().peek2();
         Address rhs = getStack().peek1();
         lhs.mul(rhs, lhs);
-        getStack().subTos(1);
+        getStack().decrement();
     }
 
     public void doRem() {
         Address lhs = getStack().peek2();
         Address rhs = getStack().peek1();
         lhs.rem(rhs, lhs);
-        getStack().subTos(1);
+        getStack().decrement();
     }
 
     public void doAnd() {
         Address lhs = getStack().peek2();
         Address rhs = getStack().peek1();
         lhs.and(rhs, lhs);
-        getStack().subTos(1);
+        getStack().decrement();
     }
 
     public void doOr() {
         Address lhs = getStack().peek2();
         Address rhs = getStack().peek1();
         lhs.or(rhs, lhs);
-        getStack().subTos(1);
+        getStack().decrement();
     }
 
     public void doXor() {
         Address lhs = getStack().peek2();
         Address rhs = getStack().peek1();
         lhs.xor(rhs, lhs);
-        getStack().subTos(1);
+        getStack().decrement();
     }
 
     public void doShl() {
         Address lhs = getStack().peek2();
         Address rhs = getStack().peek1();
         lhs.shl(rhs, lhs);
-        getStack().subTos(1);
+        getStack().decrement();
     }
 
     public void doShr() {
         Address lhs = getStack().peek2();
         Address rhs = getStack().peek1();
         lhs.shr(rhs, lhs);
-        getStack().subTos(1);
+        getStack().decrement();
     }
 
     public void doPos() {
@@ -250,27 +250,27 @@ public final class ExecutionContext {
     }
 
     public void doLoad(int i) {
-        getStack().push(getMemory().get(i));
+        getStack().push(getMemory().registry(i));
     }
 
     public void doStore(int i) {
-        getMemory().get(i).set(getStack().peek1());
-        getStack().subTos(1);
+        getMemory().registry(i).set(getStack().peek1());
+        getStack().decrement();
     }
 
     public void doInc(int i) {
-        getMemory().get(i).inc();
+        getMemory().registry(i).inc();
     }
 
     public void doDec(int i) {
-        getMemory().get(i).dec();
+        getMemory().registry(i).dec();
     }
 
     public void doArrayLoad() {
         Address arr = getStack().peek2();
         Address key = getStack().peek1();
         arr.load(key, arr);
-        getStack().subTos(1);
+        getStack().decrement();
     }
 
     public void doArrayStore() {
@@ -278,21 +278,21 @@ public final class ExecutionContext {
         Address key = getStack().peek2();
         Address val = getStack().peek1();
         arr.store(key, val);
-        getStack().subTos(3);
+        getStack().decrement3();
     }
 
     public void doArrayInc() {
         Address arr = getStack().peek2();
         Address key = getStack().peek1();
         arr.arrayInc(key, arr);
-        getStack().subTos(1);
+        getStack().decrement();
     }
 
     public void doArrayDec() {
         Address arr = getStack().peek2();
         Address key = getStack().peek1();
         arr.arrayDec(key, arr);
-        getStack().subTos(1);
+        getStack().decrement();
     }
 
     public void doNewList() {
@@ -310,7 +310,7 @@ public final class ExecutionContext {
     public void doJumpIfEq(int nextCp) {
         Address lhs = getStack().peek2();
         Address rhs = getStack().peek1();
-        getStack().subTos(2);
+        getStack().decrement2();
         if (lhs.fastCompareWith(rhs, 1) == 0) {
             setNextCp(nextCp);
         }
@@ -326,7 +326,7 @@ public final class ExecutionContext {
     public void doJumpIfGt(int nextCp) {
         Address lhs = getStack().peek2();
         Address rhs = getStack().peek1();
-        getStack().subTos(2);
+        getStack().decrement2();
         if (lhs.fastCompareWith(rhs, -1) > 0) {
             setNextCp(nextCp);
         }
@@ -335,7 +335,7 @@ public final class ExecutionContext {
     public void doJumpIfGe(int nextCp) {
         Address lhs = getStack().peek2();
         Address rhs = getStack().peek1();
-        getStack().subTos(2);
+        getStack().decrement2();
         if (lhs.fastCompareWith(rhs, -1) >= 0) {
             setNextCp(nextCp);
         }
@@ -344,7 +344,7 @@ public final class ExecutionContext {
     public void doJumpIfLt(int nextCp) {
         Address lhs = getStack().peek2();
         Address rhs = getStack().peek1();
-        getStack().subTos(2);
+        getStack().decrement2();
         if (lhs.fastCompareWith(rhs, 1) < 0) {
             setNextCp(nextCp);
         }
@@ -353,7 +353,7 @@ public final class ExecutionContext {
     public void doJumpIfLe(int nextCp) {
         Address lhs = getStack().peek2();
         Address rhs = getStack().peek1();
-        getStack().subTos(2);
+        getStack().decrement2();
         if (lhs.fastCompareWith(rhs, 1) <= 0) {
             setNextCp(nextCp);
         }
@@ -361,7 +361,7 @@ public final class ExecutionContext {
 
     public void doJumpIfNull(int nextCp) {
         Address value = getStack().peek1();
-        getStack().subTos(1);
+        getStack().decrement();
         if (value.isNull()) {
             setNextCp(nextCp);
         }
@@ -369,7 +369,7 @@ public final class ExecutionContext {
 
     public void doJumpIfNonZero(int nextCp) {
         Address value = getStack().peek1();
-        getStack().subTos(1);
+        getStack().decrement();
         if (value.booleanVal()) {
             setNextCp(nextCp);
         }
@@ -377,7 +377,7 @@ public final class ExecutionContext {
 
     public void doJumpIfZero(int nextCp) {
         Address value = getStack().peek1();
-        getStack().subTos(1);
+        getStack().decrement();
         if (!value.booleanVal()) {
             setNextCp(nextCp);
         }
@@ -385,7 +385,7 @@ public final class ExecutionContext {
 
     public void doJumpIfntNull(int nextCp) {
         Address value = getStack().peek1();
-        getStack().subTos(1);
+        getStack().decrement();
         if (!value.isNull()) {
             setNextCp(nextCp);
         }
@@ -497,10 +497,10 @@ public final class ExecutionContext {
     }
 
     public void shareLoad(int index) {
-        getStack().push(memory.getShared(index));
+        //todo
     }
 
     public void shareStore(int index) {
-        memory.getShared(index).set(getStack().popGet());
+        //todo
     }
 }

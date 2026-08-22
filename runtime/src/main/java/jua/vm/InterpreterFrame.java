@@ -5,7 +5,9 @@ public final class InterpreterFrame {
     private InterpreterFrame caller;
     private int functionId;
     private int cp;
-    private int regBase;
+    private int offset;
+    private int stackPointer;
+    private int top;
 
     public void setCaller(InterpreterFrame caller) {
         this.caller = caller;
@@ -19,11 +21,16 @@ public final class InterpreterFrame {
         this.cp = cp;
     }
 
-    public void setRegBase(int regBase) {
-        if (regBase < 0) {
-            throw new IllegalArgumentException("Negative reg base: " + regBase);
-        }
-        this.regBase = regBase;
+    public void setOffset(int offset) {
+        this.offset = offset;
+    }
+
+    public void setTop(int top) {
+        this.top = top;
+    }
+
+    public void stackPointer(int stackPointer) {
+        this.stackPointer = stackPointer;
     }
 
     public InterpreterFrame getCaller() {
@@ -38,7 +45,9 @@ public final class InterpreterFrame {
         return cp;
     }
 
-    public int getRegBase() {
-        return regBase;
-    }
+    public int offset() { return offset; }
+
+    public int stackPointer() { return stackPointer; }
+
+    public int top() { return top; }
 }
