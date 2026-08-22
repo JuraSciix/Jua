@@ -82,8 +82,7 @@ public abstract class Tree {
         void visitWhileLoop(WhileLoop tree);
         void visitDoLoop(DoLoop tree);
         void visitForLoop(ForLoop tree);
-        void visitBreak(Break tree);
-        void visitContinue(Continue tree);
+        void visitLoopControl(LoopControl tree);
         void visitVarDef(VarDef tree);
         void visitReturn(Return tree);
         void visitDiscarded(Discarded tree);
@@ -124,10 +123,7 @@ public abstract class Tree {
         public void visitForLoop(ForLoop tree) { visitTree(tree); }
 
         @Override
-        public void visitBreak(Break tree) { visitTree(tree); }
-
-        @Override
-        public void visitContinue(Continue tree) { visitTree(tree); }
+        public void visitLoopControl(LoopControl tree) { visitTree(tree); }
 
         @Override
         public void visitVarDef(VarDef tree) { visitTree(tree); }
@@ -238,10 +234,7 @@ public abstract class Tree {
         }
 
         @Override
-        public void visitBreak(Break tree) {}
-
-        @Override
-        public void visitContinue(Continue tree) { }
+        public void visitLoopControl(LoopControl tree) { }
 
         @Override
         public void visitVarDef(VarDef tree) {
@@ -406,10 +399,7 @@ public abstract class Tree {
         }
 
         @Override
-        public void visitBreak(Break tree) { result = tree; }
-
-        @Override
-        public void visitContinue(Continue tree) { result = tree; }
+        public void visitLoopControl(LoopControl tree) { result = tree; }
 
         @Override
         public void visitVarDef(VarDef tree) {
@@ -697,30 +687,21 @@ public abstract class Tree {
         public void accept(Visitor visitor) { visitor.visitForLoop(this); }
     }
 
-    public static class Break extends Stmt {
+    public static class LoopControl extends Stmt {
+        public final Tag tag;
 
-        public Break(int pos) {
+        protected LoopControl(int pos, Tag tag) {
             super(pos);
+            this.tag = tag;
         }
 
         @Override
-        public Tag getTag() { return Tag.BREAK; }
+        public Tag getTag() { return tag; }
 
         @Override
-        public void accept(Visitor visitor) { visitor.visitBreak(this); }
-    }
+        public void accept(Visitor visitor) {
 
-    public static class Continue extends Stmt {
-
-        public Continue(int pos) {
-            super(pos);
         }
-
-        @Override
-        public Tag getTag() { return Tag.CONTINUE; }
-
-        @Override
-        public void accept(Visitor visitor) { visitor.visitContinue(this); }
     }
 
     public static class VarDef extends Stmt {

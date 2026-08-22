@@ -225,18 +225,17 @@ public class Gen extends Scanner {
     }
 
     @Override
-    public void visitBreak(Break tree) {
+    public void visitLoopControl(LoopControl tree) {
         Assert.checkNonNull(flow);
         code.putPos(tree.pos);
-        flow.ontoExit(code.branch(OPCodes.Goto));
-        code.setAlive(false);
-    }
-
-    @Override
-    public void visitContinue(Continue tree) {
-        Assert.checkNonNull(flow);
-        code.putPos(tree.pos);
-        flow.ontoNext(code.branch(OPCodes.Goto), true);
+        switch (tree.tag) {
+            case BREAK:
+                flow.ontoExit(code.branch(OPCodes.Goto));
+                break;
+            case CONTINUE:
+                flow.ontoNext(code.branch(OPCodes.Goto), true);
+                break;
+        }
         code.setAlive(false);
     }
 

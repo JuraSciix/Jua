@@ -101,16 +101,12 @@ public class Check extends Scanner {
     }
 
     @Override
-    public void visitBreak(Break tree) {
-        if (!allowsBreak) {
-            report(tree.pos, "break-statement is allowed only inside loop/switch-case");
-        }
-    }
-
-    @Override
-    public void visitContinue(Continue tree) {
-        if (!allowsContinue) {
+    public void visitLoopControl(LoopControl tree) {
+        if (tree.hasTag(Tag.CONTINUE) && !allowsContinue) {
             report(tree.pos, "continue-statement is allowed only inside loop");
+        }
+        if (tree.hasTag(Tag.BREAK) && !allowsBreak) {
+            report(tree.pos, "break-statement is allowed only inside loop/switch-case");
         }
     }
 

@@ -164,12 +164,12 @@ public final class JuaParser {
 
     private Stmt parseBreak() {
         expectSemi();
-        return new Break(acceptedPos);
+        return new LoopControl(acceptedPos, Tag.BREAK);
     }
 
     private Stmt parseContinue() {
         expectSemi();
-        return new Continue(acceptedPos);
+        return new LoopControl(acceptedPos, Tag.CONTINUE);
     }
 
     private Stmt parseDo() {
