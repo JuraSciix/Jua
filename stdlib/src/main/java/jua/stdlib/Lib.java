@@ -113,6 +113,38 @@ public class Lib {
             })
             .build();
 
+    private static final Function strToByteArray = builder()
+            .name("strToByteArray")
+            .param("str")
+            .callable((context, args, returnAddress) -> {
+                StringHeap str = args[0].getStringHeap();
+                byte[] bytes = str.getBytes();
+                ListHeap codePointArray = new ListHeap(bytes.length);
+                for (byte b : bytes) {
+                    codePointArray.add().set(b);
+                }
+                returnAddress.set(codePointArray);
+            })
+            .build();
+
+    private static final Function byteArrayToStr = builder()
+            .name("byteArrayToStr")
+            .param("array")
+            .callable((context, args, returnAddress) -> {
+                StringHeap result = new StringHeap();
+                ListHeap bytes = args[0].getListHeap();
+                for (int i = 0; i < bytes.length(); i++) {
+                    long b = bytes.get(i).getLong();
+                    if (b!=((byte)b)) {
+                        context.error("#%d integer is not a byte: %d", i, b);
+                        return;
+                    }
+                    result.append((byte) b);
+                }
+                returnAddress.set(result);
+            })
+            .build();
+
     private static final Function charArrayToStr = builder()
             .name("charArrayToStr")
             .param("charArray")
@@ -345,7 +377,9 @@ public class Lib {
                 histogramAction,
                 clone,
                 sqrt,
-                printStack
+                printStack,
+                strToByteArray,
+                byteArrayToStr
         );
     }
 }
