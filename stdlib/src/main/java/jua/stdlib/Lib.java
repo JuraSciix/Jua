@@ -369,17 +369,6 @@ public class Lib {
             })
             .build();
 
-    private static final Function printStack = builder()
-            .name("print_stack")
-            .callable((context, args, returnAddress) -> {
-                InterpreterThread.currentThread()
-                        .memory()
-                        .debug();
-                returnAddress.setNull();
-            })
-            .build();
-
-
     public static Collection<Function> getFunctions() {
         return Arrays.asList(
                 print,
@@ -407,7 +396,6 @@ public class Lib {
                 histogramAction,
                 clone,
                 sqrt,
-                printStack,
                 strToByteArray,
                 byteArrayToStr
         );
