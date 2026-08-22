@@ -31,18 +31,6 @@ public final class ThreadStack {
     }
 
     /**
-     * @deprecated Use {@link #peek(int)}
-     */
-    public Address getStackAddress(int offset) {
-        ensureCapacity(offset + 1);
-        return peek(offset);
-    }
-
-    public Address getStackAddressBack(int offset) {
-        return getStackAddress(-offset);
-    }
-
-    /**
      * @deprecated Use {@link #push(Address)} and {@link #popGet()}
      */
     public void addTos(int tos) {
@@ -72,6 +60,18 @@ public final class ThreadStack {
      */
     public Address peek(int offset) {
         return data[tos + offset];
+    }
+
+    public Address peek1() {
+        return peek(-1);
+    }
+
+    public Address peek2() {
+        return peek(-2);
+    }
+
+    public Address peek3() {
+        return peek(-3);
     }
 
     public Address popGet() {
