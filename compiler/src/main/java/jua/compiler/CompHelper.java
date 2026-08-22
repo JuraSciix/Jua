@@ -125,8 +125,8 @@ public class CompHelper {
             case AMPEQ: return Tag.ASG_BIT_AND;
             case BAREQ: return Tag.ASG_BIT_OR;
             case CARETEQ: return Tag.ASG_BIT_XOR;
-            case GTGTEQ: return Tag.ASG_SL;
-            case LTLTEQ: return Tag.ASG_SR;
+            case GTGTEQ: return Tag.ASG_SR;
+            case LTLTEQ: return Tag.ASG_SL;
             case MINUSEQ: return Tag.ASG_SUB;
             case PERCENTEQ: return Tag.ASG_REM;
             case PLUSEQ: return Tag.ASG_ADD;
