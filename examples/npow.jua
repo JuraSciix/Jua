@@ -1,0 +1,14 @@
+/**
+ * Сублинейный алгоритм возведения вещественного числа в натуральную степень.
+ */
+fn npow(base, power) {
+    result := 1.0;
+    while power > 0 {
+        if (power & 1) == 1 {
+            result *= base;
+        }
+        base *= base;
+        power >>= 1;
+    }
+    return result;
+}
