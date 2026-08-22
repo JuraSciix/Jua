@@ -20,7 +20,8 @@ public final class ThreadMemory {
     }
 
     public Address get(int offset) {
-        return data[fRegBase + offset];
+        // todo: fRegBase имеет проблемы, из-за которых происходит затемнение 
+        return data[top - offset];
     }
 
     public Address getShared(int offset) {
