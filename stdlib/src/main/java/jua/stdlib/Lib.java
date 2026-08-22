@@ -121,7 +121,7 @@ public class Lib {
                 byte[] bytes = str.getBytes();
                 ListHeap codePointArray = new ListHeap(bytes.length);
                 for (byte b : bytes) {
-                    codePointArray.add().set(b);
+                    codePointArray.add().set(Byte.toUnsignedInt(b));
                 }
                 returnAddress.set(codePointArray);
             })
@@ -131,17 +131,17 @@ public class Lib {
             .name("byteArrayToStr")
             .param("array")
             .callable((context, args, returnAddress) -> {
-                StringHeap result = new StringHeap();
                 ListHeap bytes = args[0].getListHeap();
+                byte[] byteArray = new byte[bytes.length()];
                 for (int i = 0; i < bytes.length(); i++) {
                     long b = bytes.get(i).getLong();
-                    if (b!=((byte)b)) {
+                    if (0xff < b || b < 0) {
                         context.error("#%d integer is not a byte: %d", i, b);
                         return;
                     }
-                    result.append((byte) b);
+                    byteArray[i] = (byte) b;
                 }
-                returnAddress.set(result);
+                returnAddress.set(new StringHeap(new String(byteArray)));
             })
             .build();
 
