@@ -87,12 +87,6 @@ public final class StringHeap extends Heap implements CharSequence, Comparable<S
         data.setLength(newLength);
     }
 
-    public StringHeap append(byte value) {
-        resetCaches();
-        data.append(value);
-        return this;
-    }
-
     public StringHeap append(long value) {
         resetCaches();
         data.append(value);
