@@ -173,6 +173,7 @@ public final class InterpreterThread {
         if (current == null) {
             interrupt(); // Выполнять более нечего
         } else {
+            memory.setCurrentFrame(current);
             set_msg(MSG_RUNNING_FRAME);
         }
     }
