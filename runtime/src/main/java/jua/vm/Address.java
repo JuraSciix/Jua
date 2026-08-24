@@ -1,14 +1,12 @@
 package jua.vm;
 
-import jua.runtime.Operations;
 import jua.runtime.Types;
 import jua.runtime.heap.Heap;
 import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.StringHeap;
 
-import static jua.runtime.Operations.toResultCode;
-import static jua.vm.InterpreterThread.threadError;
 import static jua.runtime.Types.*;
+import static jua.vm.InterpreterThread.threadError;
 
 public final class Address implements Comparable<Address> {
 
@@ -653,18 +651,6 @@ public final class Address implements Comparable<Address> {
         }
         threadError("trying to load array-element from %s", getTypeName());
         return false;
-    }
-
-    public int contains(Address key) {
-        if (type == T_LIST) {
-            int index = validateIndex(key, false);
-            if (index >= 0) {
-                return toResultCode(getListHeap().contains(key));
-            }
-            return Operations.RESULT_FAILURE;
-        }
-        threadError("trying to check array-element from %s", getTypeName());
-        return Operations.RESULT_FAILURE;
     }
 
     private int validateIndex(Address indexAddress, boolean validateBounds) {

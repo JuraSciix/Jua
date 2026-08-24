@@ -570,70 +570,6 @@ public interface InstructionImpls {
         public int opcode() { return IfNonNull; }
     }
 
-    class IfPresent extends JumpInstruction {
-        public IfPresent(int thenCp) {
-            super(thenCp);
-        }
-
-        @Override
-        public void execute(ExecutionContext context) {
-            context.doJumpIfPresent(getNextCp());
-        }
-
-        @Override
-        public int opcode() { return IfPresent; }
-    }
-
-    class IfAbsent extends JumpInstruction {
-        public IfAbsent(int thenCp) {
-            super(thenCp);
-        }
-        
-        @Override
-        public void execute(ExecutionContext context) {
-            context.doJumpIfAbsent(getNextCp());
-        }
-
-        @Override
-        public int opcode() { return IfAbsent; }
-    }
-
-    class LinearSwitch implements Instruction {
-        private final int[] labels;
-        private final int[] cps;
-        private final int defaultCp;
-
-        public LinearSwitch(int[] labels, int[] cps, int defaultCp) {
-            this.labels = labels;
-            this.cps = cps;
-            this.defaultCp = defaultCp;
-        }
-        
-        @Override
-        public void execute(ExecutionContext context) { context.doLinearSwitch(labels, cps, defaultCp); }
-
-        @Override
-        public int opcode() { return LinearSwitch; }
-    }
-
-    class BinarySwitch implements Instruction {
-        private final int[] labels;
-        private final int[] cps;
-        private final int defaultCp;
-
-        public BinarySwitch(int[] labels, int[] cps, int defaultCp) {
-            this.labels = labels;
-            this.cps = cps;
-            this.defaultCp = defaultCp;
-        }
-
-        @Override
-        public void execute(ExecutionContext context) { context.doBinarySwitch(labels, cps, defaultCp); }
-
-        @Override
-        public int opcode() { return BinarySwitch; }
-    }
-
     class Call implements Instruction {
         private final int calleeId;
         private final int argCount;
@@ -664,33 +600,5 @@ public interface InstructionImpls {
 
         @Override
         public int opcode() { return Leave; }
-    }
-
-    class Shload implements Instruction {
-        private final int index;
-
-        public Shload(int index) {
-            this.index = index;
-        }
-
-        @Override
-        public void execute(ExecutionContext context) { context.shareLoad(index); }
-
-        @Override
-        public int opcode() { return Shload; }
-    }
-
-    class Shstore implements Instruction {
-        private final int index;
-
-        public Shstore(int index) {
-            this.index = index;
-        }
-
-        @Override
-        public void execute(ExecutionContext context) { context.shareStore(index); }
-
-        @Override
-        public int opcode() { return Shstore; }
     }
 }

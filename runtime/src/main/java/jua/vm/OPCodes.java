@@ -19,7 +19,6 @@ public interface OPCodes {
             Dup2X2 = 14,
             Push = 15,
             NewList = 16,
-            NewMap = 17,
             Pop = 18,
             Pop2 = 19,
             Add = 20,
@@ -61,18 +60,11 @@ public interface OPCodes {
             IfNz = 56,
             IfNull = 57,
             IfNonNull = 58,
-            IfPresent = 59,
-            IfAbsent = 60,
-            LinearSwitch = 61,
-            BinarySwitch = 62,
             Call = 63,
             Return = 64,
             Leave = 65,
-            // Мнимые инструкции, которые нужны лишь для гистограммы
-            Shload = 66,
-            Shstore = 67,
 
-    _InstrCount = Shstore + 1;
+    _InstrCount = Leave + 1;
 
     String[] NAMES = {
             "Nop",
@@ -85,7 +77,6 @@ public interface OPCodes {
             "ConstInt2",
             "Push",
             "NewList",
-            "NewMap",
             "Dup",
             "Dup2",
             "Dup2X1",
@@ -133,17 +124,8 @@ public interface OPCodes {
             "IfNz",
             "IfNull",
             "IfNonNull",
-            "IfPresent",
-            "IfAbsent",
-            "LinearSwitch",
-            "BinarySwitch",
-            "", // skipped
             "Call",
             "Return",
-            "Leave",
-            "_JoinFrame",
-            "_PopFrame",
-            "_JoinNativeFrame",
-            "_PopNativeFrame"
+            "Leave"
     };
 }

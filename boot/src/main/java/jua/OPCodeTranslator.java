@@ -27,9 +27,6 @@ public class OPCodeTranslator implements InstrVisitor {
             case OPCodes.Goto:
                 put(new Goto(offset));
                 break;
-            case OPCodes.IfAbsent:
-                put(new IfAbsent(offset));
-                break;
             case OPCodes.IfEq:
                 put(new IfEq(offset));
                 break;
@@ -56,9 +53,6 @@ public class OPCodeTranslator implements InstrVisitor {
                 break;
             case OPCodes.IfNz:
                 put(new IfNz(offset));
-                break;
-            case OPCodes.IfPresent:
-                put(new IfPresent(offset));
                 break;
             case OPCodes.IfZ:
                 put(new IfZ(offset));
@@ -100,12 +94,6 @@ public class OPCodeTranslator implements InstrVisitor {
             case OPCodes.Dec:
                 put(new Dec(node.index));
                 break;
-            case OPCodes.ShLoad:
-                put(new Shload(node.index));
-                break;
-            case OPCodes.ShStore:
-                put(new Shstore(node.index));
-                break;
             default:
                 opcodeMismatch(node);
         }
@@ -117,22 +105,6 @@ public class OPCodeTranslator implements InstrVisitor {
             case OPCodes.Push:
                 put(new Push(node.index));
                 break;
-            case OPCodes.BinarySwitch:
-            case OPCodes.LinearSwitch:
-                // todo: *switch инструкции хранят свои данные в пуле констант.
-            default:
-                opcodeMismatch(node);
-        }
-    }
-
-    @Override
-    public void visitSwitch(SwitchInstrNode node) {
-        switch (node.opcode) {
-            case OPCodes.LinearSwitch:
-                put(new LinearSwitch(node.literals, node.dstIps, node.defCp));
-                break;
-            case OPCodes.BinarySwitch:
-                put(new BinarySwitch(node.literals, node.dstIps, node.defCp));
             default:
                 opcodeMismatch(node);
         }

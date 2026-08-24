@@ -140,38 +140,6 @@ public class ModulePrinter {
             printOPCode(node.opcode);
             printLiteral(node.index);
         }
-
-        @Override
-        public void visitSwitch(SwitchInstrNode node) {
-            printOPCode(node.opcode);
-            int[] labels = node.literals;
-            int[] cps = node.dstIps;
-            int[][] groupedLabels = new int[labels.length][];
-            int[] groupedCps = new int[cps.length];
-            int i = 0;
-
-            assert labels.length == cps.length;
-            // Фактически, мы проходим по массиву один раз.
-            // То есть фактическая сложность O(n)
-            for (int j = 0; j < cps.length; ) {
-                for (int k = j + 1; k <= cps.length; k++) {
-                    if (k >= cps.length || cps[j] != cps[k]) {
-                        groupedLabels[i] = Arrays.copyOfRange(labels, j, k);
-                        groupedCps[i] = cps[j]; // Можно взять произвольную от j до k, они все равны.
-                        i++;
-                        j = k;
-                        break;
-                    }
-                }
-            }
-
-            for (int j = 0; j < i; j++) {
-                instrData.cases.add(new Case(groupedLabels[j], groupedCps[j]));
-                restoreTosIn(groupedCps[j], node);
-            }
-            instrData.cases.add(new Case(null, node.defCp));
-            restoreTosIn(node.defCp, node);
-        }
     }
 
     private void printFunction(Module.Executable executable) {

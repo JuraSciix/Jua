@@ -9,9 +9,6 @@ import jua.runtime.code.ResolvableCallee;
 import jua.runtime.heap.ListHeap;
 import jua.vm.instruction.Instruction;
 
-import static jua.runtime.Operations.isResultFalse;
-import static jua.runtime.Operations.isResultTrue;
-
 public final class ExecutionContext {
 
     private final ThreadStack stack;
@@ -391,82 +388,6 @@ public final class ExecutionContext {
         }
     }
 
-    public void doJumpIfPresent(int nextCp) {
-        Address key = getStack().popGet();
-        Address arr = getStack().popGet();
-        int responseCode = arr.contains(key);
-        if (isResultTrue(responseCode)) {
-            setNextCp(nextCp);
-        }
-    }
-
-    public void doJumpIfAbsent(int nextCp) {
-        Address key = getStack().popGet();
-        Address arr = getStack().popGet();
-        int responseCode = arr.contains(key);
-        if (isResultFalse(responseCode)) {
-            setNextCp(nextCp);
-        }
-    }
-
-    public void doLinearSwitch(int[] labels, int[] cps, int defaultCp) {
-        Address selector = getStack().popGet();
-
-        // Не скалярные значения семантически запрещены
-        if (!selector.isScalar()) {
-            setNextCp(defaultCp);
-            return;
-        }
-
-        int selectorHash = selector.hashCode();
-
-        for (int i = 0; i < labels.length; i++) {
-            getConstantPool().load(labels[i], tmp);
-            int kHash = tmp.hashCode();
-            if (selectorHash == kHash && selector.fastCompareWith(tmp, 1) == 0) {
-                setNextCp(cps[i]);
-                return;
-            }
-        }
-        setNextCp(defaultCp); /* default ip */
-    }
-
-    public void doBinarySwitch(int[] labels, int[] cps, int defaultCp) {
-        Address selector = getStack().popGet();
-
-        // Не скалярные значения семантически запрещены
-        if (!selector.isScalar()) {
-            setNextCp(defaultCp);
-            return;
-        }
-
-        int l = 0;
-        int h = labels.length - 1;
-
-        while (l <= h) {
-            int x = (l + h) >> 1;
-            getConstantPool().load(labels[x], tmp);
-            int d = selector.compareTo(tmp);
-
-            if (d > 0) {
-                l = x + 1;
-            } else if (d < 0) {
-                h = x - 1;
-            } else {
-                // Не помню, почему d не должно равняться 2, но удалять не буду — вдруг что-то важное.
-                /* assert d != 2; */
-
-                // Если selector != k, значит один из операндов это NaN и цикл все равно завершен.
-                if (selector.fastCompareWith(tmp, 1) == 0) {
-                    setNextCp(cps[x]);
-                }
-                return;
-            }
-        }
-
-        setNextCp(defaultCp); /* default offset */
-    }
-
     public void doCall(int calleeId, int argCount) {
 //        Histogram.get().start(OPCodes._JoinNativeFrame);
 //        Histogram.get().start(OPCodes._JoinFrame);
@@ -494,13 +415,5 @@ public final class ExecutionContext {
         getStack().pushGet().setNull();
         msg = InterpreterThread.MSG_POPPING_FRAME;
 //        Histogram.get().start(OPCodes._PopFrame);
-    }
-
-    public void shareLoad(int index) {
-        //todo
-    }
-
-    public void shareStore(int index) {
-        //todo
     }
 }

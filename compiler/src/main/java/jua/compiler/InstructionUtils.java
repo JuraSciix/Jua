@@ -87,7 +87,6 @@ public class InstructionUtils {
                 Dup2X2 = 14,
                 Push = 15,
                 NewList = 16,
-                NewMap = 17,
                 Pop = 18,
                 Pop2 = 19,
                 Add = 20,
@@ -129,16 +128,9 @@ public class InstructionUtils {
                 IfNz = 56,
                 IfNull = 57,
                 IfNonNull = 58,
-                IfPresent = 59,
-                IfAbsent = 60,
-                LinearSwitch = 61,
-                BinarySwitch = 62,
                 Call = 63,
                 Return = 64,
                 Leave = 65,
-
-                ShLoad = 66, // Shared Load. Чтение разделенной переменной
-                ShStore = 67, // Shared Store. Запись в разделенную переменную
 
         _InstrCount = Leave + 1;
     }
@@ -170,7 +162,6 @@ public class InstructionUtils {
         opData(OPCodes.ConstIntM1, "const_im1", 1);
         opData(OPCodes.Push, "push", 1);
         opData(OPCodes.NewList, "newlist", 0);
-        opData(OPCodes.NewMap, "newmap", 1);
         opData(OPCodes.Dup, "dup", 1);
         opData(OPCodes.DupX1, "dup_x1", 1);
         opData(OPCodes.DupX2, "dup_x2", 1);
@@ -199,8 +190,6 @@ public class InstructionUtils {
         opData(OPCodes.IfNz, "ifnz", -1);
         opData(OPCodes.IfNull, "if_null", -1);
         opData(OPCodes.IfNonNull, "if_nonnull", -1);
-        opData(OPCodes.IfPresent, "if_present", -2);
-        opData(OPCodes.IfAbsent, "if_absent", -2);
         opData(OPCodes.Goto, "goto", 0);
         opData(OPCodes.Length, "length", 0);
         opData(OPCodes.Load, "load", 1);
@@ -220,9 +209,7 @@ public class InstructionUtils {
         opData(OPCodes.Pos, "pos", 0);
         opData(OPCodes.Neg, "neg", 0);
         opData(OPCodes.Not, "not", 0);
-        opData(OPCodes.Call, "call", 0); // todo
-        opData(OPCodes.LinearSwitch, "linearswitch", -1);
-        opData(OPCodes.BinarySwitch, "binaryswitch", -1);
+        opData(OPCodes.Call, "call", 0);
         opData(OPCodes.Return, "return", -1);
         opData(OPCodes.Leave, "leave", 0);
 
@@ -254,7 +241,6 @@ public class InstructionUtils {
         void visitCall(CallInstrNode node);
         void visitIndexed(IndexedInstrNode node);
         void visitConst(ConstantInstrNode node);
-        void visitSwitch(SwitchInstrNode node);
     }
 
     public abstract static class InstrNode {
@@ -356,21 +342,4 @@ public class InstructionUtils {
             visitor.visitJump(this);
         }
     }
-
-    public static class SwitchInstrNode extends InstrNode {
-
-        public int[] literals;
-        public int[] dstIps;
-        public int defCp;
-
-        public SwitchInstrNode(int opcode) {
-            super(opcode);
-        }
-
-        @Override
-        public void accept(InstrVisitor visitor) {
-            visitor.visitSwitch(this);
-        }
-    }
-
 }

@@ -236,11 +236,6 @@ public final class Items {
         }
 
         @Override
-        CondItem asPresentCond() {
-            return new CondItem(OPCodes.IfPresent);
-        }
-
-        @Override
         Item increase(Tag increaseTag) {
             return new AccessIncreaseItem(increaseTag);
         }
