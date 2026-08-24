@@ -9,6 +9,7 @@ import java.util.StringJoiner;
 
 public final class ListHeap extends Heap implements Iterable<Address> {
 
+    // todo: оптимизация для избежания накладных расходов на ссылки Address
     private final Address[] data;
 
     /** Указатель на конец списка */
@@ -21,6 +22,7 @@ public final class ListHeap extends Heap implements Iterable<Address> {
         data = AddressUtils.allocateMemoryNulls(size, 0);
     }
 
+    @Deprecated
     public ListHeap(Address[] source) {
         if (source == null) {
             throw new IllegalArgumentException("source must not be null");
@@ -33,10 +35,12 @@ public final class ListHeap extends Heap implements Iterable<Address> {
         return data.length;
     }
 
+    @Deprecated
     public int key() {
         return key;
     }
 
+    @Deprecated
     public void setKey(int key) {
         if (key < 0 || key > length()) {
             throw new IndexOutOfBoundsException();
@@ -44,20 +48,24 @@ public final class ListHeap extends Heap implements Iterable<Address> {
         this.key = key;
     }
 
+    @Deprecated
     public Address get(int index) {
         return data[index];
     }
 
+    @Deprecated
     public Address get() {
         return get(key());
     }
 
+    @Deprecated
     public Address add() {
         int k = key();
         setKey(k + 1);
         return data[k];
     }
 
+    @Deprecated
     public void set(int index, Address value, Address oldValueReceptor) {
         if (oldValueReceptor != null) {
             oldValueReceptor.set(data[index]);
@@ -65,6 +73,7 @@ public final class ListHeap extends Heap implements Iterable<Address> {
         data[index].set(value);
     }
 
+    @Deprecated
     public void clear() {
         if (data.length > 0) {
             data[0].setNull();
@@ -72,6 +81,7 @@ public final class ListHeap extends Heap implements Iterable<Address> {
         }
     }
 
+    @Deprecated
     public boolean contains(Address value) {
         for (Address e : data) {
             if (e != null) {
@@ -83,6 +93,7 @@ public final class ListHeap extends Heap implements Iterable<Address> {
         return false;
     }
 
+    @Deprecated
     public boolean isPresentAt(int index) {
         return index >= 0 && index < data.length
                 && data[index] != null
@@ -107,6 +118,7 @@ public final class ListHeap extends Heap implements Iterable<Address> {
         return te.length - ae.length;
     }
 
+    @Deprecated
     public Address[] getArray() {
         return data.clone();
     }
