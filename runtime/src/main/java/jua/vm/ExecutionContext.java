@@ -11,6 +11,7 @@ import jua.vm.instruction.Instruction;
 
 public final class ExecutionContext {
 
+    private final JuaEnvironment env;
     private final ThreadStack stack;
 
     private final ThreadRegion memory;
@@ -25,7 +26,8 @@ public final class ExecutionContext {
 
     private final Address tmp = new Address();
 
-    public ExecutionContext(ThreadStack stack, ThreadRegion memory) {
+    public ExecutionContext(JuaEnvironment env, ThreadStack stack, ThreadRegion memory) {
+        this.env = env;
         this.stack = stack;
         this.memory = memory;
     }
@@ -46,8 +48,6 @@ public final class ExecutionContext {
         msg = 0;
         msgCallee = null;
         msgArgc = 0;
-
-        JuaEnvironment env = JuaEnvironment.getEnvironment();
 
         CodeData code = env.getFunctionById(frame.getFunctionId()).getCode();
         constantPool = code.getConstantPool();
@@ -397,7 +397,7 @@ public final class ExecutionContext {
             fn = callee.getResolved();
         } else {
             String name = getConstantPool().getUtf8(callee.getUtf8());
-            fn = JuaEnvironment.getEnvironment().lookupFunction(name);
+            fn = env.lookupFunction(name);
             callee.setResolved(fn);
         }
 

@@ -39,11 +39,11 @@ public final class InterpreterThread {
         currentThread().error(message, args);
     }
 
-    private final JuaEnvironment env = JuaEnvironment.getEnvironment();
 
     private final Thread jvmThread;
 
     private final JuaEnvironment environment;
+    private final JuaEnvironment env;
 
     public InterpreterFrame currentFrame() {
         return current;
@@ -69,8 +69,8 @@ public final class InterpreterThread {
         Objects.requireNonNull(environment, "environment");
         bind();
         this.jvmThread = jvmThread;
-        this.environment = environment;
-        executionContext = new ExecutionContext(stack(), memory());
+        this.environment = env = environment;
+        executionContext = new ExecutionContext(environment, stack(), memory());
     }
 
     public ThreadStack stack() {
@@ -186,7 +186,7 @@ public final class InterpreterThread {
         int i = limit;
 
         while (frame != null && i > 0) {
-            if (!JuaEnvironment.getEnvironment()
+            if (!getEnvironment()
                     .getFunctionById(frame.getFunctionId())
                     .isHidden()) {
                 stackTrace.add(toStackTraceElement(frame));
@@ -202,7 +202,7 @@ public final class InterpreterThread {
      * Возвращает номер строки, которая сейчас выполняется.
      */
     int executingLineNumber(InterpreterFrame frame) {
-        Function f = JuaEnvironment.getEnvironment().getFunctionById(frame.getFunctionId());
+        Function f = getEnvironment().getFunctionById(frame.getFunctionId());
         if (!f.isUserDefined()) return -1; // native function
         int cp = frame.getCP() - 1;
         return f.userCode().getLineNumberTable().getLineNumber(cp);
