@@ -1,35 +1,24 @@
 package jua.runtime;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public final class JuaEnvironment {
 
+    public static JuaEnvironment create(Function[] functions) {
+        for (int i = 0; i < functions.length; i++) {
+            functions[i].runtimeId = i;
+        }
+        return new JuaEnvironment(functions);
+    }
+
     private final Map<String, Function> fntab = new HashMap<>();
 
-    private final List<Function> functionData = new ArrayList<>();
+    private final List<Function> functionData;
 
-    public void addFunction(Function function) {
-        if (function == null) {
-            throw new NullPointerException("Function");
-        }
-        if (function.runtimeId >= 0) {
-            throw new RuntimeErrorException(
-                    "Function " + function.getName() + " already have an runtime ID " + function.runtimeId);
-        }
-
-        String name = function.getName();
-        synchronized (fntab) {
-            if (fntab.containsKey(name)) {
-                throw new RuntimeErrorException("Unable to override function \"" + name + "\"");
-            }
-            fntab.put(name, function);
-            function.runtimeId = functionData.size();
-            functionData.add(function);
-
-        }
+    private JuaEnvironment(Function[] functions) {
+        functionData = Arrays.asList(functions);
+        for (Function function : functions)
+            fntab.put(function.getName(), function);
     }
 
     public Function getFunctionById(int id) {

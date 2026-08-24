@@ -89,8 +89,7 @@ public class Main {
                 .filter(f -> f.getName().equals("<main>"))
                 .findAny().orElseThrow(AssertionError::new);
 
-        JuaEnvironment env = new JuaEnvironment();
-        functions.forEach(env::addFunction);
+        JuaEnvironment env = JuaEnvironment.create(functions.toArray(new Function[0]));
         InterpreterThread thread = new InterpreterThread(Thread.currentThread(), env);
         Address resultReceiver = new Address();
         thread.callAndWait(mainFn, new Address[0], resultReceiver);
