@@ -186,6 +186,12 @@ public class SimpleInterpreter {
                             "cp=%d sb=%d sp=%d rb=%d inst=%d payload=%d",
                             cp, sb, sp, rb, inst, payload));
             }
+
+            // Хак, чтобы заставить javac сворачивать транзитивные прыжки:
+            // Сворачивая этот лишний прыжок, javac каскадным образом свернёт и все транзитивные.
+            // Транзитивные прыжки - это break внутри switch-cases.
+            //noinspection UnnecessaryContinue
+            continue;
         }
 
         data.state(state);
