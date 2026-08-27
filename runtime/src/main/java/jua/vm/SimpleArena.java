@@ -13,14 +13,19 @@ public class SimpleArena {
         arena.writeReference(addr, null);
     }
 
-    public static void putBool(DataArena arena, int addr, boolean value) {
-        arena.writeType(addr, TYPE_BOOL64);
-        arena.writeBool(addr, value);
-    }
-
     public static void putInt64(DataArena arena, int addr, long value) {
         arena.writeType(addr, TYPE_INT64);
         arena.writeInt64(addr, value);
+    }
+
+    public static void putFloat64(DataArena arena, int addr, double value) {
+        arena.writeType(addr, TYPE_FLOAT64);
+        arena.writeFloat64(addr, value);
+    }
+
+    public static void putBool(DataArena arena, int addr, boolean value) {
+        arena.writeType(addr, TYPE_BOOL64);
+        arena.writeBool(addr, value);
     }
 
     public static void clearAndMove(DataArena arena, int src, int dst) {

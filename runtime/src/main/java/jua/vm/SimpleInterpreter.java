@@ -5,21 +5,18 @@ import jua.vm.arena.DataArena;
 import static jua.vm.OPCodes.*;
 import static jua.vm.SimpleArena.*;
 import static jua.vm.SimpleArithm.*;
-import static jua.vm.SimpleArithm.compare;
-import static jua.vm.SimpleArithm.inc;
-import static jua.vm.SimpleType.TYPE_INT64;
-import static jua.vm.SimpleType.TYPE_REF;
 
 public class SimpleInterpreter {
     public static final int MASK_CP = 0xffff;
-    public static final int MASK_REG = 0xff;
+    public static final int MASK_STACK = 0xffff;
+    public static final int MASK_REG = 0xffff;
 
     // cs - место, откуда начать выполнение
     // sb - базовый указатель на вершину стека
     // rb - указатель на начало регистровой области
     public static void run(int cs, int sb, int rb, int[] code, DataArena arena, FrameData data) {
         int cp = cs & MASK_CP; // Code Pointer = Code Start
-        int sp = sb; // Stack Pointer = Stack Base
+        int sp = sb & MASK_STACK; // Stack Pointer = Stack Base
 
         int state = STATE_DONE;
         while (cp * 2 + 1 < code.length && state == STATE_DONE) {
@@ -140,7 +137,6 @@ public class SimpleInterpreter {
                 case IfNull:
                 case IfNonNull:
                     if (compareRefNull(arena, sp) == (inst == IfNull)) {
-                        cp = payload & MASK_CP;
                         cp = payload & MASK_CP;
                     }
                     sp -= 1;
