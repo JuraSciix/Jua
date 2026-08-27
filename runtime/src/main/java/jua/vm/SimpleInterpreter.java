@@ -44,14 +44,24 @@ public class SimpleInterpreter {
                     sp++;
                     break;
 
-                // ...
+                case Dup:
+                case DupX1:
+                case DupX2:
+                case Swap:
+                case Dup2:
+                case Dup2X1:
+                case Dup2X2:
+                    // ...
+                    break;
 
                 case Push:
                     putInt64(arena, sp, payload);
                     sp++;
                     break;
 
-                // ...
+                case NewList:
+                    // ...
+                    break;
 
                 // Заметка: инструкции Pop/Pop2 несут ответственность за ссылки, оставляемые на стеке.
 
@@ -80,8 +90,18 @@ public class SimpleInterpreter {
                     state = div(arena, sp);
                     sp--;
                     break;
-
-                // ...
+                case Rem:
+                case And:
+                case Or:
+                case Xor:
+                case Shl:
+                case Shr:
+                case Length:
+                case Pos:
+                case Neg:
+                case Not:
+                    // ...
+                    break;
 
                 case Load:
                     clearAndMove(arena, rb + (payload & MASK_REG), sp);
@@ -108,7 +128,12 @@ public class SimpleInterpreter {
                     state = inc(arena, rb + (payload & MASK_REG), inst == Inc ? 1L : -1L);
                     break;
 
-                // ...
+                case ArrayLoad:
+                case ArrayStore:
+                case ArrayInc:
+                case ArrayDec:
+                    // ...
+                    break;
 
                 case Goto:
                     cp = payload & MASK_CP;
@@ -142,7 +167,9 @@ public class SimpleInterpreter {
                     sp -= 1;
                     break;
 
-                // ...
+                case Call:
+                    // ...
+                    break;
 
                 case Leave:
                     putNull(arena, sp);
