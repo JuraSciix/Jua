@@ -19,13 +19,7 @@ public class SimpleInterpreter {
         int sp = sb; // Stack Pointer = Stack Base
 
         int state = STATE_DONE;
-        while (state == STATE_DONE) {
-            // Код проходит валидацию, поэтому в конце обязательно присутствует
-            // инструкция Leave/Return, за которыми следует два нуля.
-            // Однако, для JIT требуется эта проверка.
-            if ((cp + 1) * 2 >= code.length) {
-                throw new AssertionError();
-            }
+        while (cp * 2 + 1 < code.length && state == STATE_DONE) {
             int inst = code[cp * 2];
             int payload = code[cp * 2 + 1];
             cp++;
@@ -41,7 +35,7 @@ public class SimpleInterpreter {
                 case ConstTrue:
                 case ConstFalse:
                     arena.writeType(sp, TYPE_BOOL64);
-                    arena.writeReference(sp, inst == ConstTrue);
+                    arena.writeBool(sp, inst == ConstTrue);
                     sp++;
                     break;
                 case ConstIntM1:
@@ -147,6 +141,7 @@ public class SimpleInterpreter {
                 case IfNull:
                 case IfNonNull:
                     if (SimpleArithm.compareRefNull(arena, sp) == (inst == IfNull)) {
+                        cp = payload & MASK_CP;
                         cp = payload & MASK_CP;
                     }
                     sp -= 1;
