@@ -50,7 +50,7 @@ public class SimpleInterpreter {
                 // ...
 
                 case Push:
-                    putInt64(arena, sb, payload);
+                    putInt64(arena, sp, payload);
                     sp++;
                     break;
 
