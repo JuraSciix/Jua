@@ -56,11 +56,6 @@ public final class DataArena {
         valueLine[addr] = val != null ? referenceArena.put(val) : HANDLE_NULL;
     }
 
-    public void clearAndMove(int src, int dst) {
-        clear(dst);
-        move(src, dst);
-    }
-
     // Переносит значение из одного адреса в другой.
     // ВНИМАНИЕ!!!
     // Метод не занимается очисткой ссылок.

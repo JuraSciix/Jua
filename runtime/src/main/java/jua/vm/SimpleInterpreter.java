@@ -3,9 +3,12 @@ package jua.vm;
 import jua.vm.arena.DataArena;
 
 import static jua.vm.OPCodes.*;
-import static jua.vm.SimpleArithm.STATE_DONE;
-import static jua.vm.SimpleArithm.STATE_LEAVE;
-import static jua.vm.SimpleType.*;
+import static jua.vm.SimpleArena.*;
+import static jua.vm.SimpleArithm.*;
+import static jua.vm.SimpleArithm.compare;
+import static jua.vm.SimpleArithm.inc;
+import static jua.vm.SimpleType.TYPE_INT64;
+import static jua.vm.SimpleType.TYPE_REF;
 
 public class SimpleInterpreter {
     public static final int MASK_CP = 0xffff;
@@ -28,22 +31,19 @@ public class SimpleInterpreter {
                 case Nop:
                     break;
                 case ConstNull:
-                    arena.writeType(sp, TYPE_REF);
-                    arena.writeReference(sp, null);
+                    putNull(arena, sp);
                     sp++;
                     break;
                 case ConstTrue:
                 case ConstFalse:
-                    arena.writeType(sp, TYPE_BOOL64);
-                    arena.writeBool(sp, inst == ConstTrue);
+                    putBool(arena, sp, inst == ConstTrue);
                     sp++;
                     break;
                 case ConstIntM1:
                 case ConstInt0:
                 case ConstInt1:
                 case ConstInt2:
-                    arena.writeType(sp, TYPE_INT64);
-                    arena.writeInt64(sp, inst - ConstInt0);
+                    putInt64(arena, sp, inst - ConstInt0);
                     sp++;
                     break;
 
@@ -69,47 +69,47 @@ public class SimpleInterpreter {
                     sp -= 2;
                     break;
                 case Add:
-                    state = SimpleArithm.add(arena, sp);
+                    state = add(arena, sp);
                     sp--;
                     break;
                 case Sub:
-                    state = SimpleArithm.sub(arena, sp);
+                    state = sub(arena, sp);
                     sp--;
                     break;
                 case Mul:
-                    state = SimpleArithm.mul(arena, sp);
+                    state = mul(arena, sp);
                     sp--;
                     break;
                 case Div:
-                    state = SimpleArithm.div(arena, sp);
+                    state = div(arena, sp);
                     sp--;
                     break;
 
                 // ...
 
                 case Load:
-                    arena.clearAndMove(rb + payload & MASK_REG, sp);
+                    clearAndMove(arena, rb + payload & MASK_REG, sp);
                     sp++;
                     break;
                 case Load0:
                 case Load1:
                 case Load2:
-                    arena.clearAndMove(rb + inst - Load0, sp);
+                    clearAndMove(arena, rb + inst - Load0, sp);
                     sp++;
                     break;
                 case Store:
-                    arena.clearAndMove(sp - 1, rb + payload & MASK_REG);
+                    clearAndMove(arena, sp - 1, rb + payload & MASK_REG);
                     sp--;
                     break;
                 case Store0:
                 case Store1:
                 case Store2:
-                    arena.clearAndMove(sp - 1, rb + inst - Store0);
+                    clearAndMove(arena, sp - 1, rb + inst - Store0);
                     sp--;
                     break;
                 case Inc:
                 case Dec:
-                    state = SimpleArithm.inc(arena, rb + payload & MASK_REG, inst == Inc ? 1L : -1L);
+                    state = inc(arena, rb + payload & MASK_REG, inst == Inc ? 1L : -1L);
                     break;
 
                 // ...
@@ -118,13 +118,13 @@ public class SimpleInterpreter {
                     cp = payload & MASK_CP;
                     break;
 
-                case IfEq: case IfNe: // 49, 50
-                case IfGe: case IfLt: // 51, 52
-                case IfLe: case IfGt: // 53, 54
-                    if (SimpleArithm.compare(arena, sp,
+                case IfEq: case IfNe:
+                case IfGe: case IfLt:
+                case IfLe: case IfGt:
+                    if ((inst != IfNe) ^ compare(arena, sp,
                             inst == IfNe || inst == IfEq || inst == IfGe || inst == IfLe,
                             inst == IfGe || inst == IfGt,
-                            inst == IfLe || inst == IfLt) == (inst != IfNe)) {
+                            inst == IfLe || inst == IfLt)) {
                         cp = payload & MASK_CP;
                     }
                     sp -= 2;
@@ -132,7 +132,7 @@ public class SimpleInterpreter {
 
                 case IfZ:
                 case IfNz:
-                    if (SimpleArithm.compareInt64Zero(arena, sp) == (inst == IfZ)) {
+                    if (compareInt64Zero(arena, sp) == (inst == IfZ)) {
                         cp = payload & MASK_CP;
                     }
                     sp -= 1;
@@ -140,7 +140,7 @@ public class SimpleInterpreter {
 
                 case IfNull:
                 case IfNonNull:
-                    if (SimpleArithm.compareRefNull(arena, sp) == (inst == IfNull)) {
+                    if (compareRefNull(arena, sp) == (inst == IfNull)) {
                         cp = payload & MASK_CP;
                         cp = payload & MASK_CP;
                     }
@@ -150,8 +150,7 @@ public class SimpleInterpreter {
                 // ...
 
                 case Leave:
-                    arena.writeType(sp, TYPE_REF);
-                    arena.writeReference(sp, null);
+                    putNull(arena, sp);
                     sp++;
                     // fallthrough
                 case Return:
