@@ -160,6 +160,18 @@ public class SimpleArithm {
             return eq && lhs == rhs || gt && lhs > rhs || lt && lhs < rhs;
         }
 
+        if (typeUnionOf(TYPE_FLOAT64, TYPE_INT64) == tp) {
+            double lhs = arena.readFloat64(top - 2);
+            double rhs = (double) arena.readInt64(top - 1);
+            return eq && lhs == rhs || gt && lhs > rhs || lt && lhs < rhs;
+        }
+
+        if (typeUnionOf(TYPE_INT64, TYPE_FLOAT64) == tp) {
+            double lhs = (double) arena.readInt64(top - 2);
+            double rhs = arena.readFloat64(top - 1);
+            return eq && lhs == rhs || gt && lhs > rhs || lt && lhs < rhs;
+        }
+
         return false;
     }
 
