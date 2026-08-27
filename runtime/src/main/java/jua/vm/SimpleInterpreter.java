@@ -124,8 +124,10 @@ public class SimpleInterpreter {
                     sp--;
                     break;
                 case Inc:
+                    state = inc(arena, rb + (payload & MASK_REG), 1L);
+                    break;
                 case Dec:
-                    state = inc(arena, rb + (payload & MASK_REG), inst == Inc ? 1L : -1L);
+                    state = inc(arena, rb + (payload & MASK_REG),-1L);
                     break;
 
                 case ArrayLoad:
@@ -142,29 +144,29 @@ public class SimpleInterpreter {
                 case IfEq: case IfNe:
                 case IfGe: case IfLt:
                 case IfLe: case IfGt:
-                    if ((inst == IfNe) ^ compare(arena, sp,
+                    sp -= 2;
+                    if ((inst == IfNe) ^ compare(arena, sp + 2,
                             inst == IfNe || inst == IfEq || inst == IfGe || inst == IfLe,
                             inst == IfGe || inst == IfGt,
                             inst == IfLe || inst == IfLt)) {
                         cp = payload & MASK_CP;
                     }
-                    sp -= 2;
                     break;
 
                 case IfZ:
                 case IfNz:
-                    if (compareInt64Zero(arena, sp) == (inst == IfZ)) {
+                    sp -= 1;
+                    if (compareInt64Zero(arena, sp + 1) == (inst == IfZ)) {
                         cp = payload & MASK_CP;
                     }
-                    sp -= 1;
                     break;
 
                 case IfNull:
                 case IfNonNull:
-                    if (compareRefNull(arena, sp) == (inst == IfNull)) {
+                    sp -= 1;
+                    if (compareRefNull(arena, sp + 1) == (inst == IfNull)) {
                         cp = payload & MASK_CP;
                     }
-                    sp -= 1;
                     break;
 
                 case Call:
