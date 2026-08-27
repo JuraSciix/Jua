@@ -50,8 +50,7 @@ public class SimpleInterpreter {
                 // ...
 
                 case Push:
-                    arena.writeType(sp, TYPE_INT64);
-                    arena.writeInt64(sp, payload);
+                    putInt64(arena, sb, payload);
                     sp++;
                     break;
 
@@ -121,7 +120,7 @@ public class SimpleInterpreter {
                 case IfEq: case IfNe:
                 case IfGe: case IfLt:
                 case IfLe: case IfGt:
-                    if ((inst != IfNe) ^ compare(arena, sp,
+                    if ((inst == IfNe) ^ compare(arena, sp,
                             inst == IfNe || inst == IfEq || inst == IfGe || inst == IfLe,
                             inst == IfGe || inst == IfGt,
                             inst == IfLe || inst == IfLt)) {
