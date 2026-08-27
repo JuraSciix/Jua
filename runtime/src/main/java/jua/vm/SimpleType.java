@@ -8,6 +8,6 @@ public class SimpleType {
     public static final byte TYPE_REF     = 4;
 
     public static int typeUnionOf(byte lhs, byte rhs) {
-        return rhs << 4 | lhs;
+        return rhs << 4 | lhs & 0xf;
     }
 }

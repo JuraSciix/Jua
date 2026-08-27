@@ -19,7 +19,7 @@ public class SimpleInterpreter {
         int sp = sb & MASK_STACK; // Stack Pointer = Stack Base
 
         int state = STATE_DONE;
-        while (cp * 2 + 1 < code.length && state == STATE_DONE) {
+        while (state == STATE_DONE) {
             int inst = code[cp * 2];
             int payload = code[cp * 2 + 1];
             cp++;
@@ -84,7 +84,7 @@ public class SimpleInterpreter {
                 // ...
 
                 case Load:
-                    clearAndMove(arena, rb + payload & MASK_REG, sp);
+                    clearAndMove(arena, rb + (payload & MASK_REG), sp);
                     sp++;
                     break;
                 case Load0:
@@ -94,7 +94,7 @@ public class SimpleInterpreter {
                     sp++;
                     break;
                 case Store:
-                    clearAndMove(arena, sp - 1, rb + payload & MASK_REG);
+                    clearAndMove(arena, sp - 1, rb + (payload & MASK_REG));
                     sp--;
                     break;
                 case Store0:
@@ -105,7 +105,7 @@ public class SimpleInterpreter {
                     break;
                 case Inc:
                 case Dec:
-                    state = inc(arena, rb + payload & MASK_REG, inst == Inc ? 1L : -1L);
+                    state = inc(arena, rb + (payload & MASK_REG), inst == Inc ? 1L : -1L);
                     break;
 
                 // ...

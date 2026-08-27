@@ -29,8 +29,7 @@ public class SimpleArena {
     }
 
     public static void clearAndMove(DataArena arena, int src, int dst) {
-        arena.clear(dst);
-        arena.move(src, dst);
+        arena.clearAndMove(src, dst);
     }
 
     public static String toString(DataArena arena, int addr) {

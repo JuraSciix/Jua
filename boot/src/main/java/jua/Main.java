@@ -27,7 +27,7 @@ public class Main {
                 .emit(Inc, 1)
                 .resolveJump(testHandle)
                 .emit(Load1)
-                .emit(Push, 50)
+                .emit(Push, 500000)
                 .emitJump(IfLe, startHandle)
                 .emit(Load0)
                 .emit(Return)
@@ -36,9 +36,18 @@ public class Main {
         FrameData data = new FrameData();
 
         arena.allocate(4);
-        SimpleInterpreter.run(0, 2, 0, code, arena, data);
-        System.out.println("State: " + data.state());
-        System.out.println(SimpleArena.toString(arena, 2));
+
+        long sum = 0;
+        for (int i = 0; i < 1000; i++) {
+            long time1 = System.nanoTime();
+            SimpleInterpreter.run(0, 2, 0, code, arena, data);
+            long time2 = System.nanoTime();
+            if (i >= 10) {
+                sum += (time2 - time1) / 1000;
+            }
+            System.out.println((time2 - time1) / 1000);
+        }
+        System.out.println("Average: " + sum / 1000);
         arena.deallocate(3);
     }
 
