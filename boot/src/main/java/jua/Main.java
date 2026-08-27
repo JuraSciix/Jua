@@ -1,98 +1,37 @@
 package jua;
 
-import jua.compiler.JuaCompiler;
-import jua.compiler.Module;
-import jua.compiler.ModulePrinter;
-import jua.compiler.ModuleScope;
-import jua.runtime.Function;
-import jua.runtime.JuaEnvironment;
-import jua.vm.AddressSupport;
-import jua.vm.InterpreterThread;
-import jua.vm.Address;
-import jua.stdlib.Lib;
+import jua.vm.FrameData;
+import jua.vm.SimpleInterpreter;
+import jua.vm.arena.DataArena;
 
-import java.io.File;
-import java.util.*;
-import java.util.stream.Collectors;
+import static jua.vm.OPCodes.*;
 
 public class Main {
 
-    private static Module module;
-    private static Function[] nativeFunctions;
-
-
     public static void main(String[] args) {
-        parseOptions(args);
-        targetFile();
-        compile();
-        interpret();
-    }
+        Object contHandle = new Object();
+        Object exitHandle = new Object();
+        int[] code = new CodeBuilder()
+                .emit(ConstInt0)
+                .emit(Store0)
+                .resolveJump(contHandle)
+                .emit(Load0)
+                .emit(Push, 0)
+                .emitJump(IfGe, exitHandle)
+                .emit(Inc, 0)
+                .emitJump(Goto, contHandle)
+                .resolveJump(exitHandle)
+                .toArray();
+        DataArena arena = new DataArena();
+        FrameData data = new FrameData();
 
-    private static void parseOptions(String[] args) {
-        try {
-            Options.bind(args);
-        } catch (RuntimeException e) {
-            System.err.println("Unable to parse options: " + e);
-            System.exit(1);
+        for (int i = 0; i < 100; i++) {
+            long time0 = System.nanoTime();
+            arena.allocate(20);
+            SimpleInterpreter.run(0, 10, 0, code, arena, data);
+            arena.deallocate(20);
+            long time1 = System.nanoTime();
+            System.out.println((time1 - time0) / 1E6);
         }
-    }
-
-    private static void targetFile() {
-        File file = new File(Options.firstFile());
-        if (!file.isFile()) {
-            System.err.println("Unable to find file " + Options.firstFile());
-            System.exit(1);
-        }
-    }
-
-    private static void compile() {
-        JuaCompiler c = new JuaCompiler();
-        c.setCharset(Options.charset());
-        c.setFile(Options.firstFile());
-        c.setGenJvmLoops(Options.genJvmLoops());
-        c.setStderr(System.err);
-        c.setStdout(System.out);
-        c.setLintMode(Options.isLintEnabled());
-//        c.setPrettyTreeMode(Options.isShouldPrettyTree());
-        c.setLogLimit(Options.logMaxErrors());
-
-        // Регистрируем нативные члены.
-        ModuleScope ms = c.getModuleScope();
-
-        nativeFunctions = Lib.getFunctions().toArray(new Function[0]);
-        for (int i = 0; i < nativeFunctions.length; i++) {
-            Function f = nativeFunctions[i];
-            ms.defineNativeFunction(f.getName(), f.getMinArgc(), f.getMaxArgc(),
-                    Arrays.stream(f.getDefaults()).map(AddressSupport::toJavaObject).toArray(), f.getParams(), i);
-        }
-
-        module = c.compile();
-        if (module == null) {
-            // todo: Сделать нормальную проверку на ошибку компиляции.
-            System.exit(1);
-        }
-
-        if (Options.isShouldPrintCode()) {
-            ModulePrinter.printModule(module);
-            System.exit(1);
-        }
-    }
-
-    private static void interpret() {
-        List<Function> functions = Arrays.stream(module.executables)
-                .map(Executable2FunctionTranslator::translate)
-                .collect(Collectors.toList());
-
-        Collections.addAll(functions, nativeFunctions);
-
-        Function mainFn = functions.stream()
-                .filter(f -> f.getName().equals("<main>"))
-                .findAny().orElseThrow(AssertionError::new);
-
-        JuaEnvironment env = JuaEnvironment.create(functions.toArray(new Function[0]));
-        InterpreterThread thread = new InterpreterThread(Thread.currentThread(), env);
-        Address resultReceiver = new Address();
-        thread.callAndWait(mainFn, new Address[0], resultReceiver);
-        // Если будет интересно, что вернул код, то можно напечатать resultReceiver.
     }
 }
