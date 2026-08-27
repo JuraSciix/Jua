@@ -2,7 +2,7 @@
  * Сублинейный алгоритм возведения вещественного числа в натуральную степень.
  */
 fn npow(base, power) {
-    result := 1.0;
+    result := 1;
     while power > 0 {
         if (power & 1) == 1 {
             result *= base;
