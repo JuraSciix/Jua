@@ -183,9 +183,7 @@ public class SimpleInterpreter {
                 default:
                     // Перед выполнением код проходит валидацию.
                     // Поэтому этот сценарий считается невозможным.
-                    throw new AssertionError(String.format(
-                            "cp=%d sb=%d sp=%d rb=%d inst=%d payload=%d",
-                            cp, sb, sp, rb, inst, payload));
+                    throw new AssertionError();
             }
         }
 
