@@ -63,15 +63,10 @@ public class SimpleInterpreter {
                     // ...
                     break;
 
-                // Заметка: инструкции Pop/Pop2 несут ответственность за ссылки, оставляемые на стеке.
-
                 case Pop:
-                    arena.clear(sp - 1);
                     sp--;
                     break;
                 case Pop2:
-                    arena.clear(sp - 2);
-                    arena.clear(sp - 1);
                     sp -= 2;
                     break;
                 case Add:
@@ -104,23 +99,23 @@ public class SimpleInterpreter {
                     break;
 
                 case Load:
-                    clearAndMove(arena, rb + payload, sp);
+                    arena.move(rb + payload, sp);
                     sp++;
                     break;
                 case Load0:
                 case Load1:
                 case Load2:
-                    clearAndMove(arena, rb + inst - Load0, sp);
+                    arena.move(rb + inst - Load0, sp);
                     sp++;
                     break;
                 case Store:
-                    clearAndMove(arena, sp - 1, rb + payload);
+                    arena.move(sp - 1, rb + payload);
                     sp--;
                     break;
                 case Store0:
                 case Store1:
                 case Store2:
-                    clearAndMove(arena, sp - 1, rb + inst - Store0);
+                    arena.move(sp - 1, rb + inst - Store0);
                     sp--;
                     break;
                 case Inc:

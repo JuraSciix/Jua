@@ -9,8 +9,8 @@ import static jua.vm.SimpleType.*;
 public class SimpleArena {
 
     public static void putNull(DataArena arena, int addr) {
-        arena.writeType(addr, TYPE_REF);
-        arena.writeReference(addr, null);
+        arena.writeType(addr, TYPE_PTR64);
+        arena.writePtr64(addr, -1);
     }
 
     public static void putInt64(DataArena arena, int addr, long value) {
@@ -28,17 +28,13 @@ public class SimpleArena {
         arena.writeBool(addr, value);
     }
 
-    public static void clearAndMove(DataArena arena, int src, int dst) {
-        arena.clearAndMove(src, dst);
-    }
-
     public static String toString(DataArena arena, int addr) {
         byte type = arena.readType(addr);
         switch (type) {
             case TYPE_INT64: return Long.toString(arena.readInt64(addr));
             case TYPE_FLOAT64: return Double.toString(arena.readFloat64(addr));
             case TYPE_BOOL64: return Boolean.toString(arena.readBool(addr));
-            case TYPE_REF: return Objects.toString(arena.readBool(addr));
+            case TYPE_PTR64: return Objects.toString(arena.readBool(addr));
             default: return String.format("%02x:%016x", type, arena.readInt64(addr));
         }
     }
