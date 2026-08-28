@@ -175,12 +175,12 @@ public class SimpleArithm {
         return false;
     }
 
-    public static boolean compareInt64Zero(DataArena arena, int top) {
+    public static boolean compareBool(DataArena arena, int top) {
 
         return false;
     }
 
-    public static boolean compareRefNull(DataArena arena, int top) {
+    public static boolean compareNullPtr(DataArena arena, int top) {
 
         return false;
     }

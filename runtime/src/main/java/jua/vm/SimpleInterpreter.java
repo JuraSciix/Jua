@@ -148,18 +148,18 @@ public class SimpleInterpreter {
                     }
                     continue;
 
-                case _if_z:
-                case _if_nz:
+                case _if_bz:
+                case _if_nbz:
                     sp -= 1;
-                    if (compareInt64Zero(arena, sp + 1) == (inst == _if_z)) {
+                    if (compareBool(arena, sp + 1) == (inst == _if_bz)) {
                         cp = payload;
                     }
                     continue;
 
-                case _if_n:
-                case _if_nn:
+                case _if_null:
+                case _if_nnull:
                     sp -= 1;
-                    if (compareRefNull(arena, sp + 1) == (inst == _if_n)) {
+                    if (compareNullPtr(arena, sp + 1) == (inst == _if_null)) {
                         cp = payload;
                     }
                     continue;
