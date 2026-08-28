@@ -1,11 +1,9 @@
 package jua.vm;
 
-public final class FrameData {
+public final class ThreadData {
 
     private int state;
     private int cp;
-    private int sp;
-
     public int state() { return state; }
 
     public void state(int state) {
@@ -16,7 +14,11 @@ public final class FrameData {
         this.cp = cp;
     }
 
-    public void stackPointer(int sp) {
-        this.sp = sp;
+    public void callee(int callee) {
+
+    }
+
+    public void argc(int argc) {
+
     }
 }

@@ -2,6 +2,8 @@ package jua.vm;
 
 import jua.vm.arena.DataArena;
 
+import static jua.vm.Fetch.decodeArgc;
+import static jua.vm.Fetch.decodeCallee;
 import static jua.vm.OPCodes.*;
 import static jua.vm.SimpleArena.*;
 import static jua.vm.SimpleArithm.*;
@@ -14,7 +16,7 @@ public class SimpleInterpreter {
     // cs - место, откуда начать выполнение
     // sb - базовый указатель на вершину стека
     // rb - указатель на начало регистровой области
-    public static void run(int cs, int sb, int rb, int[] code, DataArena arena, FrameData data) {
+    public static void run(int cs, int sb, int rb, int[] code, DataArena arena, ThreadData data) {
         int cp = cs & MASK_CP; // Code Pointer = Code Start
         int sp = sb & MASK_STACK; // Stack Pointer = Stack Base
 
@@ -165,7 +167,9 @@ public class SimpleInterpreter {
                     continue;
 
                 case _call:
-                    // ...
+                    data.callee(decodeCallee(payload));
+                    data.argc(decodeArgc(payload));
+                    state = STATE_CALL;
                     continue;
 
                 case _leave:
@@ -186,9 +190,6 @@ public class SimpleInterpreter {
         }
 
         data.state(state);
-        // Мы всегда инкрементируем CP перед выполнением,
-        // поэтому вычитаем 1.
-        data.codePointer(cp - 1);
-        data.stackPointer(sp);
+        data.codePointer(cp);
     }
 }

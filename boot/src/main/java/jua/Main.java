@@ -1,6 +1,6 @@
 package jua;
 
-import jua.vm.FrameData;
+import jua.vm.ThreadData;
 import jua.vm.SimpleInterpreter;
 import jua.vm.arena.DataArena;
 
@@ -32,7 +32,7 @@ public class Main {
                 .emit(_return)
                 .toArray();
         DataArena arena = new DataArena();
-        FrameData data = new FrameData();
+        ThreadData data = new ThreadData();
 
         arena.allocate(4);
 

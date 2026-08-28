@@ -6,10 +6,11 @@ import static jua.vm.SimpleType.*;
 
 public class SimpleArithm {
 
-    public static final int STATE_DONE = 0;
-    public static final int STATE_LEAVE = 5;
-    public static final int STATE_ERROR = 10;
-    public static final int STATE_ERR_DBZ = 11;
+    public static final int STATE_DONE    = 0; // Строго нулю! Для оптимизации
+    public static final int STATE_CALL    = 1;
+    public static final int STATE_LEAVE   = 2;
+    public static final int STATE_ERROR   = 3;
+    public static final int STATE_ERR_DBZ = 4;
 
     public static int typePair(DataArena arena, int top) {
         return typeUnionOf(arena.readType(top - 2), arena.readType(top - 1));
