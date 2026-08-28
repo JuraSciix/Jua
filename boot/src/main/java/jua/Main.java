@@ -1,7 +1,6 @@
 package jua;
 
 import jua.vm.FrameData;
-import jua.vm.SimpleArena;
 import jua.vm.SimpleInterpreter;
 import jua.vm.arena.DataArena;
 
@@ -14,23 +13,23 @@ public class Main {
         Object startHandle = new Object();
 
         int[] code = new CodeBuilder()
-                .emit(ConstInt0)
-                .emit(Store0)
-                .emit(ConstInt1)
-                .emit(Store1)
-                .emitJump(Goto, testHandle)
+                .emit(_const_i_0)
+                .emit(_store0)
+                .emit(_const_i_1)
+                .emit(_store1)
+                .emitJump(_goto, testHandle)
                 .resolveJump(startHandle)
-                .emit(Load0)
-                .emit(Load1)
-                .emit(Add)
-                .emit(Store0)
-                .emit(Inc, 1)
+                .emit(_load0)
+                .emit(_load1)
+                .emit(_add)
+                .emit(_store0)
+                .emit(_inc, 1)
                 .resolveJump(testHandle)
-                .emit(Load1)
-                .emit(Push, 1_000_000)
-                .emitJump(IfLe, startHandle)
-                .emit(Load0)
-                .emit(Return)
+                .emit(_load1)
+                .emit(_push, 1_000_000)
+                .emitJump(_if_le, startHandle)
+                .emit(_load0)
+                .emit(_return)
                 .toArray();
         DataArena arena = new DataArena();
         FrameData data = new FrameData();

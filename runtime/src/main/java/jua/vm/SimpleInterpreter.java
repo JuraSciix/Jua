@@ -25,154 +25,154 @@ public class SimpleInterpreter {
             cp++;
 
             switch (inst) {
-                case Nop:
+                case _nop:
                     break;
-                case ConstNull:
+                case _const_null:
                     putNull(arena, sp);
                     sp++;
                     break;
-                case ConstTrue:
-                case ConstFalse:
-                    putBool(arena, sp, inst == ConstTrue);
+                case _const_true:
+                case _const_false:
+                    putBool(arena, sp, inst == _const_true);
                     sp++;
                     break;
-                case ConstIntM1:
-                case ConstInt0:
-                case ConstInt1:
-                case ConstInt2:
-                    putInt64(arena, sp, inst - ConstInt0);
+                case _const_i_m1:
+                case _const_i_0:
+                case _const_i_1:
+                case _const_i_2:
+                    putInt64(arena, sp, inst - _const_i_0);
                     sp++;
                     break;
 
-                case Dup:
-                case DupX1:
-                case DupX2:
-                case Swap:
-                case Dup2:
-                case Dup2X1:
-                case Dup2X2:
+                case _dup:
+                case _dup_x1:
+                case _dup_x2:
+                case _swap:
+                case _dup2:
+                case _dup2_x1:
+                case _dup2_x2:
                     // ...
                     break;
 
-                case Push:
+                case _push:
                     putInt64(arena, sp, payload);
                     sp++;
                     break;
 
-                case NewList:
+                case _new_list:
                     // ...
                     break;
 
-                case Pop:
+                case _pop:
                     sp--;
                     break;
-                case Pop2:
+                case _pop2:
                     sp -= 2;
                     break;
-                case Add:
+                case _add:
                     state = add(arena, sp);
                     sp--;
                     break;
-                case Sub:
+                case _sub:
                     state = sub(arena, sp);
                     sp--;
                     break;
-                case Mul:
+                case _mul:
                     state = mul(arena, sp);
                     sp--;
                     break;
-                case Div:
+                case _div:
                     state = div(arena, sp);
                     sp--;
                     break;
-                case Rem:
-                case And:
-                case Or:
-                case Xor:
-                case Shl:
-                case Shr:
-                case Length:
-                case Pos:
-                case Neg:
-                case Not:
+                case _rem:
+                case _bit_and:
+                case _bit_or:
+                case _bit_xor:
+                case _bit_shl:
+                case _bit_shr:
+                case _len:
+                case _pos:
+                case _neg:
+                case _bit_inv:
                     // ...
                     break;
 
-                case Load:
+                case _load:
                     arena.move(rb + payload, sp);
                     sp++;
                     break;
-                case Load0:
-                case Load1:
-                case Load2:
-                    arena.move(rb + inst - Load0, sp);
+                case _load0:
+                case _load1:
+                case _load2:
+                    arena.move(rb + inst - _load0, sp);
                     sp++;
                     break;
-                case Store:
+                case _store:
                     arena.move(sp - 1, rb + payload);
                     sp--;
                     break;
-                case Store0:
-                case Store1:
-                case Store2:
-                    arena.move(sp - 1, rb + inst - Store0);
+                case _store0:
+                case _store1:
+                case _store2:
+                    arena.move(sp - 1, rb + inst - _store0);
                     sp--;
                     break;
-                case Inc:
+                case _inc:
                     state = inc(arena, rb + payload, 1L);
                     break;
-                case Dec:
+                case _dec:
                     state = inc(arena, rb + payload,-1L);
                     break;
 
-                case ArrayLoad:
-                case ArrayStore:
-                case ArrayInc:
-                case ArrayDec:
+                case _a_load:
+                case _a_store:
+                case _a_inc:
+                case _a_dec:
                     // ...
                     break;
 
-                case Goto:
+                case _goto:
                     cp = payload;
                     break;
 
-                case IfEq: case IfNe:
-                case IfGe: case IfLt:
-                case IfLe: case IfGt:
+                case _if_eq: case _if_ne:
+                case _if_ge: case _if_lt:
+                case _if_le: case _if_gt:
                     sp -= 2;
-                    if ((inst == IfNe) ^ compare(arena, sp + 2,
-                            inst == IfNe || inst == IfEq || inst == IfGe || inst == IfLe,
-                            inst == IfGe || inst == IfGt,
-                            inst == IfLe || inst == IfLt)) {
+                    if ((inst == _if_ne) ^ compare(arena, sp + 2,
+                            inst == _if_ne || inst == _if_eq || inst == _if_ge || inst == _if_le,
+                            inst == _if_ge || inst == _if_gt,
+                            inst == _if_le || inst == _if_lt)) {
                         cp = payload;
                     }
                     break;
 
-                case IfZ:
-                case IfNz:
+                case _if_z:
+                case _if_nz:
                     sp -= 1;
-                    if (compareInt64Zero(arena, sp + 1) == (inst == IfZ)) {
+                    if (compareInt64Zero(arena, sp + 1) == (inst == _if_z)) {
                         cp = payload;
                     }
                     break;
 
-                case IfNull:
-                case IfNonNull:
+                case _if_n:
+                case _if_nn:
                     sp -= 1;
-                    if (compareRefNull(arena, sp + 1) == (inst == IfNull)) {
+                    if (compareRefNull(arena, sp + 1) == (inst == _if_n)) {
                         cp = payload;
                     }
                     break;
 
-                case Call:
+                case _call:
                     // ...
                     break;
 
-                case Leave:
+                case _leave:
                     putNull(arena, sp);
                     sp++;
                     // fallthrough
-                case Return:
+                case _return:
                     state = STATE_LEAVE;
                     break;
 

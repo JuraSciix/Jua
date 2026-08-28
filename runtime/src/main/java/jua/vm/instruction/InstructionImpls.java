@@ -11,7 +11,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) {}
 
         @Override
-        public int opcode() { return Nop; }
+        public int opcode() { return _nop; }
     }
 
     class ConstIntM1 implements Instruction {
@@ -21,7 +21,7 @@ public interface InstructionImpls {
         }
 
         @Override
-        public int opcode() { return ConstIntM1; }
+        public int opcode() { return _const_i_m1; }
     }
 
     class ConstInt0 implements Instruction {
@@ -29,7 +29,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doConstInt(0); }
 
         @Override
-        public int opcode() { return ConstInt0; }
+        public int opcode() { return _const_i_0; }
     }
 
     class ConstInt1 implements Instruction {
@@ -37,7 +37,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doConstInt(1); }
 
         @Override
-        public int opcode() { return ConstInt1; }
+        public int opcode() { return _const_i_1; }
     }
 
     class ConstInt2 implements Instruction {
@@ -45,7 +45,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doConstInt(2); }
 
         @Override
-        public int opcode() { return ConstInt2; }
+        public int opcode() { return _const_i_2; }
     }
 
     class ConstFalse implements Instruction {
@@ -53,7 +53,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doConstFalse(); }
 
         @Override
-        public int opcode() { return ConstFalse; }
+        public int opcode() { return _const_false; }
     }
 
     class ConstTrue implements Instruction {
@@ -61,7 +61,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doConstTrue(); }
 
         @Override
-        public int opcode() { return ConstTrue; }
+        public int opcode() { return _const_true; }
     }
 
     class ConstNull implements Instruction {
@@ -69,7 +69,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doConstNull(); }
 
         @Override
-        public int opcode() { return ConstNull; }
+        public int opcode() { return _const_null; }
     }
 
     class Push implements Instruction {
@@ -83,7 +83,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doPush(cpi); }
 
         @Override
-        public int opcode() { return Push; }
+        public int opcode() { return _push; }
     }
 
     class Dup implements Instruction {
@@ -91,7 +91,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doDup(); }
 
         @Override
-        public int opcode() { return Dup; }
+        public int opcode() { return _dup; }
     }
 
     class DupX1 implements Instruction {
@@ -99,7 +99,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doDupX1(); }
 
         @Override
-        public int opcode() { return DupX1; }
+        public int opcode() { return _dup_x1; }
     }
 
     class DupX2 implements Instruction {
@@ -107,7 +107,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doDupX2(); }
 
         @Override
-        public int opcode() { return DupX2; }
+        public int opcode() { return _dup_x2; }
     }
 
     class Dup2 implements Instruction {
@@ -115,7 +115,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doDup2(); }
 
         @Override
-        public int opcode() { return Dup2; }
+        public int opcode() { return _dup2; }
     }
 
     class Dup2X1 implements Instruction {
@@ -123,7 +123,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doDup2x1(); }
 
         @Override
-        public int opcode() { return Dup2X1; }
+        public int opcode() { return _dup2_x1; }
     }
 
     class Dup2X2 implements Instruction {
@@ -131,7 +131,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doDup2x2(); }
 
         @Override
-        public int opcode() { return Dup2X2; }
+        public int opcode() { return _dup2_x2; }
     }
 
     class Pop implements Instruction {
@@ -139,7 +139,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doPop(); }
 
         @Override
-        public int opcode() { return Pop; }
+        public int opcode() { return _pop; }
     }
 
     class Pop2 implements Instruction {
@@ -147,7 +147,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doPop2(); }
 
         @Override
-        public int opcode() { return Pop2; }
+        public int opcode() { return _pop2; }
     }
 
     class Add implements Instruction {
@@ -155,7 +155,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doAdd(); }
 
         @Override
-        public int opcode() { return Add; }
+        public int opcode() { return _add; }
     }
 
     class Sub implements Instruction {
@@ -163,7 +163,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doSub(); }
 
         @Override
-        public int opcode() { return Sub; }
+        public int opcode() { return _sub; }
     }
 
     class Mul implements Instruction {
@@ -171,7 +171,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doMul(); }
 
         @Override
-        public int opcode() { return Mul; }
+        public int opcode() { return _mul; }
     }
 
     class Div implements Instruction {
@@ -179,7 +179,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doDiv(); }
 
         @Override
-        public int opcode() { return Div; }
+        public int opcode() { return _div; }
     }
 
     class Rem implements Instruction {
@@ -187,7 +187,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doRem(); }
 
         @Override
-        public int opcode() { return Rem; }
+        public int opcode() { return _rem; }
     }
 
     class Shl implements Instruction {
@@ -195,7 +195,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doShl(); }
 
         @Override
-        public int opcode() { return Shl; }
+        public int opcode() { return _bit_shl; }
     }
 
     class Shr implements Instruction {
@@ -203,7 +203,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doShr(); }
 
         @Override
-        public int opcode() { return Shr; }
+        public int opcode() { return _bit_shr; }
     }
 
     class And implements Instruction {
@@ -211,7 +211,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doAnd(); }
 
         @Override
-        public int opcode() { return And; }
+        public int opcode() { return _bit_and; }
     }
 
     class Or implements Instruction {
@@ -219,7 +219,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doOr(); }
 
         @Override
-        public int opcode() { return Or; }
+        public int opcode() { return _bit_or; }
     }
 
     class Xor implements Instruction {
@@ -227,7 +227,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doXor(); }
 
         @Override
-        public int opcode() { return Xor; }
+        public int opcode() { return _bit_xor; }
     }
 
     class Pos implements Instruction {
@@ -235,7 +235,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doPos(); }
 
         @Override
-        public int opcode() { return Pos; }
+        public int opcode() { return _pos; }
     }
 
     class Neg implements Instruction {
@@ -243,7 +243,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doNeg(); }
 
         @Override
-        public int opcode() { return Neg; }
+        public int opcode() { return _neg; }
     }
 
     class Not implements Instruction {
@@ -251,7 +251,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doNot(); }
 
         @Override
-        public int opcode() { return Not; }
+        public int opcode() { return _bit_inv; }
     }
 
     class Length implements Instruction {
@@ -259,7 +259,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doLength(); }
 
         @Override
-        public int opcode() { return Length; }
+        public int opcode() { return _len; }
     }
 
     class Load0 implements Instruction {
@@ -267,7 +267,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doLoad(0); }
 
         @Override
-        public int opcode() { return Load0; }
+        public int opcode() { return _load0; }
     }
 
     class Load1 implements Instruction {
@@ -275,7 +275,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doLoad(1); }
 
         @Override
-        public int opcode() { return Load1; }
+        public int opcode() { return _load1; }
     }
 
     class Load2 implements Instruction {
@@ -283,7 +283,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doLoad(2); }
 
         @Override
-        public int opcode() { return Load2; }
+        public int opcode() { return _load2; }
     }
 
     class Load implements Instruction {
@@ -297,7 +297,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doLoad(i); }
 
         @Override
-        public int opcode() { return Load; }
+        public int opcode() { return _load; }
     }
 
     class Store0 implements Instruction {
@@ -305,7 +305,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doStore(0); }
 
         @Override
-        public int opcode() { return Store0; }
+        public int opcode() { return _store0; }
     }
 
     class Store1 implements Instruction {
@@ -313,7 +313,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doStore(1); }
 
         @Override
-        public int opcode() { return Store1; }
+        public int opcode() { return _store1; }
     }
 
     class Store2 implements Instruction {
@@ -321,7 +321,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doStore(2); }
 
         @Override
-        public int opcode() { return Store2; }
+        public int opcode() { return _store2; }
     }
 
     class Store implements Instruction {
@@ -335,7 +335,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doStore(i); }
 
         @Override
-        public int opcode() { return Store; }
+        public int opcode() { return _store; }
     }
 
     class Inc implements Instruction {
@@ -349,7 +349,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doInc(i); }
 
         @Override
-        public int opcode() { return Inc; }
+        public int opcode() { return _inc; }
     }
 
     class Dec implements Instruction {
@@ -363,7 +363,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doDec(i); }
 
         @Override
-        public int opcode() { return Dec; }
+        public int opcode() { return _dec; }
     }
 
     class ArrayLoad implements Instruction {
@@ -371,7 +371,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doArrayLoad(); }
 
         @Override
-        public int opcode() { return ArrayLoad; }
+        public int opcode() { return _a_load; }
     }
 
     class ArrayStore implements Instruction {
@@ -379,7 +379,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doArrayStore(); }
 
         @Override
-        public int opcode() { return ArrayStore; }
+        public int opcode() { return _a_store; }
     }
 
     class ArrayInc implements Instruction {
@@ -387,7 +387,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doArrayInc(); }
 
         @Override
-        public int opcode() { return ArrayInc; }
+        public int opcode() { return _a_inc; }
     }
 
     class ArrayDec implements Instruction {
@@ -395,7 +395,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doArrayDec(); }
 
         @Override
-        public int opcode() { return ArrayDec; }
+        public int opcode() { return _a_dec; }
     }
 
     class NewList implements Instruction {
@@ -403,7 +403,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doNewList(); }
 
         @Override
-        public int opcode() { return NewList; }
+        public int opcode() { return _new_list; }
     }
 
     abstract class JumpInstruction implements Instruction {
@@ -427,7 +427,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.setNextCp(getNextCp()); }
 
         @Override
-        public int opcode() { return Goto; }
+        public int opcode() { return _goto; }
     }
 
     class IfEq extends JumpInstruction {
@@ -441,7 +441,7 @@ public interface InstructionImpls {
         }
 
         @Override
-        public int opcode() { return IfEq; }
+        public int opcode() { return _if_eq; }
     }
 
     class IfNe extends JumpInstruction {
@@ -455,7 +455,7 @@ public interface InstructionImpls {
         }
 
         @Override
-        public int opcode() { return IfNe; }
+        public int opcode() { return _if_ne; }
     }
 
     class IfGt extends JumpInstruction {
@@ -469,7 +469,7 @@ public interface InstructionImpls {
         }
 
         @Override
-        public int opcode() { return IfGt; }
+        public int opcode() { return _if_gt; }
     }
 
     class IfLe extends JumpInstruction {
@@ -483,7 +483,7 @@ public interface InstructionImpls {
         }
 
         @Override
-        public int opcode() { return IfLe; }
+        public int opcode() { return _if_le; }
     }
 
     class IfLt extends JumpInstruction {
@@ -497,7 +497,7 @@ public interface InstructionImpls {
         }
 
         @Override
-        public int opcode() { return IfLt; }
+        public int opcode() { return _if_lt; }
     }
 
     class IfGe extends JumpInstruction {
@@ -511,7 +511,7 @@ public interface InstructionImpls {
         }
 
         @Override
-        public int opcode() { return IfGe; }
+        public int opcode() { return _if_ge; }
     }
 
     class IfNz extends JumpInstruction {
@@ -525,7 +525,7 @@ public interface InstructionImpls {
         }
 
         @Override
-        public int opcode() { return IfNz; }
+        public int opcode() { return _if_nz; }
     }
 
     class IfZ extends JumpInstruction {
@@ -539,7 +539,7 @@ public interface InstructionImpls {
         }
 
         @Override
-        public int opcode() { return IfZ; }
+        public int opcode() { return _if_z; }
     }
 
     class IfNull extends JumpInstruction {
@@ -548,7 +548,7 @@ public interface InstructionImpls {
         }
 
         @Override
-        public int opcode() { return IfNull; }
+        public int opcode() { return _if_n; }
 
         @Override
         public void execute(ExecutionContext context) {
@@ -567,7 +567,7 @@ public interface InstructionImpls {
         }
 
         @Override
-        public int opcode() { return IfNonNull; }
+        public int opcode() { return _if_nn; }
     }
 
     class Call implements Instruction {
@@ -583,7 +583,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doCall(calleeId, argCount); }
 
         @Override
-        public int opcode() { return Call; }
+        public int opcode() { return _call; }
     }
 
     class Return implements Instruction {
@@ -591,7 +591,7 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doReturn(); }
 
         @Override
-        public int opcode() { return Return; }
+        public int opcode() { return _return; }
     }
 
     class Leave implements Instruction {
@@ -599,6 +599,6 @@ public interface InstructionImpls {
         public void execute(ExecutionContext context) { context.doLeave(); }
 
         @Override
-        public int opcode() { return Leave; }
+        public int opcode() { return _leave; }
     }
 }
