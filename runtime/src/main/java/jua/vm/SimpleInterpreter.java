@@ -26,23 +26,23 @@ public class SimpleInterpreter {
 
             switch (inst) {
                 case _nop:
-                    break;
+                    continue;
                 case _const_null:
                     putNull(arena, sp);
                     sp++;
-                    break;
+                    continue;
                 case _const_true:
                 case _const_false:
                     putBool(arena, sp, inst == _const_true);
                     sp++;
-                    break;
+                    continue;
                 case _const_i_m1:
                 case _const_i_0:
                 case _const_i_1:
                 case _const_i_2:
                     putInt64(arena, sp, inst - _const_i_0);
                     sp++;
-                    break;
+                    continue;
 
                 case _dup:
                 case _dup_x1:
@@ -52,39 +52,39 @@ public class SimpleInterpreter {
                 case _dup2_x1:
                 case _dup2_x2:
                     // ...
-                    break;
+                    continue;
 
                 case _push:
                     putInt64(arena, sp, payload);
                     sp++;
-                    break;
+                    continue;
 
                 case _new_list:
                     // ...
-                    break;
+                    continue;
 
                 case _pop:
                     sp--;
-                    break;
+                    continue;
                 case _pop2:
                     sp -= 2;
-                    break;
+                    continue;
                 case _add:
                     state = add(arena, sp);
                     sp--;
-                    break;
+                    continue;
                 case _sub:
                     state = sub(arena, sp);
                     sp--;
-                    break;
+                    continue;
                 case _mul:
                     state = mul(arena, sp);
                     sp--;
-                    break;
+                    continue;
                 case _div:
                     state = div(arena, sp);
                     sp--;
-                    break;
+                    continue;
                 case _rem:
                 case _bit_and:
                 case _bit_or:
@@ -96,45 +96,45 @@ public class SimpleInterpreter {
                 case _neg:
                 case _bit_inv:
                     // ...
-                    break;
+                    continue;
 
                 case _load:
                     arena.move(rb + payload, sp);
                     sp++;
-                    break;
+                    continue;
                 case _load0:
                 case _load1:
                 case _load2:
                     arena.move(rb + inst - _load0, sp);
                     sp++;
-                    break;
+                    continue;
                 case _store:
                     arena.move(sp - 1, rb + payload);
                     sp--;
-                    break;
+                    continue;
                 case _store0:
                 case _store1:
                 case _store2:
                     arena.move(sp - 1, rb + inst - _store0);
                     sp--;
-                    break;
+                    continue;
                 case _inc:
                     state = inc(arena, rb + payload, 1L);
-                    break;
+                    continue;
                 case _dec:
                     state = inc(arena, rb + payload,-1L);
-                    break;
+                    continue;
 
                 case _a_load:
                 case _a_store:
                 case _a_inc:
                 case _a_dec:
                     // ...
-                    break;
+                    continue;
 
                 case _goto:
                     cp = payload;
-                    break;
+                    continue;
 
                 case _if_eq: case _if_ne:
                 case _if_ge: case _if_lt:
@@ -146,7 +146,7 @@ public class SimpleInterpreter {
                             inst == _if_le || inst == _if_lt)) {
                         cp = payload;
                     }
-                    break;
+                    continue;
 
                 case _if_z:
                 case _if_nz:
@@ -154,7 +154,7 @@ public class SimpleInterpreter {
                     if (compareInt64Zero(arena, sp + 1) == (inst == _if_z)) {
                         cp = payload;
                     }
-                    break;
+                    continue;
 
                 case _if_n:
                 case _if_nn:
@@ -162,11 +162,11 @@ public class SimpleInterpreter {
                     if (compareRefNull(arena, sp + 1) == (inst == _if_n)) {
                         cp = payload;
                     }
-                    break;
+                    continue;
 
                 case _call:
                     // ...
-                    break;
+                    continue;
 
                 case _leave:
                     putNull(arena, sp);
@@ -174,7 +174,7 @@ public class SimpleInterpreter {
                     // fallthrough
                 case _return:
                     state = STATE_LEAVE;
-                    break;
+                    continue;
 
                 default:
                     // Перед выполнением код проходит валидацию.
@@ -183,12 +183,6 @@ public class SimpleInterpreter {
                             "cp=%d sb=%d sp=%d rb=%d inst=%d payload=%d",
                             cp, sb, sp, rb, inst, payload));
             }
-
-            // Хак, чтобы заставить javac сворачивать транзитивные прыжки:
-            // Сворачивая этот лишний прыжок, javac каскадным образом свернёт и все транзитивные.
-            // Транзитивные прыжки - это break внутри switch-cases.
-            //noinspection UnnecessaryContinue
-            continue;
         }
 
         data.state(state);
