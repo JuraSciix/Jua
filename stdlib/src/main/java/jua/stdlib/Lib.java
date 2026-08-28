@@ -3,10 +3,8 @@ package jua.stdlib;
 import jua.runtime.Function;
 import jua.runtime.heap.ListHeap;
 import jua.runtime.heap.StringHeap;
-import jua.vm.Address;
-import jua.vm.Histogram;
-import jua.vm.InterpreterThread;
 import jua.stdlib.util.ObjectSizeAnalyzing;
+import jua.vm.Address;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -333,25 +331,6 @@ public class Lib {
             })
             .build();
 
-    private static final Function histogramAction = builder()
-            .name("histogramAction")
-            .param("actionId")
-            .callable((context, args, returnAddress) -> {
-                switch ((int)args[0].getLong()) {
-                    case 0:
-                        Histogram.enable();
-                        break;
-                    case 1:
-                        Histogram.get().print();
-                        break;
-                    case 2:
-                        Histogram.disable();
-                        break;
-                }
-                returnAddress.setNull();
-            })
-            .build();
-
     private static final Function clone = builder()
             .name("clone")
             .param("value")
@@ -393,7 +372,6 @@ public class Lib {
                 strUpperCase,
                 strTrim,
                 sizeof,
-                histogramAction,
                 clone,
                 sqrt,
                 strToByteArray,
