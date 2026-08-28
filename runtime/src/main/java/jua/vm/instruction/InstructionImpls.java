@@ -525,7 +525,7 @@ public interface InstructionImpls {
         }
 
         @Override
-        public int opcode() { return _if_nz; }
+        public int opcode() { return _if_nbz; }
     }
 
     class IfZ extends JumpInstruction {
@@ -539,7 +539,7 @@ public interface InstructionImpls {
         }
 
         @Override
-        public int opcode() { return _if_z; }
+        public int opcode() { return _if_bz; }
     }
 
     class IfNull extends JumpInstruction {
@@ -548,7 +548,7 @@ public interface InstructionImpls {
         }
 
         @Override
-        public int opcode() { return _if_n; }
+        public int opcode() { return _if_null; }
 
         @Override
         public void execute(ExecutionContext context) {
@@ -567,7 +567,7 @@ public interface InstructionImpls {
         }
 
         @Override
-        public int opcode() { return _if_nn; }
+        public int opcode() { return _if_nnull; }
     }
 
     class Call implements Instruction {
