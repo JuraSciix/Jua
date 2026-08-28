@@ -27,7 +27,7 @@ public class Main {
                 .emit(Inc, 1)
                 .resolveJump(testHandle)
                 .emit(Load1)
-                .emit(Push, 500000)
+                .emit(Push, 1_000_000)
                 .emitJump(IfLe, startHandle)
                 .emit(Load0)
                 .emit(Return)

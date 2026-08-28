@@ -7,9 +7,9 @@ import static jua.vm.SimpleArena.*;
 import static jua.vm.SimpleArithm.*;
 
 public class SimpleInterpreter {
-    public static final int MASK_CP = 0xffff;
-    public static final int MASK_STACK = 0xffff;
-    public static final int MASK_REG = 0xffff;
+    private static final int MASK_CP = 0xffff;
+    private static final int MASK_STACK = 0xffff;
+    private static final int MASK_INST = 0xff;
 
     // cs - место, откуда начать выполнение
     // sb - базовый указатель на вершину стека
@@ -20,8 +20,8 @@ public class SimpleInterpreter {
 
         int state = STATE_DONE;
         while (state == STATE_DONE) {
-            int inst = code[cp * 2];
-            int payload = code[cp * 2 + 1];
+            int inst = code[cp] & MASK_INST;
+            int payload = code[cp] >>> 8;
             cp++;
 
             switch (inst) {
@@ -104,7 +104,7 @@ public class SimpleInterpreter {
                     break;
 
                 case Load:
-                    clearAndMove(arena, rb + (payload & MASK_REG), sp);
+                    clearAndMove(arena, rb + payload, sp);
                     sp++;
                     break;
                 case Load0:
@@ -114,7 +114,7 @@ public class SimpleInterpreter {
                     sp++;
                     break;
                 case Store:
-                    clearAndMove(arena, sp - 1, rb + (payload & MASK_REG));
+                    clearAndMove(arena, sp - 1, rb + payload);
                     sp--;
                     break;
                 case Store0:
@@ -124,10 +124,10 @@ public class SimpleInterpreter {
                     sp--;
                     break;
                 case Inc:
-                    state = inc(arena, rb + (payload & MASK_REG), 1L);
+                    state = inc(arena, rb + payload, 1L);
                     break;
                 case Dec:
-                    state = inc(arena, rb + (payload & MASK_REG),-1L);
+                    state = inc(arena, rb + payload,-1L);
                     break;
 
                 case ArrayLoad:
@@ -138,7 +138,7 @@ public class SimpleInterpreter {
                     break;
 
                 case Goto:
-                    cp = payload & MASK_CP;
+                    cp = payload;
                     break;
 
                 case IfEq: case IfNe:
@@ -149,7 +149,7 @@ public class SimpleInterpreter {
                             inst == IfNe || inst == IfEq || inst == IfGe || inst == IfLe,
                             inst == IfGe || inst == IfGt,
                             inst == IfLe || inst == IfLt)) {
-                        cp = payload & MASK_CP;
+                        cp = payload;
                     }
                     break;
 
@@ -157,7 +157,7 @@ public class SimpleInterpreter {
                 case IfNz:
                     sp -= 1;
                     if (compareInt64Zero(arena, sp + 1) == (inst == IfZ)) {
-                        cp = payload & MASK_CP;
+                        cp = payload;
                     }
                     break;
 
@@ -165,7 +165,7 @@ public class SimpleInterpreter {
                 case IfNonNull:
                     sp -= 1;
                     if (compareRefNull(arena, sp + 1) == (inst == IfNull)) {
-                        cp = payload & MASK_CP;
+                        cp = payload;
                     }
                     break;
 
