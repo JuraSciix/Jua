@@ -1,7 +1,7 @@
 package jua;
 
-import jua.vm.ThreadData;
-import jua.vm.SimpleInterpreter;
+import jua.vm.simple.ThreadData;
+import jua.vm.simple.SimpleInterpreter;
 import jua.vm.arena.DataArena;
 
 import static jua.vm.OPCodes.*;

@@ -1,8 +1,8 @@
-package jua.vm;
+package jua.vm.simple;
 
 import jua.vm.arena.DataArena;
 
-import static jua.vm.SimpleType.*;
+import static jua.vm.simple.SimpleType.*;
 
 public class SimpleArithm {
 

@@ -1,10 +1,10 @@
-package jua.vm;
+package jua.vm.simple;
 
 import jua.vm.arena.DataArena;
 
 import java.util.Objects;
 
-import static jua.vm.SimpleType.*;
+import static jua.vm.simple.SimpleType.*;
 
 public class SimpleArena {
 

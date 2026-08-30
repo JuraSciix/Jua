@@ -2,7 +2,7 @@ package jua.vm.arena;
 
 import java.util.Arrays;
 
-import static jua.vm.SimpleType.TYPE_INVALID;
+import static jua.vm.simple.SimpleType.TYPE_INVALID;
 
 public final class DataArena {
     private static final int INITIAL_CAPACITY = 512;

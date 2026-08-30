@@ -1,4 +1,4 @@
-package jua.vm;
+package jua.vm.simple;
 
 public class Fetch {
 

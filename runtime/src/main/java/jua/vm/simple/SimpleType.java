@@ -1,4 +1,4 @@
-package jua.vm;
+package jua.vm.simple;
 
 public class SimpleType {
     public static final byte TYPE_INVALID = 0;

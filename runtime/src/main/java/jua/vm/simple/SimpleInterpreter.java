@@ -1,12 +1,12 @@
-package jua.vm;
+package jua.vm.simple;
 
 import jua.vm.arena.DataArena;
 
-import static jua.vm.Fetch.decodeArgc;
-import static jua.vm.Fetch.decodeCallee;
+import static jua.vm.simple.Fetch.decodeArgc;
+import static jua.vm.simple.Fetch.decodeCallee;
 import static jua.vm.OPCodes.*;
-import static jua.vm.SimpleArena.*;
-import static jua.vm.SimpleArithm.*;
+import static jua.vm.simple.SimpleArena.*;
+import static jua.vm.simple.SimpleArithm.*;
 
 public class SimpleInterpreter {
     private static final int MASK_CP = 0xffff;
