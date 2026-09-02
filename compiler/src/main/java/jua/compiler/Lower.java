@@ -10,25 +10,6 @@ public final class Lower extends Translator {
      private final Evaluator evaluator = new Evaluator();
 
     @Override
-    public void visitDocument(Document tree) {
-        // Jua, начиная с версии 3.1 от 10/3/2023 не поддерживает выполняемые инструкции вне функций.
-        // Для временной обратной совместимости, компилятор преобразовывает код вне функций в код функции <main>.
-        // Возможно, в будущем времени компилятор полностью перестанет работать с кодом вне функций.
-
-        // Заметка: в tree.stats не могут находиться операторы Tag.FUNCDEF и Tag.CONSTDEF.
-        int pos = tree.pos;
-        FuncDef element = new FuncDef(pos,
-                pos,
-                "<main>",
-                TList.empty(),
-                new Block(pos, tree.stats), 0);
-        tree.functions.add(element);
-        tree.stats = TList.empty();
-
-        super.visitDocument(tree);
-    }
-
-    @Override
     public void visitWhileLoop(WhileLoop tree) {
         tree.cond = translate(tree.cond);
         tree.body = translate(tree.body);

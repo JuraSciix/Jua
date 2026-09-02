@@ -60,9 +60,20 @@ public final class JuaParser {
                 report(e);
             }
         }
+
+
+        // Jua, начиная с версии 3.1 от 10/3/2023 не поддерживает выполняемые инструкции вне функций.
+        // Для временной обратной совместимости, компилятор преобразовывает код вне функций в код функции <main>.
+        // Возможно, в будущем времени компилятор полностью перестанет работать с кодом вне функций.
+        FuncDef element = new FuncDef(0, 0,
+                "<main>",
+                TList.empty(),
+                new Block(0, stats), 0);
+        funcDefs.add(element);
+
         return new Document(0, source,
                 funcDefs,
-                stats);
+                TList.empty());
     }
 
     private void report(ParseNodeExit e) {
