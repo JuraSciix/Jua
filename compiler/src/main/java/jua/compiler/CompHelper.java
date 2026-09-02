@@ -72,46 +72,7 @@ public class CompHelper {
         }
     }
 
-    public static Object literalType(Expr tree) {
-        Expr innerTree = stripParens(tree);
-        if (innerTree.hasTag(Tag.LITERAL)) {
-            Literal literalTree = (Literal) innerTree;
-            return literalTree.value;
-        }
-        throw new AssertionError(innerTree.getTag());
-    }
-
     public static boolean isNull(Expr tree) {
-        Expr innerTree = stripParens(tree);
-        if (innerTree.hasTag(Tag.LITERAL)) {
-            Literal literalTree = (Literal) innerTree;
-            return literalTree.value == null;
-        }
-        return false;
-    }
-
-    public static boolean isLiteralShort(Expr tree) {
-        Expr innerTree = stripParens(tree);
-        if (innerTree.hasTag(Tag.LITERAL)) {
-            Literal literalTree = (Literal) innerTree;
-            if (literalTree.value instanceof Long) {
-                long longVal = (long) literalTree.value;
-                return (longVal >>> 16) == 0;
-            }
-        }
-        return false;
-    }
-
-    public static boolean isLiteralTrue(Expr tree) {
-        Expr innerTree = stripParens(tree);
-        if (innerTree.hasTag(Tag.LITERAL)) {
-            Literal literalTree = (Literal) innerTree;
-            return SemanticInfo.ofBoolean(literalTree.value).isTrue();
-        }
-        return false;
-    }
-
-    public static boolean isLiteralFalse(Expr tree) {
         Expr innerTree = stripParens(tree);
         if (innerTree.hasTag(Tag.LITERAL)) {
             Literal literalTree = (Literal) innerTree;

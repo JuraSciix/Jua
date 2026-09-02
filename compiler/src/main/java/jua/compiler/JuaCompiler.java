@@ -105,7 +105,6 @@ public final class JuaCompiler {
             }
             ModuleScope programScope = getModuleScope();
             // todo: Проверить, что тут надо было пофиксить.
-            compilationUnit.accept(new Lower());
             compilationUnit.accept(new Enter(programScope, log));
             compilationUnit.accept(new Check(programScope, log));
 
