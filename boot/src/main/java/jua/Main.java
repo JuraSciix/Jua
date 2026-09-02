@@ -1,53 +1,98 @@
 package jua;
 
-import jua.vm.simple.ThreadData;
-import jua.vm.simple.SimpleInterpreter;
-import jua.vm.arena.DataArena;
+import jua.compiler.JuaCompiler;
+import jua.compiler.Module;
+import jua.compiler.ModulePrinter;
+import jua.compiler.ModuleScope;
+import jua.runtime.Function;
+import jua.runtime.JuaEnvironment;
+import jua.vm.AddressSupport;
+import jua.vm.InterpreterThread;
+import jua.vm.Address;
+import jua.stdlib.Lib;
 
-import static jua.vm.OPCodes.*;
+import java.io.File;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Main {
 
+    private static Module module;
+    private static Function[] nativeFunctions;
+
+
     public static void main(String[] args) {
-        Object testHandle = new Object();
-        Object startHandle = new Object();
-
-        int[] code = new CodeBuilder()
-                .emit(_const_i_0)
-                .emit(_store0)
-                .emit(_const_i_1)
-                .emit(_store1)
-                .emitJump(_goto, testHandle)
-                .resolveJump(startHandle)
-                .emit(_load0)
-                .emit(_load1)
-                .emit(_add)
-                .emit(_store0)
-                .emit(_inc, 1)
-                .resolveJump(testHandle)
-                .emit(_load1)
-                .emit(_push, 1_000_000)
-                .emitJump(_if_le, startHandle)
-                .emit(_load0)
-                .emit(_return)
-                .toArray();
-        DataArena arena = new DataArena();
-        ThreadData data = new ThreadData();
-
-        arena.allocate(4);
-
-        long sum = 0;
-        for (int i = 0; i < 1000; i++) {
-            long time1 = System.nanoTime();
-            SimpleInterpreter.run(0, 2, 0, code, arena, data);
-            long time2 = System.nanoTime();
-            if (i >= 10) {
-                sum += (time2 - time1) / 1000;
-            }
-            System.out.println((time2 - time1) / 1000);
-        }
-        System.out.println("Average: " + sum / 1000);
-        arena.deallocate(3);
+        parseOptions(args);
+        targetFile();
+        compile();
+        interpret();
     }
 
+    private static void parseOptions(String[] args) {
+        try {
+            Options.bind(args);
+        } catch (RuntimeException e) {
+            System.err.println("Unable to parse options: " + e);
+            System.exit(1);
+        }
+    }
+
+    private static void targetFile() {
+        File file = new File(Options.firstFile());
+        if (!file.isFile()) {
+            System.err.println("Unable to find file " + Options.firstFile());
+            System.exit(1);
+        }
+    }
+
+    private static void compile() {
+        JuaCompiler c = new JuaCompiler();
+        c.setCharset(Options.charset());
+        c.setFile(Options.firstFile());
+        c.setGenJvmLoops(Options.genJvmLoops());
+        c.setStderr(System.err);
+        c.setStdout(System.out);
+        c.setLintMode(Options.isLintEnabled());
+//        c.setPrettyTreeMode(Options.isShouldPrettyTree());
+        c.setLogLimit(Options.logMaxErrors());
+
+        // Регистрируем нативные члены.
+        ModuleScope ms = c.getModuleScope();
+
+        nativeFunctions = Lib.getFunctions().toArray(new Function[0]);
+        for (int i = 0; i < nativeFunctions.length; i++) {
+            Function f = nativeFunctions[i];
+            ms.defineNativeFunction(f.getName(), f.getMinArgc(), f.getMaxArgc(),
+                    Arrays.stream(f.getDefaults()).map(AddressSupport::toJavaObject).toArray(), f.getParams(), i);
+        }
+
+        module = c.compile();
+        if (module == null) {
+            // todo: Сделать нормальную проверку на ошибку компиляции.
+            System.exit(1);
+        }
+
+        if (Options.isShouldPrintCode()) {
+            ModulePrinter.printModule(module);
+            System.exit(1);
+        }
+    }
+
+    private static void interpret() {
+        List<Function> functions = Arrays.stream(module.executables)
+                .map(Executable2FunctionTranslator::translate)
+                .collect(Collectors.toList());
+
+        Collections.addAll(functions, nativeFunctions);
+
+        Function mainFn = functions.stream()
+                .filter(f -> f.getName().equals("<main>"))
+                .findAny().orElseThrow(AssertionError::new);
+
+        JuaEnvironment env = JuaEnvironment.create(functions.toArray(new Function[0]));
+        InterpreterThread thread = new InterpreterThread(Thread.currentThread(), env);
+        Address resultReceiver = new Address();
+        thread.callAndWait(mainFn, new Address[0], resultReceiver);
+        // Если будет интересно, что вернул код, то можно напечатать resultReceiver.
+    }
 }
