@@ -1,38 +1,24 @@
 package jua.compiler.utils;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.CharBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 
 public class IOUtils {
 
     private static String userDirCache;
     private static Path userDirPath;
 
-    public static char[] readFileCharBuffer(File file, Charset charset) throws IOException {
-        if (!file.exists()) {
-            throw new FileNotFoundException();
+    public static CharBuffer readFileCharBuffer(File file, Charset charset) throws IOException {
+        try (FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.READ)) {
+            long size = channel.size();
+            return charset.decode(channel.map(FileChannel.MapMode.READ_ONLY, 0, size));
         }
-        long len64 = file.length();
-        if (len64 == 0L) {
-            return new char[0];
-        }
-        if (len64 > 0x7fffffffL) {
-            throw new OutOfMemoryError("File is too big");
-        }
-        byte[] buffer = new byte[(int) len64];
-        try (InputStream reader = Files.newInputStream(file.toPath())) {
-            int c = reader.read(buffer);
-            if (c < 0) {
-                throw new AssertionError(c);
-            }
-        }
-        return new String(buffer, charset).toCharArray();
     }
 
     public static Path relativize(Path p) {
