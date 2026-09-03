@@ -75,7 +75,7 @@ public final class JuaCompiler {
     public Module compile() {
         char[] filecontents;
         try {
-            filecontents = IOUtils.readFileCharBuffer(new File(file), charset);
+            filecontents = IOUtils.readFileCharBuffer(new File(file), charset).array();
         } catch (IOException e) {
             stderr.println("Unable access to file.");
             System.exit(1);

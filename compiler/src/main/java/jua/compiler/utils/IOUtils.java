@@ -6,27 +6,21 @@ import java.nio.CharBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
-public class IOUtils {
-
-    private static String userDirCache;
-    private static Path userDirPath;
+public final class IOUtils {
+    private IOUtils() {
+        throw new AssertionError();
+    }
 
     public static CharBuffer readFileCharBuffer(File file, Charset charset) throws IOException {
-        try (FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.READ)) {
+        return readPathCharBuffer(file.toPath(), charset);
+    }
+
+    public static CharBuffer readPathCharBuffer(Path path, Charset charset) throws IOException {
+        try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
             long size = channel.size();
             return charset.decode(channel.map(FileChannel.MapMode.READ_ONLY, 0, size));
         }
-    }
-
-    public static Path relativize(Path p) {
-        String userDir = System.getProperty("user.dir");
-        if (!userDir.equals(userDirCache)) {
-            userDirCache = userDir;
-            userDirPath = Paths.get(userDir);
-        }
-        return userDirPath.relativize(p);
     }
 }
