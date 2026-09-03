@@ -699,9 +699,7 @@ public abstract class Tree {
         public Tag getTag() { return tag; }
 
         @Override
-        public void accept(Visitor visitor) {
-
-        }
+        public void accept(Visitor visitor) { visitor.visitLoopControl(this); }
     }
 
     public static class VarDef extends Stmt {
