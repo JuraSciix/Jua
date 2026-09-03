@@ -21,6 +21,7 @@ public class Lib {
                 Address stringAddress = new Address();
                 args[0].stringVal(stringAddress);
                 System.out.print(stringAddress.getStringHeap().toString());
+                returnAddress.setNull();
             })
             .build();
 
@@ -32,6 +33,7 @@ public class Lib {
                 Address stringAddress = new Address();
                 args[0].stringVal(stringAddress);
                 System.out.println(stringAddress.getStringHeap().toString());
+                returnAddress.setNull();
             })
             .build();
 
