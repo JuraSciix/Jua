@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -75,7 +76,7 @@ public final class JuaCompiler {
     public Module compile() {
         char[] filecontents;
         try {
-            filecontents = IOUtils.readFileCharBuffer(new File(file), charset).array();
+            filecontents = IOUtils.readPathCharBuffer(Paths.get(file), charset).array();
         } catch (IOException e) {
             stderr.println("Unable access to file.");
             System.exit(1);
