@@ -2,45 +2,73 @@ package jua.compiler.utils;
 
 import java.util.Arrays;
 
-public class IntArrayList {
+public final class IntArrayList {
+    private static final int INITIAL_CAPACITY = 16;
 
-    private int[] elements;
-
-    private int top = 0;
+    private int[] array;
+    private int count = 0;
 
     public IntArrayList() {
-        this(16);
+        this(INITIAL_CAPACITY);
     }
 
-    public IntArrayList(int initialCapacity) {
-        elements = new int[initialCapacity];
+    public IntArrayList(int capacity) {
+        if (capacity < 0) {
+            throw new IllegalArgumentException("Negative capacity");
+        }
+        array = new int[capacity];
     }
 
     public int size() {
-        return top;
+        return count;
     }
 
     public void add(int element) {
-        if (top >= elements.length) {
-            elements = Arrays.copyOf(elements, elements.length * 2);
+        if (count >= array.length) {
+            // На практике newCapacity никогда даже не приблизится к Integer.MAX_VALUE
+            int newCapacity = Math.max(array.length, INITIAL_CAPACITY / 2) * 2;
+            array = Arrays.copyOf(array, newCapacity);
         }
-        elements[top++] = element;
+        array[count++] = element;
     }
 
     public int get(int index) {
-        return elements[index];
+        if (0 <= index && index < count) {
+            return array[index];
+        } else {
+            throw new IndexOutOfBoundsException(oob(index));
+        }
     }
 
-    public int indexOf(int element) {
-        for (int i = 0; i < size(); i++) {
-            if (get(i) == element) {
-                return i;
-            }
+    public void set(int index, int value) {
+        if (0 <= index && index < count) {
+            array[index] = value;
+        } else {
+            throw new IndexOutOfBoundsException(oob(index));
         }
-        return -1;
+    }
+
+    public void and(int index, int mask) {
+        if (0 <= index && index < count) {
+            array[index] &= mask;
+        } else {
+            throw new IndexOutOfBoundsException(oob(index));
+        }
+    }
+
+    public void or(int index, int mask) {
+        if (0 <= index && index < count) {
+            array[index] |= mask;
+        } else {
+            throw new IndexOutOfBoundsException(oob(index));
+        }
+    }
+
+    private String oob(int index) {
+        return "Index: " + index + ". Count: " + count;
     }
 
     public int[] toArray() {
-        return Arrays.copyOfRange(elements, 0, top);
+        return Arrays.copyOf(array, count);
     }
 }
