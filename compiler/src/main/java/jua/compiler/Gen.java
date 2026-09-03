@@ -51,43 +51,6 @@ public class Gen extends Scanner {
         }
     }
 
-    static class SwitchEnv extends FlowEnv {
-
-        /** Индексы констант из ключей кейзов. Равно null когда isSwitch=false */
-        final IntArrayList caseLabelsConstantIndexes = new IntArrayList();
-        /** Точка входа (IP) для каждого кейза. Равно null когда isSwitch=false */
-        final IntArrayList switchCaseOffsets = new IntArrayList();
-        /** Указатель на точку входа в default-case */
-        int switchDefaultOffset = -1;
-
-        /** label constant index => chain */
-        final Map<Integer, Chain> caseChains = new HashMap<>();
-        Chain elseCaseChain;
-
-        SwitchEnv(FlowEnv parent) {
-            super(parent);
-        }
-
-        @Override
-        void ontoNext(Chain opcode, boolean loop) {
-            if (loop) {
-                parent.ontoNext(opcode, true);
-            } else {
-                contChain = mergeChains(contChain, opcode);
-            }
-        }
-
-        @Override
-        void ontoElse(Chain opcode) {
-            elseCaseChain = mergeChains(elseCaseChain, opcode);
-        }
-
-        @Override
-        void ontoCase(int labelIndex, Chain opcode) {
-            caseChains.computeIfPresent(labelIndex, (i, prev) -> mergeChains(prev, opcode));
-        }
-    }
-
     // Set from Code.<init>
     public Code code;
     public Source source;
@@ -97,9 +60,6 @@ public class Gen extends Scanner {
     private Items items;
 
     private FlowEnv flow;
-
-    // Set from JuaCompiler.compile
-    public boolean genJvmLoops;
 
     private Item genExpr(Expr tree) {
         Item prevItem = result;
